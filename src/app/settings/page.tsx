@@ -1,24 +1,45 @@
 
 'use client';
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
+import { Settings, Users, MapPin, ListChecks, Bell } from "lucide-react";
 
-export default function SettingsPage() {
-  return (
-    <div className="mx-auto max-w-4xl space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">مركز التحكم</h1>
-        <p className="text-muted-foreground">إدارة حسابك وإعدادات النظام.</p>
-      </div>
-      <Separator />
+type Panel = 'general' | 'users' | 'areas' | 'statuses' | 'notifications';
 
-      <Card>
+const navItems = [
+    { id: 'general', label: 'الإعدادات العامة', icon: Settings },
+    { id: 'users', label: 'المستخدمين والتجار', icon: Users },
+    { id: 'areas', label: 'المناطق وقوائم الأسعار', icon: MapPin },
+    { id: 'statuses', label: 'حالات الطلب', icon: ListChecks },
+    { id: 'notifications', label: 'الإشعارات والتكامل', icon: Bell },
+];
+
+const SidebarNav = ({ activePanel, setActivePanel }: { activePanel: Panel, setActivePanel: (panel: Panel) => void }) => {
+    return (
+        <nav className="flex flex-col gap-2">
+            {navItems.map(item => (
+                <Button
+                    key={item.id}
+                    variant={activePanel === item.id ? 'default' : 'ghost'}
+                    className="justify-start"
+                    onClick={() => setActivePanel(item.id as Panel)}
+                >
+                    <item.icon className="mr-2 h-4 w-4" />
+                    {item.label}
+                </Button>
+            ))}
+        </nav>
+    );
+};
+
+const GeneralSettingsPanel = () => (
+    <Card>
         <CardHeader>
           <CardTitle>إعدادات الملف الشخصي</CardTitle>
           <CardDescription>تحديث معلوماتك الشخصية.</CardDescription>
@@ -38,48 +59,7 @@ export default function SettingsPage() {
             <Label htmlFor="email">البريد الإلكتروني</Label>
             <Input id="email" type="email" defaultValue="admin@alwameedh.com" />
           </div>
-          <Button>تحديث الملف الشخصي</Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>إعدادات الإشعارات</CardTitle>
-          <CardDescription>اختر كيف تريد أن يتم إعلامك.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <Label htmlFor="new-order-email" className="font-medium">الطلبات الجديدة</Label>
-              <p className="text-sm text-muted-foreground">استلام بريد إلكتروني لكل طلب جديد.</p>
-            </div>
-            <Switch id="new-order-email" defaultChecked />
-          </div>
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <Label htmlFor="return-request-email" className="font-medium">طلبات الإرجاع</Label>
-              <p className="text-sm text-muted-foreground">الحصول على إشعار حول طلبات الإرجاع الجديدة.</p>
-            </div>
-            <Switch id="return-request-email" />
-          </div>
-           <div className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <Label htmlFor="daily-summary-email" className="font-medium">الملخص اليومي</Label>
-              <p className="text-sm text-muted-foreground">استلام ملخص يومي للأنشطة.</p>
-            </div>
-            <Switch id="daily-summary-email" defaultChecked />
-          </div>
-          <Button>حفظ التفضيلات</Button>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>إعدادات النظام</CardTitle>
-          <CardDescription>إدارة تكوينات النظام العامة.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
+           <div className="space-y-2">
             <Label htmlFor="language">اللغة</Label>
             <Select defaultValue="ar">
                 <SelectTrigger id="language">
@@ -104,11 +84,55 @@ export default function SettingsPage() {
                 </SelectContent>
             </Select>
           </div>
-          <Button>حفظ الإعدادات</Button>
+          <Button>تحديث الملف الشخصي</Button>
         </CardContent>
       </Card>
+);
+
+const PlaceholderPanel = ({ title }: { title: string }) => (
+    <Card className="flex items-center justify-center min-h-[300px]">
+        <CardContent className="text-center text-muted-foreground p-6">
+            <h3 className="text-lg font-semibold">{title}</h3>
+            <p className="text-sm">هذه الميزة قيد التطوير حاليًا.</p>
+        </CardContent>
+    </Card>
+);
+
+export default function SettingsPage() {
+    const [activePanel, setActivePanel] = useState<Panel>('general');
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">مركز التحكم</h1>
+        <p className="text-muted-foreground">إدارة حسابك وإعدادات النظام.</p>
+      </div>
+      <Separator />
+
+       <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+            <div className="hidden md:block md:col-span-1">
+                <SidebarNav activePanel={activePanel} setActivePanel={setActivePanel} />
+            </div>
+             <div className="md:hidden">
+                <Select onValueChange={(value) => setActivePanel(value as Panel)} defaultValue={activePanel}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="اختر قسمًا" />
+                    </SelectTrigger>
+                    <SelectContent>
+                       {navItems.map(item => (
+                         <SelectItem key={item.id} value={item.id}>{item.label}</SelectItem>
+                       ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="md:col-span-3">
+                {activePanel === 'general' && <GeneralSettingsPanel />}
+                {activePanel === 'users' && <PlaceholderPanel title="إدارة المستخدمين والتجار" />}
+                {activePanel === 'areas' && <PlaceholderPanel title="إدارة المناطق وقوائم الأسعار" />}
+                {activePanel === 'statuses' && <PlaceholderPanel title="إدارة حالات الطلب" />}
+                {activePanel === 'notifications' && <PlaceholderPanel title="إدارة الإشعارات والتكامل" />}
+            </div>
+        </div>
     </div>
   );
 }
-
-    
