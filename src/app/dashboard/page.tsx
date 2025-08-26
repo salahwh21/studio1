@@ -1,221 +1,252 @@
 
 'use client';
 
-import {
-  AlertCircle,
-  ArrowUpRight,
-  CheckCircle,
-  ChevronRight,
-  DollarSign,
-  ShoppingCart,
-  Star,
-  Truck,
-} from 'lucide-react';
+import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
 import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
-} from '@/components/ui/chart';
-import Link from 'next/link';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  Legend
+  TrendingUp,
+  Phone,
+  PackageCheck,
+  RefreshCw,
+  XCircle,
+  Truck,
+  Package as PackageIcon,
+  DollarSign,
+  ShoppingCart,
+  Star,
+} from 'lucide-react';
+import {
+    Bar,
+    BarChart,
+    CartesianGrid,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+    Legend
 } from 'recharts';
-
-const revenueData = [
-    { month: 'يناير', revenue: 45231.84 },
-    { month: 'فبراير', revenue: 47890.12 },
-    { month: 'مارس', revenue: 51234.56 },
-    { month: 'أبريل', revenue: 53890.78 },
-    { month: 'مايو', revenue: 55123.45 },
-    { month: 'يونيو', revenue: 58345.90 },
-];
-
-const orderStatusData = [
-    { name: 'قيد التوصيل', value: 400, fill: 'hsl(var(--chart-1))' },
-    { name: 'مكتملة', value: 1980, fill: 'hsl(var(--chart-2))' },
-    { name: 'مرتجعة', value: 124, fill: 'hsl(var(--chart-3))' },
-    { name: 'قيد الانتظار', value: 210, fill: 'hsl(var(--chart-4))' },
-    { name: 'متأخرة', value: 35, fill: 'hsl(var(--chart-5))' },
-];
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
 
 const topDrivers = [
-    { name: "علي الأحمد", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d", completed: 125, delayed: 2, returned: 1, rate: 98, assigned: 128 },
-    { name: "محمد الخالد", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026705d", completed: 110, delayed: 5, returned: 3, rate: 95, assigned: 118 },
-    { name: "فاطمة الزهراء", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026706d", completed: 98, delayed: 1, returned: 0, rate: 99, assigned: 99 },
-    { name: "يوسف إبراهيم", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026707d", completed: 95, delayed: 8, returned: 2, rate: 93, assigned: 105 },
-    { name: "عائشة بكر", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026708d", completed: 90, delayed: 3, returned: 5, rate: 92, assigned: 98 },
-]
+    { id: 1, name: "علي الأحمد", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d", phone: '07712345678', status: 'نشط', completed: 125, postponed: 5, returned: 2, total: 132 },
+    { id: 2, name: "محمد الخالد", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026705d", phone: '07812345678', status: 'نشط', completed: 110, postponed: 8, returned: 3, total: 121 },
+    { id: 3, name: "فاطمة الزهراء", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026706d", phone: '07912345678', status: 'نشط', completed: 98, postponed: 2, returned: 1, total: 101 },
+    { id: 4, name: "يوسف إبراهيم", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026707d", phone: '07723456789', status: 'إجازة', completed: 95, postponed: 10, returned: 5, total: 110 },
+    { id: 5, name: "عائشة بكر", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026708d", phone: '07823456789', status: 'نشط', completed: 90, postponed: 4, returned: 6, total: 100 },
+];
 
+const orderStatusData = [
+    { name: 'قيد التوصيل', value: 400, color: 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/50 border-blue-500/50' },
+    { name: 'مكتملة', value: 1980, color: 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/50 border-green-500/50' },
+    { name: 'مرتجعة', value: 124, color: 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/50 border-red-500/50' },
+    { name: 'قيد الانتظار', value: 210, color: 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/50 border-yellow-500/50' },
+    { name: 'متأخرة', value: 35, color: 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/50 border-red-500/50' },
+];
 
 const chartConfig = {
-  revenue: {
-    label: 'الإيرادات',
-    color: 'hsl(var(--primary))',
-  },
-  'قيد التوصيل': { label: 'قيد التوصيل', color: 'hsl(var(--chart-1))' },
-  'مكتملة': { label: 'مكتملة', color: 'hsl(var(--chart-2))' },
-  'مرتجعة': { label: 'مرتجعة', color: 'hsl(var(--chart-3))' },
-  'قيد الانتظار': { label: 'قيد الانتظار', color: 'hsl(var(--chart-4))' },
-  'متأخرة': { label: 'متأخرة', color: 'hsl(var(--chart-5))' },
+  delivered: { label: 'تم التوصيل', color: 'hsl(var(--chart-2))' },
+  postponed: { label: 'مؤجلة', color: 'hsl(var(--chart-4))' },
+  returned: { label: 'ملغية/مرتجعة', color: 'hsl(var(--chart-3))' },
 };
 
 
-export default function DashboardPage() {
-  return (
-    <div className="flex flex-col gap-6">
-      
-      <div className="space-y-2">
-        <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle className="font-bold">تنبيه: 35 طلب متأخر!</AlertTitle>
-            <AlertDescription>
-                تجاوزت بعض الطلبات الوقت المحدد للتسليم. <Link href="/orders?status=delayed" className="underline font-semibold">عرض التفاصيل</Link>
-            </AlertDescription>
-        </Alert>
-         <Alert className="bg-orange-100 dark:bg-orange-900/30 border-orange-500/50 text-orange-800 dark:text-orange-300">
-            <AlertCircle className="h-4 w-4 !text-orange-600 dark:!text-orange-400" />
-            <AlertTitle className="font-bold">تنبيه: 8 طلبات ذات أولوية عالية</AlertTitle>
-            <AlertDescription>
-                لديك طلبات جديدة ذات أولوية عالية تحتاج إلى تعيين سائق. <Link href="/orders?priority=high" className="underline font-semibold">عرض التفاصيل</Link>
-            </AlertDescription>
-        </Alert>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>الإحصائيات العامة</CardTitle>
-            <CardDescription>نظرة شاملة على أداء أعمالك خلال الـ 6 أشهر الماضية.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-6 md:grid-cols-2">
-             <div className="space-y-4">
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col items-start gap-2 p-4 rounded-lg bg-muted/50">
-                        <div className="flex items-center gap-2">
-                            <DollarSign className="h-6 w-6 text-muted-foreground"/>
-                            <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
-                        </div>
-                        <p className="text-2xl font-bold">٤٥٢,٣١٨ د.ع</p>
-                    </div>
-                    <div className="flex flex-col items-start gap-2 p-4 rounded-lg bg-muted/50">
-                        <div className="flex items-center gap-2">
-                            <ShoppingCart className="h-6 w-6 text-muted-foreground"/>
-                            <p className="text-sm text-muted-foreground">إجمالي الطلبات</p>
-                        </div>
-                        <p className="text-2xl font-bold">٢,٣٥٠</p>
-                    </div>
-                 </div>
-                <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                    <LineChart
-                        data={revenueData}
-                        margin={{ left: -20, right: 10, top:10, bottom: 0 }}
-                        accessibilityLayer
-                    >
-                        <CartesianGrid vertical={false} />
-                        <XAxis
-                            dataKey="month"
-                            tickLine={false}
-                            axisLine={false}
-                            tickMargin={8}
-                            tickFormatter={(value) => value.slice(0, 3)}
-                        />
-                        <YAxis
-                            tickLine={false}
-                            axisLine={false}
-                            tickMargin={8}
-                             tickFormatter={(value) => `${(value / 1000).toLocaleString()} ألف`}
-                        />
-                        <Tooltip
-                            cursor={{ strokeDasharray: '3 3' }}
-                            content={<ChartTooltipContent indicator="dot" formatter={(value) => new Intl.NumberFormat('ar-IQ', { style: 'currency', currency: 'IQD' }).format(value as number)} />}
-                        />
-                        <Line type="monotone" dataKey="revenue" stroke="var(--color-revenue)" strokeWidth={2} dot={true} />
-                    </LineChart>
-                </ChartContainer>
-             </div>
-             <div className="flex flex-col items-center justify-center">
-                <p className="font-medium text-center mb-2">توزيع حالات الطلبات</p>
-                <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Tooltip
-                        content={<ChartTooltipContent hideLabel />}
-                      />
-                      <Pie data={orderStatusData} dataKey="value" nameKey="name" innerRadius="50%" outerRadius="80%" paddingAngle={5}>
-                      </Pie>
-                      <Legend content={<ChartLegendContent nameKey="name" />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
-             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-1 flex flex-col">
-          <CardHeader>
-            <CardTitle>أداء أفضل السائقين</CardTitle>
-            <CardDescription>نظرة سريعة على أداء السائقين</CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 space-y-4 overflow-y-auto pr-4">
-           {topDrivers.map((driver, index) => (
-             <Link href={'/driver-app'} key={driver.name} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted transition-colors">
-                <Avatar className="h-12 w-12">
-                    <AvatarImage src={driver.avatar} alt={driver.name} />
-                    <AvatarFallback>{driver.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <p className="font-semibold">{driver.name} {index === 0 && <Star className="inline h-4 w-4 text-green-500 fill-green-500"/>}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{driver.completed} مكتملة</span>
-                    <span className="text-gray-400">&bull;</span>
-                    <span>{driver.assigned} معينة</span>
-                  </div>
-                   <div className="w-full bg-muted rounded-full h-2.5 mt-1">
-                      <div className="h-2.5 rounded-full" style={{ width: `${(driver.completed/driver.assigned)*100}%`, backgroundColor: index === 0 ? 'hsl(var(--chart-2))' : 'hsl(var(--primary))' }}></div>
-                    </div>
+const StatCard = ({ title, value, icon: Icon, color = 'text-primary' }: { title: string, value: string | number, icon: React.ElementType, color?: string }) => (
+    <Card>
+        <CardContent className="p-4">
+            <div className="flex justify-between items-center">
+                <div>
+                    <p className="text-sm text-muted-foreground">{title}</p>
+                    <p className="text-2xl font-bold">{value}</p>
                 </div>
-                 <div className="flex flex-col items-end">
-                    <span className="font-bold text-lg" style={{ color: index === 0 ? 'hsl(var(--chart-2))' : 'hsl(var(--foreground))' }}>{((driver.completed/driver.assigned)*100).toFixed(0)}%</span>
-                    <span className="text-xs text-muted-foreground">إنجاز</span>
-                 </div>
-             </Link>
-           ))}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
+                <Icon className={`w-7 h-7 ${color}`} />
+            </div>
+        </CardContent>
+    </Card>
+);
+
+
+export default function DashboardPage() {
+    const [selectedDriver, setSelectedDriver] = useState<string>('all');
+
+    const filteredDriverStats = useMemo(() => {
+        if (!selectedDriver || selectedDriver === 'all') {
+            return topDrivers;
+        }
+        return topDrivers.filter(driver =>
+            driver.name === selectedDriver
+        );
+    }, [selectedDriver]);
+
+    const chartData = topDrivers.map(d => ({
+        name: d.name,
+        delivered: d.completed,
+        postponed: d.postponed,
+        returned: d.returned
+    }));
+
+    return (
+        <div className="flex flex-col gap-8">
+            <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>إحصائيات عامة</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        <StatCard title="إجمالي الإيرادات" value={`٤٥٢,٣١٨ د.ع`} icon={TrendingUp} color="text-green-500" />
+                         <StatCard title="إجمالي الطلبات" value="٢,٣٥٠" icon={ShoppingCart} color="text-blue-500" />
+                        {orderStatusData.map((stat) => (
+                            <Button
+                                key={stat.name}
+                                asChild
+                                variant="outline"
+                                className="h-auto flex-col items-center justify-center p-4"
+                            >
+                                <Link href={`/orders?status=${encodeURIComponent(stat.name)}`}>
+                                    <p className="text-2xl font-bold">{stat.value}</p>
+                                    <p className="text-sm text-muted-foreground">{stat.name}</p>
+                                </Link>
+                            </Button>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <CardTitle>نظرة عامة على أداء السائقين</CardTitle>
+                            <CardDescription>عرض ملخص لأداء كل سائق على حدة.</CardDescription>
+                        </div>
+                        <Select value={selectedDriver} onValueChange={setSelectedDriver}>
+                            <SelectTrigger className="w-full sm:w-[240px]">
+                                <SelectValue placeholder="فلترة حسب السائق" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">كل السائقين</SelectItem>
+                                {topDrivers.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {filteredDriverStats.map((driver, index) => {
+                            const { id, name, stats, phone, status, completed, postponed, returned, total, avatar } = driver;
+                            const progressValue = total > 0 ? (completed / total) * 100 : 0;
+
+                            const statsList = [
+                                { label: 'تم التوصيل', value: completed, color: 'bg-green-500', filter: 'delivered', icon: PackageCheck },
+                                { label: 'مؤجلة', value: postponed, color: 'bg-orange-500', filter: 'postponed', icon: RefreshCw },
+                                { label: 'ملغية/مرتجعة', value: returned, color: 'bg-red-500', filter: 'returned', icon: XCircle },
+                            ];
+
+                            return (
+                                <Card key={id} className="overflow-hidden">
+                                    <div className="p-4 flex flex-col sm:flex-row gap-4">
+                                        <div className="flex flex-1 items-center gap-4">
+                                            <Avatar className="h-14 w-14">
+                                                <AvatarImage src={avatar} alt={name} />
+                                                <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <Link href={`/driver-app`} className="font-bold text-lg hover:text-primary flex items-center gap-1">
+                                                    {name}
+                                                    {index === 0 && selectedDriver === 'all' && <Star className="inline h-4 w-4 text-green-500 fill-green-500"/>}
+                                                </Link>
+                                                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                                    <Phone className="w-3 h-3" />
+                                                    {phone}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-3 h-3 rounded-full ${status === 'نشط' ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                                            <span className="text-sm">{status}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 border-t">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-sm">إجمالي الشحنات</span>
+                                            <span className="font-semibold">{total}</span>
+                                        </div>
+                                        <Progress value={progressValue} className="h-2" />
+                                        <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
+                                            <span>{completed} شحنة موصلة</span>
+                                            <span>{Math.round(progressValue)}% إنجاز</span>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 border-t grid grid-cols-3 gap-2 text-center">
+                                        {statsList.map(s => (
+                                            <Link key={s.label} href={`/orders?driver=${encodeURIComponent(name)}&status=${s.filter}`} className="hover:bg-accent rounded-md p-2 transition-colors">
+                                                <s.icon className={`w-6 h-6 mx-auto mb-1 ${s.color.replace('bg-', 'text-')}`} />
+                                                <p className="font-semibold text-lg">{s.value}</p>
+                                                <p className="text-xs text-muted-foreground">{s.label}</p>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </Card>
+                            )
+                        })}
+                        {filteredDriverStats.length === 0 && (
+                            <div className="lg:col-span-2 text-center text-muted-foreground py-10">
+                                {selectedDriver ? `لم يتم العثور على سائق بهذا الاسم.` : `لا يوجد سائقين لعرضهم.`}
+                            </div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>أداء السائقين (مقارنة)</CardTitle>
+                    <CardDescription>مقارنة بين عدد الشحنات المسلمة، المؤجلة، والملغية لكل سائق.</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[350px]">
+                   <ChartContainer config={chartConfig} className="h-full w-full">
+                        <BarChart data={chartData} accessibilityLayer margin={{ top: 20, right: 20, bottom: 40, left: -10 }}>
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                                dataKey="name"
+                                tickLine={false}
+                                axisLine={false}
+                                tickMargin={10}
+                                angle={-45}
+                                textAnchor="end"
+                            />
+                            <YAxis />
+                            <Tooltip content={<ChartTooltipContent />} />
+                            <Legend />
+                            <Bar dataKey="delivered" name="تم التوصيل" fill="var(--color-delivered)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="postponed" name="مؤجلة" fill="var(--color-postponed)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="returned" name="ملغية/مرتجعة" fill="var(--color-returned)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+
+        </div>
+    )
+
+    
