@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -99,7 +100,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                      className: 'bg-primary/90 text-primary-foreground',
                   }}
                 >
-                  <Link href="#">
+                  <Link href={item.href}>
                     <item.icon className="h-5 w-5" />
                     <span>{item.label}</span>
                   </Link>
