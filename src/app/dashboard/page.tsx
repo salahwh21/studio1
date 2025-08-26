@@ -27,10 +27,8 @@ import {
   RefreshCw,
   XCircle,
   Truck,
-  Package as PackageIcon,
-  DollarSign,
-  ShoppingCart,
   Star,
+  ShoppingCart,
 } from 'lucide-react';
 import {
     Bar,
@@ -44,7 +42,6 @@ import {
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
-
 const topDrivers = [
     { id: 1, name: "علي الأحمد", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d", phone: '07712345678', status: 'نشط', completed: 125, postponed: 5, returned: 2, total: 132 },
     { id: 2, name: "محمد الخالد", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026705d", phone: '07812345678', status: 'نشط', completed: 110, postponed: 8, returned: 3, total: 121 },
@@ -54,11 +51,11 @@ const topDrivers = [
 ];
 
 const orderStatusData = [
-    { name: 'قيد التوصيل', value: 400, color: 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/50 border-blue-500/50' },
-    { name: 'مكتملة', value: 1980, color: 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/50 border-green-500/50' },
-    { name: 'مرتجعة', value: 124, color: 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/50 border-red-500/50' },
-    { name: 'قيد الانتظار', value: 210, color: 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/50 border-yellow-500/50' },
-    { name: 'متأخرة', value: 35, color: 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/50 border-red-500/50' },
+    { name: 'قيد التوصيل', value: 400, color: 'border-blue-500/50 hover:bg-blue-50' },
+    { name: 'مكتملة', value: 1980, color: 'border-green-500/50 hover:bg-green-50' },
+    { name: 'مرتجعة', value: 124, color: 'border-red-500/50 hover:bg-red-50' },
+    { name: 'قيد الانتظار', value: 210, color: 'border-yellow-500/50 hover:bg-yellow-50' },
+    { name: 'متأخرة', value: 35, color: 'border-orange-500/50 hover:bg-orange-50' },
 ];
 
 const chartConfig = {
@@ -66,7 +63,6 @@ const chartConfig = {
   postponed: { label: 'مؤجلة', color: 'hsl(var(--chart-4))' },
   returned: { label: 'ملغية/مرتجعة', color: 'hsl(var(--chart-3))' },
 };
-
 
 const StatCard = ({ title, value, icon: Icon, color = 'text-primary' }: { title: string, value: string | number, icon: React.ElementType, color?: string }) => (
     <Card>
@@ -81,7 +77,6 @@ const StatCard = ({ title, value, icon: Icon, color = 'text-primary' }: { title:
         </CardContent>
     </Card>
 );
-
 
 export default function DashboardPage() {
     const [selectedDriver, setSelectedDriver] = useState<string>('all');
@@ -113,13 +108,13 @@ export default function DashboardPage() {
                 <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         <StatCard title="إجمالي الإيرادات" value={`٤٥٢,٣١٨ د.ع`} icon={TrendingUp} color="text-green-500" />
-                         <StatCard title="إجمالي الطلبات" value="٢,٣٥٠" icon={ShoppingCart} color="text-blue-500" />
+                        <StatCard title="إجمالي الطلبات" value="٢,٣٥٠" icon={ShoppingCart} color="text-blue-500" />
                         {orderStatusData.map((stat) => (
                             <Button
                                 key={stat.name}
                                 asChild
                                 variant="outline"
-                                className="h-auto flex-col items-center justify-center p-4"
+                                className={`h-auto flex-col items-center justify-center p-4 transition-colors ${stat.color}`}
                             >
                                 <Link href={`/orders?status=${encodeURIComponent(stat.name)}`}>
                                     <p className="text-2xl font-bold">{stat.value}</p>
@@ -152,27 +147,27 @@ export default function DashboardPage() {
                 <CardContent>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {filteredDriverStats.map((driver, index) => {
-                            const { id, name, stats, phone, status, completed, postponed, returned, total, avatar } = driver;
+                            const { id, name, phone, status, completed, postponed, returned, total, avatar } = driver;
                             const progressValue = total > 0 ? (completed / total) * 100 : 0;
 
                             const statsList = [
-                                { label: 'تم التوصيل', value: completed, color: 'bg-green-500', filter: 'delivered', icon: PackageCheck },
-                                { label: 'مؤجلة', value: postponed, color: 'bg-orange-500', filter: 'postponed', icon: RefreshCw },
-                                { label: 'ملغية/مرتجعة', value: returned, color: 'bg-red-500', filter: 'returned', icon: XCircle },
+                                { label: 'تم التوصيل', value: completed, color: 'text-green-500', filter: 'delivered', icon: PackageCheck },
+                                { label: 'مؤجلة', value: postponed, color: 'text-orange-500', filter: 'postponed', icon: RefreshCw },
+                                { label: 'ملغية/مرتجعة', value: returned, color: 'text-red-500', filter: 'returned', icon: XCircle },
                             ];
 
                             return (
                                 <Card key={id} className="overflow-hidden">
-                                    <div className="p-4 flex flex-col sm:flex-row gap-4">
+                                     <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                                         <div className="flex flex-1 items-center gap-4">
                                             <Avatar className="h-14 w-14">
-                                                <AvatarImage src={avatar} alt={name} />
+                                                <AvatarImage src={avatar} alt={name} data-ai-hint="driver profile" />
                                                 <AvatarFallback>{name.charAt(0)}</AvatarFallback>
                                             </Avatar>
                                             <div>
                                                 <Link href={`/driver-app`} className="font-bold text-lg hover:text-primary flex items-center gap-1">
                                                     {name}
-                                                    {index === 0 && selectedDriver === 'all' && <Star className="inline h-4 w-4 text-green-500 fill-green-500"/>}
+                                                    {index === 0 && selectedDriver === 'all' && <Star className="inline h-4 w-4 text-yellow-500 fill-yellow-500"/>}
                                                 </Link>
                                                 <p className="text-sm text-muted-foreground flex items-center gap-1">
                                                     <Phone className="w-3 h-3" />
@@ -182,29 +177,29 @@ export default function DashboardPage() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <div className={`w-3 h-3 rounded-full ${status === 'نشط' ? 'bg-green-500' : 'bg-gray-500'}`}></div>
-                                            <span className="text-sm">{status}</span>
+                                            <span className="text-sm font-medium">{status}</span>
                                         </div>
                                     </div>
-
-                                    <div className="p-4 border-t">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-sm">إجمالي الشحنات</span>
-                                            <span className="font-semibold">{total}</span>
-                                        </div>
-                                        <Progress value={progressValue} className="h-2" />
-                                        <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
-                                            <span>{completed} شحنة موصلة</span>
-                                            <span>{Math.round(progressValue)}% إنجاز</span>
-                                        </div>
-                                    </div>
-                                    <div className="p-4 border-t grid grid-cols-3 gap-2 text-center">
-                                        {statsList.map(s => (
-                                            <Link key={s.label} href={`/orders?driver=${encodeURIComponent(name)}&status=${s.filter}`} className="hover:bg-accent rounded-md p-2 transition-colors">
-                                                <s.icon className={`w-6 h-6 mx-auto mb-1 ${s.color.replace('bg-', 'text-')}`} />
-                                                <p className="font-semibold text-lg">{s.value}</p>
-                                                <p className="text-xs text-muted-foreground">{s.label}</p>
-                                            </Link>
-                                        ))}
+                                    <div className="p-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                      <div>
+                                          <div className="flex justify-between items-center mb-2">
+                                              <span className="text-sm text-muted-foreground">مستوى الإنجاز</span>
+                                              <span className="font-semibold">{Math.round(progressValue)}%</span>
+                                          </div>
+                                          <Progress value={progressValue} className="h-2" />
+                                          <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
+                                              <span>{completed} من {total}</span>
+                                          </div>
+                                      </div>
+                                      <div className="grid grid-cols-3 gap-2 text-center">
+                                          {statsList.map(s => (
+                                              <Link key={s.label} href={`/orders?driver=${encodeURIComponent(name)}&status=${s.filter}`} className="hover:bg-accent/50 rounded-md p-2 transition-colors flex flex-col items-center justify-center">
+                                                  <s.icon className={`w-5 h-5 mb-1 ${s.color}`} />
+                                                  <p className="font-semibold text-base">{s.value}</p>
+                                                  <p className="text-xs text-muted-foreground">{s.label}</p>
+                                              </Link>
+                                          ))}
+                                      </div>
                                     </div>
                                 </Card>
                             )
@@ -245,8 +240,8 @@ export default function DashboardPage() {
                     </ChartContainer>
                 </CardContent>
             </Card>
-
         </div>
     )
+}
 
     
