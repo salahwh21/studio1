@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -67,7 +66,7 @@ export default function SettingsPage() {
               <Label htmlFor="daily-summary-email" className="font-medium">الملخص اليومي</Label>
               <p className="text-sm text-muted-foreground">استلام ملخص يومي للأنشطة.</p>
             </div>
-            <Switch id="daily-summary-email" defaultChecked/>
+            <Switch id="daily-summary-email" defaultChecked />
           </div>
           <Button>حفظ التفضيلات</Button>
         </CardContent>
