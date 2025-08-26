@@ -21,23 +21,21 @@ const navItems: { id: Panel; label: string; icon: LucideIcon }[] = [
     { id: 'notifications', label: 'الإشعارات والتكامل', icon: Bell },
 ];
 
-const SidebarNav = ({ activePanel, setActivePanel }: { activePanel: Panel, setActivePanel: (panel: Panel) => void }) => {
-    return (
-        <nav className="flex flex-col gap-2">
-            {navItems.map(item => (
-                <Button
-                    key={item.id}
-                    variant={activePanel === item.id ? 'default' : 'ghost'}
-                    className="justify-start"
-                    onClick={() => setActivePanel(item.id)}
-                >
-                    <item.icon className="mr-2 h-4 w-4" />
-                    {item.label}
-                </Button>
-            ))}
-        </nav>
-    );
-};
+const SidebarNav = ({ activePanel, setActivePanel }: { activePanel: Panel, setActivePanel: (panel: Panel) => void }) => (
+    <nav className="flex flex-col gap-2">
+        {navItems.map(item => (
+            <Button
+                key={item.id}
+                variant={activePanel === item.id ? 'default' : 'ghost'}
+                className="justify-start"
+                onClick={() => setActivePanel(item.id)}
+            >
+                <item.icon className="mr-2 h-4 w-4" />
+                {item.label}
+            </Button>
+        ))}
+    </nav>
+);
 
 const GeneralSettingsPanel = () => (
     <Card>
@@ -87,7 +85,7 @@ const GeneralSettingsPanel = () => (
           </div>
           <Button>تحديث الملف الشخصي</Button>
         </CardContent>
-      </Card>
+    </Card>
 );
 
 const PlaceholderPanel = ({ title }: { title: string }) => (

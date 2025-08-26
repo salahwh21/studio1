@@ -25,11 +25,11 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 197 71% 52%; /* #29ABE2 */
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --chart-1: 197 71% 52%; /* Primary */
+    --chart-2: 120 60% 45%; /* Completed - Green */
+    --chart-3: 0 84% 60%;   /* Delayed - Red */
+    --chart-4: 33 87% 62%;  /* Pending/Priority - Orange */
+    --chart-5: 210 40% 56.1%;
     --radius: 0.5rem;
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222.2 84% 4.9%;
@@ -60,11 +60,11 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 197 71% 52%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-1: 197 71% 52%;
+    --chart-2: 120 60% 45%;
+    --chart-3: 0 70% 50%;
+    --chart-4: 33 87% 62%;
+    --chart-5: 210 40% 56.1%;
     --sidebar-background: 202 45% 8%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 197 71% 52%;
