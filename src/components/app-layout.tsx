@@ -60,7 +60,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   
   return (
      <SidebarProvider>
-      <div className="flex h-screen w-full bg-background">
+      <div className="flex h-screen w-full bg-background overflow-hidden">
         <Sidebar side="right" collapsible="icon">
           <SidebarHeader className="p-0">
             <div className="flex h-16 items-center justify-center p-2 group-data-[collapsible=icon]:h-12">
