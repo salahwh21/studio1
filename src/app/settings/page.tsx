@@ -9,10 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Settings, Users, MapPin, ListChecks, Bell } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 type Panel = 'general' | 'users' | 'areas' | 'statuses' | 'notifications';
 
-const navItems = [
+const navItems: { id: Panel; label: string; icon: LucideIcon }[] = [
     { id: 'general', label: 'الإعدادات العامة', icon: Settings },
     { id: 'users', label: 'المستخدمين والتجار', icon: Users },
     { id: 'areas', label: 'المناطق وقوائم الأسعار', icon: MapPin },
@@ -28,7 +29,7 @@ const SidebarNav = ({ activePanel, setActivePanel }: { activePanel: Panel, setAc
                     key={item.id}
                     variant={activePanel === item.id ? 'default' : 'ghost'}
                     className="justify-start"
-                    onClick={() => setActivePanel(item.id as Panel)}
+                    onClick={() => setActivePanel(item.id)}
                 >
                     <item.icon className="mr-2 h-4 w-4" />
                     {item.label}
