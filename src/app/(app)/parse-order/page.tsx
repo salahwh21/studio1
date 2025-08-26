@@ -21,10 +21,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { ParseOrderDetailsOutput } from '@/ai/flows/parse-order-details';
+import { Badge } from '@/components/ui/badge';
 
 const formSchema = z.object({
   request: z.string().min(10, {
-    message: 'Request must be at least 10 characters.',
+    message: 'يجب أن يكون الطلب ١٠ أحرف على الأقل.',
   }),
 });
 
@@ -51,7 +52,7 @@ export default function AIOrderParsingPage() {
     if (formState.error) {
       toast({
         variant: 'destructive',
-        title: 'Uh oh! Something went wrong.',
+        title: 'حدث خطأ ما!',
         description: formState.error,
       });
     }
@@ -75,6 +76,7 @@ export default function AIOrderParsingPage() {
 
   const handleFormSubmit = async (formData: FormData) => {
     setIsPending(true);
+    setParsedData(null);
     formAction(formData);
   };
   
@@ -85,8 +87,8 @@ export default function AIOrderParsingPage() {
     } catch (error) {
       toast({
         variant: 'destructive',
-        title: 'Failed to paste',
-        description: 'Could not read from clipboard. Please paste manually.',
+        title: 'فشل اللصق',
+        description: 'لم نتمكن من القراءة من الحافظة. يرجى اللصق يدويًا.',
       });
     }
   };
@@ -97,19 +99,19 @@ export default function AIOrderParsingPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Bot /> AI Order Parser
+              <Bot /> محلل الطلبات الذكي
             </CardTitle>
             <CardDescription>
-              Enter a new order using text or upload an image of the order. Our AI will parse the details for you.
+              أدخل طلبًا جديدًا باستخدام نص أو قم بتحميل صورة للطلب. سيقوم الذكاء الاصطناعي بتحليل التفاصيل لك.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
              <div className="space-y-2">
-                <Label htmlFor="request">Order Details</Label>
+                <Label htmlFor="request">تفاصيل الطلب</Label>
                 <Textarea
                   id="request"
                   name="request"
-                  placeholder="e.g., Send 2 large pizzas to Ali at 123 Main St, Riyadh. One pepperoni, one veggie."
+                  placeholder="مثال: إرسال ٢ بيتزا حجم كبير إلى علي في ١٢٣ شارع الملك، الرياض. واحدة بيبروني وواحدة خضار."
                   className="min-h-[150px]"
                   value={form.watch('request')}
                   onChange={(e) => form.setValue('request', e.target.value)}
@@ -117,11 +119,11 @@ export default function AIOrderParsingPage() {
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={handlePasteFromClipboard} className="gap-2">
-                    <Clipboard className="h-4 w-4" /> Paste
+                    <Clipboard className="h-4 w-4" /> لصق
                 </Button>
                 <Button type="button" variant="outline" size="sm" asChild className="gap-2">
-                    <Label htmlFor="image-upload">
-                        <ImageIcon className="h-4 w-4" /> Upload Image
+                    <Label htmlFor="image-upload" className="cursor-pointer">
+                        <ImageIcon className="h-4 w-4" /> تحميل صورة
                         <input id="image-upload" type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
                     </Label>
                 </Button>
@@ -132,10 +134,10 @@ export default function AIOrderParsingPage() {
               {isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Parsing...
+                  جاري التحليل...
                 </>
               ) : (
-                'Parse Order'
+                'تحليل الطلب'
               )}
             </Button>
           </CardFooter>
@@ -144,41 +146,41 @@ export default function AIOrderParsingPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><FileText/> Parsed Order Confirmation</CardTitle>
+          <CardTitle className="flex items-center gap-2"><FileText/> تأكيد الطلب المستخرج</CardTitle>
           <CardDescription>
-            Verify the details extracted by the AI below and confirm the order.
+            تحقق من التفاصيل التي استخرجها الذكاء الاصطناعي أدناه وقم بتأكيد الطلب.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 min-h-[300px] flex flex-col justify-center">
           {isPending && !parsedData && (
              <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p>AI is processing the order...</p>
+                <p>يقوم الذكاء الاصطناعي بمعالجة الطلب...</p>
              </div>
           )}
           {!isPending && !parsedData && (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
                 <Bot className="h-8 w-8" />
-                <p>Awaiting order details to parse.</p>
+                <p>في انتظار تفاصيل الطلب لتحليلها.</p>
              </div>
           )}
           {parsedData && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="customerName" className="flex items-center gap-2"><User className="h-4 w-4"/> Customer Name</Label>
-                <Input id="customerName" value={parsedData.customerName || ''} readOnly />
+                <Label htmlFor="customerName" className="flex items-center gap-2"><User className="h-4 w-4"/> اسم العميل</Label>
+                <Input id="customerName" defaultValue={parsedData.customerName || ''} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="address" className="flex items-center gap-2"><Home className="h-4 w-4"/> Delivery Address</Label>
-                <Input id="address" value={parsedData.address || ''} readOnly />
+                <Label htmlFor="address" className="flex items-center gap-2"><Home className="h-4 w-4"/> عنوان التوصيل</Label>
+                <Input id="address" defaultValue={parsedData.address || ''} />
               </div>
               <div>
-                 <Label className="flex items-center gap-2 mb-2"><ShoppingBasket className="h-4 w-4"/> Items</Label>
+                 <Label className="flex items-center gap-2 mb-2"><ShoppingBasket className="h-4 w-4"/> المنتجات</Label>
                  <div className="space-y-2 rounded-md border p-4">
                      {parsedData.items.map((item, index) => (
                         <div key={index} className="flex justify-between items-center">
                             <span className="flex items-center gap-2"><Hash className="h-3 w-3 text-muted-foreground"/>{item}</span>
-                            <Badge variant="secondary">Qty: {parsedData.quantity[index]}</Badge>
+                            <Badge variant="secondary">الكمية: {parsedData.quantity[index]}</Badge>
                         </div>
                      ))}
                  </div>
@@ -187,7 +189,7 @@ export default function AIOrderParsingPage() {
           )}
         </CardContent>
         <CardFooter>
-            <Button disabled={!parsedData}>Confirm & Create Order</Button>
+            <Button disabled={!parsedData || isPending}>تأكيد وإنشاء الطلب</Button>
         </CardFooter>
       </Card>
     </div>

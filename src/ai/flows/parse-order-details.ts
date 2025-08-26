@@ -17,10 +17,10 @@ const ParseOrderDetailsInputSchema = z.object({
 export type ParseOrderDetailsInput = z.infer<typeof ParseOrderDetailsInputSchema>;
 
 const ParseOrderDetailsOutputSchema = z.object({
-  customerName: z.string().describe('The name of the customer.'),
-  address: z.string().describe('The delivery address.'),
-  items: z.array(z.string()).describe('A list of items in the order.'),
-  quantity: z.array(z.number()).describe('The quantity of each item in the order.'),
+  customerName: z.string().describe('اسم العميل'),
+  address: z.string().describe('عنوان التوصيل الكامل (المدينة، المنطقة، الشارع).'),
+  items: z.array(z.string()).describe('قائمة بالمنتجات في الطلب.'),
+  quantity: z.array(z.number()).describe('كمية كل منتج في الطلب.'),
 });
 export type ParseOrderDetailsOutput = z.infer<typeof ParseOrderDetailsOutputSchema>;
 
@@ -32,11 +32,11 @@ const prompt = ai.definePrompt({
   name: 'parseOrderDetailsPrompt',
   input: {schema: ParseOrderDetailsInputSchema},
   output: {schema: ParseOrderDetailsOutputSchema},
-  prompt: `You are an AI assistant that extracts order details from a delivery request. The request can be in the form of text or an image. Extract the customer name, address, items, and quantity from the request.
+  prompt: `أنت مساعد ذكاء اصطناعي متخصص في استخراج تفاصيل الطلبات من نصوص باللغة العربية. يمكن أن يكون الطلب على شكل نص عادي أو صورة. قم باستخراج اسم العميل، العنوان، المنتجات، والكمية من الطلب التالي.
 
-Request: {{{request}}}
+الطلب: {{{request}}}
 
-Output the data in JSON format. If the request is an image, use OCR to extract the text from the image before extracting the order details.`,
+أخرج البيانات بصيغة JSON. إذا كان الطلب صورة، استخدم تقنية OCR لاستخراج النص قبل تحليل تفاصيل الطلب. ركز على تحديد الكميات بشكل صحيح لكل منتج.`,
 });
 
 const parseOrderDetailsFlow = ai.defineFlow(
