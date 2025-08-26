@@ -104,8 +104,13 @@ export default function OrdersPage() {
                       2023-06-2{i + 1}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={i % 3 === 0 ? "default" : i % 3 === 1 ? "outline" : "secondary"}>
-                        {i % 3 === 0 ? 'قيد التجهيز' : i % 3 === 1 ? 'تم التوصيل' : 'قيد الانتظار'}
+                      <Badge variant={i % 4 === 0 ? "secondary" : i % 4 === 1 ? "outline" : i % 4 === 2 ? "default" : "destructive" } className={
+                        i % 4 === 0 ? "bg-yellow-100 text-yellow-800" :
+                        i % 4 === 1 ? "" :
+                        i % 4 === 2 ? "bg-blue-100 text-blue-800" :
+                        ""
+                      }>
+                        {i % 4 === 0 ? 'قيد الانتظار' : i % 4 === 1 ? 'تم التوصيل' : i % 4 === 2 ? 'قيد التجهيز' : 'ملغي'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">٢٥٠.٠٠ د.ع</TableCell>
@@ -135,5 +140,3 @@ export default function OrdersPage() {
     </Tabs>
   );
 }
-
-    

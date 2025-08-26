@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ArrowUpRight, DollarSign, ReceiptText, ShoppingCart, CheckCircle, XCircle, Truck, Star, Ban, PackageSearch } from 'lucide-react';
@@ -176,7 +177,7 @@ export default function DashboardPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge>قيد التجهيز</Badge>
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">قيد التجهيز</Badge>
                   </TableCell>
                   <TableCell className="text-right">١٥٠.٠٠ د.ع</TableCell>
                 </TableRow>
@@ -236,7 +237,7 @@ export default function DashboardPage() {
                   <CardTitle>{driver.name}</CardTitle>
                   <CardDescription>نسبة الإنجاز: {driver.rate}</CardDescription>
                 </div>
-                {index === 0 && <Badge className="ml-auto bg-amber-500 text-white"><Star className="h-4 w-4 mr-1"/>الأفضل</Badge>}
+                {index === 0 && <Badge className="ml-auto bg-accent text-accent-foreground"><Star className="h-4 w-4 mr-1"/>الأفضل</Badge>}
               </CardHeader>
               <CardContent className="grid flex-1 grid-cols-3 gap-2 text-center text-sm">
                 <div className="rounded-md bg-green-100 dark:bg-green-900/50 p-2 flex flex-col justify-center">
