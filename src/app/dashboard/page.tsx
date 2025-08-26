@@ -47,6 +47,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  Legend
 } from 'recharts';
 
 const revenueData = [
@@ -59,11 +60,11 @@ const revenueData = [
 ];
 
 const orderStatusData = [
-    { name: 'قيد التوصيل', value: 400, fill: 'hsl(210 90% 50%)' },
-    { name: 'مكتملة', value: 1980, fill: 'hsl(142 71% 45%)' },
-    { name: 'مرتجعة', value: 124, fill: 'hsl(0 72% 51%)' },
-    { name: 'قيد الانتظار', value: 210, fill: 'hsl(48 96% 50%)' },
-    { name: 'متأخرة', value: 35, fill: 'hsl(25 95% 53%)' },
+    { name: 'قيد التوصيل', value: 400, fill: 'hsl(var(--chart-1))' },
+    { name: 'مكتملة', value: 1980, fill: 'hsl(var(--chart-2))' },
+    { name: 'مرتجعة', value: 124, fill: 'hsl(var(--chart-3))' },
+    { name: 'قيد الانتظار', value: 210, fill: 'hsl(var(--chart-4))' },
+    { name: 'متأخرة', value: 35, fill: 'hsl(var(--chart-5))' },
 ];
 
 
@@ -81,11 +82,11 @@ const chartConfig = {
     label: 'الإيرادات',
     color: 'hsl(var(--primary))',
   },
-  delivering: { label: 'قيد التوصيل', color: 'hsl(210 90% 50%)' },
-  completed: { label: 'مكتملة', color: 'hsl(142 71% 45%)' },
-  returned: { label: 'مرتجعة', color: 'hsl(0 72% 51%)' },
-  pending: { label: 'قيد الانتظار', color: 'hsl(48 96% 50%)' },
-  delayed: { label: 'متأخرة', color: 'hsl(25 95% 53%)' },
+  'قيد التوصيل': { label: 'قيد التوصيل', color: 'hsl(var(--chart-1))' },
+  'مكتملة': { label: 'مكتملة', color: 'hsl(var(--chart-2))' },
+  'مرتجعة': { label: 'مرتجعة', color: 'hsl(var(--chart-3))' },
+  'قيد الانتظار': { label: 'قيد الانتظار', color: 'hsl(var(--chart-4))' },
+  'متأخرة': { label: 'متأخرة', color: 'hsl(var(--chart-5))' },
 };
 
 
@@ -94,8 +95,8 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6">
       
       <div className="space-y-2">
-        <Alert variant="destructive" className="bg-red-100 dark:bg-red-900/30 border-red-500/50 text-red-800 dark:text-red-300">
-            <AlertCircle className="h-4 w-4 !text-red-600 dark:!text-red-400" />
+        <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
             <AlertTitle className="font-bold">تنبيه: 35 طلب متأخر!</AlertTitle>
             <AlertDescription>
                 تجاوزت بعض الطلبات الوقت المحدد للتسليم. <Link href="/orders?status=delayed" className="underline font-semibold">عرض التفاصيل</Link>
@@ -120,22 +121,22 @@ export default function DashboardPage() {
           <CardContent className="grid grid-cols-1 gap-6 md:grid-cols-2">
              <div className="space-y-4">
                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-                        <DollarSign className="h-8 w-8 text-muted-foreground"/>
-                        <div>
+                    <div className="flex flex-col items-start gap-2 p-4 rounded-lg bg-muted/50">
+                        <div className="flex items-center gap-2">
+                            <DollarSign className="h-6 w-6 text-muted-foreground"/>
                             <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
-                            <p className="text-2xl font-bold">٤٥٢,٣١٨ د.ع</p>
                         </div>
+                        <p className="text-2xl font-bold">٤٥٢,٣١٨ د.ع</p>
                     </div>
-                    <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-                        <ShoppingCart className="h-8 w-8 text-muted-foreground"/>
-                        <div>
+                    <div className="flex flex-col items-start gap-2 p-4 rounded-lg bg-muted/50">
+                        <div className="flex items-center gap-2">
+                            <ShoppingCart className="h-6 w-6 text-muted-foreground"/>
                             <p className="text-sm text-muted-foreground">إجمالي الطلبات</p>
-                            <p className="text-2xl font-bold">٢,٣٥٠</p>
                         </div>
+                        <p className="text-2xl font-bold">٢,٣٥٠</p>
                     </div>
                  </div>
-                <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
+                <ChartContainer config={chartConfig} className="h-[250px] w-full">
                     <LineChart
                         data={revenueData}
                         margin={{ left: -20, right: 10, top:10, bottom: 0 }}
@@ -165,13 +166,17 @@ export default function DashboardPage() {
              </div>
              <div className="flex flex-col items-center justify-center">
                 <p className="font-medium text-center mb-2">توزيع حالات الطلبات</p>
-                <ChartContainer config={chartConfig} className="min-h-[300px] w-full max-w-[300px] mx-auto">
+                <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                        <Tooltip
-                           content={<ChartTooltipContent hideLabel />}
-                        />
-                        <Pie data={orderStatusData} dataKey="value" nameKey="name" innerRadius={60} strokeWidth={5} />
+                      <Tooltip
+                        content={<ChartTooltipContent hideLabel />}
+                      />
+                      <Pie data={orderStatusData} dataKey="value" nameKey="name" innerRadius="50%" outerRadius="80%" paddingAngle={5}>
+                      </Pie>
+                      <Legend content={<ChartLegendContent nameKey="name" />} />
                     </PieChart>
+                  </ResponsiveContainer>
                 </ChartContainer>
              </div>
           </CardContent>
@@ -180,10 +185,11 @@ export default function DashboardPage() {
         <Card className="lg:col-span-1 flex flex-col">
           <CardHeader>
             <CardTitle>أداء أفضل السائقين</CardTitle>
+            <CardDescription>نظرة سريعة على أداء السائقين</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 space-y-4 overflow-y-auto pr-4">
            {topDrivers.map((driver, index) => (
-             <Link href="/driver-app" key={driver.name} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted transition-colors">
+             <Link href={`/driver-app/${driver.name}`} key={driver.name} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted transition-colors">
                 <Avatar className="h-12 w-12">
                     <AvatarImage src={driver.avatar} alt={driver.name} />
                     <AvatarFallback>{driver.name.charAt(0)}</AvatarFallback>
@@ -196,11 +202,11 @@ export default function DashboardPage() {
                     <span>{driver.assigned} معينة</span>
                   </div>
                    <div className="w-full bg-muted rounded-full h-2.5 mt-1">
-                      <div className="bg-primary h-2.5 rounded-full" style={{ width: `${(driver.completed/driver.assigned)*100}%` }}></div>
+                      <div className="h-2.5 rounded-full" style={{ width: `${(driver.completed/driver.assigned)*100}%`, backgroundColor: index === 0 ? 'hsl(var(--chart-2))' : 'hsl(var(--primary))' }}></div>
                     </div>
                 </div>
                  <div className="flex flex-col items-end">
-                    <span className="font-bold text-lg text-green-600">{((driver.completed/driver.assigned)*100).toFixed(0)}%</span>
+                    <span className="font-bold text-lg" style={{ color: index === 0 ? 'hsl(var(--chart-2))' : 'hsl(var(--foreground))' }}>{((driver.completed/driver.assigned)*100).toFixed(0)}%</span>
                     <span className="text-xs text-muted-foreground">إنجاز</span>
                  </div>
              </Link>
@@ -211,5 +217,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
