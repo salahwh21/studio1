@@ -4,6 +4,8 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { Inter } from 'next/font/google';
 import { AppLayout } from '@/components/app-layout';
+import { ThemeProvider } from 'next-themes';
+
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -20,10 +22,17 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <AppLayout>
-          {children}
-        </AppLayout>
-        <Toaster />
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+        >
+            <AppLayout>
+              {children}
+            </AppLayout>
+            <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

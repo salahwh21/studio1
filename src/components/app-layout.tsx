@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -11,20 +12,19 @@ import {
   Wallet,
   Settings,
   Truck,
-  BotMessageSquare,
   Store,
+  BotMessageSquare,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 
 import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
-  SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
+  SidebarInset,
 } from '@/components/ui/sidebar';
 import { AppHeader } from '@/components/header';
 import { cn } from '@/lib/utils';
@@ -35,46 +35,54 @@ type NavItem = {
   icon: LucideIcon;
 };
 
-const navItems: NavItem[] = [
+const mainNavItems: NavItem[] = [
   { href: '/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
   { href: '/orders', label: 'إدارة الطلبات', icon: ShoppingCart },
-  { href: '/parse-order', label: 'إدخال الطلبات بالذكاء الاصطناعي', icon: Sparkles },
+  { href: '/parse-order', label: 'إدخال سريع بالذكاء الاصطناعي', icon: Sparkles },
   { href: '/returns', label: 'متابعة المرتجعات', icon: RotateCw },
   { href: '/financials', label: 'الإدارة المالية', icon: Wallet },
-  { href: '/settings', label: 'مركز التحكم', icon: Settings },
 ];
 
 const secondaryNavItems: NavItem[] = [
-    { href: '/driver-app', label: 'تطبيق السائق', icon: Truck },
-    { href: '/merchant', label: 'واجهة التاجر', icon: Store },
+  { href: '/driver-app', label: 'تطبيق السائق', icon: Truck },
+  { href: '/merchant', label: 'واجهة التاجر', icon: Store },
 ];
+
+const settingsNavItem: NavItem = { href: '/settings', label: 'مركز التحكم', icon: Settings };
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
+  const isActive = (href: string) => {
+    if (href === '/dashboard') return pathname === href;
+    return pathname.startsWith(href);
+  };
+  
   return (
     <SidebarProvider>
-      <Sidebar side="right">
-        <SidebarHeader className="p-4">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <BotMessageSquare className="w-8 h-8 text-primary" />
-            <span className="text-xl font-semibold text-foreground">الوميض</span>
-          </Link>
+      <Sidebar side="right" collapsible="icon">
+        <SidebarHeader className="p-0">
+           <div className="flex h-16 items-center justify-center p-2 group-data-[collapsible=icon]:h-12">
+            <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
+              <BotMessageSquare className="w-8 h-8 text-primary group-data-[collapsible=icon]:w-6 group-data-[collapsible=icon]:h-6 transition-all" />
+              <span className="text-lg font-semibold text-foreground whitespace-nowrap group-data-[collapsible=icon]:hidden">
+                الوميض
+              </span>
+            </Link>
+          </div>
         </SidebarHeader>
         <SidebarContent className="p-2">
           <SidebarMenu>
-            {navItems.map((item) => (
+            {mainNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname === item.href}
-                  className={cn(
-                    'justify-start',
-                    pathname === item.href &&
-                      'bg-primary/10 text-primary hover:bg-primary/20'
-                  )}
+                  isActive={isActive(item.href)}
+                  className="justify-start"
                   tooltip={{
                     children: item.label,
+                    side: 'left',
+                    align: 'center',
                     className: 'bg-primary/90 text-primary-foreground',
                   }}
                 >
@@ -86,19 +94,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
-           <SidebarMenu className="mt-auto">
-            {secondaryNavItems.map((item) => (
+          <SidebarMenu className="mt-auto">
+             {secondaryNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname.startsWith(item.href)}
-                   className={cn(
-                    'justify-start text-muted-foreground',
-                    pathname === item.href &&
-                      'bg-primary/10 text-primary hover:bg-primary/20'
-                  )}
+                  isActive={isActive(item.href)}
+                  className="justify-start text-muted-foreground"
                   tooltip={{
                     children: item.label,
+                    side: 'left',
+                    align: 'center',
                      className: 'bg-primary/90 text-primary-foreground',
                   }}
                 >
@@ -109,13 +115,31 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
+             <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive(settingsNavItem.href)}
+                  className="justify-start"
+                  tooltip={{
+                    children: settingsNavItem.label,
+                    side: 'left',
+                    align: 'center',
+                    className: 'bg-primary/90 text-primary-foreground',
+                  }}
+                >
+                  <Link href={settingsNavItem.href}>
+                    <settingsNavItem.icon className="h-5 w-5" />
+                    <span>{settingsNavItem.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
       </Sidebar>
-      <SidebarInset className="flex flex-col">
+      <SidebarInset>
         <AppHeader />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-background">
-          {children}
+        <main className="flex-1 overflow-y-auto bg-background/95">
+          <div className="p-4 lg:p-6">{children}</div>
         </main>
       </SidebarInset>
     </SidebarProvider>
