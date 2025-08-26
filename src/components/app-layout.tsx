@@ -60,7 +60,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   
   return (
      <SidebarProvider>
-      <div className="relative flex min-h-screen w-full bg-muted/40">
+      <div className="flex h-screen w-full bg-background">
         <Sidebar side="right" collapsible="icon">
           <SidebarHeader className="p-0">
             <div className="flex h-16 items-center justify-center p-2 group-data-[collapsible=icon]:h-12">
@@ -94,9 +94,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
-        <div className="flex flex-1 flex-col sm:pr-12">
+        <div className="flex flex-1 flex-col overflow-auto">
           <AppHeader />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 bg-muted/40">
             {children}
           </main>
         </div>
