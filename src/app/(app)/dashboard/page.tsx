@@ -4,15 +4,12 @@
 import {
   AlertCircle,
   ArrowUpRight,
-  Ban,
   CheckCircle,
   ChevronRight,
   DollarSign,
-  PackageSearch,
   ShoppingCart,
   Star,
   Truck,
-  X,
 } from 'lucide-react';
 import {
   Card,
@@ -31,7 +28,6 @@ import {
 } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   ChartContainer,
@@ -43,6 +39,8 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Line,
+  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -51,21 +49,21 @@ import {
   YAxis,
 } from 'recharts';
 
-const monthlySalesData = [
-  { month: 'يناير', sales: 186000 },
-  { month: 'فبراير', sales: 305000 },
-  { month: 'مارس', sales: 237000 },
-  { month: 'أبريل', sales: 273000 },
-  { month: 'مايو', sales: 209000 },
-  { month: 'يونيو', sales: 214000 },
+const revenueData = [
+    { month: 'يناير', revenue: 45231.84 },
+    { month: 'فبراير', revenue: 47890.12 },
+    { month: 'مارس', revenue: 51234.56 },
+    { month: 'أبريل', revenue: 53890.78 },
+    { month: 'مايو', revenue: 55123.45 },
+    { month: 'يونيو', revenue: 58345.90 },
 ];
 
 const orderStatusData = [
-    { name: 'قيد التوصيل', value: 400, fill: 'var(--color-delivering)' },
-    { name: 'مكتملة', value: 1980, fill: 'var(--color-completed)' },
-    { name: 'مرتجعة', value: 124, fill: 'var(--color-returned)' },
-    { name: 'قيد الانتظار', value: 210, fill: 'var(--color-pending)' },
-    { name: 'متأخرة', value: 35, fill: 'var(--color-delayed)' },
+    { name: 'قيد التوصيل', value: 400, fill: 'hsl(210 90% 50%)' },
+    { name: 'مكتملة', value: 1980, fill: 'hsl(142 71% 45%)' },
+    { name: 'مرتجعة', value: 124, fill: 'hsl(0 72% 51%)' },
+    { name: 'قيد الانتظار', value: 210, fill: 'hsl(48 96% 50%)' },
+    { name: 'متأخرة', value: 35, fill: 'hsl(25 95% 53%)' },
 ];
 
 
@@ -79,8 +77,8 @@ const topDrivers = [
 
 
 const chartConfig = {
-  sales: {
-    label: 'المبيعات',
+  revenue: {
+    label: 'الإيرادات',
     color: 'hsl(var(--primary))',
   },
   delivering: { label: 'قيد التوصيل', color: 'hsl(210 90% 50%)' },
@@ -101,7 +99,7 @@ export default function DashboardPage() {
             <AlertCircle className="h-4 w-4 !text-red-600 dark:!text-red-400" />
             <AlertTitle className="font-bold">تنبيه: طلبات متأخرة!</AlertTitle>
             <AlertDescription>
-                يوجد 5 طلبات تجاوزت الوقت المحدد للتسليم. <Link href="/orders?status=delayed" className="underline font-semibold">عرض التفاصيل</Link>
+                يوجد 35 طلبات تجاوزت الوقت المحدد للتسليم. <Link href="/orders?status=delayed" className="underline font-semibold">عرض التفاصيل</Link>
             </AlertDescription>
         </Alert>
          <Alert className="bg-orange-100 dark:bg-orange-900/30 border-orange-500/50 text-orange-800 dark:text-orange-300">
@@ -119,60 +117,62 @@ export default function DashboardPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>الإحصائيات العامة</CardTitle>
-            <CardDescription>نظرة شاملة على أداء أعمالك.</CardDescription>
+            <CardDescription>نظرة شاملة على أداء أعمالك خلال الـ 6 أشهر الماضية.</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-6 md:grid-cols-2">
              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                    <DollarSign className="h-8 w-8 text-muted-foreground"/>
-                    <div>
-                        <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
-                        <p className="text-2xl font-bold">٤٥٢,٣١٨ د.ع</p>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-4">
+                        <DollarSign className="h-8 w-8 text-muted-foreground"/>
+                        <div>
+                            <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
+                            <p className="text-2xl font-bold">٤٥٢,٣١٨ د.ع</p>
+                        </div>
                     </div>
-                </div>
-                <div className="flex items-center gap-4">
-                    <ShoppingCart className="h-8 w-8 text-muted-foreground"/>
-                    <div>
-                        <p className="text-sm text-muted-foreground">إجمالي الطلبات</p>
-                        <p className="text-2xl font-bold">٢,٣٥٠</p>
+                    <div className="flex items-center gap-4">
+                        <ShoppingCart className="h-8 w-8 text-muted-foreground"/>
+                        <div>
+                            <p className="text-sm text-muted-foreground">إجمالي الطلبات</p>
+                            <p className="text-2xl font-bold">٢,٣٥٠</p>
+                        </div>
                     </div>
-                </div>
+                 </div>
                 <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-                    <BarChart
-                        data={monthlySalesData}
-                        layout="vertical"
-                        margin={{ left: 10, right: 10, top:10, bottom: 0 }}
+                    <LineChart
+                        data={revenueData}
+                        margin={{ left: -20, right: 10, top:10, bottom: 0 }}
                         accessibilityLayer
                     >
-                        <CartesianGrid horizontal={false} />
+                        <CartesianGrid vertical={false} />
+                        <XAxis
+                            dataKey="month"
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                            tickFormatter={(value) => value.slice(0, 3)}
+                        />
                         <YAxis
-                        dataKey="month"
-                        type="category"
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={10}
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                             tickFormatter={(value) => `${(value / 1000).toLocaleString()} ألف`}
                         />
-                        <XAxis type="number" hide />
                         <Tooltip
-                            cursor={{ fill: 'hsl(var(--muted))' }}
-                            content={<ChartTooltipContent indicator="line" formatter={(value) => value.toLocaleString('ar-IQ')} />}
+                            cursor={{ strokeDasharray: '3 3' }}
+                            content={<ChartTooltipContent indicator="dot" formatter={(value) => new Intl.NumberFormat('ar-IQ', { style: 'currency', currency: 'IQD' }).format(value as number)} />}
                         />
-                        <Bar dataKey="sales" fill="var(--color-sales)" radius={5} />
-                    </BarChart>
+                        <Line type="monotone" dataKey="revenue" stroke="var(--color-revenue)" strokeWidth={2} dot={true} />
+                    </LineChart>
                 </ChartContainer>
              </div>
              <div className="flex flex-col items-center justify-center">
-                 <p className="font-medium text-center mb-2">توزيع حالات الطلبات</p>
+                <p className="font-medium text-center mb-2">توزيع حالات الطلبات</p>
                 <ChartContainer config={chartConfig} className="min-h-[250px] w-full max-w-[300px] mx-auto">
                     <PieChart>
-                         <Tooltip
-                            content={<ChartTooltipContent hideLabel />}
+                        <Tooltip
+                           content={<ChartTooltipContent hideLabel />}
                         />
-                        <Pie data={orderStatusData} dataKey="value" nameKey="name" innerRadius={60} strokeWidth={5}>
-                             {orderStatusData.map((entry, index) => (
-                                <div key={`cell-${index}`} fill={entry.fill} />
-                            ))}
-                        </Pie>
+                        <Pie data={orderStatusData} dataKey="value" nameKey="name" innerRadius={60} strokeWidth={5} />
                     </PieChart>
                 </ChartContainer>
              </div>
@@ -180,41 +180,38 @@ export default function DashboardPage() {
         </Card>
 
         {/* Driver Performance Cards */}
-        <Card className="lg:col-span-1 flex flex-col">
+        <Card className="lg:col-span-1 flex flex-col h-[480px]">
           <CardHeader>
             <CardTitle>أداء السائقين</CardTitle>
             <CardDescription>نظرة على أداء أفضل السائقين.</CardDescription>
           </CardHeader>
-          <CardContent className="flex-1 space-y-4 overflow-y-auto">
+          <CardContent className="flex-1 space-y-4 overflow-y-auto pr-4">
            {topDrivers.map((driver, index) => (
-             <div key={driver.name} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+             <Link href="/driver-app" key={driver.name} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted/50 transition-colors">
                 <Avatar className="h-12 w-12">
                     <AvatarImage src={driver.avatar} alt={driver.name} />
                     <AvatarFallback>{driver.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <p className="font-semibold">{driver.name} {index === 0 && <Star className="inline h-4 w-4 text-accent fill-accent"/>}</p>
+                  <p className="font-semibold">{driver.name} {index === 0 && <Star className="inline h-4 w-4 text-green-500 fill-green-500"/>}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span>{driver.completed} مكتملة</span>
-                    <span>&bull;</span>
-                    <span>{driver.delayed} مؤجلة</span>
-                     <span>&bull;</span>
-                    <span>{driver.returned} مرتجعة</span>
+                    <span className="text-gray-400">&bull;</span>
+                    <span>{driver.assigned} معينة</span>
                   </div>
                    <div className="w-full bg-muted rounded-full h-2.5 mt-1">
-                      <div className="bg-primary h-2.5 rounded-full" style={{ width: `${driver.rate}%` }}></div>
+                      <div className="bg-primary h-2.5 rounded-full" style={{ width: `${(driver.completed/driver.assigned)*100}%` }}></div>
                     </div>
                 </div>
-                 <Button variant="ghost" size="icon" className="shrink-0">
-                    <ChevronRight className="h-5 w-5" />
-                 </Button>
-             </div>
+                 <div className="flex flex-col items-end">
+                    <span className="font-bold text-lg text-green-600">{((driver.completed/driver.assigned)*100).toFixed(0)}%</span>
+                    <span className="text-xs text-muted-foreground">إنجاز</span>
+                 </div>
+             </Link>
            ))}
           </CardContent>
         </Card>
-
       </div>
-        
     </div>
   );
 }
