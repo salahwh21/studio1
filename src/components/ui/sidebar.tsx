@@ -45,14 +45,12 @@ function useSidebar() {
 const SidebarProvider = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
-    defaultOpen?: boolean
     open?: boolean
     onOpenChange?: (open: boolean) => void
   }
 >(
   (
     {
-      defaultOpen = true,
       open: openProp,
       onOpenChange: setOpenProp,
       className,
@@ -64,7 +62,7 @@ const SidebarProvider = React.forwardRef<
   ) => {
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
-    const [_open, _setOpen] = React.useState(defaultOpen)
+    const [_open, _setOpen] = React.useState(true)
     const open = openProp ?? _open
     const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
@@ -128,7 +126,7 @@ const SidebarProvider = React.forwardRef<
               } as React.CSSProperties
             }
             className={cn(
-              "group/sidebar-wrapper flex min-h-svh w-full has-[[data-variant=inset]]:bg-sidebar",
+              "group/sidebar-wrapper flex w-full",
               className
             )}
             ref={ref}
@@ -180,30 +178,26 @@ const Sidebar = React.forwardRef<
     }
 
     return (
-      <div
+       <div
         ref={ref}
-        className="group peer text-sidebar-foreground"
+        className={cn(
+          "group peer text-sidebar-foreground",
+          "w-[--sidebar-width-icon]",
+          "data-[side=right]:order-last"
+        )}
         data-state={state}
-        data-collapsible={state === "collapsed" ? collapsible : ""}
+        data-collapsible={collapsible}
         data-variant={variant}
         data-side={side}
       >
         {/* This is what handles the sidebar gap */}
         <div
           className={cn(
-            "duration-200 relative h-svh bg-transparent transition-[width] ease-linear",
-             "w-[--sidebar-width-icon]", // Always collapsed on all screens
-            "group-data-[side=right]:order-last"
-          )}
-        />
-        <div
-          className={cn(
-            "duration-200 fixed inset-y-0 z-10 h-svh transition-[left,right,width] ease-linear flex",
-            "w-[--sidebar-width-icon]", // Always collapsed
+            "fixed inset-y-0 z-10 flex h-svh flex-col",
+            "w-[--sidebar-width-icon]",
             side === "left"
-              ? "left-0"
-              : "right-0",
-             "border-r group-data-[side=right]:border-l",
+              ? "left-0 border-r"
+              : "right-0 border-l",
             className
           )}
         >
@@ -219,6 +213,7 @@ const Sidebar = React.forwardRef<
   }
 )
 Sidebar.displayName = "Sidebar"
+
 
 const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,
