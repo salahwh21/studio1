@@ -12,6 +12,7 @@ import {
   Settings,
   Truck,
   BotMessageSquare,
+  Store,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -45,6 +46,7 @@ const navItems: NavItem[] = [
 
 const secondaryNavItems: NavItem[] = [
     { href: '/driver-app', label: 'تطبيق السائق', icon: Truck },
+    { href: '/merchant', label: 'واجهة التاجر', icon: Store },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
