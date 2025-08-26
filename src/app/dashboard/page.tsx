@@ -48,11 +48,11 @@ const topDrivers = [
 ];
 
 const orderStatusData = [
-    { name: 'قيد التوصيل', value: 400, color: 'border-blue-500/50 hover:bg-blue-50' },
     { name: 'مكتملة', value: 1980, color: 'border-green-500/50 hover:bg-green-50' },
-    { name: 'مرتجعة', value: 124, color: 'border-red-500/50 hover:bg-red-50' },
+    { name: 'قيد التوصيل', value: 400, color: 'border-blue-500/50 hover:bg-blue-50' },
     { name: 'قيد الانتظار', value: 210, color: 'border-yellow-500/50 hover:bg-yellow-50' },
     { name: 'متأخرة', value: 35, color: 'border-orange-500/50 hover:bg-orange-50' },
+    { name: 'مرتجعة', value: 124, color: 'border-red-500/50 hover:bg-red-50' },
 ];
 
 const chartConfig = {
@@ -69,19 +69,27 @@ const chartData = topDrivers.map(d => ({
 }));
 
 
-const StatCard = ({ title, value, icon: Icon, color = 'text-primary' }: { title: string, value: string | number, icon: React.ElementType, color?: string }) => (
+const StatCard = ({ title, value, icon: Icon, color = 'text-primary' }: { title: string, value: string | number, icon?: React.ElementType, color?: string }) => (
     <Card>
-        <CardContent className="p-4">
-            <div className="flex justify-between items-center">
-                <div>
-                    <p className="text-sm text-muted-foreground">{title}</p>
-                    <p className="text-2xl font-bold">{value}</p>
-                </div>
-                <Icon className={`w-7 h-7 ${color}`} />
+        <CardContent className="p-4 flex flex-col items-center justify-center text-center h-full">
+            <p className="text-3xl font-bold">{value}</p>
+            <p className="text-sm text-muted-foreground mt-1">{title}</p>
+        </CardContent>
+    </Card>
+);
+
+const RevenueCard = ({ title, value, icon: Icon, color = 'text-green-500' }: { title: string, value: string | number, icon: React.ElementType, color?: string }) => (
+    <Card>
+        <CardContent className="p-4 flex items-center justify-center text-center h-full">
+             <Icon className={`w-8 h-8 ml-4 ${color}`} />
+            <div>
+                <p className="text-sm text-muted-foreground">{title}</p>
+                <p className="text-2xl font-bold">{value}</p>
             </div>
         </CardContent>
     </Card>
 );
+
 
 export default function DashboardPage() {
     const [selectedDriver, setSelectedDriver] = useState('all');
@@ -93,17 +101,17 @@ export default function DashboardPage() {
     return (
         <div className="flex flex-col gap-8">
             <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
-
+            
             <Card>
                 <CardHeader>
                     <CardTitle>إحصائيات عامة</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        <StatCard title="إجمالي الإيرادات" value={`٤٥٢,٣١٨ د.ع`} icon={TrendingUp} color="text-green-500" />
-                        <StatCard title="إجمالي الطلبات" value="٢,٣٥٠" icon={ShoppingCart} color="text-blue-500" />
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        <RevenueCard title="إجمالي الإيرادات" value={`٤٥٢,٣١٨ د.ع`} icon={TrendingUp} />
+                         <RevenueCard title="إجمالي الطلبات" value="٢,٣٥٠" icon={ShoppingCart} color="text-blue-500" />
                         {orderStatusData.map((stat) => (
-                            <Button
+                             <Button
                                 key={stat.name}
                                 asChild
                                 variant="outline"
@@ -236,5 +244,3 @@ export default function DashboardPage() {
         </div>
     )
 }
-
-    
