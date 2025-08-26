@@ -75,8 +75,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader className="p-0">
            <div className="flex h-16 items-center justify-center p-2 group-data-[collapsible=icon]:h-12">
             <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
-              <Logo iconOnly className="group-data-[collapsible=icon]:block hidden" />
-              <Logo className="group-data-[collapsible=icon]:hidden" />
+              <Logo className="h-10 w-10" iconOnly />
             </Link>
           </div>
         </SidebarHeader>
