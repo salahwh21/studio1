@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useEffect, useState, useActionState } from 'react';
+import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Bot, Image as ImageIcon, Loader2, Clipboard, FileText, User, Home, ShoppingBasket, Hash } from 'lucide-react';
+import { Bot, Image as ImageIcon, Loader2, Clipboard, FileText, User, Home, ShoppingBasket, Hash, Trash2, Send, Wand2 } from 'lucide-react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,24 +22,39 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { ParseOrderDetailsOutput } from '@/ai/flows/parse-order-details';
 import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
 
 const formSchema = z.object({
-  request: z.string().min(10, {
-    message: 'يجب أن يكون الطلب ١٠ أحرف على الأقل.',
+  request: z.string().min(1, {
+    message: 'الرجاء إدخال نص الطلب.',
   }),
 });
 
+type OrderReviewItem = ParseOrderDetailsOutput & { id: number };
+
+type FormState = {
+  data: ParseOrderDetailsOutput | null;
+  error: string | null;
+  message: string;
+};
+
 export default function AIOrderParsingPage() {
   const { toast } = useToast();
-  const [initialState, setInitialState] = useState({
+  const [reviewList, setReviewList] = useState<OrderReviewItem[]>([]);
+  const [isPending, setIsPending] = useState(false);
+  const [formState, setFormState] = useState<FormState>({
     data: null,
     error: null,
     message: '',
   });
-
-  const [formState, formAction] = useActionState(parseOrderFromRequest, initialState);
-  const [isPending, setIsPending] = useState(false);
-  const [parsedData, setParsedData] = useState<ParseOrderDetailsOutput | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,34 +67,25 @@ export default function AIOrderParsingPage() {
     if (formState.error) {
       toast({
         variant: 'destructive',
-        title: 'حدث خطأ ما!',
+        title: 'فشل التحليل!',
         description: formState.error,
       });
     }
     if (formState.data) {
-        setParsedData(formState.data);
-    }
-    setIsPending(false);
-  }, [formState, toast]);
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUri = reader.result as string;
-        form.setValue('request', dataUri);
+      const newOrder: OrderReviewItem = {
+        id: Date.now(),
+        ...formState.data,
       };
-      reader.readAsDataURL(file);
+      setReviewList(prev => [newOrder, ...prev]);
+      form.reset();
+       toast({
+        title: 'نجح التحليل!',
+        description: 'تمت إضافة الطلب إلى جدول المراجعة.',
+      });
     }
-  };
+  }, [formState, toast, form]);
 
-  const handleFormSubmit = async (formData: FormData) => {
-    setIsPending(true);
-    setParsedData(null);
-    formAction(formData);
-  };
-  
+
   const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -92,104 +98,142 @@ export default function AIOrderParsingPage() {
       });
     }
   };
+  
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUri = reader.result as string;
+        form.setValue('request', dataUri);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  const handleSubmit = async (formData: FormData) => {
+    setIsPending(true);
+    const state = await parseOrderFromRequest(formState, formData);
+    setFormState(state);
+    setIsPending(false);
+  };
+
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <form action={handleFormSubmit}>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bot /> محلل الطلبات الذكي
-            </CardTitle>
-            <CardDescription>
-              أدخل طلبًا جديدًا باستخدام نص أو قم بتحميل صورة للطلب. سيقوم الذكاء الاصطناعي بتحليل التفاصيل لك.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-             <div className="space-y-2">
-                <Label htmlFor="request">تفاصيل الطلب</Label>
-                <Textarea
-                  id="request"
-                  name="request"
-                  placeholder="مثال: إرسال ٢ بيتزا حجم كبير إلى علي في ١٢٣ شارع الملك، الرياض. واحدة بيبروني وواحدة خضار."
-                  className="min-h-[150px]"
-                  value={form.watch('request')}
-                  onChange={(e) => form.setValue('request', e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={handlePasteFromClipboard} className="gap-2">
-                    <Clipboard className="h-4 w-4" /> لصق
+      <div className="flex flex-col gap-6">
+        <form action={handleSubmit}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wand2 /> إدخال الطلب
+                </CardTitle>
+                <CardDescription>
+                  الصق نص الطلب من واتساب أو أي مصدر آخر، أو قم بتحميل صورة. سيقوم الذكاء الاصطناعي بالباقي.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                 <div className="space-y-2">
+                    <Label htmlFor="request">نص الطلب</Label>
+                    <Textarea
+                      id="request"
+                      name="request"
+                      placeholder="مثال: إرسال ٢ بيتزا حجم كبير إلى علي في ١٢٣ شارع الملك، الرياض. واحدة بيبروني وواحدة خضار."
+                      className={`min-h-[150px] transition-colors ${formState.error ? 'border-red-500' : formState.data ? 'border-green-500' : ''}`}
+                      {...form.register('request')}
+                    />
+                    {form.formState.errors.request && <p className="text-sm text-red-600">{form.formState.errors.request.message}</p>}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={handlePasteFromClipboard} className="gap-2">
+                        <Clipboard className="h-4 w-4" /> لصق
+                    </Button>
+                     <Button type="button" variant="outline" size="sm" asChild className="gap-2">
+                        <Label htmlFor="image-upload" className="cursor-pointer">
+                            <ImageIcon className="h-4 w-4" /> تحميل صورة
+                            <input id="image-upload" type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
+                        </Label>
+                    </Button>
+                  </div>
+              </CardContent>
+              <CardFooter>
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      جاري التحليل...
+                    </>
+                  ) : (
+                    <>
+                      <Bot className="mr-2 h-4 w-4" />
+                      تحليل وإضافة للمراجعة
+                    </>
+                  )}
                 </Button>
-                <Button type="button" variant="outline" size="sm" asChild className="gap-2">
-                    <Label htmlFor="image-upload" className="cursor-pointer">
-                        <ImageIcon className="h-4 w-4" /> تحميل صورة
-                        <input id="image-upload" type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
-                    </Label>
-                </Button>
-              </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  جاري التحليل...
-                </>
-              ) : (
-                'تحليل الطلب'
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
-      </form>
+              </CardFooter>
+            </Card>
+        </form>
+      </div>
       
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><FileText/> تأكيد الطلب المستخرج</CardTitle>
+          <CardTitle className="flex items-center gap-2"><FileText/> طلبات قيد المراجعة</CardTitle>
           <CardDescription>
-            تحقق من التفاصيل التي استخرجها الذكاء الاصطناعي أدناه وقم بتأكيد الطلب.
+            تحقق من الطلبات التي تم تحليلها. يمكنك تعديلها أو حذفها قبل تأكيدها بشكل نهائي.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4 min-h-[300px] flex flex-col justify-center">
-          {isPending && !parsedData && (
-             <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
+        <CardContent className="space-y-4">
+           {isPending && reviewList.length === 0 && (
+             <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground min-h-[300px]">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p>يقوم الذكاء الاصطناعي بمعالجة الطلب...</p>
+                <p>يقوم الذكاء الاصطناعي بمعالجة أول طلب...</p>
              </div>
           )}
-          {!isPending && !parsedData && (
-            <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
+          {!isPending && reviewList.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground min-h-[300px]">
                 <Bot className="h-8 w-8" />
-                <p>في انتظار تفاصيل الطلب لتحليلها.</p>
+                <p>في انتظار إضافة طلبات للمراجعة.</p>
              </div>
           )}
-          {parsedData && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="customerName" className="flex items-center gap-2"><User className="h-4 w-4"/> اسم العميل</Label>
-                <Input id="customerName" defaultValue={parsedData.customerName || ''} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address" className="flex items-center gap-2"><Home className="h-4 w-4"/> عنوان التوصيل</Label>
-                <Input id="address" defaultValue={parsedData.address || ''} />
-              </div>
-              <div>
-                 <Label className="flex items-center gap-2 mb-2"><ShoppingBasket className="h-4 w-4"/> المنتجات</Label>
-                 <div className="space-y-2 rounded-md border p-4">
-                     {parsedData.items.map((item, index) => (
-                        <div key={index} className="flex justify-between items-center">
-                            <span className="flex items-center gap-2"><Hash className="h-3 w-3 text-muted-foreground"/>{item}</span>
-                            <Badge variant="secondary">الكمية: {parsedData.quantity[index]}</Badge>
-                        </div>
-                     ))}
-                 </div>
-              </div>
-            </div>
+          {reviewList.length > 0 && (
+             <div className="overflow-x-auto">
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>العميل</TableHead>
+                            <TableHead>العنوان</TableHead>
+                            <TableHead>المنتجات</TableHead>
+                            <TableHead className="text-right">إجراء</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {reviewList.map(order => (
+                           <TableRow key={order.id} className="bg-blue-50 dark:bg-blue-900/20">
+                                <TableCell className="font-medium">{order.customerName}</TableCell>
+                                <TableCell>{order.address}</TableCell>
+                                <TableCell>
+                                    <div className="flex flex-wrap gap-2">
+                                        {order.items.map((item, index) => (
+                                            <Badge key={index} variant="secondary">{item} (x{order.quantity[index]})</Badge>
+                                        ))}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <Button variant="ghost" size="icon" onClick={() => setReviewList(prev => prev.filter(o => o.id !== order.id))}>
+                                        <Trash2 className="h-4 w-4 text-destructive"/>
+                                    </Button>
+                                </TableCell>
+                           </TableRow>
+                        ))}
+                    </TableBody>
+                 </Table>
+             </div>
           )}
         </CardContent>
-        <CardFooter>
-            <Button disabled={!parsedData || isPending}>تأكيد وإنشاء الطلب</Button>
+        <CardFooter className="flex justify-end">
+            <Button disabled={reviewList.length === 0 || isPending}>
+                <Send className="mr-2 h-4 w-4"/> تأكيد كل الطلبات 
+            </Button>
         </CardFooter>
       </Card>
     </div>
