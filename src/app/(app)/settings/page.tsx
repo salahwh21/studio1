@@ -93,7 +93,7 @@ export default function SettingsPage() {
             <Select>
                 <SelectTrigger id="theme">
                     <SelectValue placeholder="اختر المظهر" />
-                </SelectTrigger>
+                </Trigger>
                 <SelectContent>
                     <SelectItem value="light">فاتح</SelectItem>
                     <SelectItem value="dark">داكن</SelectItem>
@@ -107,5 +107,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
