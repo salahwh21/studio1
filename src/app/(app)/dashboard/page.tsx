@@ -1,3 +1,5 @@
+'use client';
+
 import { ArrowUpRight, DollarSign, Receipt, ShoppingCart, Users } from 'lucide-react';
 import {
   Card,

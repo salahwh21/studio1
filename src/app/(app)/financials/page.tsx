@@ -1,3 +1,5 @@
+'use client';
+
 import { DollarSign, MinusCircle, PlusCircle, TrendingUp } from 'lucide-react';
 import {
   Card,
