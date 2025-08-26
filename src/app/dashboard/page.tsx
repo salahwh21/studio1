@@ -191,7 +191,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="flex-1 space-y-4 overflow-y-auto pr-4">
            {topDrivers.map((driver, index) => (
-             <Link href={`/driver-app/${driver.name}`} key={driver.name} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted transition-colors">
+             <Link href={'/driver-app'} key={driver.name} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted transition-colors">
                 <Avatar className="h-12 w-12">
                     <AvatarImage src={driver.avatar} alt={driver.name} />
                     <AvatarFallback>{driver.name.charAt(0)}</AvatarFallback>
