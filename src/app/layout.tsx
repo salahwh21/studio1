@@ -6,8 +6,8 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Al-Wameedh Delivery Management',
-  description: 'A comprehensive solution for managing deliveries, orders, finances, and drivers for Al-Wameedh.',
+  title: 'إدارة توصيل الطلبات - الوميض',
+  description: 'حل شامل لإدارة التوصيل والطلبات والشؤون المالية والسائقين لشركة الوميض.',
 };
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body className={`${inter.variable} font-body antialiased`}>
         {children}
         <Toaster />

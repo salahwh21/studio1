@@ -34,16 +34,16 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/orders', label: 'Order Management', icon: ShoppingCart },
-  { href: '/parse-order', label: 'AI Order Parsing', icon: Sparkles },
-  { href: '/returns', label: 'Returns Tracking', icon: RotateCw },
-  { href: '/financials', label: 'Financials', icon: Wallet },
-  { href: '/settings', label: 'Control Center', icon: Settings },
+  { href: '/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
+  { href: '/orders', label: 'إدارة الطلبات', icon: ShoppingCart },
+  { href: '/parse-order', label: 'إدخال الطلبات بالذكاء الاصطناعي', icon: Sparkles },
+  { href: '/returns', label: 'متابعة المرتجعات', icon: RotateCw },
+  { href: '/financials', label: 'الإدارة المالية', icon: Wallet },
+  { href: '/settings', label: 'مركز التحكم', icon: Settings },
 ];
 
 const secondaryNavItems: NavItem[] = [
-    { href: '/driver-app', label: 'Driver Web App', icon: Truck },
+    { href: '/driver-app', label: 'تطبيق السائق', icon: Truck },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -51,11 +51,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <Sidebar>
+      <Sidebar side="right">
         <SidebarHeader className="p-4">
           <Link href="/dashboard" className="flex items-center gap-2">
             <BotMessageSquare className="w-8 h-8 text-primary" />
-            <span className="text-xl font-semibold text-foreground">Al-Wameedh</span>
+            <span className="text-xl font-semibold text-foreground">الوميض</span>
           </Link>
         </SidebarHeader>
         <SidebarContent className="p-2">
