@@ -103,7 +103,6 @@ const PlaceholderPanel = ({ title }: { title: string }) => {
     );
 };
 
-
 export default function SettingsPage() {
     const [activePanel, setActivePanel] = useState<Panel>('general');
 
