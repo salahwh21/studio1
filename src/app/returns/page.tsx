@@ -1,11 +1,6 @@
 
-import {
-  File,
-  ListFilter,
-  MoreHorizontal,
-  PlusCircle,
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+'use client';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -13,15 +8,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -30,135 +18,173 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { FileText, Search, Truck, Store, Archive } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
-export default function ReturnsPage() {
-  return (
-    <Tabs defaultValue="all">
-      <div className="flex items-center">
-        <TabsList>
-          <TabsTrigger value="all">الكل</TabsTrigger>
-          <TabsTrigger value="pending">قيد الانتظار</TabsTrigger>
-          <TabsTrigger value="approved">موافق عليه</TabsTrigger>
-          <TabsTrigger value="completed" className="hidden sm:flex">مكتمل</TabsTrigger>
-          <TabsTrigger value="rejected" className="hidden sm:flex">مرفوض</TabsTrigger>
-        </TabsList>
-        <div className="ml-auto flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-1">
-                <ListFilter className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  تصفية
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuLabel>تصفية حسب</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>التاريخ</DropdownMenuItem>
-                <DropdownMenuItem>السائق</DropdownMenuItem>
-                <DropdownMenuItem>التاجر</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-           <Button size="sm" variant="outline" className="h-8 gap-1">
-            <File className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              تصدير
-            </span>
-          </Button>
-          <Button size="sm" className="h-8 gap-1">
-            <PlusCircle className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              مرتجع جديد
-            </span>
-          </Button>
-        </div>
-      </div>
-      <TabsContent value="all">
-        <Card>
-          <CardHeader>
-            <CardTitle>المرتجعات</CardTitle>
-            <CardDescription>
-              تتبع وإدارة جميع طلبات إرجاع العملاء من الاستلام وحتى التسليم للتاجر.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+const driverCollections = [
+  { name: 'علي الأحمد', pending: 8, collected: 5, status: 'pending' },
+  { name: 'فاطمة الزهراء', pending: 0, collected: 12, status: 'completed' },
+  { name: 'محمد الخالد', pending: 3, collected: 4, status: 'pending' },
+];
+
+const merchantDeliveries = [
+    { name: 'تاجر أ', atBranch: 13, deliveryDue: '2023-08-20', collectionPending: false, status: 'pending'},
+    { name: 'تاجر ب', atBranch: 7, deliveryDue: '2023-08-21', collectionPending: true, status: 'pending' },
+    { name: 'تاجر ج', atBranch: 22, deliveryDue: '2023-08-19', collectionPending: false, status: 'completed' },
+];
+
+const archiveData = [
+    { date: '2023-08-18', driver: 'علي الأحمد', merchant: 'تاجر أ', count: 15, status: 'completed' },
+    { date: '2023-08-17', driver: 'فاطمة الزهراء', merchant: 'تاجر ج', count: 10, status: 'completed' },
+    { date: '2023-08-16', driver: 'محمد الخالد', merchant: 'تاجر ب', count: 8, status: 'completed' },
+];
+
+const DriverCollectionPanel = () => (
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Truck className="h-6 w-6 text-primary"/> تحصيل السائق</CardTitle>
+            <CardDescription>متابعة المرتجعات التي يجب تحصيلها من السائقين.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            {driverCollections.map(driver => (
+                <Card key={driver.name} className={`${driver.status === 'pending' ? 'border-orange-400' : 'border-green-400'} border-l-4`}>
+                    <CardHeader className="p-4">
+                        <div className="flex justify-between items-start">
+                            <CardTitle className="text-base">{driver.name}</CardTitle>
+                             <Badge variant={driver.status === 'pending' ? 'secondary' : 'default'} className={driver.status === 'pending' ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'}>
+                                {driver.status === 'pending' ? 'قيد التحصيل' : 'مكتمل'}
+                            </Badge>
+                        </div>
+                         <CardDescription>
+                            {driver.pending > 0 ? `${driver.pending} مرتجع بانتظار التحصيل` : 'لا توجد مرتجعات معلقة'}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardFooter className="p-4 pt-0 flex justify-between">
+                         <Button variant="outline" size="sm" className="gap-1"><FileText className="h-4 w-4" /> كشف تحصيل</Button>
+                         <Button size="sm" disabled={driver.status === 'completed'}>تأكيد التحصيل</Button>
+                    </CardFooter>
+                </Card>
+            ))}
+        </CardContent>
+    </Card>
+);
+
+const MerchantDeliveryPanel = () => (
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Store className="h-6 w-6 text-primary"/> تسليم التاجر</CardTitle>
+            <CardDescription>متابعة المرتجعات في الفرع وتجهيزها للتسليم للتاجر.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+             {merchantDeliveries.map(merchant => (
+                <Card key={merchant.name} className={`${merchant.status === 'pending' ? 'border-orange-400' : 'border-green-400'} border-l-4`}>
+                    <CardHeader className="p-4">
+                        <div className="flex justify-between items-start">
+                             <CardTitle className="text-base">{merchant.name}</CardTitle>
+                             <Badge variant={merchant.status === 'pending' ? 'secondary' : 'default'} className={merchant.status === 'pending' ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'}>
+                                {merchant.status === 'pending' ? 'قيد التسليم' : 'تم التسليم'}
+                            </Badge>
+                        </div>
+                        <CardDescription>
+                            {merchant.atBranch} مرتجع في الفرع.
+                            {merchant.collectionPending && <span className="text-red-500 block"> (بانتظار تحصيل السائق)</span>}
+                        </CardDescription>
+                    </CardHeader>
+                     <CardFooter className="p-4 pt-0 flex justify-between items-center">
+                         <Button variant="outline" size="sm" className="gap-1"><FileText className="h-4 w-4" /> كشف تسليم</Button>
+                         <div className="text-xs text-muted-foreground">موعد التسليم: {merchant.deliveryDue}</div>
+                    </CardFooter>
+                </Card>
+            ))}
+        </CardContent>
+    </Card>
+);
+
+const ArchivePanel = () => (
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Archive className="h-6 w-6 text-primary"/> أرشيف الكشوفات</CardTitle>
+             <div className="relative mt-2">
+                <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="بحث بالتاريخ، السائق..." className="pr-8" />
+            </div>
+        </CardHeader>
+        <CardContent>
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>معرف المرتجع</TableHead>
-                  <TableHead>معرف الطلب</TableHead>
-                  <TableHead>العميل</TableHead>
-                  <TableHead className="hidden md:table-cell">التاريخ</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead className="hidden md:table-cell">السبب</TableHead>
-                  <TableHead>
-                    <span className="sr-only">إجراءات</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[
-                    {id: 1, orderId: 3210, customer: 'فاطمة الخان', date: '2023-07-11', status: 'pending', reason: 'منتج خاطئ'},
-                    {id: 2, orderId: 3211, customer: 'يوسف إبراهيم', date: '2023-07-12', status: 'approved', reason: 'تالف عند الوصول'},
-                    {id: 3, orderId: 3212, customer: 'عائشة بكر', date: '2023-07-13', status: 'rejected', reason: 'تم فتح المنتج'},
-                    {id: 4, orderId: 3213, customer: 'علي الأحمد', date: '2023-07-14', status: 'completed', reason: 'لم يعد مطلوباً'},
-                    {id: 5, orderId: 3214, customer: 'محمد الخالد', date: '2023-07-15', status: 'pending', reason: 'مقاس غير صحيح'},
-                    {id: 6, orderId: 3215, customer: 'نورة عبدالله', date: '2023-07-16', status: 'approved', reason: 'منتج خاطئ'},
-                    {id: 7, orderId: 3216, customer: 'خالد الفيصل', date: '2023-07-17', status: 'completed', reason: 'تالف عند الوصول'},
-                    {id: 8, orderId: 3217, customer: 'سارة تركي', date: '2023-07-18', status: 'rejected', reason: 'تأخير في التسليم'},
-                ].map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">#R00{item.id}</TableCell>
-                    <TableCell>#{item.orderId}</TableCell>
-                    <TableCell>{item.customer}</TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {item.date}
-                    </TableCell>
-                    <TableCell>
-                       <Badge variant={
-                        item.status === 'pending' ? 'secondary' : 
-                        item.status === 'approved' ? 'default' : 
-                        item.status === 'completed' ? 'outline' :
-                        'destructive'
-                        }>
-                        {
-                        item.status === 'pending' ? 'قيد الانتظار' : 
-                        item.status === 'approved' ? 'موافق عليه' :
-                        item.status === 'completed' ? 'مكتمل' :
-                        'مرفوض'
-                        }
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">{item.reason}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">فتح القائمة</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
-                          <DropdownMenuItem>عرض التفاصيل</DropdownMenuItem>
-                          {item.status === 'pending' && <DropdownMenuItem>الموافقة على الإرجاع</DropdownMenuItem>}
-                          {item.status === 'pending' && <DropdownMenuItem>رفض الإرجاع</DropdownMenuItem>}
-                          {item.status === 'approved' && <DropdownMenuItem>إنشاء كشف استلام</DropdownMenuItem>}
-                          {item.status === 'completed' && <DropdownMenuItem>إنشاء كشف تسليم</DropdownMenuItem>}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>التاريخ</TableHead>
+                        <TableHead>التاجر</TableHead>
+                        <TableHead>الحالة</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {archiveData.map(item => (
+                        <TableRow key={item.date + item.merchant}>
+                            <TableCell className="font-medium text-xs">{item.date}</TableCell>
+                            <TableCell className="text-xs">{item.merchant}</TableCell>
+                            <TableCell>
+                                <Badge variant={item.status === 'completed' ? 'outline' : 'destructive'}>
+                                    {item.status === 'completed' ? 'مكتمل' : 'معلق'}
+                                </Badge>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+        </CardContent>
+    </Card>
+);
+
+
+export default function ReturnsTrackingPage() {
+  return (
+    <div className="flex flex-col gap-6">
+
+        {/* Mobile View */}
+        <div className="md:hidden">
+             <Accordion type="single" collapsible defaultValue='item-1' className="w-full">
+                <AccordionItem value="item-1">
+                  <AccordionTrigger className="text-lg font-semibold"><Truck className="mr-2 h-5 w-5 text-primary"/> تحصيل السائق</AccordionTrigger>
+                  <AccordionContent>
+                     <DriverCollectionPanel />
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-2">
+                  <AccordionTrigger className="text-lg font-semibold"><Store className="mr-2 h-5 w-5 text-primary"/> تسليم التاجر</AccordionTrigger>
+                  <AccordionContent>
+                    <MerchantDeliveryPanel />
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-3">
+                  <AccordionTrigger className="text-lg font-semibold"><Archive className="mr-2 h-5 w-5 text-primary"/> الأرشيف</AccordionTrigger>
+                  <AccordionContent>
+                    <ArchivePanel />
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+        </div>
+
+
+        {/* Desktop View */}
+        <div className="hidden md:grid md:grid-cols-1 lg:grid-cols-10 gap-6">
+            <div className="lg:col-span-3">
+                 <DriverCollectionPanel />
+            </div>
+            <div className="lg:col-span-4">
+                <MerchantDeliveryPanel />
+            </div>
+            <div className="lg:col-span-3">
+                <ArchivePanel />
+            </div>
+        </div>
+    </div>
   );
 }
-
-    
