@@ -44,10 +44,9 @@ const navItems: NavItem[] = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'لوحة التحكم' },
     { href: '/dashboard/orders', icon: ShoppingCart, label: 'عرض الطلبات' },
     { href: '/dashboard/parse-order', icon: PackagePlus, label: 'إضافة طلبات' },
-    { href: '/dashboard/orders', icon: Archive, label: 'الطلبات المؤرشفة' },
+    { href: '/dashboard/orders/archive', icon: Archive, label: 'الطلبات المؤرشفة' },
     { href: '/dashboard/returns', icon: ArchiveRestore, label: 'إدارة المرتجعات' },
     { href: '/dashboard/financials', icon: Calculator, label: 'المحاسبة' },
-    { href: '/dashboard/parse-order', icon: BrainCircuit, label: 'تحسين المسار' },
     { href: '/dashboard/driver-app', icon: MapPinned, label: 'خريطة السائقين' },
     { href: '/dashboard/settings', icon: Settings, label: 'الإعدادات' },
 ];
@@ -57,13 +56,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
-    if (href === '/dashboard/settings') {
-        return pathname.startsWith('/dashboard/settings');
+    if (href === '/dashboard') {
+        return pathname === href;
     }
-    if (href === '/dashboard/orders') {
+    if (href.includes('/dashboard/orders')) {
+        // Special handling for nested order routes
+        if (href === '/dashboard/orders/archive') {
+            return pathname === href;
+        }
         return pathname.startsWith('/dashboard/orders') && !pathname.includes('archive');
     }
-    return pathname === href;
+    return pathname.startsWith(href);
   };
   
   return (
