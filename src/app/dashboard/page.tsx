@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -110,7 +109,7 @@ export default function DashboardPage() {
                                 variant="outline"
                                 className={`h-auto flex-col items-center justify-center p-4 transition-colors ${stat.color}`}
                             >
-                                <Link href={`/orders?status=${encodeURIComponent(stat.name)}`}>
+                                <Link href={`/dashboard/orders?status=${encodeURIComponent(stat.name)}`}>
                                     <p className="text-2xl font-bold">{stat.value}</p>
                                     <p className="text-sm text-muted-foreground">{stat.name}</p>
                                 </Link>
@@ -159,7 +158,7 @@ export default function DashboardPage() {
                                                 <AvatarFallback>{name.charAt(0)}</AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                <Link href={`/driver-app`} className="font-bold text-lg hover:text-primary flex items-center gap-1">
+                                                <Link href={`/dashboard/driver-app`} className="font-bold text-lg hover:text-primary flex items-center gap-1">
                                                     {name}
                                                     {index === 0 && selectedDriver === 'all' && <Star className="inline h-4 w-4 text-yellow-500 fill-yellow-500"/>}
                                                 </Link>
@@ -187,7 +186,7 @@ export default function DashboardPage() {
                                       </div>
                                       <div className="grid grid-cols-3 gap-2 text-center">
                                           {statsList.map(s => (
-                                              <Link key={s.label} href={`/orders?driver=${encodeURIComponent(name)}&status=${s.filter}`} className="hover:bg-accent/50 rounded-md p-2 transition-colors flex flex-col items-center justify-center">
+                                              <Link key={s.label} href={`/dashboard/orders?driver=${encodeURIComponent(name)}&status=${s.filter}`} className="hover:bg-accent/50 rounded-md p-2 transition-colors flex flex-col items-center justify-center">
                                                   <s.icon className={`w-5 h-5 mb-1 ${s.color}`} />
                                                   <p className="font-semibold text-base">{s.value}</p>
                                                   <p className="text-xs text-muted-foreground">{s.label}</p>

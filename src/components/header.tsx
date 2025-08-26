@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -66,13 +65,13 @@ export function AppHeader() {
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                     <DropdownMenuItem asChild>
-                        <Link href="/settings">
+                        <Link href="/dashboard/settings">
                             <User className="mr-2 h-4 w-4"/>
                             <span>الملف الشخصي</span>
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                        <Link href="/settings">
+                        <Link href="/dashboard/settings">
                            <Settings className="mr-2 h-4 w-4" />
                            <span>الإعدادات</span>
                         </Link>
@@ -91,4 +90,3 @@ export function AppHeader() {
     </header>
   );
 }
-

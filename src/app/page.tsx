@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -54,10 +53,10 @@ export default function LoginPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Button onClick={() => router.push('/merchant')} variant="outline">
+            <Button onClick={() => router.push('/dashboard/merchant')} variant="outline">
               دخول كتاجر
             </Button>
-            <Button onClick={() => router.push('/driver-app')} variant="outline">
+            <Button onClick={() => router.push('/dashboard/driver-app')} variant="outline">
               دخول كسائق
             </Button>
           </div>

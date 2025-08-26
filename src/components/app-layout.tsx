@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -37,24 +36,26 @@ type NavItem = {
 
 const mainNavItems: NavItem[] = [
   { href: '/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
-  { href: '/orders', label: 'إدارة الطلبات', icon: ShoppingCart },
-  { href: '/parse-order', label: 'إدخال سريع بالذكاء الاصطناعي', icon: Sparkles },
-  { href: '/returns', label: 'متابعة المرتجعات', icon: RotateCw },
-  { href: '/financials', label: 'الإدارة المالية', icon: Wallet },
+  { href: '/dashboard/orders', label: 'إدارة الطلبات', icon: ShoppingCart },
+  { href: '/dashboard/parse-order', label: 'إدخال سريع بالذكاء الاصطناعي', icon: Sparkles },
+  { href: '/dashboard/returns', label: 'متابعة المرتجعات', icon: RotateCw },
+  { href: '/dashboard/financials', label: 'الإدارة المالية', icon: Wallet },
 ];
 
 const secondaryNavItems: NavItem[] = [
-  { href: '/driver-app', label: 'تطبيق السائق', icon: Truck },
-  { href: '/merchant', label: 'واجهة التاجر', icon: Store },
+  { href: '/dashboard/driver-app', label: 'تطبيق السائق', icon: Truck },
+  { href: '/dashboard/merchant', label: 'واجهة التاجر', icon: Store },
 ];
 
-const settingsNavItem: NavItem = { href: '/settings', label: 'مركز التحكم', icon: Settings };
+const settingsNavItem: NavItem = { href: '/dashboard/settings', label: 'مركز التحكم', icon: Settings };
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
+    // Exact match for dashboard
     if (href === '/dashboard') return pathname === href;
+    // Starts with for other main nav items
     return pathname.startsWith(href);
   };
   
