@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpRight, DollarSign, Receipt, ShoppingCart, Users } from 'lucide-react';
+import { ArrowUpRight, DollarSign, ReceiptText, ShoppingCart, CheckCircle, XCircle, Truck, Star } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -21,22 +21,29 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-const chartData = [
-  { month: 'January', sales: 186 },
-  { month: 'February', sales: 305 },
-  { month: 'March', sales: 237 },
-  { month: 'April', sales: 273 },
-  { month: 'May', sales: 209 },
-  { month: 'June', sales: 214 },
+const monthlySalesData = [
+  { month: 'يناير', sales: 1860 },
+  { month: 'فبراير', sales: 3050 },
+  { month: 'مارس', sales: 2370 },
+  { month: 'أبريل', sales: 2730 },
+  { month: 'مايو', sales: 2090 },
+  { month: 'يونيو', sales: 2140 },
 ];
 
 const chartConfig = {
   sales: {
-    label: 'Sales',
+    label: 'المبيعات',
     color: 'hsl(var(--primary))',
   },
 };
+
+const topDrivers = [
+    { name: "علي الأحمد", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d", completed: 125, delayed: 2, returned: 1, rate: "98%" },
+    { name: "محمد الخالد", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026705d", completed: 110, delayed: 5, returned: 3, rate: "95%" },
+    { name: "فاطمة الزهراء", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026706d", completed: 98, delayed: 1, returned: 0, rate: "99%" },
+]
 
 export default function DashboardPage() {
   return (
@@ -44,67 +51,102 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">إجمالي الإيرادات</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
-            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+            <div className="text-2xl font-bold">٤٥,٢٣١.٨٩ د.ع</div>
+            <p className="text-xs text-muted-foreground">نمو بنسبة ٢٠.١٪ عن الشهر الماضي</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Orders</CardTitle>
+            <CardTitle className="text-sm font-medium">إجمالي الطلبات</CardTitle>
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+2,350</div>
-            <p className="text-xs text-muted-foreground">+180.1% from last month</p>
+            <div className="text-2xl font-bold">+٢,٣٥٠</div>
+            <p className="text-xs text-muted-foreground">نمو بنسبة ٨٠.١٪ عن الشهر الماضي</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Customers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">الطلبات المكتملة</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+573</div>
-            <p className="text-xs text-muted-foreground">+19% from last month</p>
+            <div className="text-2xl font-bold">+١,٩٨٠</div>
+            <p className="text-xs text-muted-foreground">نمو بنسبة ١٩٪ عن الشهر الماضي</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Returns</CardTitle>
-            <Receipt className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">إجمالي المرتجعات</CardTitle>
+            <XCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">124</div>
-            <p className="text-xs text-muted-foreground">-5% from last month</p>
+            <div className="text-2xl font-bold">١٢٤</div>
+            <p className="text-xs text-muted-foreground">انخفاض بنسبة ٥٪ عن الشهر الماضي</p>
           </CardContent>
         </Card>
+      </div>
+      
+       <div>
+        <h2 className="text-xl font-semibold mb-4">أداء أفضل السائقين</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {topDrivers.map((driver, index) => (
+             <Card key={index}>
+              <CardHeader className="flex flex-row items-center gap-4">
+                 <Avatar className="h-12 w-12">
+                    <AvatarImage src={driver.avatar} alt={driver.name} />
+                    <AvatarFallback>{driver.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <CardTitle>{driver.name}</CardTitle>
+                  <CardDescription>نسبة الإنجاز: {driver.rate}</CardDescription>
+                </div>
+                {index === 0 && <Badge className="ml-auto bg-amber-500 text-white"><Star className="h-4 w-4 mr-1"/>الأفضل</Badge>}
+              </CardHeader>
+              <CardContent className="grid grid-cols-3 gap-2 text-center text-sm">
+                <div className="rounded-md bg-green-100 dark:bg-green-900/50 p-2">
+                    <p className="font-bold text-green-700 dark:text-green-400">{driver.completed}</p>
+                    <p className="text-xs text-green-600 dark:text-green-500">مكتمل</p>
+                </div>
+                 <div className="rounded-md bg-yellow-100 dark:bg-yellow-900/50 p-2">
+                    <p className="font-bold text-yellow-700 dark:text-yellow-400">{driver.delayed}</p>
+                    <p className="text-xs text-yellow-600 dark:text-yellow-500">مؤجل</p>
+                </div>
+                 <div className="rounded-md bg-red-100 dark:bg-red-900/50 p-2">
+                    <p className="font-bold text-red-700 dark:text-red-400">{driver.returned}</p>
+                    <p className="text-xs text-red-600 dark:text-red-500">مرتجع</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Sales Overview</CardTitle>
-            <CardDescription>An overview of sales for the past 6 months.</CardDescription>
+            <CardTitle>نظرة عامة على الإيرادات</CardTitle>
+            <CardDescription>نظرة عامة على إيرادات الأشهر الستة الماضية.</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
-              <BarChart data={chartData} accessibilityLayer>
+              <BarChart data={monthlySalesData} accessibilityLayer>
                 <CartesianGrid vertical={false} />
                 <XAxis
                   dataKey="month"
                   tickLine={false}
                   tickMargin={10}
                   axisLine={false}
-                  tickFormatter={(value) => value.slice(0, 3)}
                 />
                 <YAxis
                     tickLine={false}
                     axisLine={false}
                     tickMargin={10}
+                    tickFormatter={(value) => `${value / 1000} ألف`}
                 />
                 <ChartTooltip
                   cursor={false}
@@ -119,12 +161,12 @@ export default function DashboardPage() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center">
             <div className="grid gap-2">
-              <CardTitle>Recent Orders</CardTitle>
-              <CardDescription>An overview of the most recent orders.</CardDescription>
+              <CardTitle>أحدث الطلبات</CardTitle>
+              <CardDescription>نظرة عامة على أحدث الطلبات المستلمة.</CardDescription>
             </div>
             <Button asChild size="sm" className="ml-auto gap-1">
               <Link href="/orders">
-                View All
+                عرض الكل
                 <ArrowUpRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -133,71 +175,71 @@ export default function DashboardPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>العميل</TableHead>
+                  <TableHead>الحالة</TableHead>
+                  <TableHead className="text-right">المبلغ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 <TableRow>
                   <TableCell>
-                    <div className="font-medium">Ali Ahmed</div>
+                    <div className="font-medium">علي الأحمد</div>
                     <div className="hidden text-sm text-muted-foreground md:inline">
                       ali.ahmed@example.com
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">Delivered</Badge>
+                    <Badge variant="outline">تم التوصيل</Badge>
                   </TableCell>
-                  <TableCell className="text-right">$250.00</TableCell>
+                  <TableCell className="text-right">٢٥٠.٠٠ د.ع</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>
-                    <div className="font-medium">Fatima Khan</div>
+                    <div className="font-medium">فاطمة الخان</div>
                     <div className="hidden text-sm text-muted-foreground md:inline">
                       fatima.khan@example.com
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge>Processing</Badge>
+                    <Badge>قيد التجهيز</Badge>
                   </TableCell>
-                  <TableCell className="text-right">$150.00</TableCell>
+                  <TableCell className="text-right">١٥٠.٠٠ د.ع</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>
-                    <div className="font-medium">Yusuf Ibrahim</div>
+                    <div className="font-medium">يوسف إبراهيم</div>
                     <div className="hidden text-sm text-muted-foreground md:inline">
                       yusuf.i@example.com
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">Delivered</Badge>
+                    <Badge variant="outline">تم التوصيل</Badge>
                   </TableCell>
-                  <TableCell className="text-right">$350.00</TableCell>
+                  <TableCell className="text-right">٣٥٠.٠٠ د.ع</TableCell>
                 </TableRow>
                  <TableRow>
                   <TableCell>
-                    <div className="font-medium">Aisha Bakr</div>
+                    <div className="font-medium">عائشة بكر</div>
                     <div className="hidden text-sm text-muted-foreground md:inline">
                       a.bakr@example.com
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="destructive">Cancelled</Badge>
+                    <Badge variant="destructive">ملغي</Badge>
                   </TableCell>
-                  <TableCell className="text-right">$50.00</TableCell>
+                  <TableCell className="text-right">٥٠.٠٠ د.ع</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>
-                    <div className="font-medium">Omar Hassan</div>
+                    <div className="font-medium">عمر حسن</div>
                     <div className="hidden text-sm text-muted-foreground md:inline">
                       omar.h@example.com
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">Delivered</Badge>
+                    <Badge variant="outline">تم التوصيل</Badge>
                   </TableCell>
-                  <TableCell className="text-right">$450.00</TableCell>
+                  <TableCell className="text-right">٤٥٠.٠٠ د.ع</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
@@ -207,3 +249,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

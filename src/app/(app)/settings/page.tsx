@@ -10,100 +10,102 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Control Center</h1>
-        <p className="text-muted-foreground">Manage your account and system settings.</p>
+        <h1 className="text-3xl font-bold tracking-tight">مركز التحكم</h1>
+        <p className="text-muted-foreground">إدارة حسابك وإعدادات النظام.</p>
       </div>
       <Separator />
 
       <Card>
         <CardHeader>
-          <CardTitle>Profile Settings</CardTitle>
-          <CardDescription>Update your personal information.</CardDescription>
+          <CardTitle>إعدادات الملف الشخصي</CardTitle>
+          <CardDescription>تحديث معلوماتك الشخصية.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
-              <Input id="firstName" defaultValue="Admin" />
+              <Label htmlFor="firstName">الاسم الأول</Label>
+              <Input id="firstName" defaultValue="مسؤول" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input id="lastName" defaultValue="User" />
+              <Label htmlFor="lastName">الاسم الأخير</Label>
+              <Input id="lastName" defaultValue="النظام" />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">البريد الإلكتروني</Label>
             <Input id="email" type="email" defaultValue="admin@alwameedh.com" />
           </div>
-          <Button>Update Profile</Button>
+          <Button>تحديث الملف الشخصي</Button>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Notification Settings</CardTitle>
-          <CardDescription>Choose how you want to be notified.</CardDescription>
+          <CardTitle>إعدادات الإشعارات</CardTitle>
+          <CardDescription>اختر كيف تريد أن يتم إعلامك.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div>
-              <Label htmlFor="new-order-email" className="font-medium">New Orders</Label>
-              <p className="text-sm text-muted-foreground">Receive an email for every new order.</p>
+              <Label htmlFor="new-order-email" className="font-medium">الطلبات الجديدة</Label>
+              <p className="text-sm text-muted-foreground">استلام بريد إلكتروني لكل طلب جديد.</p>
             </div>
             <Switch id="new-order-email" defaultChecked />
           </div>
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div>
-              <Label htmlFor="return-request-email" className="font-medium">Return Requests</Label>
-              <p className="text-sm text-muted-foreground">Get notified about new return requests.</p>
+              <Label htmlFor="return-request-email" className="font-medium">طلبات الإرجاع</Label>
+              <p className="text-sm text-muted-foreground">الحصول على إشعار حول طلبات الإرجاع الجديدة.</p>
             </div>
             <Switch id="return-request-email" />
           </div>
            <div className="flex items-center justify-between rounded-lg border p-4">
             <div>
-              <Label htmlFor="daily-summary-email" className="font-medium">Daily Summary</Label>
-              <p className="text-sm text-muted-foreground">Receive a daily summary of activities.</p>
+              <Label htmlFor="daily-summary-email" className="font-medium">الملخص اليومي</Label>
+              <p className="text-sm text-muted-foreground">استلام ملخص يومي للأنشطة.</p>
             </div>
             <Switch id="daily-summary-email" defaultChecked/>
           </div>
-          <Button>Save Preferences</Button>
+          <Button>حفظ التفضيلات</Button>
         </CardContent>
       </Card>
       
       <Card>
         <CardHeader>
-          <CardTitle>System Settings</CardTitle>
-          <CardDescription>Manage general system configurations.</CardDescription>
+          <CardTitle>إعدادات النظام</CardTitle>
+          <CardDescription>إدارة تكوينات النظام العامة.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="language">Language</Label>
-            <Select>
+            <Label htmlFor="language">اللغة</Label>
+            <Select defaultValue="ar">
                 <SelectTrigger id="language">
-                    <SelectValue placeholder="Select language" />
+                    <SelectValue placeholder="اختر اللغة" />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="ar">Arabic (العربية)</SelectItem>
+                    <SelectItem value="ar">العربية</SelectItem>
                 </SelectContent>
             </Select>
           </div>
            <div className="space-y-2">
-            <Label htmlFor="theme">Theme</Label>
+            <Label htmlFor="theme">المظهر</Label>
             <Select>
                 <SelectTrigger id="theme">
-                    <SelectValue placeholder="Select theme" />
+                    <SelectValue placeholder="اختر المظهر" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
+                    <SelectItem value="light">فاتح</SelectItem>
+                    <SelectItem value="dark">داكن</SelectItem>
+                    <SelectItem value="system">النظام</SelectItem>
                 </SelectContent>
             </Select>
           </div>
-          <Button>Save Settings</Button>
+          <Button>حفظ الإعدادات</Button>
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    

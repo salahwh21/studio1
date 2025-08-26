@@ -21,21 +21,21 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line, ComposedChart } from 'recharts';
 
 const chartData = [
-  { month: "Jan", income: 1860, expense: 800 },
-  { month: "Feb", income: 3050, expense: 1200 },
-  { month: "Mar", income: 2370, expense: 950 },
-  { month: "Apr", income: 2730, expense: 1500 },
-  { month: "May", income: 2090, expense: 1100 },
-  { month: "Jun", income: 2140, expense: 1300 },
+  { month: "يناير", income: 1860, expense: 800 },
+  { month: "فبراير", income: 3050, expense: 1200 },
+  { month: "مارس", income: 2370, expense: 950 },
+  { month: "أبريل", income: 2730, expense: 1500 },
+  { month: "مايو", income: 2090, expense: 1100 },
+  { month: "يونيو", income: 2140, expense: 1300 },
 ];
 
 const chartConfig = {
   income: {
-    label: 'Income',
+    label: 'الدخل',
     color: 'hsl(var(--primary))',
   },
   expense: {
-    label: 'Expense',
+    label: 'المصروفات',
     color: 'hsl(var(--destructive))',
   },
 };
@@ -46,61 +46,61 @@ export default function FinancialsPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Income</CardTitle>
+            <CardTitle className="text-sm font-medium">إجمالي الدخل</CardTitle>
             <PlusCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$14,240.00</div>
-            <p className="text-xs text-muted-foreground">+15% from last month</p>
+            <div className="text-2xl font-bold">14,240.00 د.ع</div>
+            <p className="text-xs text-muted-foreground">نمو 15% عن الشهر الماضي</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+            <CardTitle className="text-sm font-medium">إجمالي المصروفات</CardTitle>
             <MinusCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$5,850.00</div>
-            <p className="text-xs text-muted-foreground">+8% from last month</p>
+            <div className="text-2xl font-bold">5,850.00 د.ع</div>
+            <p className="text-xs text-muted-foreground">زيادة 8% عن الشهر الماضي</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
+            <CardTitle className="text-sm font-medium">صافي الربح</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">$8,390.00</div>
-            <p className="text-xs text-muted-foreground">+22% from last month</p>
+            <div className="text-2xl font-bold text-green-600">8,390.00 د.ع</div>
+            <p className="text-xs text-muted-foreground">نمو 22% عن الشهر الماضي</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Profit Margin</CardTitle>
+            <CardTitle className="text-sm font-medium">هامش الربح</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">58.92%</div>
-            <p className="text-xs text-muted-foreground">+5.2% from last month</p>
+            <p className="text-xs text-muted-foreground">زيادة 5.2% عن الشهر الماضي</p>
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Income vs Expense</CardTitle>
-          <CardDescription>A summary of your income and expenses over the last 6 months.</CardDescription>
+          <CardTitle>الدخل مقابل المصروفات</CardTitle>
+          <CardDescription>ملخص للدخل والمصروفات خلال الـ 6 أشهر الماضية.</CardDescription>
         </CardHeader>
         <CardContent>
           <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
             <ComposedChart data={chartData}>
               <CartesianGrid vertical={false} />
               <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
-              <YAxis tickLine={false} axisLine={false} tickMargin={10} />
+              <YAxis tickLine={false} axisLine={false} tickMargin={10} tickFormatter={(value) => `${value / 1000} ألف`} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Legend />
-              <Bar dataKey="income" fill="var(--color-income)" radius={[4, 4, 0, 0]} />
-              <Line type="monotone" dataKey="expense" stroke="var(--color-expense)" strokeWidth={2} dot={false}/>
+              <Bar dataKey="income" fill="var(--color-income)" radius={[4, 4, 0, 0]} name="الدخل" />
+              <Line type="monotone" dataKey="expense" stroke="var(--color-expense)" strokeWidth={2} dot={false} name="المصروفات"/>
             </ComposedChart>
           </ChartContainer>
         </CardContent>
@@ -108,19 +108,19 @@ export default function FinancialsPage() {
       
       <Card>
           <CardHeader>
-            <CardTitle>Recent Transactions</CardTitle>
+            <CardTitle>المعاملات الأخيرة</CardTitle>
             <CardDescription>
-              A list of your most recent financial transactions.
+              قائمة بأحدث معاملاتك المالية.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Transaction ID</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>معرف المعاملة</TableHead>
+                  <TableHead>النوع</TableHead>
+                  <TableHead>التاريخ</TableHead>
+                  <TableHead className="text-right">المبلغ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -129,7 +129,7 @@ export default function FinancialsPage() {
                     <TableCell className="font-medium">#T00{i+1}</TableCell>
                     <TableCell>
                       <Badge variant={i % 2 === 0 ? "default" : "destructive"}>
-                         {i % 2 === 0 ? 'Income' : 'Expense'}
+                         {i % 2 === 0 ? 'دخل' : 'مصروف'}
                       </Badge>
                     </TableCell>
                     <TableCell>2023-08-1{i+1}</TableCell>
@@ -145,3 +145,5 @@ export default function FinancialsPage() {
     </div>
   );
 }
+
+    
