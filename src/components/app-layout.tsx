@@ -6,19 +6,13 @@ import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
   ShoppingCart,
-  Sparkles,
-  RotateCw,
-  Wallet,
-  Settings,
-  Truck,
-  Store,
-  BotMessageSquare,
   PackagePlus,
   Archive,
-  MapPinned,
+  ArchiveRestore,
   Calculator,
   BrainCircuit,
-  ArchiveRestore,
+  MapPinned,
+  Settings,
 } from 'lucide-react';
 
 import {
@@ -47,7 +41,6 @@ const navItems: NavItem[] = [
     { href: '/dashboard/orders/archive', icon: Archive, label: 'الطلبات المؤرشفة' },
     { href: '/dashboard/returns', icon: ArchiveRestore, label: 'إدارة المرتجعات' },
     { href: '/dashboard/financials', icon: Calculator, label: 'المحاسبة' },
-    { href: '/dashboard/driver-app', icon: MapPinned, label: 'خريطة السائقين' },
     { href: '/dashboard/settings', icon: Settings, label: 'الإعدادات' },
 ];
 
@@ -59,11 +52,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     if (href === '/dashboard') {
         return pathname === href;
     }
-    if (href.includes('/dashboard/orders')) {
-        // Special handling for nested order routes
-        if (href === '/dashboard/orders/archive') {
-            return pathname === href;
-        }
+    if (href === '/dashboard/orders/archive') {
+        return pathname === href;
+    }
+    if (href.startsWith('/dashboard/orders')) {
         return pathname.startsWith('/dashboard/orders') && !pathname.includes('archive');
     }
     return pathname.startsWith(href);
@@ -71,7 +63,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   
   return (
     <SidebarProvider>
-      <Sidebar side="right" collapsible="icon" defaultOpen={false}>
+      <Sidebar side="right" collapsible="icon">
         <SidebarHeader className="p-0">
            <div className="flex h-16 items-center justify-center p-2 group-data-[collapsible=icon]:h-12">
             <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
@@ -82,7 +74,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarContent className="p-2">
           <SidebarMenu>
             {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
+              <SidebarMenuItem key={item.label}>
                 <SidebarMenuButton
                   asChild
                   isActive={isActive(item.href)}
