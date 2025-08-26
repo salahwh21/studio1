@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useFormState } from 'react-dom';
+import { useEffect, useState, useActionState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -37,7 +36,7 @@ export default function AIOrderParsingPage() {
     message: '',
   });
 
-  const [formState, formAction] = useFormState(parseOrderFromRequest, initialState);
+  const [formState, formAction] = useActionState(parseOrderFromRequest, initialState);
   const [isPending, setIsPending] = useState(false);
   const [parsedData, setParsedData] = useState<ParseOrderDetailsOutput | null>(null);
 
