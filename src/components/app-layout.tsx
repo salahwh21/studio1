@@ -21,7 +21,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarInset,
 } from '@/components/ui/sidebar';
 import { AppHeader } from '@/components/header';
 import { Logo } from '@/components/logo';
@@ -61,7 +60,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   
   return (
      <SidebarProvider>
-      <div className="relative flex min-h-screen w-full flex-col bg-muted/40">
+      <div className="relative flex min-h-screen w-full bg-muted/40">
         <Sidebar side="right" collapsible="icon">
           <SidebarHeader className="p-0">
             <div className="flex h-16 items-center justify-center p-2 group-data-[collapsible=icon]:h-12">
@@ -97,7 +96,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </Sidebar>
         <div className="flex flex-1 flex-col sm:pr-12">
           <AppHeader />
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8">
             {children}
           </main>
         </div>

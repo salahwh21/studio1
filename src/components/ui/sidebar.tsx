@@ -193,7 +193,7 @@ const Sidebar = React.forwardRef<
         {/* This is what handles the sidebar gap */}
         <div
           className={cn(
-            "fixed inset-y-0 z-10 flex h-svh flex-col",
+            "fixed inset-y-0 z-40 flex h-svh flex-col bg-sidebar",
             "w-[--sidebar-width-icon]",
             side === "left"
               ? "left-0 border-r"
@@ -203,7 +203,7 @@ const Sidebar = React.forwardRef<
         >
           <div
             data-sidebar="sidebar"
-            className="flex h-full w-full flex-col bg-sidebar"
+            className="flex h-full w-full flex-col"
           >
             {children}
           </div>
