@@ -114,7 +114,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </Sidebar>
       <SidebarInset className="flex flex-col">
         <AppHeader />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-background max-w-full">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-background">
           {children}
         </main>
       </SidebarInset>
