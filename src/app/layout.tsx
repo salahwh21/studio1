@@ -2,10 +2,14 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { Inter } from 'next/font/google';
+import { PT_Sans } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const ptSans = PT_Sans({ 
+  subsets: ['latin'], 
+  weight: ['400', '700'],
+  variable: '--font-pt-sans' 
+});
 
 export const metadata: Metadata = {
   title: 'إدارة توصيل الطلبات - الوميض',
@@ -19,7 +23,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
+       <head>
+          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+              integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+              crossOrigin=""/>
+      </head>
+      <body className={`${ptSans.variable} font-sans antialiased`}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"
