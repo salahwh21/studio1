@@ -3,9 +3,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { Inter } from 'next/font/google';
-import { AppLayout } from '@/components/app-layout';
 import { ThemeProvider } from 'next-themes';
-
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -28,9 +26,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
         >
-            <AppLayout>
-              {children}
-            </AppLayout>
+            {children}
             <Toaster />
         </ThemeProvider>
       </body>

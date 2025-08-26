@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   Card,
@@ -26,7 +26,6 @@ import {
   PackageCheck,
   RefreshCw,
   XCircle,
-  Truck,
   Star,
   ShoppingCart,
 } from 'lucide-react';
@@ -34,11 +33,10 @@ import {
     Bar,
     BarChart,
     CartesianGrid,
-    ResponsiveContainer,
+    Legend,
     Tooltip,
     XAxis,
     YAxis,
-    Legend
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
@@ -64,6 +62,14 @@ const chartConfig = {
   returned: { label: 'ملغية/مرتجعة', color: 'hsl(var(--chart-3))' },
 };
 
+const chartData = topDrivers.map(d => ({
+    name: d.name,
+    delivered: d.completed,
+    postponed: d.postponed,
+    returned: d.returned
+}));
+
+
 const StatCard = ({ title, value, icon: Icon, color = 'text-primary' }: { title: string, value: string | number, icon: React.ElementType, color?: string }) => (
     <Card>
         <CardContent className="p-4">
@@ -79,23 +85,11 @@ const StatCard = ({ title, value, icon: Icon, color = 'text-primary' }: { title:
 );
 
 export default function DashboardPage() {
-    const [selectedDriver, setSelectedDriver] = useState<string>('all');
+    const [selectedDriver, setSelectedDriver] = useState('all');
 
-    const filteredDriverStats = useMemo(() => {
-        if (!selectedDriver || selectedDriver === 'all') {
-            return topDrivers;
-        }
-        return topDrivers.filter(driver =>
-            driver.name === selectedDriver
-        );
-    }, [selectedDriver]);
-
-    const chartData = topDrivers.map(d => ({
-        name: d.name,
-        delivered: d.completed,
-        postponed: d.postponed,
-        returned: d.returned
-    }));
+    const filteredDriverStats = selectedDriver === 'all'
+        ? topDrivers
+        : topDrivers.filter(driver => driver.name === selectedDriver);
 
     return (
         <div className="flex flex-col gap-8">
@@ -243,5 +237,3 @@ export default function DashboardPage() {
         </div>
     )
 }
-
-    
