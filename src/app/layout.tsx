@@ -2,13 +2,13 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { PT_Sans } from 'next/font/google';
+import { Tajawal } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 
-const ptSans = PT_Sans({ 
-  subsets: ['latin'], 
+const tajawal = Tajawal({ 
+  subsets: ['latin', 'arabic'], 
   weight: ['400', '700'],
-  variable: '--font-pt-sans' 
+  variable: '--font-tajawal' 
 });
 
 export const metadata: Metadata = {
@@ -27,8 +27,11 @@ export default function RootLayout({
           <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
               integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
               crossOrigin=""/>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Inter:wght@400;700&family=PT+Sans:wght@400;700&family=Roboto:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet" />
       </head>
-      <body className={`${ptSans.variable} font-sans antialiased`}>
+      <body className={`${tajawal.variable} font-sans antialiased`}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"

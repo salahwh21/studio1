@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle, Info, Palette, Type, XCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Info, Palette, Type, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -17,14 +17,43 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { updateThemeAction } from '@/app/actions/update-theme';
+
+// Helper function to convert HEX to HSL string
+const hexToHsl = (hex: string): string => {
+  let r = 0, g = 0, b = 0;
+  if (hex.length === 4) {
+    r = parseInt(hex[1] + hex[1], 16);
+    g = parseInt(hex[2] + hex[2], 16);
+    b = parseInt(hex[3] + hex[3], 16);
+  } else if (hex.length === 7) {
+    r = parseInt(hex[1] + hex[2], 16);
+    g = parseInt(hex[3] + hex[4], 16);
+    b = parseInt(hex[5] + hex[6], 16);
+  }
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+};
+
 
 export default function FontsColorsPage() {
   const { toast } = useToast();
-  const [primaryColor, setPrimaryColor] = useState('#F2994A');
-  const [fontFamily, setFontFamily] = useState('Inter');
+  const [primaryColor, setPrimaryColor] = useState('#29ABE2');
+  const [fontFamily, setFontFamily] = useState('Tajawal');
   const [baseFontSize, setBaseFontSize] = useState(14);
+  const [isSaving, setIsSaving] = useState(false);
 
   const previewStyle = useMemo(() => ({
     '--preview-primary': primaryColor,
@@ -32,11 +61,36 @@ export default function FontsColorsPage() {
     '--preview-font-size': `${baseFontSize}px`,
   } as React.CSSProperties), [primaryColor, fontFamily, baseFontSize]);
 
-  const handleSaveChanges = () => {
-    toast({
-      title: 'تم الحفظ!',
-      description: 'تم حفظ إعدادات الألوان والخطوط. (هذه معاينة فقط)',
-    });
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    const formData = new FormData();
+    formData.append('primary', hexToHsl(primaryColor));
+    // Pass accent and background as null to not update them from this page
+    formData.append('accent', ''); 
+    formData.append('background', '');
+    formData.append('fontFamily', fontFamily);
+    formData.append('fontSize', baseFontSize.toString());
+    
+    try {
+      const result = await updateThemeAction(formData);
+
+      if (result.success) {
+        toast({
+          title: 'تم الحفظ بنجاح!',
+          description: 'تم تحديث الألوان والخطوط. قد تحتاج لإعادة تحميل الصفحة لرؤية التغييرات.',
+        });
+      } else {
+        throw new Error(typeof result.error === 'string' ? result.error : 'An unknown error occurred');
+      }
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'فشل الحفظ',
+            description: error.message || 'فشل تحديث ملفات الثيم.',
+        });
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   return (
@@ -100,6 +154,7 @@ export default function FontsColorsPage() {
                   <SelectItem value="Cairo">Cairo</SelectItem>
                   <SelectItem value="Tajawal">Tajawal</SelectItem>
                   <SelectItem value="Roboto">Roboto</SelectItem>
+                  <SelectItem value="PT_Sans">PT Sans</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -162,8 +217,9 @@ export default function FontsColorsPage() {
         </Card>
 
         <div className="flex justify-start">
-          <Button size="lg" onClick={handleSaveChanges} style={{ backgroundColor: 'var(--preview-primary)', color: '#fff' }}>
-            حفظ الإعدادات
+          <Button size="lg" onClick={handleSaveChanges} disabled={isSaving} style={{ backgroundColor: 'var(--preview-primary)', color: '#fff' }}>
+             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSaving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
           </Button>
         </div>
       </div>
