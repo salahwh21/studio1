@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from 'next-themes';
 
 import { Tajawal } from 'next/font/google';
+
 const tajawal = Tajawal({ 
   subsets: ['latin', 'arabic'], 
   weight: ['400', '700'],
