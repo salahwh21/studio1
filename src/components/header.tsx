@@ -18,6 +18,9 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Logo } from './logo';
@@ -46,10 +49,17 @@ export function AppHeader() {
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="right">
-                    <nav className="grid gap-6 text-lg font-medium">
+                    <SheetHeader>
+                      <SheetTitle>
                         <Link href="#" className="flex items-center gap-2 text-lg font-semibold mb-4">
                             <Logo />
                         </Link>
+                      </SheetTitle>
+                      <SheetDescription>
+                        قائمة التنقل الرئيسية للتطبيق.
+                      </SheetDescription>
+                    </SheetHeader>
+                    <nav className="grid gap-6 text-lg font-medium mt-4">
                         {navItems.map(item => (
                             <Link key={item.href} href={item.href} className="text-muted-foreground hover:text-foreground">
                                 {item.label}
