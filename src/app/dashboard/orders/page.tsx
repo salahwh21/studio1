@@ -279,12 +279,8 @@ function OrdersPageContent() {
                                 <Table className="min-w-max border-b">
                                     <TableHeader className="sticky top-0 z-10">
                                         <TableRow className="bg-primary hover:bg-primary/90">
-                                            <TableHead className="sticky right-0 p-1 bg-primary border-l border-primary-foreground/20 text-right px-4 bg-muted">
-                                                <Checkbox
-                                                    onCheckedChange={handleSelectAll}
-                                                    checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
-                                                    className="border-white data-[state=checked]:bg-white data-[state=checked]:text-primary"
-                                                />
+                                            <TableHead className="sticky right-0 p-1 bg-primary border-l border-primary-foreground/20 text-right bg-muted">
+                                                {/* This cell is now empty */}
                                             </TableHead>
                                             <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                                 <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
@@ -328,7 +324,11 @@ function OrdersPageContent() {
                                         </TableRow>
                                         <TableRow className="bg-muted/50 hover:bg-muted/80">
                                             <TableHead className="sticky right-0 w-12 px-4 border-l bg-muted text-right flex items-center justify-center">
-                                                
+                                                <Checkbox
+                                                    onCheckedChange={handleSelectAll}
+                                                    checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
+                                                    className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                                />
                                             </TableHead>
                                             <TableHead className="text-right border-l bg-muted">رقم الطلب</TableHead>
                                             <TableHead className="text-right border-l bg-muted">المصدر</TableHead>
