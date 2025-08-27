@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { useActionState } from 'react';
 import { z } from 'zod';
 import { Bot, Image as ImageIcon, Loader2, Clipboard, FileText, Trash2, Send, Wand2 } from 'lucide-react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
@@ -50,20 +49,20 @@ export default function AIOrderParsingPage() {
   const [imageDataUri, setImageDataUri] = useState<string | null>(null);
   
   const [isPending, startTransition] = useTransition();
-  const [formState, formAction] = useActionState(parseOrderFromRequest, initialState);
+  const [state, setState] = useState(initialState);
 
   useEffect(() => {
-    if (formState.error) {
+    if (state.error) {
       toast({
         variant: 'destructive',
         title: 'فشل التحليل!',
-        description: formState.error,
+        description: state.error,
       });
     }
-    if (formState.data && formState.data.customerName) {
+    if (state.data && state.data.customerName) {
       const newOrder: OrderReviewItem = {
         id: Date.now(),
-        ...formState.data,
+        ...state.data,
       };
       setReviewList(prev => [newOrder, ...prev]);
       setRequestText('');
@@ -77,7 +76,7 @@ export default function AIOrderParsingPage() {
         description: 'تمت إضافة الطلب إلى جدول المراجعة.',
       });
     }
-  }, [formState, toast]);
+  }, [state, toast]);
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -91,17 +90,21 @@ export default function AIOrderParsingPage() {
         return;
     }
     
-    const formData = new FormData(event.currentTarget);
-    startTransition(() => {
-        formAction(formData);
+    startTransition(async () => {
+        const formData = new FormData();
+        formData.append('request', requestText || imageDataUri || '');
+        const result = await parseOrderFromRequest(state, formData);
+        setState(result);
     });
   };
 
   const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
-      setRequestText(text);
-      setImageDataUri(null);
+      if (text) {
+        setRequestText(text);
+        setImageDataUri(null);
+      }
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -156,7 +159,7 @@ export default function AIOrderParsingPage() {
                       id="request"
                       name="request"
                       placeholder="مثال: إرسال ٢ بيتزا حجم كبير إلى علي في ١٢٣ شارع الملك، الرياض. واحدة بيبروني وواحدة خضار."
-                      className={`min-h-[150px] transition-colors ${formState.error ? 'border-red-500' : ''}`}
+                      className={`min-h-[150px] transition-colors ${state.error ? 'border-red-500' : ''}`}
                       value={requestText}
                       onChange={(e) => {
                           setRequestText(e.target.value);
@@ -164,7 +167,6 @@ export default function AIOrderParsingPage() {
                       }}
                       disabled={!!imageDataUri}
                     />
-                    <input type="hidden" name="request" value={imageDataUri || requestText} />
 
                     {imageDataUri && (
                         <div className="relative mt-2 w-40 h-40">
@@ -192,7 +194,7 @@ export default function AIOrderParsingPage() {
                   </div>
               </CardContent>
               <CardFooter>
-                <Button type="submit" disabled={isPending}>
+                <Button type="submit" disabled={isPending || (!requestText && !imageDataUri)}>
                   {isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
