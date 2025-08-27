@@ -60,16 +60,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   
   return (
      <SidebarProvider>
-      <div className="flex h-screen w-full bg-background overflow-hidden">
-        <Sidebar side="right" collapsible="icon">
-          <SidebarHeader className="p-0">
+      <div className="flex h-screen bg-background overflow-hidden">
+        <Sidebar side="right" collapsible="icon" className="z-40">
+          <SidebarHeader>
             <div className="flex h-16 items-center justify-center p-2 group-data-[collapsible=icon]:h-12">
               <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
                 <Logo className="h-10 w-10" iconOnly />
               </Link>
             </div>
           </SidebarHeader>
-          <SidebarContent className="p-2">
+          <SidebarContent>
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
@@ -94,7 +94,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
-        <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
+        <div className="flex flex-1 flex-col h-screen overflow-y-auto">
           <AppHeader />
           <main className="flex-1 p-4 sm:p-6 lg:p-8 bg-muted/40">
             {children}
