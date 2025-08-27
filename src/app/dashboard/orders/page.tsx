@@ -140,24 +140,8 @@ function OrdersPageContent() {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(15);
     
-    const tableContainerRef = useRef<HTMLDivElement>(null);
-    const totalsContainerRef = useRef<HTMLDivElement>(null);
-
     useEffect(() => { setIsClient(true); }, []);
     
-    useEffect(() => {
-        const tableContainer = tableContainerRef.current;
-        const totalsContainer = totalsContainerRef.current;
-        if (tableContainer && totalsContainer) {
-            const handleScroll = () => {
-                totalsContainer.scrollLeft = tableContainer.scrollLeft;
-            };
-            tableContainer.addEventListener('scroll', handleScroll);
-            return () => tableContainer.removeEventListener('scroll', handleScroll);
-        }
-    }, []);
-
-
     const filteredOrders = useMemo(() => {
         return orders.filter(order => {
             const searchLower = searchQuery.toLowerCase();
@@ -289,7 +273,6 @@ function OrdersPageContent() {
                                         <DetailRow icon={User} label="المستلم" value={order.recipient} />
                                         <DetailRow icon={Phone} label="الهاتف" value={order.phone} />
                                         <DetailRow icon={MapPin} label="العنوان" value={`${order.address}, ${order.city}`} />
-                                        <DetailRow icon={Truck} label="السائق" value={order.driver} />
                                     </div>
                                     
                                     <Separator className='my-3' />
@@ -366,7 +349,7 @@ function OrdersPageContent() {
                         <Button variant="outline" size="sm"><RefreshCw /></Button>
                     </div>
                 </div>
-                 <div ref={tableContainerRef} className="flex-1 overflow-auto">
+                 <div className="flex-1 overflow-auto">
                     <Table className="min-w-full border-separate border-spacing-0">
                         <TableHeader className="sticky top-0 z-20 bg-background">
                             <TableRow>
@@ -481,24 +464,20 @@ function OrdersPageContent() {
                                 </TableRow>
                             )})}
                         </TableBody>
-                    </Table>
-                </div>
-                <div ref={totalsContainerRef} className="flex-none overflow-x-hidden bg-muted/80 backdrop-blur">
-                    <div className="w-fit min-w-full">
-                        <div className="table min-w-full border-separate border-spacing-0">
-                             <div className="table-row">
-                                <div className="table-cell p-2 border-l text-right font-semibold" style={{ width: 'calc(100% - 30rem - 2px)' }}>
+                        <TableFooter className="sticky bottom-0 bg-muted/80">
+                            <TableRow>
+                                <TableCell colSpan={11} className="text-right font-semibold">
                                     <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
                                         {displayLabel}
                                     </div>
-                                </div>
-                                <div className="table-cell p-2 border-l text-right font-bold w-40">{displayTotals.itemPrice.toFixed(2)}</div>
-                                <div className="table-cell p-2 border-l text-right font-bold w-40">{displayTotals.deliveryFee.toFixed(2)}</div>
-                                <div className="table-cell p-2 border-l text-right font-bold w-40">{displayTotals.cod.toFixed(2)}</div>
-                                <div className="table-cell p-2 border-l text-right w-40"></div>
-                            </div>
-                        </div>
-                    </div>
+                                </TableCell>
+                                <TableCell className="text-right font-bold">{displayTotals.itemPrice.toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-bold">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-bold">{displayTotals.cod.toFixed(2)}</TableCell>
+                                <TableCell></TableCell>
+                            </TableRow>
+                        </TableFooter>
+                    </Table>
                 </div>
                 <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
                     <span className="text-xs text-muted-foreground">
