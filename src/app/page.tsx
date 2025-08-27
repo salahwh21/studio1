@@ -119,7 +119,7 @@ export default function LoginPage() {
               <div className="flex justify-center gap-4">
                 {settings.socialLinks.whatsapp && (
                   <a href={`https://wa.me/${settings.socialLinks.whatsapp}`} target="_blank" rel="noopener noreferrer">
-                    <Button variant="ghost" size="icon" className="hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"><WhatsappIcon className="h-7 w-7"/></Button>
+                    <Button variant="ghost" size="icon" className="hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"><WhatsappIcon className="h-8 w-8"/></Button>
                   </a>
                 )}
                 {settings.socialLinks.instagram && (
