@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -61,7 +62,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
      <SidebarProvider>
       <div className="flex h-screen bg-background overflow-hidden">
-        <Sidebar side="left" collapsible="icon" className="z-40">
+        <Sidebar side="right" collapsible="icon" className="z-40">
           <SidebarHeader>
             <div className="flex h-16 items-center justify-center p-2 group-data-[collapsible=icon]:h-12">
               <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
@@ -94,7 +95,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
-        <div className="flex flex-1 flex-col h-screen overflow-y-auto">
+        <div className="flex-1 flex flex-col h-screen overflow-y-auto">
           <AppHeader />
           <main className="flex-1 p-4 sm:p-6 lg:p-8 bg-muted/40">
             {children}
