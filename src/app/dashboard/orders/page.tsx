@@ -51,7 +51,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Mock Data
 const initialOrders = Array.from({ length: 15 }, (_, i) => ({
@@ -75,6 +75,21 @@ const initialOrders = Array.from({ length: 15 }, (_, i) => ({
 
 type Order = typeof initialOrders[0];
 type OrderSource = Order['source'];
+
+function useMediaQuery(query: string) {
+    const [matches, setMatches] = useState(false);
+    useEffect(() => {
+        const media = window.matchMedia(query);
+        if (media.matches !== matches) {
+            setMatches(media.matches);
+        }
+        const listener = () => setMatches(media.matches);
+        window.addEventListener("resize", listener);
+        return () => window.removeEventListener("resize", listener);
+    }, [matches, query]);
+    return matches;
+}
+
 
 const sourceIcons: Record<OrderSource, React.ElementType> = {
     Shopify: Store,
@@ -103,21 +118,6 @@ type ModalState =
     | { type: 'barcode', order: Order }
     | { type: 'assignDriver' }
     | { type: 'changeStatus' };
-
-function useMediaQuery(query: string) {
-    const [matches, setMatches] = useState(false);
-    useEffect(() => {
-        const media = window.matchMedia(query);
-        if (media.matches !== matches) {
-            setMatches(media.matches);
-        }
-        const listener = () => setMatches(media.matches);
-        window.addEventListener("resize", listener);
-        return () => window.removeEventListener("resize", listener);
-    }, [matches, query]);
-    return matches;
-}
-
 
 // Mobile-specific card component
 const MobileOrderCard = ({ order, isSelected, onCheckboxClick, openModal }: { order: Order, isSelected: boolean, onCheckboxClick: (id: string) => void, openModal: (state: ModalState) => void }) => {
