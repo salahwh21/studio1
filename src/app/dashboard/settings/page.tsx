@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import type { LucideIcon } from "lucide-react";
-import { Settings, User, Users, MapPin, ListChecks, Bell, ArrowLeft, Store, DollarSign, Share2, MessageSquareQuestion } from "lucide-react";
+import { Settings, User, Users, MapPin, ListChecks, Bell, ArrowLeft, Store, DollarSign, Share2, MessageSquareQuote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -70,7 +70,7 @@ const settingsItems: {
   },
    {
       href: '#',
-      icon: MessageSquareQuestion,
+      icon: MessageSquareQuote,
       title: 'الدعم الفني',
       description: 'الحصول على مساعدة أو طلب ميزات جديدة.'
   },
