@@ -154,7 +154,7 @@ export default function FontsColorsPage() {
                   <SelectItem value="Cairo">Cairo</SelectItem>
                   <SelectItem value="Tajawal">Tajawal</SelectItem>
                   <SelectItem value="Roboto">Roboto</SelectItem>
-                  <SelectItem value="PT_Sans">PT Sans</SelectItem>
+                  <SelectItem value="PT Sans">PT Sans</SelectItem>
                 </SelectContent>
               </Select>
             </div>

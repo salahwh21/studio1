@@ -68,13 +68,13 @@ export async function updateThemeAction(formData: FormData) {
     const cssFilePath = path.join(process.cwd(), 'src', 'app', 'globals.css');
     let cssContent = await fs.readFile(cssFilePath, 'utf-8');
 
-    if (primary) {
+    if (primary && primary.trim() !== '') {
       cssContent = cssContent.replace(/--primary:\s*[\d\s%]+;/g, `--primary: ${primary};`);
     }
-    if (background) {
+    if (background && background.trim() !== '') {
       cssContent = cssContent.replace(/--background:\s*[\d\s%]+;/g, `--background: ${background};`);
     }
-    if (accent) {
+    if (accent && accent.trim() !== '') {
       cssContent = cssContent.replace(/--accent:\s*[\d\s%]+;/g, `--accent: ${accent};`);
     }
      if (fontSize) {
@@ -88,10 +88,12 @@ export async function updateThemeAction(formData: FormData) {
         const tailwindConfigPath = path.join(process.cwd(), 'tailwind.config.ts');
         let tailwindConfigContent = await fs.readFile(tailwindConfigPath, 'utf-8');
         
+        const fontVarName = `--font-${fontFamily.toLowerCase().replace(/[\s_]/g, '-')}`;
+
         // More robust regex to handle different spacings and single/double quotes
         tailwindConfigContent = tailwindConfigContent.replace(
             /fontFamily:\s*{[^}]*sans:\s*\[[^\]]+\]/s,
-            `fontFamily: {\n        sans: ["var(--font-${fontFamily.toLowerCase().replace(/[\s_]/g, '-')})", 'sans-serif']`
+            `fontFamily: {\n        sans: ["var(${fontVarName})", 'sans-serif']`
         );
 
         await fs.writeFile(tailwindConfigPath, tailwindConfigContent, 'utf-8');
@@ -100,40 +102,34 @@ export async function updateThemeAction(formData: FormData) {
         const layoutFilePath = path.join(process.cwd(), 'src', 'app', 'layout.tsx');
         let layoutContent = await fs.readFile(layoutFilePath, 'utf-8');
 
-        // Dynamically create font import and variable based on selection
         const fontName = fontFamily.replace(/ /g, '_');
-        const fontVarName = `font${fontName.replace(/_/g, '')}`;
-        const fontVarNameLower = fontVarName.toLowerCase();
-        
-        // Remove existing font imports from next/font/google
-        const fontImportRegex = /import\s*{[^}]+}\s*from 'next\/font\/google';/g;
-        layoutContent = layoutContent.replace(fontImportRegex, '');
-        
-        // Remove existing font const declarations
-        const fontConstRegex = /const\s+\w+\s*=\s*\w+\([^)]+\);/g;
-        layoutContent = layoutContent.replace(fontConstRegex, '');
+        const fontConstName = `${fontName.toLowerCase().replace(/_/g, '')}`;
 
-        // Add new font import and const
+        // Remove existing font imports from next/font/google
+        layoutContent = layoutContent.replace(/import\s*{[^}]+}\s*from 'next\/font\/google';/g, '');
+        // Remove existing font const declarations
+        layoutContent = layoutContent.replace(/const\s+\w+\s*=\s*\w+\([^)]+\);/g, '');
+
         const newImport = `import { ${fontName} } from 'next/font/google';`;
-        const newConst = `const ${fontVarNameLower} = ${fontName}({ 
+        const newConst = `const ${fontConstName} = ${fontName}({ 
   subsets: ['latin', 'arabic'], 
   weight: ['400', '700'],
-  variable: '--font-${fontFamily.toLowerCase().replace(/[\s_]/g, '-')}' 
+  variable: '${fontVarName}' 
 });`;
         
-        // Prepend new import and const after the first 'use client' or import statement
-        const firstImportIndex = layoutContent.indexOf('import');
-        layoutContent = 
-            layoutContent.slice(0, firstImportIndex) + 
-            `${newImport}\n${newConst}\n` +
-            layoutContent.slice(firstImportIndex);
+        // Find the last import statement to add our new import and const after it
+        const lastImportIndex = layoutContent.lastIndexOf('import ');
+        const endOfLastImportLine = layoutContent.indexOf('\n', lastImportIndex) + 1;
         
-        // Update className in body
-        const classNameRegex = /className=\{`([^`]+)`\}/;
-        layoutContent = layoutContent.replace(classNameRegex, `className={\`${fontVarNameLower}.variable font-sans antialiased\``);
+        layoutContent = 
+            layoutContent.slice(0, endOfLastImportLine) + 
+            `\n${newImport}\n${newConst}\n` +
+            layoutContent.slice(endOfLastImportLine);
+        
+        // Update className in body, making sure not to add duplicate variables
+        layoutContent = layoutContent.replace(/className=\{`[^`]+`\}/, `className={\`${fontConstName}.variable font-sans antialiased\``);
         
         await fs.writeFile(layoutFilePath, layoutContent, 'utf-8');
-
     }
     
     return { success: true };
