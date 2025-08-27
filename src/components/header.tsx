@@ -37,13 +37,15 @@ export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
+    // Exact match for the main dashboard page
     if (href === '/dashboard') {
       return pathname === href;
     }
-     if (href.startsWith('/dashboard/orders') && pathname.startsWith('/dashboard/orders')) {
+    // Match for parent routes like /settings or /orders
+     if (href.startsWith('/dashboard/settings') && pathname.startsWith('/dashboard/settings')) {
         return true;
     }
-    if (href.startsWith('/dashboard/settings') && pathname.startsWith('/dashboard/settings')) {
+    if (href.startsWith('/dashboard/orders') && pathname.startsWith('/dashboard/orders')) {
         return true;
     }
     return pathname.startsWith(href) && href !== '/dashboard';
@@ -52,7 +54,7 @@ export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
   const allNavItems = [...navItems, ...bottomNavItems];
 
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={0}>
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 sm:px-6">
         
         <div className="flex items-center gap-4">
@@ -95,6 +97,10 @@ export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
                         </Button>
                     </SheetTrigger>
                     <SheetContent side="right" className="flex flex-col p-2 w-72">
+                         <div className="p-4">
+                            <Logo />
+                        </div>
+                        <Separator />
                         <nav className="flex-1 flex flex-col gap-2 p-2 overflow-y-auto">
                             {allNavItems.map(item => (
                                 <Link 
@@ -102,7 +108,7 @@ export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
                                     href={item.href} 
                                     className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
                                         isActive(item.href)
-                                        ? 'bg-accent text-accent-foreground'
+                                        ? 'bg-primary text-primary-foreground'
                                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                                     }`}
                                 >

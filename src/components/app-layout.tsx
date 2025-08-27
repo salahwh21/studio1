@@ -13,6 +13,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 
 import { AppHeader } from '@/components/header';
+import { Separator } from './ui/separator';
 
 type NavItem = {
   href: string;
@@ -36,9 +37,9 @@ const bottomNavItems: NavItem[] = [
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen flex-col bg-muted/40">
+    <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <AppHeader navItems={navItems} bottomNavItems={bottomNavItems} />
-      <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+      <main className="flex flex-1 flex-col gap-4 bg-background sm:gap-8">
         {children}
       </main>
     </div>
