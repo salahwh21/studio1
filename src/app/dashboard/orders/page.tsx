@@ -51,7 +51,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 // Mock Data
 const initialOrders = Array.from({ length: 15 }, (_, i) => ({
@@ -79,13 +79,15 @@ type OrderSource = Order['source'];
 function useMediaQuery(query: string) {
     const [matches, setMatches] = useState(false);
     useEffect(() => {
-        const media = window.matchMedia(query);
-        if (media.matches !== matches) {
-            setMatches(media.matches);
+        if (typeof window !== 'undefined') {
+            const media = window.matchMedia(query);
+            if (media.matches !== matches) {
+                setMatches(media.matches);
+            }
+            const listener = () => setMatches(media.matches);
+            window.addEventListener("resize", listener);
+            return () => window.removeEventListener("resize", listener);
         }
-        const listener = () => setMatches(media.matches);
-        window.addEventListener("resize", listener);
-        return () => window.removeEventListener("resize", listener);
     }, [matches, query]);
     return matches;
 }
@@ -263,7 +265,7 @@ function OrdersPageContent() {
                             <Table className="min-w-max">
                                 <TableHeader className="sticky top-0 z-10">
                                     <TableRow className="bg-primary hover:bg-primary/90">
-                                        <TableHead className="w-10 p-1 bg-primary border-l border-primary-foreground/20"></TableHead>
+                                        <TableHead className="w-12 p-1 bg-primary border-l border-primary-foreground/20"></TableHead>
                                         {['رقم الطلب', 'المصدر', 'الرقم المرجعي', 'المستلم', 'الهاتف', 'المنطقة', 'المدينة', 'المتجر', 'الحالة', 'السائق', 'المستحق للتاجر', 'أجور التوصيل', 'قيمة التحصيل', 'التاريخ'].map(h => (
                                             <TableHead key={h} className="p-1 align-top bg-primary border-l border-primary-foreground/20">
                                                 <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
@@ -271,21 +273,21 @@ function OrdersPageContent() {
                                         ))}
                                     </TableRow>
                                     <TableRow className="bg-muted/50 hover:bg-muted/80">
-                                        <TableHead className="w-10 border-l bg-muted"><Checkbox onCheckedChange={handleSelectAll} checked={selectedRows.length === filteredOrders.length && filteredOrders.length > 0} /></TableHead>
-                                        <TableHead className="border-l bg-muted">رقم الطلب</TableHead>
-                                        <TableHead className="border-l bg-muted">المصدر</TableHead>
-                                        <TableHead className="border-l bg-muted">الرقم المرجعي</TableHead>
-                                        <TableHead className="border-l bg-muted">المستلم</TableHead>
-                                        <TableHead className="border-l bg-muted">الهاتف</TableHead>
-                                        <TableHead className="border-l bg-muted">المنطقة</TableHead>
-                                        <TableHead className="border-l bg-muted">المدينة</TableHead>
-                                        <TableHead className="border-l bg-muted">المتجر</TableHead>
-                                        <TableHead className="border-l bg-muted">الحالة</TableHead>
-                                        <TableHead className="border-l bg-muted">السائق</TableHead>
-                                        <TableHead className="border-l bg-muted">المستحق للتاجر</TableHead>
-                                        <TableHead className="border-l bg-muted">أجور التوصيل</TableHead>
-                                        <TableHead className="border-l bg-muted">قيمة التحصيل</TableHead>
-                                        <TableHead className="border-l bg-muted">التاريخ</TableHead>
+                                        <TableHead className="w-12 px-4 border-l bg-muted"><Checkbox onCheckedChange={handleSelectAll} checked={selectedRows.length === filteredOrders.length && filteredOrders.length > 0} /></TableHead>
+                                        <TableHead className="text-right border-l bg-muted">رقم الطلب</TableHead>
+                                        <TableHead className="text-right border-l bg-muted">المصدر</TableHead>
+                                        <TableHead className="text-right border-l bg-muted">الرقم المرجعي</TableHead>
+                                        <TableHead className="text-right border-l bg-muted">المستلم</TableHead>
+                                        <TableHead className="text-right border-l bg-muted">الهاتف</TableHead>
+                                        <TableHead className="text-right border-l bg-muted">المنطقة</TableHead>
+                                        <TableHead className="text-right border-l bg-muted">المدينة</TableHead>
+                                        <TableHead className="text-right border-l bg-muted">المتجر</TableHead>
+                                        <TableHead className="text-right border-l bg-muted">الحالة</TableHead>
+                                        <TableHead className="text-right border-l bg-muted">السائق</TableHead>
+                                        <TableHead className="text-right border-l bg-muted">المستحق للتاجر</TableHead>
+                                        <TableHead className="text-right border-l bg-muted">أجور التوصيل</TableHead>
+                                        <TableHead className="text-right border-l bg-muted">قيمة التحصيل</TableHead>
+                                        <TableHead className="text-right border-l bg-muted">التاريخ</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -294,21 +296,21 @@ function OrdersPageContent() {
                                         const SourceIcon = sourceIcons[order.source] || LinkIcon;
                                         return (
                                         <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''}>
-                                            <TableCell className="border-l"><Checkbox checked={selectedRows.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}/></TableCell>
-                                            <TableCell className="font-medium text-primary p-1 border-l"><Link href="#">{order.id}</Link></TableCell>
-                                            <TableCell className="p-1 border-l">
+                                            <TableCell className="px-4 border-l"><Checkbox checked={selectedRows.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}/></TableCell>
+                                            <TableCell className="font-medium text-primary p-1 border-l text-right"><Link href="#">{order.id}</Link></TableCell>
+                                            <TableCell className="p-1 border-l text-right">
                                                 <Badge variant="outline" className="gap-1.5 font-normal">
                                                     <SourceIcon className="h-3 w-3" />
                                                     {order.source}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="p-1 border-l">{order.referenceNumber}</TableCell>
-                                            <TableCell className="p-1 border-l">{order.recipient}</TableCell>
-                                            <TableCell className="p-1 border-l">{order.phone}</TableCell>
-                                            <TableCell className="p-1 border-l">{order.region}</TableCell>
-                                            <TableCell className="p-1 border-l">{order.city}</TableCell>
-                                            <TableCell className="p-1 border-l">{order.merchant}</TableCell>
-                                            <TableCell className="p-1 border-l">
+                                            <TableCell className="p-1 border-l text-right">{order.referenceNumber}</TableCell>
+                                            <TableCell className="p-1 border-l text-right">{order.recipient}</TableCell>
+                                            <TableCell className="p-1 border-l text-right">{order.phone}</TableCell>
+                                            <TableCell className="p-1 border-l text-right">{order.region}</TableCell>
+                                            <TableCell className="p-1 border-l text-right">{order.city}</TableCell>
+                                            <TableCell className="p-1 border-l text-right">{order.merchant}</TableCell>
+                                            <TableCell className="p-1 border-l text-right">
                                                  <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
                                                     <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
                                                         <SelectValue placeholder="الحالة" />
@@ -320,11 +322,11 @@ function OrdersPageContent() {
                                                     </SelectContent>
                                                 </Select>
                                             </TableCell>
-                                            <TableCell className="p-1 border-l">{order.driver}</TableCell>
-                                            <TableCell className="p-1 border-l">{order.itemPrice.toFixed(2)}</TableCell>
-                                            <TableCell className="p-1 border-l">{order.deliveryFee.toFixed(2)}</TableCell>
-                                            <TableCell className="p-1 border-l">{order.cod.toFixed(2)}</TableCell>
-                                            <TableCell className="p-1 border-l">{order.date}</TableCell>
+                                            <TableCell className="p-1 border-l text-right">{order.driver}</TableCell>
+                                            <TableCell className="p-1 border-l text-right">{order.itemPrice.toFixed(2)}</TableCell>
+                                            <TableCell className="p-1 border-l text-right">{order.deliveryFee.toFixed(2)}</TableCell>
+                                            <TableCell className="p-1 border-l text-right">{order.cod.toFixed(2)}</TableCell>
+                                            <TableCell className="p-1 border-l text-right">{order.date}</TableCell>
                                         </TableRow>
                                     )})}
                                 </TableBody>
