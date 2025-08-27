@@ -414,7 +414,8 @@ function OrdersPageContent() {
                             </TableBody>
                             <TableFooter className="sticky bottom-[56px] z-20 bg-muted/80 backdrop-blur">
                                 <TableRow>
-                                        <TableCell colSpan={11} className="p-1 border-l text-right font-semibold">
+                                        <TableCell className="sticky right-0 bg-muted z-10">&nbsp;</TableCell>
+                                        <TableCell colSpan={10} className="p-2 border-l text-right font-semibold">
                                             <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
                                                 {displayLabel}
                                             </div>
