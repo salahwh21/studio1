@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -262,7 +263,7 @@ function OrdersPageContent() {
                             <Table className="min-w-max">
                                 <TableHeader className="sticky top-0 z-10">
                                     <TableRow className="bg-primary hover:bg-primary/90">
-                                        <TableHead className="w-10 p-1 bg-primary"></TableHead>
+                                        <TableHead className="w-10 p-1 bg-primary border-l border-primary-foreground/20"></TableHead>
                                         {['رقم الطلب', 'المصدر', 'الرقم المرجعي', 'المستلم', 'الهاتف', 'المنطقة', 'المدينة', 'المتجر', 'الحالة', 'السائق', 'المستحق للتاجر', 'أجور التوصيل', 'قيمة التحصيل', 'التاريخ'].map(h => (
                                             <TableHead key={h} className="p-1 align-top bg-primary border-l border-primary-foreground/20">
                                                 <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
@@ -270,21 +271,21 @@ function OrdersPageContent() {
                                         ))}
                                     </TableRow>
                                     <TableRow className="bg-muted/50 hover:bg-muted/80">
-                                        <TableHead className="w-10 border-l"><Checkbox onCheckedChange={handleSelectAll} checked={selectedRows.length === filteredOrders.length && filteredOrders.length > 0} /></TableHead>
-                                        <TableHead className="border-l">رقم الطلب</TableHead>
-                                        <TableHead className="border-l">المصدر</TableHead>
-                                        <TableHead className="border-l">الرقم المرجعي</TableHead>
-                                        <TableHead className="border-l">المستلم</TableHead>
-                                        <TableHead className="border-l">الهاتف</TableHead>
-                                        <TableHead className="border-l">المنطقة</TableHead>
-                                        <TableHead className="border-l">المدينة</TableHead>
-                                        <TableHead className="border-l">المتجر</TableHead>
-                                        <TableHead className="border-l">الحالة</TableHead>
-                                        <TableHead className="border-l">السائق</TableHead>
-                                        <TableHead className="border-l">المستحق للتاجر</TableHead>
-                                        <TableHead className="border-l">أجور التوصيل</TableHead>
-                                        <TableHead className="border-l">قيمة التحصيل</TableHead>
-                                        <TableHead className="border-l">التاريخ</TableHead>
+                                        <TableHead className="w-10 border-l bg-muted"><Checkbox onCheckedChange={handleSelectAll} checked={selectedRows.length === filteredOrders.length && filteredOrders.length > 0} /></TableHead>
+                                        <TableHead className="border-l bg-muted">رقم الطلب</TableHead>
+                                        <TableHead className="border-l bg-muted">المصدر</TableHead>
+                                        <TableHead className="border-l bg-muted">الرقم المرجعي</TableHead>
+                                        <TableHead className="border-l bg-muted">المستلم</TableHead>
+                                        <TableHead className="border-l bg-muted">الهاتف</TableHead>
+                                        <TableHead className="border-l bg-muted">المنطقة</TableHead>
+                                        <TableHead className="border-l bg-muted">المدينة</TableHead>
+                                        <TableHead className="border-l bg-muted">المتجر</TableHead>
+                                        <TableHead className="border-l bg-muted">الحالة</TableHead>
+                                        <TableHead className="border-l bg-muted">السائق</TableHead>
+                                        <TableHead className="border-l bg-muted">المستحق للتاجر</TableHead>
+                                        <TableHead className="border-l bg-muted">أجور التوصيل</TableHead>
+                                        <TableHead className="border-l bg-muted">قيمة التحصيل</TableHead>
+                                        <TableHead className="border-l bg-muted">التاريخ</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
