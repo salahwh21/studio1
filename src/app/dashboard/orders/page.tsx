@@ -223,7 +223,7 @@ function OrdersPageContent() {
         <TooltipProvider>
             <div className="flex flex-col gap-4">
                 <Card>
-                    <CardHeader className="p-2 border-b flex-row items-center justify-between">
+                    <CardContent className="p-2 flex-row items-center justify-between flex flex-wrap gap-2">
                          <div className="relative w-full max-w-xs">
                             <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input placeholder="بحث شامل..." className="pr-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -245,7 +245,9 @@ function OrdersPageContent() {
                             <Button variant="outline" size="sm"><Printer /></Button>
                             <Button variant="outline" size="sm"><RefreshCw /></Button>
                         </div>
-                    </CardHeader>
+                    </CardContent>
+                </Card>
+                <Card>
                     <CardContent className="p-0">
                         {isMobile ? (
                             <div className="p-2 space-y-2">
@@ -264,56 +266,54 @@ function OrdersPageContent() {
                             <Table className="min-w-max">
                                 <TableHeader className="sticky top-0 z-10">
                                     <TableRow className="bg-primary hover:bg-primary/90">
-                                        <TableHead className="w-12 p-1 bg-primary border-l border-primary-foreground/20"></TableHead>
-                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                        <TableHead className="w-12 p-1 bg-primary border-l border-primary-foreground/20 text-right px-4"><Checkbox
+                                                onCheckedChange={handleSelectAll}
+                                                checked={selectedRows.length === filteredOrders.length && filteredOrders.length > 0}
+                                                className="border-white"
+                                            /></TableHead>
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                             <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
                                         </TableHead>
-                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                             <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
                                         </TableHead>
-                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                             <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
                                         </TableHead>
-                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                             <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
                                         </TableHead>
-                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                             <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
                                         </TableHead>
-                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                             <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
                                         </TableHead>
-                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                             <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
                                         </TableHead>
-                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                             <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
                                         </TableHead>
-                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                             <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
                                         </TableHead>
-                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                             <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
                                         </TableHead>
-                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                             <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
                                         </TableHead>
-                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                             <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
                                         </TableHead>
-                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
-                                            <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                        </TableHead>
-                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                             <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
                                         </TableHead>
                                     </TableRow>
                                     <TableRow className="bg-muted/50 hover:bg-muted/80">
-                                        <TableHead className="w-12 px-4 border-l bg-muted">
-                                            <Checkbox
-                                                onCheckedChange={handleSelectAll}
-                                                checked={selectedRows.length === filteredOrders.length && filteredOrders.length > 0}
-                                            />
+                                        <TableHead className="w-12 px-4 border-l bg-muted text-right">
+                                            
                                         </TableHead>
                                         <TableHead className="text-right border-l bg-muted">رقم الطلب</TableHead>
                                         <TableHead className="text-right border-l bg-muted">المصدر</TableHead>
