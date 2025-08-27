@@ -296,150 +296,146 @@ function OrdersPageContent() {
                         <Button variant="outline" size="sm"><RefreshCw /></Button>
                     </div>
                 </div>
-                <div className="flex-1 relative overflow-auto">
-                    <div className="h-full overflow-auto">
-                        <Table className="min-w-full border-separate" style={{borderSpacing: 0}}>
-                            <TableHeader className="sticky top-0 z-20 bg-background">
-                                <TableRow>
-                                    <TableHead className="sticky right-0 p-1 bg-primary border-l border-primary-foreground/20 text-right z-30 w-12">
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text_white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                </TableRow>
-                                <TableRow className="bg-muted/50 hover:bg-muted/80">
-                                    <TableHead className="sticky right-0 px-4 border-l bg-muted text-right flex items-center justify-center z-30 w-12">
+                <div className="flex-1 overflow-auto">
+                    <Table className="min-w-full border-separate border-spacing-0">
+                        <TableHeader className="sticky top-0 z-20 bg-background">
+                            <TableRow>
+                                <TableHead className="sticky right-0 p-1 bg-primary border-l border-primary-foreground/20 text-right z-30 w-12">
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                            </TableRow>
+                            <TableRow className="bg-muted/50 hover:bg-muted/80">
+                                <TableHead className="sticky right-0 px-4 border-l bg-muted text-right flex items-center justify-center z-30 w-12">
+                                    <Checkbox
+                                        onCheckedChange={handleSelectAll}
+                                        checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
+                                        className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                    />
+                                </TableHead>
+                                <TableHead className="text-right border-l bg-muted">رقم الطلب</TableHead>
+                                <TableHead className="text-right border-l bg-muted">المصدر</TableHead>
+                                <TableHead className="text-right border-l bg-muted">الرقم المرجعي</TableHead>
+                                <TableHead className="text-right border-l bg-muted">المستلم</TableHead>
+                                <TableHead className="text-right border-l bg-muted">الهاتف</TableHead>
+                                <TableHead className="text-right border-l bg-muted">المنطقة</TableHead>
+                                <TableHead className="text-right border-l bg-muted">المدينة</TableHead>
+                                <TableHead className="text-right border-l bg-muted">المتجر</TableHead>
+                                <TableHead className="text-right border-l bg-muted">الحالة</TableHead>
+                                <TableHead className="text-right border-l bg-muted">السائق</TableHead>
+                                <TableHead className="text-right border-l bg-muted">المستحق للتاجر</TableHead>
+                                <TableHead className="text-right border-l bg-muted">أجور التوصيل</TableHead>
+                                <TableHead className="text-right border-l bg-muted">قيمة التحصيل</TableHead>
+                                <TableHead className="text-right border-l bg-muted">التاريخ</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {paginatedOrders.map(order => {
+                                const statusInfo = getStatusInfo(order.status);
+                                const SourceIcon = sourceIcons[order.source] || LinkIcon;
+                                return (
+                                <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''}>
+                                    <TableCell className="sticky right-0 border-l bg-muted flex items-center justify-center z-10">
                                         <Checkbox
-                                            onCheckedChange={handleSelectAll}
-                                            checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
-                                            className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                            checked={selectedRows.includes(order.id)}
+                                            onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
                                         />
-                                    </TableHead>
-                                    <TableHead className="text-right border-l bg-muted">رقم الطلب</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">المصدر</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">الرقم المرجعي</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">المستلم</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">الهاتف</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">المنطقة</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">المدينة</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">المتجر</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">الحالة</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">السائق</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">المستحق للتاجر</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">أجور التوصيل</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">قيمة التحصيل</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">التاريخ</TableHead>
+                                    </TableCell>
+                                    <TableCell className="font-medium text-primary p-1 border-l text-right"><Link href="#">{order.id}</Link></TableCell>
+                                    <TableCell className="p-1 border-l text-right">
+                                        <Badge variant="outline" className="gap-1.5 font-normal">
+                                            <SourceIcon className="h-3 w-3" />
+                                            {order.source}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.referenceNumber}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.recipient}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.phone}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.region}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.city}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.merchant}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">
+                                            <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
+                                            <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
+                                                <SelectValue placeholder="الحالة" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                    <SelectGroup>
+                                                    {statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                                                    </SelectGroup>
+                                            </SelectContent>
+                                        </Select>
+                                    </TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.driver}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.itemPrice.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.deliveryFee.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.cod.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.date}</TableCell>
                                 </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {paginatedOrders.map(order => {
-                                    const statusInfo = getStatusInfo(order.status);
-                                    const SourceIcon = sourceIcons[order.source] || LinkIcon;
-                                    return (
-                                    <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''}>
-                                        <TableCell className="sticky right-0 border-l bg-muted flex items-center justify-center z-10">
-                                            <Checkbox
-                                                checked={selectedRows.includes(order.id)}
-                                                onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
-                                            />
-                                        </TableCell>
-                                        <TableCell className="font-medium text-primary p-1 border-l text-right"><Link href="#">{order.id}</Link></TableCell>
-                                        <TableCell className="p-1 border-l text-right">
-                                            <Badge variant="outline" className="gap-1.5 font-normal">
-                                                <SourceIcon className="h-3 w-3" />
-                                                {order.source}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.referenceNumber}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.recipient}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.phone}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.region}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.city}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.merchant}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">
-                                                <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
-                                                <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
-                                                    <SelectValue placeholder="الحالة" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                        <SelectGroup>
-                                                        {statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                                                        </SelectGroup>
-                                                </SelectContent>
-                                            </Select>
-                                        </TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.driver}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.itemPrice.toFixed(2)}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.deliveryFee.toFixed(2)}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.cod.toFixed(2)}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.date}</TableCell>
-                                    </TableRow>
-                                )})}
-                            </TableBody>
-                            <TableFooter className="sticky bottom-[56px] z-20 bg-muted/80 backdrop-blur">
-                                <TableRow>
-                                        <TableCell colSpan={11} className="p-2 border-l text-right font-semibold">
-                                            <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
-                                                {displayLabel}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="p-2 border-l text-right font-bold">{displayTotals.itemPrice.toFixed(2)}</TableCell>
-                                        <TableCell className="p-2 border-l text-right font-bold">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
-                                        <TableCell className="p-2 border-l text-right font-bold">{displayTotals.cod.toFixed(2)}</TableCell>
-                                        <TableCell className="p-2 border-l text-right"></TableCell>
-                                </TableRow>
-                            </TableFooter>
-                        </Table>
-                    </div>
+                            )})}
+                        </TableBody>
+                        <TableFooter className="sticky bottom-0 z-20 bg-muted/80 backdrop-blur">
+                            <TableRow>
+                                    <TableCell colSpan={11} className="p-2 border-l text-right font-semibold">
+                                        <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
+                                            {displayLabel}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="p-2 border-l text-right font-bold">{displayTotals.itemPrice.toFixed(2)}</TableCell>
+                                    <TableCell className="p-2 border-l text-right font-bold">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
+                                    <TableCell className="p-2 border-l text-right font-bold">{displayTotals.cod.toFixed(2)}</TableCell>
+                                    <TableCell className="p-2 border-l text-right"></TableCell>
+                            </TableRow>
+                        </TableFooter>
+                    </Table>
                 </div>
-                 <div className="flex-none sticky bottom-0 z-20">
-                    <CardFooter className="flex items-center justify-between p-2 border-t bg-background">
-                        <span className="text-xs text-muted-foreground">
-                            عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
-                        </span>
-                        <div className="flex items-center gap-1">
-                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
-                            <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
-                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>التالي</Button>
-                        </div>
-                    </CardFooter>
-                 </div>
+                <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
+                    <span className="text-xs text-muted-foreground">
+                        عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
+                    </span>
+                    <div className="flex items-center gap-1">
+                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
+                        <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
+                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>التالي</Button>
+                    </div>
+                </CardFooter>
             </div>
             
             {/* Modals */}
@@ -477,3 +473,5 @@ function OrdersPageContent() {
 export default function OrdersPage() {
     return <OrdersPageContent />
 }
+
+    
