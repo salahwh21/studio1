@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import type { LucideIcon } from "lucide-react";
-import { Settings, User, Users, MapPin, Palette, ListChecks, Bell, ArrowLeft } from "lucide-react";
+import { Settings, User, Users, MapPin, ListChecks, Bell, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -15,8 +15,8 @@ const settingsItems: {
   description: string;
 }[] = [
   {
-    href: '#',
-    icon: Palette,
+    href: '/dashboard/settings/general',
+    icon: Settings,
     title: 'الإعدادات العامة',
     description: 'التحكم في هوية الشركة، الألوان، والميزات الرئيسية.',
   },
@@ -33,7 +33,7 @@ const settingsItems: {
     description: 'إدارة صلاحيات وأدوار السائقين والمدراء.',
   },
   {
-    href: '/dashboard/settings/areas', // This will be the actual page later
+    href: '/dashboard/settings/areas', 
     icon: MapPin,
     title: 'المناطق والأسعار',
     description: 'إدارة مناطق التوصيل وأسعارها المختلفة.',
