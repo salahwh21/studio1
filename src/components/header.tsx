@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Bell, LogOut, Moon, Settings, Sun, User, Menu } from 'lucide-react';
+import { Bell, LogOut, Moon, Settings, Sun, User, Menu, Undo2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -55,9 +55,6 @@ export function AppHeader() {
                             <Logo />
                         </Link>
                       </SheetTitle>
-                      <SheetDescription>
-                        قائمة التنقل الرئيسية للتطبيق.
-                      </SheetDescription>
                     </SheetHeader>
                     <nav className="grid gap-6 text-lg font-medium mt-4">
                         {navItems.map(item => (

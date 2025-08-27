@@ -9,7 +9,7 @@ import {
   ShoppingCart,
   PackagePlus,
   Archive,
-  ArchiveRestore,
+  Undo2,
   Calculator,
   Settings,
 } from 'lucide-react';
@@ -36,7 +36,7 @@ const navItems: NavItem[] = [
     { href: '/dashboard/orders', icon: ShoppingCart, label: 'عرض الطلبات' },
     { href: '/dashboard/parse-order', icon: PackagePlus, label: 'إضافة طلبات' },
     { href: '/dashboard/orders/archive', icon: Archive, label: 'الطلبات المؤرشفة' },
-    { href: '/dashboard/returns', icon: ArchiveRestore, label: 'إدارة المرتجعات' },
+    { href: '/dashboard/returns', icon: Undo2, label: 'إدارة المرتجعات' },
     { href: '/dashboard/financials', icon: Calculator, label: 'المحاسبة' },
     { href: '/dashboard/settings', icon: Settings, label: 'الإعدادات' },
 ];
