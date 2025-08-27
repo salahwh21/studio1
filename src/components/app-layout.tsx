@@ -8,12 +8,10 @@ import {
   LayoutDashboard,
   ShoppingCart,
   PackagePlus,
-  Archive,
   Undo2,
   Calculator,
   Settings,
-  Home,
-  Package,
+  Wand2,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -35,6 +33,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'لوحة التحكم' },
   { href: '/dashboard/orders', icon: ShoppingCart, label: 'عرض الطلبات' },
   { href: '/dashboard/parse-order', icon: PackagePlus, label: 'إضافة طلبات' },
+  { href: '/dashboard/optimize', icon: Wand2, label: 'تحسين المسار' },
   { href: '/dashboard/returns', icon: Undo2, label: 'إدارة المرتجعات' },
   { href: '/dashboard/financials', icon: Calculator, label: 'المحاسبة' },
 ];
