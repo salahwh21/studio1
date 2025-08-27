@@ -370,7 +370,7 @@ function OrdersPageContent() {
                                     const statusInfo = getStatusInfo(order.status);
                                     const SourceIcon = sourceIcons[order.source] || LinkIcon;
                                     return (
-                                    <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50">
+                                    <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
                                         <TableCell className="sticky right-0 z-10 bg-background data-[state=selected]:bg-muted p-1 text-center border-b border-l">
                                             <Checkbox
                                                 checked={selectedRows.includes(order.id)}
