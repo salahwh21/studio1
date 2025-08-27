@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Bell, LogOut, Moon, Settings, Sun, User } from 'lucide-react';
+import { Bell, LogOut, Moon, Settings, Sun, User, Menu } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,13 +15,51 @@ import {
   DropdownMenuTrigger,
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
-import { SidebarTrigger } from './ui/sidebar';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { Logo } from './logo';
+
+const navItems = [
+    { href: '/dashboard', label: 'لوحة التحكم' },
+    { href: '/dashboard/orders', label: 'عرض الطلبات' },
+    { href: '/dashboard/parse-order', label: 'إضافة طلبات' },
+    { href: '/dashboard/orders/archive', label: 'الطلبات المؤرشفة' },
+    { href: '/dashboard/returns', label: 'إدارة المرتجعات' },
+    { href: '/dashboard/financials', label: 'المحاسبة' },
+    { href: '/dashboard/settings', label: 'الإعدادات' },
+];
 
 export function AppHeader() {
   const { setTheme, theme } = useTheme();
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6">
+        <div className="md:hidden">
+            <Sheet>
+                <SheetTrigger asChild>
+                    <Button variant="outline" size="icon">
+                        <Menu className="h-5 w-5" />
+                        <span className="sr-only">فتح القائمة</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent side="right">
+                    <nav className="grid gap-6 text-lg font-medium">
+                        <Link href="#" className="flex items-center gap-2 text-lg font-semibold mb-4">
+                            <Logo />
+                        </Link>
+                        {navItems.map(item => (
+                            <Link key={item.href} href={item.href} className="text-muted-foreground hover:text-foreground">
+                                {item.label}
+                            </Link>
+                        ))}
+                    </nav>
+                </SheetContent>
+            </Sheet>
+        </div>
+
         <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
             <div className="ml-auto flex-1 sm:flex-initial" />
             

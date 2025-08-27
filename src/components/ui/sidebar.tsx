@@ -160,55 +160,20 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
-    const { state } = useSidebar()
-
-    if (collapsible === "none") {
-      return (
-        <div
-          className={cn(
-            "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
-            className
-          )}
-          ref={ref}
-          {...props}
-        >
-          {children}
-        </div>
-      )
-    }
 
     return (
-       <div
+      <div
         ref={ref}
         className={cn(
-          "group peer text-sidebar-foreground",
-          "w-[--sidebar-width-icon]",
-          "data-[side=right]:order-last"
-        )}
-        data-state={state}
-        data-collapsible={collapsible}
-        data-variant={variant}
-        data-side={side}
-      >
-        {/* This is what handles the sidebar gap */}
-        <div
-          className={cn(
-            "fixed inset-y-0 z-40 flex h-svh flex-col bg-sidebar",
-            "w-[--sidebar-width-icon]",
-            side === "left"
-              ? "left-0 border-r"
-              : "right-0 border-l",
+            "h-full w-[var(--sidebar-width)] flex-shrink-0 flex-col border-l bg-card text-card-foreground shadow-sm",
+            side === "left" && "border-r",
+            side === "right" && "border-l order-last",
             className
-          )}
+        )}
+        {...props}
         >
-          <div
-            data-sidebar="sidebar"
-            className="flex h-full w-full flex-col"
-          >
-            {children}
-          </div>
-        </div>
-      </div>
+        {children}
+    </div>
     )
   }
 )
@@ -449,7 +414,7 @@ const SidebarMenu = React.forwardRef<
   <ul
     ref={ref}
     data-sidebar="menu"
-    className={cn("flex w-full min-w-0 flex-col gap-1", className)}
+    className={cn("flex w-full min-w-0 flex-col gap-1 p-2", className)}
     {...props}
   />
 ))
@@ -511,7 +476,6 @@ const SidebarMenuButton = React.forwardRef<
     ref
   ) => {
     const Comp = asChild ? Slot : "button"
-    const { state } = useSidebar()
 
     const button = (
       <Comp
