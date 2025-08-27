@@ -1,11 +1,10 @@
 
 'use client';
 
-import { useEffect, useState, useActionState } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import { useActionState } from 'react';
 import { z } from 'zod';
-import { Bot, Image as ImageIcon, Loader2, Clipboard, FileText, User, Home, ShoppingBasket, Hash, Trash2, Send, Wand2 } from 'lucide-react';
+import { Bot, Image as ImageIcon, Loader2, Clipboard, FileText, Trash2, Send, Wand2 } from 'lucide-react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,7 +15,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -30,7 +28,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
 
 const formSchema = z.object({
   request: z.string().min(1, {
@@ -49,19 +46,14 @@ const initialState = {
 export default function AIOrderParsingPage() {
   const { toast } = useToast();
   const [reviewList, setReviewList] = useState<OrderReviewItem[]>([]);
+  const [requestText, setRequestText] = useState('');
+  const [imageDataUri, setImageDataUri] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formState, formAction] = useActionState(parseOrderFromRequest, initialState);
-  
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      request: '',
-    },
-  });
-  
-  const { isSubmitting } = form.formState;
 
   useEffect(() => {
+    setIsSubmitting(false);
     if (formState.error) {
       toast({
         variant: 'destructive',
@@ -75,19 +67,42 @@ export default function AIOrderParsingPage() {
         ...formState.data,
       };
       setReviewList(prev => [newOrder, ...prev]);
-      form.reset();
-       toast({
+      setRequestText('');
+      setImageDataUri(null);
+      
+      const fileInput = document.getElementById('image-upload') as HTMLInputElement;
+      if(fileInput) fileInput.value = '';
+
+      toast({
         title: 'نجح التحليل!',
         description: 'تمت إضافة الطلب إلى جدول المراجعة.',
       });
     }
-  }, [formState, toast, form]);
+  }, [formState, toast]);
 
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const validation = formSchema.safeParse({ request: requestText || imageDataUri });
+    if (!validation.success) {
+        toast({
+            variant: 'destructive',
+            title: 'خطأ في الإدخال',
+            description: validation.error.flatten().fieldErrors.request?.join(', ') || 'الرجاء إدخال نص الطلب أو تحميل صورة.',
+        });
+        return;
+    }
+
+    setIsSubmitting(true);
+    const formData = new FormData();
+    formData.append('request', requestText || imageDataUri!);
+    formAction(formData);
+  };
 
   const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
-      form.setValue('request', text);
+      setRequestText(text);
+      setImageDataUri(null);
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -103,15 +118,18 @@ export default function AIOrderParsingPage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUri = reader.result as string;
-        form.setValue('request', dataUri);
+        setImageDataUri(dataUri);
+        setRequestText(''); // Clear text when image is selected
+        toast({
+          title: 'تم تحميل الصورة',
+          description: 'الصورة جاهزة للتحليل.',
+        })
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleConfirmOrders = () => {
-    // In a real application, this would send the orders to the backend.
-    // For this prototype, we'll just clear the list and show a confirmation.
     setReviewList([]);
     toast({
       title: 'تم تأكيد الطلبات بنجاح!',
@@ -119,14 +137,10 @@ export default function AIOrderParsingPage() {
     });
   };
 
-
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="flex flex-col gap-6">
-        <form
-            action={formAction}
-            onSubmit={form.handleSubmit(() => {})}
-        >
+        <form onSubmit={handleSubmit}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -138,14 +152,29 @@ export default function AIOrderParsingPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                  <div className="space-y-2">
-                    <Label htmlFor="request">نص الطلب</Label>
+                    <Label htmlFor="request">نص الطلب أو الصورة</Label>
                     <Textarea
                       id="request"
                       placeholder="مثال: إرسال ٢ بيتزا حجم كبير إلى علي في ١٢٣ شارع الملك، الرياض. واحدة بيبروني وواحدة خضار."
-                      className={`min-h-[150px] transition-colors ${formState.error ? 'border-red-500' : (formState.data && formState.data.customerName) ? 'border-green-500' : ''}`}
-                      {...form.register('request')}
+                      className={`min-h-[150px] transition-colors ${formState.error ? 'border-red-500' : ''}`}
+                      value={requestText}
+                      onChange={(e) => {
+                          setRequestText(e.target.value);
+                          if(e.target.value) setImageDataUri(null);
+                      }}
                     />
-                    {form.formState.errors.request && <p className="text-sm text-red-600">{form.formState.errors.request.message}</p>}
+                    {imageDataUri && (
+                        <div className="relative mt-2 w-40 h-40">
+                            <img src={imageDataUri} alt="Preview" className="rounded-md object-cover w-full h-full"/>
+                             <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={() => {
+                                setImageDataUri(null);
+                                const fileInput = document.getElementById('image-upload') as HTMLInputElement;
+                                if(fileInput) fileInput.value = '';
+                             }}>
+                                <Trash2 className="h-4 w-4"/>
+                             </Button>
+                        </div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button type="button" variant="outline" size="sm" onClick={handlePasteFromClipboard} className="gap-2">
