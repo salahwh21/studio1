@@ -83,54 +83,61 @@ export async function updateThemeAction(formData: FormData) {
       cssContent = cssContent.replace(/--accent:\s*[\d\s%]+;/g, `--accent: ${accentHsl};`);
     }
      if (fontSize) {
-      cssContent = cssContent.replace(/font-size:\s*[^;]+;/, `font-size: ${fontSize}px;`);
+      // Use a more robust regex to find the font-size in the body
+      cssContent = cssContent.replace(/(body\s*{[^}]*font-size:\s*)[^;]+(;[^}]*})/s, `$1${fontSize}px$2`);
     }
     
     await fs.writeFile(cssFilePath, cssContent, 'utf-8');
 
     // Update tailwind.config.ts and layout.tsx for font family
     if (fontFamily) {
-        const fontVarName = `--font-${fontFamily.toLowerCase().replace(/\s/g, '-')}`;
+        const fontVarName = `--font-${fontFamily.toLowerCase().replace(/ /g, '-')}`;
 
         // 1. Update tailwind.config.ts
         const tailwindConfigPath = path.join(process.cwd(), 'tailwind.config.ts');
         let tailwindConfigContent = await fs.readFile(tailwindConfigPath, 'utf-8');
+        
+        // This regex is more robust to handle different formatting
         tailwindConfigContent = tailwindConfigContent.replace(
-            /fontFamily:\s*{[^}]*sans:\s*\[[^\]]+\]/s,
-            `fontFamily: {\n        sans: ['var(${fontVarName})', 'sans-serif']`
+            /fontFamily:\s*{[^}]*sans:\s*\[([^\]]+)\]/s,
+            `fontFamily: {\n        sans: ["var(${fontVarName})", "sans-serif"]`
         );
         await fs.writeFile(tailwindConfigPath, tailwindConfigContent, 'utf-8');
+
 
         // 2. Update layout.tsx
         const layoutFilePath = path.join(process.cwd(), 'src', 'app', 'layout.tsx');
         let layoutContent = await fs.readFile(layoutFilePath, 'utf-8');
 
-        // Remove existing font imports from next/font/google and const declarations
+        // Remove existing Google Font imports and const declarations
         layoutContent = layoutContent.replace(/import\s*{[^}]+}\s*from 'next\/font\/google';/gs, '');
         layoutContent = layoutContent.replace(/const\s+\w+\s*=\s*\w+\({[^}]*}\);/gs, '');
         
-        const fontName = fontFamily.replace(/ /g, '_');
-        const fontConstName = `${fontName.toLowerCase()}`;
-
-        // Add new font import and const
-        const newImport = `import { ${fontName} } from 'next/font/google';`;
-        const newConst = `const ${fontConstName} = ${fontName}({ 
+        // Prepare new font details
+        const fontImportName = fontFamily.replace(/ /g, '_');
+        const fontConstName = `${fontImportName.toLowerCase()}`;
+        const newImport = `import { ${fontImportName} } from 'next/font/google';`;
+        const newConst = `const ${fontConstName} = ${fontImportName}({ 
   subsets: ['latin', 'arabic'], 
   weight: ['400', '700'],
   variable: '${fontVarName}' 
 });`;
         
-        // Find the last import statement to add our new import and const after it
-        const lastImportIndex = layoutContent.lastIndexOf('import ');
-        const endOfLastImportLine = layoutContent.indexOf('\n', lastImportIndex) + 1;
-        
-        let importsAndConsts = `\n${newImport}\n\n${newConst}\n`;
-        layoutContent = 
-            layoutContent.slice(0, endOfLastImportLine) +
-            importsAndConsts +
-            layoutContent.slice(endOfLastImportLine).trim();
-        
-        // Update className in body
+        // Add new import and const after other imports
+        const lastImportMatch = Array.from(layoutContent.matchAll(/import.*from\s*['"].*['"];/g)).pop();
+        if (lastImportMatch) {
+            const endOfLastImport = lastImportMatch.index! + lastImportMatch[0].length;
+            layoutContent = 
+                layoutContent.slice(0, endOfLastImport) +
+                `\n\n${newImport}\n${newConst}` +
+                layoutContent.slice(endOfLastImport);
+        } else {
+             // Fallback if no imports found (unlikely)
+             const headIndex = layoutContent.indexOf('<head>');
+             layoutContent = layoutContent.slice(0, headIndex) + `${newImport}\n${newConst}\n` + layoutContent.slice(headIndex);
+        }
+
+        // Update className in body tag to use the new font variable
         layoutContent = layoutContent.replace(
             /className=\{`[^`]+`\}/, 
             `className={\`\${${fontConstName}.variable} font-sans antialiased\``

@@ -2,9 +2,9 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { Tajawal } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 
+import { Tajawal } from 'next/font/google';
 const tajawal = Tajawal({ 
   subsets: ['latin', 'arabic'], 
   weight: ['400', '700'],

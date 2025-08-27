@@ -209,7 +209,7 @@ export default function FontsColorsPage() {
         </Card>
 
         <div className="flex justify-start">
-          <Button size="lg" onClick={handleSaveChanges} disabled={isSaving} style={{ backgroundColor: 'var(--preview-primary)', color: '#fff' }}>
+          <Button size="lg" onClick={handleSaveChanges} disabled={isSaving}>
              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSaving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
           </Button>
