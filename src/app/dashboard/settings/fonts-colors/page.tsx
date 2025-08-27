@@ -54,7 +54,7 @@ export default function FontsColorsPage() {
     '--preview-primary': primaryColor,
     '--preview-background': backgroundColor,
     '--preview-accent': accentColor,
-    '--preview-font-family': `${fontFamily}, sans-serif`,
+    '--preview-font-family': `${fontFamily.replace(/_/g, ' ')}, sans-serif`,
     '--preview-font-size': `${baseFontSize}px`,
   } as React.CSSProperties), [primaryColor, backgroundColor, accentColor, fontFamily, baseFontSize]);
 
@@ -151,9 +151,28 @@ export default function FontsColorsPage() {
                     <SelectValue placeholder="اختر خطًا" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Inter">Inter</SelectItem>
                     <SelectItem value="Cairo">Cairo</SelectItem>
                     <SelectItem value="Tajawal">Tajawal</SelectItem>
+                    <SelectItem value="Almarai">Almarai</SelectItem>
+                    <SelectItem value="Lalezar">Lalezar</SelectItem>
+                    <SelectItem value="Markazi_Text">Markazi Text</SelectItem>
+                    <SelectItem value="Changa">Changa</SelectItem>
+                    <SelectItem value="Lemonada">Lemonada</SelectItem>
+                    <SelectItem value="El_Messiri">El Messiri</SelectItem>
+                    <SelectItem value="Scheherazade_New">Scheherazade New</SelectItem>
+                    <SelectItem value="Mada">Mada</SelectItem>
+                    <SelectItem value="Reem_Kufi">Reem Kufi</SelectItem>
+                    <SelectItem value="IBM_Plex_Sans_Arabic">IBM Plex Sans Arabic</SelectItem>
+                    <SelectItem value="Noto_Sans_Arabic">Noto Sans Arabic</SelectItem>
+                    <SelectItem value="Noto_Kufi_Arabic">Noto Kufi Arabic</SelectItem>
+                    <SelectItem value="Amiri">Amiri</SelectItem>
+                    <SelectItem value="Lateef">Lateef</SelectItem>
+                    <SelectItem value="Kufam">Kufam</SelectItem>
+                    <SelectItem value="Harmattan">Harmattan</SelectItem>
+                    <SelectItem value="Aref_Ruqaa">Aref Ruqaa</SelectItem>
+                    <SelectItem value="Vazirmatn">Vazirmatn</SelectItem>
+                    {/* Non-arabic */}
+                    <SelectItem value="Inter">Inter</SelectItem>
                     <SelectItem value="Roboto">Roboto</SelectItem>
                     <SelectItem value="PT_Sans">PT Sans</SelectItem>
                   </SelectContent>

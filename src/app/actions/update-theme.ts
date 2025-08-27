@@ -115,7 +115,8 @@ export async function updateThemeAction(formData: FormData) {
         
         // Prepare new font details
         const fontImportName = fontFamily.replace(/ /g, '_');
-        const fontConstName = `${fontImportName.toLowerCase()}`;
+        const fontConstName = `${fontFamily.toLowerCase().replace(/ /g, '_')}`;
+
         const newImport = `import { ${fontImportName} } from 'next/font/google';`;
         const newConst = `const ${fontConstName} = ${fontImportName}({ 
   subsets: ['latin', 'arabic'], 
@@ -139,7 +140,7 @@ export async function updateThemeAction(formData: FormData) {
 
         // Update className in body tag to use the new font variable
         layoutContent = layoutContent.replace(
-            /className=\{`[^`]+`\}/, 
+            /className={`[^`]+`}/, 
             `className={\`\${${fontConstName}.variable} font-sans antialiased\``
         );
         
