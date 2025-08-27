@@ -15,13 +15,13 @@ const driver = {
   name: "علي الأحمد",
   avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
   assignedShipments: 25,
-  cashToCollect: 1250000,
+  cashToCollect: 1250,
   orders: [
-    { id: '#3210', customer: 'محمد جاسم', phone: '07701234567', address: 'المنصور، شارع الأميرات', status: 'delivered', amount: 50000, notes: 'اتصل قبل الوصول' },
-    { id: '#3211', customer: 'سارة كريم', phone: '07801234567', address: 'زيونة، شارع الربيعي', status: 'out_for_delivery', amount: 75000, notes: '' },
-    { id: '#3212', customer: 'أحمد خالد', phone: '07901234567', address: 'الكرادة، ساحة الحرية', status: 'postponed', amount: 30000, notes: '' },
-    { id: '#3213', customer: 'فاطمة علي', phone: '07711234567', address: 'الأعظمية، شارع عمر بن عبد العزيز', status: 'returned', amount: 15000, notes: 'العميل رفض الاستلام' },
-    { id: '#3214', customer: 'حسن محمود', phone: '07811234567', address: 'الغزالية، شارع البدالة', status: 'out_for_delivery', amount: 90000, notes: '' },
+    { id: '#3210', customer: 'محمد جاسم', phone: '07901234567', address: 'عمان، الصويفية', status: 'delivered', amount: 50, notes: 'اتصل قبل الوصول' },
+    { id: '#3211', customer: 'سارة كريم', phone: '07801234567', address: 'الزرقاء، حي معصوم', status: 'out_for_delivery', amount: 75, notes: '' },
+    { id: '#3212', customer: 'أحمد خالد', phone: '07701234567', address: 'عمان، الدوار السابع', status: 'postponed', amount: 30, notes: '' },
+    { id: '#3213', customer: 'فاطمة علي', phone: '07911234567', address: 'إربد، شارع الجامعة', status: 'returned', amount: 15, notes: 'العميل رفض الاستلام' },
+    { id: '#3214', customer: 'حسن محمود', phone: '07811234567', address: 'عمان، خلدا', status: 'out_for_delivery', amount: 90, notes: '' },
   ],
 };
 
@@ -87,7 +87,7 @@ export default function DriverWebAppPage() {
                         <Wallet className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{outForDeliveryAmount.toLocaleString('ar-IQ')} د.ع</div>
+                        <div className="text-2xl font-bold">{outForDeliveryAmount.toLocaleString('ar-JO')} د.أ</div>
                         <p className="text-xs text-muted-foreground">من الطلبات قيد التوصيل</p>
                     </CardContent>
                 </Card>
@@ -158,7 +158,7 @@ export default function DriverWebAppPage() {
                         </div>
                         <div className="flex flex-col items-end gap-2">
                             {getStatusBadge(order.status)}
-                            <span className="font-bold">{order.amount.toLocaleString('ar-IQ')} د.ع</span>
+                            <span className="font-bold">{order.amount.toLocaleString('ar-JO')} د.أ</span>
                         </div>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
@@ -196,7 +196,7 @@ export default function DriverWebAppPage() {
                       <TableCell>{order.customer}</TableCell>
                       <TableCell>{order.address}</TableCell>
                       <TableCell>{getStatusBadge(order.status)}</TableCell>
-                      <TableCell>{order.amount.toLocaleString('ar-IQ')} د.ع</TableCell>
+                      <TableCell>{order.amount.toLocaleString('ar-JO')} د.أ</TableCell>
                        <TableCell>{order.notes || '-'}</TableCell>
                       <TableCell className="flex items-center justify-center gap-2">
                         <Button variant="outline" size="icon" title="اتصال بالعميل">
@@ -244,11 +244,11 @@ export default function DriverWebAppPage() {
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="phone">رقم الهاتف</Label>
-                    <Input id="phone" defaultValue="07701234567" />
+                    <Input id="phone" defaultValue="07901234567" />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="vehicle">معلومات المركبة</Label>
-                    <Input id="vehicle" defaultValue="Toyota Corolla - 12345 Baghdad" />
+                    <Input id="vehicle" defaultValue="Toyota Corolla - 12345 Amman" />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="password">كلمة المرور الجديدة</Label>
@@ -262,5 +262,3 @@ export default function DriverWebAppPage() {
     </div>
   );
 }
-
-    

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -55,14 +56,14 @@ import {
 import { Separator } from '@/components/ui/separator';
 
 const ordersData = [
-  { id: '#3210', customer: 'محمد جاسم', phone: '07701112233', merchant: 'تاجر أ', driver: 'علي الأحمد', status: 'delivered', city: 'بغداد', area: 'المنصور', fee: 5000, date: '2023-08-15', notes: 'اتصل قبل الوصول', priority: false, delayed: false },
-  { id: '#3211', customer: 'سارة كريم', phone: '07802223344', merchant: 'تاجر ب', driver: 'فاطمة الزهراء', status: 'in_delivery', city: 'بغداد', area: 'زيونة', fee: 5000, date: '2023-08-15', notes: '', priority: true, delayed: false },
-  { id: '#3212', customer: 'أحمد خالد', phone: '07903334455', merchant: 'تاجر أ', driver: 'علي الأحمد', status: 'pending', city: 'بغداد', area: 'الكرادة', fee: 5000, date: '2023-08-14', notes: 'أولوية عالية', priority: true, delayed: false },
-  { id: '#3213', customer: 'فاطمة علي', phone: '07714445566', merchant: 'تاجر ج', driver: 'يوسف إبراهيم', status: 'returned', city: 'البصرة', area: 'الجنينة', fee: 8000, date: '2023-08-14', notes: 'العميل رفض الاستلام', priority: false, delayed: false },
-  { id: '#3214', customer: 'حسن محمود', phone: '07815556677', merchant: 'تاجر ب', driver: 'محمد الخالد', status: 'delayed', city: 'بغداد', area: 'الغزالية', fee: 6000, date: '2023-08-13', notes: 'تأخير بسبب الازدحام', priority: false, delayed: true },
-  { id: '#3215', customer: 'نور الهدى', phone: '07916667788', merchant: 'تاجر أ', driver: 'علي الأحمد', status: 'delivered', city: 'أربيل', area: 'عينكاوة', fee: 10000, date: '2023-08-12', notes: '', priority: false, delayed: false },
-  { id: '#3216', customer: 'خالد وليد', phone: '07727778899', merchant: 'تاجر د', driver: 'عائشة بكر', status: 'in_delivery', city: 'بغداد', area: 'الأعظمية', fee: 5000, date: '2023-08-15', notes: '', priority: false, delayed: false },
-  { id: '#3217', customer: 'زينب عامر', phone: '07828889900', merchant: 'تاجر ج', driver: 'فاطمة الزهراء', status: 'pending', city: 'الموصل', area: 'الزهور', fee: 9000, date: '2023-08-14', notes: 'توصيل في المساء', priority: false, delayed: false },
+  { id: '#3210', customer: 'محمد جاسم', phone: '07701112233', merchant: 'تاجر أ', driver: 'علي الأحمد', status: 'delivered', city: 'عمان', area: 'الصويفية', fee: 5, date: '2023-08-15', notes: 'اتصل قبل الوصول', priority: false, delayed: false },
+  { id: '#3211', customer: 'سارة كريم', phone: '07802223344', merchant: 'تاجر ب', driver: 'فاطمة الزهراء', status: 'in_delivery', city: 'عمان', area: 'خلدا', fee: 5, date: '2023-08-15', notes: '', priority: true, delayed: false },
+  { id: '#3212', customer: 'أحمد خالد', phone: '07903334455', merchant: 'تاجر أ', driver: 'علي الأحمد', status: 'pending', city: 'عمان', area: 'تلاع العلي', fee: 5, date: '2023-08-14', notes: 'أولوية عالية', priority: true, delayed: false },
+  { id: '#3213', customer: 'فاطمة علي', phone: '07714445566', merchant: 'تاجر ج', driver: 'يوسف إبراهيم', status: 'returned', city: 'الزرقاء', area: 'حي معصوم', fee: 8, date: '2023-08-14', notes: 'العميل رفض الاستلام', priority: false, delayed: false },
+  { id: '#3214', customer: 'حسن محمود', phone: '07815556677', merchant: 'تاجر ب', driver: 'محمد الخالد', status: 'delayed', city: 'عمان', area: 'الجبيهة', fee: 6, date: '2023-08-13', notes: 'تأخير بسبب الازدحام', priority: false, delayed: true },
+  { id: '#3215', customer: 'نور الهدى', phone: '07916667788', merchant: 'تاجر أ', driver: 'علي الأحمد', status: 'delivered', city: 'إربد', area: 'الحي الشرقي', fee: 10, date: '2023-08-12', notes: '', priority: false, delayed: false },
+  { id: '#3216', customer: 'خالد وليد', phone: '07727778899', merchant: 'تاجر د', driver: 'عائشة بكر', status: 'in_delivery', city: 'عمان', area: 'العبدلي', fee: 5, date: '2023-08-15', notes: '', priority: false, delayed: false },
+  { id: '#3217', customer: 'زينب عامر', phone: '07828889900', merchant: 'تاجر ج', driver: 'فاطمة الزهراء', status: 'pending', city: 'العقبة', area: 'البلد القديمة', fee: 9, date: '2023-08-14', notes: 'توصيل في المساء', priority: false, delayed: false },
 ];
 
 const getStatusBadge = (status: string) => {
@@ -81,8 +82,8 @@ const FiltersPanel = () => {
         { name: "الحالة", options: ["الكل", "قيد الانتظار", "قيد التوصيل", "تم التوصيل", "مرتجع", "متأخر"] },
         { name: "التاجر", options: ["تاجر أ", "تاجر ب", "تاجر ج", "تاجر د"] },
         { name: "السائق", options: ["علي الأحمد", "فاطمة الزهراء", "محمد الخالد", "يوسف إبراهيم", "عائشة بكر"] },
-        { name: "المدينة", options: ["بغداد", "البصرة", "أربيل", "الموصل"] },
-        { name: "المنطقة", options: ["المنصور", "زيونة", "الكرادة", "الجنينة", "الغزالية", "عينكاوة", "الأعظمية", "الزهور"] }
+        { name: "المدينة", options: ["عمان", "الزرقاء", "إربد", "العقبة"] },
+        { name: "المنطقة", options: ["الصويفية", "خلدا", "تلاع العلي", "حي معصوم", "الجبيهة", "الحي الشرقي", "العبدلي", "البلد القديمة"] }
     ];
 
     return (
@@ -247,7 +248,7 @@ export default function OrdersPage() {
                         <TableCell>{getStatusBadge(order.status)}</TableCell>
                         <TableCell>{order.city}</TableCell>
                         <TableCell>{order.area}</TableCell>
-                        <TableCell>{order.fee.toLocaleString('ar-IQ')} د.ع</TableCell>
+                        <TableCell>{order.fee.toLocaleString('ar-JO')} د.أ</TableCell>
                         <TableCell>{order.date}</TableCell>
                         <TableCell>{order.notes}</TableCell>
                         <TableCell>
@@ -283,7 +284,7 @@ export default function OrdersPage() {
                               </div>
                               <div className="text-left">
                                   {getStatusBadge(order.status)}
-                                  <p className="font-semibold text-sm mt-1">{order.fee.toLocaleString('ar-IQ')} د.ع</p>
+                                  <p className="font-semibold text-sm mt-1">{order.fee.toLocaleString('ar-JO')} د.أ</p>
                               </div>
                           </CardHeader>
                           <CardContent className="p-4 pt-0 text-sm text-muted-foreground">

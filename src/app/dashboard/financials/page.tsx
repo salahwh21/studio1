@@ -51,25 +51,25 @@ import {
 // --- Data ---
 
 const driverAccountingData = [
-    { id: 1, name: 'علي الأحمد', balance: 150000, status: 'due', lastPayout: '2023-08-10' },
-    { id: 2, name: 'محمد الخالد', balance: -25000, status: 'paid', lastPayout: '2023-08-15' },
-    { id: 3, name: 'فاطمة الزهراء', balance: 75000, status: 'due', lastPayout: '2023-08-09' },
+    { id: 1, name: 'علي الأحمد', balance: 150, status: 'due', lastPayout: '2023-08-10' },
+    { id: 2, name: 'محمد الخالد', balance: -25, status: 'paid', lastPayout: '2023-08-15' },
+    { id: 3, name: 'فاطمة الزهراء', balance: 75, status: 'due', lastPayout: '2023-08-09' },
 ];
 
 const merchantAccountingData = [
-    { id: 1, name: 'تاجر أ', amountDue: 550000, status: 'due', lastPayment: '2023-07-25' },
+    { id: 1, name: 'تاجر أ', amountDue: 5500, status: 'due', lastPayment: '2023-07-25' },
     { id: 2, name: 'تاجر ب', amountDue: 0, status: 'paid', lastPayment: '2023-08-14' },
-    { id: 3, name: 'تاجر ج', amountDue: 120000, status: 'overdue', lastPayment: '2023-07-10' },
+    { id: 3, name: 'تاجر ج', amountDue: 1200, status: 'overdue', lastPayment: '2023-07-10' },
 ];
 
 const profitChartData = [
-  { date: "2023-08-01", profit: 45000 },
-  { date: "2023-08-02", profit: 48000 },
-  { date: "2023-08-03", profit: 52000 },
-  { date: "2023-08-04", profit: 47000 },
-  { date: "2023-08-05", profit: 55000 },
-  { date: "2023-08-06", profit: 60000 },
-  { date: "2023-08-07", profit: 58000 },
+  { date: "2023-08-01", profit: 450 },
+  { date: "2023-08-02", profit: 480 },
+  { date: "2023-08-03", profit: 520 },
+  { date: "2023-08-04", profit: 470 },
+  { date: "2023-08-05", profit: 550 },
+  { date: "2023-08-06", profit: 600 },
+  { date: "2023-08-07", profit: 580 },
 ];
 
 const ordersStatusData = [
@@ -109,7 +109,7 @@ const DriverAccountingTab = () => (
                         <TableRow key={driver.id}>
                             <TableCell className="font-medium">{driver.name}</TableCell>
                             <TableCell className={driver.balance >= 0 ? 'text-green-600' : 'text-red-600'}>
-                                {driver.balance.toLocaleString('ar-IQ')} د.ع
+                                {driver.balance.toLocaleString('ar-JO')} د.أ
                             </TableCell>
                             <TableCell>
                                 <Badge variant={driver.status === 'due' ? 'secondary' : 'default'} className={driver.status === 'due' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}>
@@ -147,7 +147,7 @@ const MerchantAccountingTab = () => (
                     {merchantAccountingData.map(merchant => (
                         <TableRow key={merchant.id} className={merchant.status === 'overdue' ? 'bg-red-50 dark:bg-red-900/20' : ''}>
                             <TableCell className="font-medium">{merchant.name}</TableCell>
-                            <TableCell>{merchant.amountDue.toLocaleString('ar-IQ')} د.ع</TableCell>
+                            <TableCell>{merchant.amountDue.toLocaleString('ar-JO')} د.أ</TableCell>
                             <TableCell>
                                  <Badge variant={merchant.status === 'paid' ? 'default' : (merchant.status === 'due' ? 'secondary' : 'destructive')} className={merchant.status === 'paid' ? 'bg-green-100 text-green-800' : (merchant.status === 'due' ? 'bg-yellow-100 text-yellow-800' : '')}>
                                     {merchant.status === 'paid' ? 'مدفوع' : (merchant.status === 'due' ? 'مستحق' : 'متأخر')}
@@ -184,10 +184,10 @@ const ProfitReportsTab = () => (
                     <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
                         <LineChart data={profitChartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
                             <CartesianGrid vertical={false} />
-                             <XAxis dataKey="date" tickFormatter={(value) => new Date(value).toLocaleDateString('ar-IQ', {day: 'numeric', month: 'short'})} />
-                             <YAxis tickFormatter={(value) => `${(value / 1000)} ألف`} />
+                             <XAxis dataKey="date" tickFormatter={(value) => new Date(value).toLocaleDateString('ar-JO', {day: 'numeric', month: 'short'})} />
+                             <YAxis tickFormatter={(value) => `${(value)}`} />
                             <Tooltip
-                                content={<ChartTooltipContent formatter={(value) => (value as number).toLocaleString('ar-IQ', { style: 'currency', currency: 'IQD' })} />}
+                                content={<ChartTooltipContent formatter={(value) => (value as number).toLocaleString('ar-JO', { style: 'currency', currency: 'JOD' })} />}
                             />
                             <Legend />
                             <Line type="monotone" dataKey="profit" stroke="var(--color-profit)" strokeWidth={2} name="الربح" />
@@ -206,14 +206,14 @@ const ProfitReportsTab = () => (
                         <DollarSign className="h-6 w-6 text-muted-foreground mr-4" />
                         <div>
                             <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
-                            <p className="text-2xl font-bold">٤٥٢,٣١٨ د.ع</p>
+                            <p className="text-2xl font-bold">4,523 د.أ</p>
                         </div>
                     </div>
                      <div className="flex items-center">
                         <TrendingUp className="h-6 w-6 text-muted-foreground mr-4" />
                         <div>
                             <p className="text-sm text-muted-foreground">متوسط رسوم التوصيل</p>
-                            <p className="text-2xl font-bold">٦,٢٥٠ د.ع</p>
+                            <p className="text-2xl font-bold">6.25 د.أ</p>
                         </div>
                     </div>
                 </CardContent>

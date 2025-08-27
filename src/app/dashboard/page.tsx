@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -40,10 +41,10 @@ import {
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
 const topDrivers = [
-    { id: 1, name: "علي الأحمد", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d", phone: '07712345678', status: 'نشط', completed: 125, postponed: 5, returned: 2, total: 132 },
+    { id: 1, name: "علي الأحمد", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d", phone: '07912345678', status: 'نشط', completed: 125, postponed: 5, returned: 2, total: 132 },
     { id: 2, name: "محمد الخالد", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026705d", phone: '07812345678', status: 'نشط', completed: 110, postponed: 8, returned: 3, total: 121 },
-    { id: 3, name: "فاطمة الزهراء", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026706d", phone: '07912345678', status: 'نشط', completed: 98, postponed: 2, returned: 1, total: 101 },
-    { id: 4, name: "يوسف إبراهيم", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026707d", phone: '07723456789', status: 'إجازة', completed: 95, postponed: 10, returned: 5, total: 110 },
+    { id: 3, name: "فاطمة الزهراء", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026706d", phone: '07712345678', status: 'نشط', completed: 98, postponed: 2, returned: 1, total: 101 },
+    { id: 4, name: "يوسف إبراهيم", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026707d", phone: '07923456789', status: 'إجازة', completed: 95, postponed: 10, returned: 5, total: 110 },
     { id: 5, name: "عائشة بكر", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026708d", phone: '07823456789', status: 'نشط', completed: 90, postponed: 4, returned: 6, total: 100 },
 ];
 
@@ -108,8 +109,8 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        <RevenueCard title="إجمالي الإيرادات" value={`٤٥٢,٣١٨ د.ع`} icon={TrendingUp} />
-                         <RevenueCard title="إجمالي الطلبات" value="٢,٣٥٠" icon={ShoppingCart} color="text-blue-500" />
+                        <RevenueCard title="إجمالي الإيرادات" value={`4,523 د.أ`} icon={TrendingUp} />
+                         <RevenueCard title="إجمالي الطلبات" value="2,350" icon={ShoppingCart} color="text-blue-500" />
                         {orderStatusData.map((stat) => (
                              <Button
                                 key={stat.name}

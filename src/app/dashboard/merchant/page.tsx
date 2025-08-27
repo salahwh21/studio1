@@ -66,7 +66,7 @@ import Link from 'next/link';
 
 const summaryData = {
     totalParcels: 125,
-    amountReadyForCollection: 3500000,
+    amountReadyForCollection: 3500,
     ordersByStatus: [
         { name: 'قيد التوصيل', value: 40, fill: 'hsl(var(--chart-1))' },
         { name: 'مكتملة', value: 75, fill: 'hsl(var(--chart-2))' },
@@ -75,10 +75,10 @@ const summaryData = {
 };
 
 const ordersData = [
-  { id: '#M3210', customer: 'محمد جاسم', phone: '07701112233', status: 'delivered', fee: 5000, date: '2023-08-15', notes: 'اتصل قبل الوصول' },
-  { id: '#M3211', customer: 'سارة كريم', phone: '07802223344', status: 'in_delivery', fee: 5000, date: '2023-08-15', notes: '' },
-  { id: '#M3213', customer: 'فاطمة علي', phone: '07714445566', status: 'returned', fee: 8000, date: '2023-08-14', notes: 'العميل رفض الاستلام'},
-  { id: '#M3214', customer: 'حسن محمود', phone: '07815556677', status: 'delayed', fee: 6000, date: '2023-08-13', notes: 'تأخير بسبب الازدحام' },
+  { id: '#M3210', customer: 'محمد جاسم', phone: '07701112233', status: 'delivered', fee: 5, date: '2023-08-15', notes: 'اتصل قبل الوصول' },
+  { id: '#M3211', customer: 'سارة كريم', phone: '07802223344', status: 'in_delivery', fee: 5, date: '2023-08-15', notes: '' },
+  { id: '#M3213', customer: 'فاطمة علي', phone: '07714445566', status: 'returned', fee: 8, date: '2023-08-14', notes: 'العميل رفض الاستلام'},
+  { id: '#M3214', customer: 'حسن محمود', phone: '07815556677', status: 'delayed', fee: 6, date: '2023-08-13', notes: 'تأخير بسبب الازدحام' },
 ];
 
 const getStatusBadge = (status: string) => {
@@ -116,7 +116,7 @@ const SummaryDashboard = () => (
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summaryData.amountReadyForCollection.toLocaleString('ar-IQ')} د.ع</div>
+            <div className="text-2xl font-bold">{summaryData.amountReadyForCollection.toLocaleString('ar-JO')} د.أ</div>
             <p className="text-xs text-muted-foreground">من الطلبات المكتملة</p>
           </CardContent>
         </Card>
@@ -196,7 +196,7 @@ const OrdersManagement = () => (
                       <TableCell>{order.customer}</TableCell>
                       <TableCell>{order.phone}</TableCell>
                       <TableCell>{getStatusBadge(order.status)}</TableCell>
-                      <TableCell>{order.fee.toLocaleString('ar-IQ')} د.ع</TableCell>
+                      <TableCell>{order.fee.toLocaleString('ar-JO')} د.أ</TableCell>
                       <TableCell>{order.date}</TableCell>
                       <TableCell>{order.notes}</TableCell>
                       <TableCell>
@@ -245,11 +245,11 @@ const ProfilePanel = () => (
             </div>
              <div className="space-y-2">
                 <Label htmlFor="phone">رقم الهاتف</Label>
-                <Input id="phone" defaultValue="07709876543" />
+                <Input id="phone" defaultValue="07909876543" />
             </div>
              <div className="space-y-2">
                 <Label htmlFor="address">العنوان</Label>
-                <Input id="address" defaultValue="الشورجة، بغداد" />
+                <Input id="address" defaultValue="عمان، الأردن" />
             </div>
             <Button>حفظ التغييرات</Button>
         </CardContent>
@@ -301,7 +301,7 @@ export default function MerchantPage() {
                                         </div>
                                         <div className="text-left">
                                             {getStatusBadge(order.status)}
-                                            <p className="font-semibold text-sm mt-1">{order.fee.toLocaleString('ar-IQ')} د.ع</p>
+                                            <p className="font-semibold text-sm mt-1">{order.fee.toLocaleString('ar-JO')} د.أ</p>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="p-4 pt-0 text-sm text-muted-foreground">

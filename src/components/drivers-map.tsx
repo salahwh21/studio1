@@ -43,12 +43,12 @@ const MapContent = ({ drivers, selectedDriver, setMap }: { drivers: Driver[], se
     return (
          <MapContainer
             center={selectedDriver ? selectedDriver.position : defaultPosition}
-            zoom={13}
+            zoom={12}
             scrollWheelZoom={true}
             style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
             whenCreated={setMap}
         >
-            <ChangeView center={selectedDriver ? selectedDriver.position : defaultPosition} zoom={13} />
+            <ChangeView center={selectedDriver ? selectedDriver.position : defaultPosition} zoom={selectedDriver ? 14 : 12} />
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
