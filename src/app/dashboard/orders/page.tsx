@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ListFilter,
@@ -411,19 +411,19 @@ function OrdersPageContent() {
                                 )})}
                             </TableBody>
                             <TableFooter>
-                                <TableRow className="hover:bg-muted/50">
-                                    <TableCell className="sticky bottom-0 right-0 z-20 bg-muted/95 p-1 text-center border-l">
+                                <TableRow className="hover:bg-muted/50 sticky bottom-0 z-10 bg-muted/95">
+                                    <TableCell className="sticky right-0 z-20 bg-muted/95 p-1 text-center border-l">
                                         <div className={cn('p-2 rounded text-xs')}></div>
                                     </TableCell>
-                                    <TableCell colSpan={10} className="sticky bottom-0 bg-muted/95 p-1 text-center font-semibold border-b border-l">
+                                    <TableCell colSpan={10} className="p-1 text-center font-semibold border-b border-l">
                                          <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
                                             {displayLabel}
                                         </div>
                                     </TableCell>
-                                    <TableCell className="sticky bottom-0 bg-muted/95 p-1 text-center font-bold whitespace-nowrap border-b border-l">{displayTotals.itemPrice.toFixed(2)}</TableCell>
-                                    <TableCell className="sticky bottom-0 bg-muted/95 p-1 text-center font-bold whitespace-nowrap border-b border-l">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
-                                    <TableCell className="sticky bottom-0 bg-muted/95 p-1 text-center font-bold whitespace-nowrap border-b border-l">{displayTotals.cod.toFixed(2)}</TableCell>
-                                    <TableCell className="sticky bottom-0 bg-muted/95 p-1 text-center whitespace-nowrap border-b border-l"></TableCell>
+                                    <TableCell className="p-1 text-center font-bold whitespace-nowrap border-b border-l">{displayTotals.itemPrice.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 text-center font-bold whitespace-nowrap border-b border-l">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 text-center font-bold whitespace-nowrap border-b border-l">{displayTotals.cod.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-b border-l"></TableCell>
                                 </TableRow>
                             </TableFooter>
                         </Table>
@@ -476,3 +476,5 @@ function OrdersPageContent() {
 export default function OrdersPage() {
     return <OrdersPageContent />;
 }
+
+    
