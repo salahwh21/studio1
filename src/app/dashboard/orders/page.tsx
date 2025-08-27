@@ -272,8 +272,8 @@ function OrdersPageContent() {
 
     return (
         <TooltipProvider>
-            <div className="flex flex-col h-[calc(100vh-8rem)] p-4">
-                 <div className="flex-none p-2 flex-row items-center justify-between flex flex-wrap gap-2 border-b">
+            <div className="flex flex-col h-[calc(100vh-64px)] bg-background">
+                 <div className="flex-none p-4 flex-row items-center justify-between flex flex-wrap gap-2 border-b">
                      <div className="relative w-full max-w-xs">
                         <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="بحث شامل..." className="pr-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -297,11 +297,10 @@ function OrdersPageContent() {
                     </div>
                 </div>
                 <div className="flex-1 relative overflow-auto">
-                    <Table className="min-w-full border-separate border-spacing-0">
+                    <Table className="min-w-full border-separate" style={{borderSpacing: 0}}>
                         <TableHeader className="sticky top-0 z-20 bg-background">
                             <TableRow>
                                 <TableHead className="sticky right-0 p-1 bg-primary border-l border-primary-foreground/20 text-right z-30 w-12">
-                                    {/* empty for checkbox in next row */}
                                 </TableHead>
                                 <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                     <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
@@ -412,32 +411,33 @@ function OrdersPageContent() {
                                 </TableRow>
                             )})}
                         </TableBody>
-                        <TableFooter className="sticky bottom-[56px] z-20">
+                         <TableFooter className="sticky bottom-[56px] z-20 bg-muted/80 backdrop-blur">
                             <TableRow>
-                                <TableCell className="sticky right-0 bg-muted z-30"></TableCell>
-                                <TableCell colSpan={10} className="p-1 border-l text-right font-semibold">
-                                    <div className={`p-2 rounded text-xs ${selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800'}`}>
-                                        {displayLabel}
-                                    </div>
-                                </TableCell>
-                                <TableCell className="p-2 border-l text-right font-bold">{displayTotals.itemPrice.toFixed(2)}</TableCell>
-                                <TableCell className="p-2 border-l text-right font-bold">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
-                                <TableCell className="p-2 border-l text-right font-bold">{displayTotals.cod.toFixed(2)}</TableCell>
-                                <TableCell className="p-2 border-l text-right"></TableCell>
+                                    <TableCell colSpan={11} className="p-1 border-l text-right font-semibold">
+                                        <div className={`p-2 rounded text-xs ${selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800'}`}>
+                                            {displayLabel}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="p-2 border-l text-right font-bold">{displayTotals.itemPrice.toFixed(2)}</TableCell>
+                                    <TableCell className="p-2 border-l text-right font-bold">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
+                                    <TableCell className="p-2 border-l text-right font-bold">{displayTotals.cod.toFixed(2)}</TableCell>
+                                    <TableCell className="p-2 border-l text-right"></TableCell>
                             </TableRow>
                         </TableFooter>
                     </Table>
                 </div>
-                 <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
-                    <span className="text-xs text-muted-foreground">
-                        عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
-                    </span>
-                    <div className="flex items-center gap-1">
-                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
-                        <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
-                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>التالي</Button>
-                    </div>
-                </CardFooter>
+                 <div className="flex-none sticky bottom-0 z-20">
+                    <CardFooter className="flex items-center justify-between p-2 border-t bg-background">
+                        <span className="text-xs text-muted-foreground">
+                            عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
+                        </span>
+                        <div className="flex items-center gap-1">
+                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
+                            <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
+                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>التالي</Button>
+                        </div>
+                    </CardFooter>
+                 </div>
             </div>
             
             {/* Modals */}
@@ -475,5 +475,3 @@ function OrdersPageContent() {
 export default function OrdersPage() {
     return <OrdersPageContent />
 }
-
-    
