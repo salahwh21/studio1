@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, useFormState as useReactHookFormState } from 'react-hook-form';
+import { useFormState } from 'react-dom';
 import { z } from 'zod';
 import { Bot, Image as ImageIcon, Loader2, Clipboard, FileText, User, Home, ShoppingBasket, Hash, Trash2, Send, Wand2 } from 'lucide-react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
@@ -39,28 +40,26 @@ const formSchema = z.object({
 
 type OrderReviewItem = ParseOrderDetailsOutput & { id: number };
 
-type FormState = {
-  data: ParseOrderDetailsOutput | null;
-  error: string | null;
-  message: string;
+const initialState = {
+  data: null,
+  error: null,
+  message: '',
 };
 
 export default function AIOrderParsingPage() {
   const { toast } = useToast();
   const [reviewList, setReviewList] = useState<OrderReviewItem[]>([]);
-  const [isPending, setIsPending] = useState(false);
-  const [formState, setFormState] = useState<FormState>({
-    data: null,
-    error: null,
-    message: '',
-  });
-
+  
+  const [formState, formAction] = useFormState(parseOrderFromRequest, initialState);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       request: '',
     },
   });
+  
+  const { isPending } = useReactHookFormState({ control: form.control });
 
   useEffect(() => {
     if (formState.error) {
@@ -109,19 +108,12 @@ export default function AIOrderParsingPage() {
       reader.readAsDataURL(file);
     }
   };
-  
-  const handleSubmit = async (formData: FormData) => {
-    setIsPending(true);
-    const state = await parseOrderFromRequest(formState, formData);
-    setFormState(state);
-    setIsPending(false);
-  };
 
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="flex flex-col gap-6">
-        <form action={handleSubmit}>
+        <form action={formAction}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
