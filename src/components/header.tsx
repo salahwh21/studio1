@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -38,9 +37,10 @@ type NavItem = {
 
 interface AppHeaderProps {
     navItems: NavItem[];
+    bottomNavItems: NavItem[];
 }
 
-export function AppHeader({ navItems }: AppHeaderProps) {
+export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
   const { setTheme, theme } = useTheme();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const pathname = usePathname();
@@ -55,14 +55,9 @@ export function AppHeader({ navItems }: AppHeaderProps) {
     return pathname.startsWith(href);
   };
 
-
-  const bottomNavItems: NavItem[] = [
-    { href: '/dashboard/settings', icon: Settings, label: 'الإعدادات' },
-  ];
-
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6">
-        <div className="sm:hidden">
+        <div className="flex items-center gap-2">
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetTrigger asChild>
                     <Button variant="outline" size="icon">
@@ -70,57 +65,58 @@ export function AppHeader({ navItems }: AppHeaderProps) {
                         <span className="sr-only">فتح القائمة</span>
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="flex flex-col p-2 w-20">
-                    <SheetHeader className="p-0 border-none text-center mt-2 mb-2">
-                      <SheetTitle>
-                        <Link 
-                            href="/dashboard" 
-                            className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base mx-auto"
-                            onClick={() => setIsSheetOpen(false)}
-                        >
-                           <Logo className="h-5 w-5 transition-all group-hover:scale-110" />
-                           <span className="sr-only">الوميض</span>
-                        </Link>
-                      </SheetTitle>
+                <SheetContent side="right" className="flex flex-col p-2 w-72">
+                     <SheetHeader className="p-4 border-b text-right">
+                        <SheetTitle>
+                             <Link 
+                                href="/dashboard" 
+                                className="group flex items-center gap-2 text-lg font-semibold"
+                                onClick={() => setIsSheetOpen(false)}
+                            >
+                               <Logo className="h-6 w-6" />
+                               <span>لوحة تحكم الوميض</span>
+                            </Link>
+                        </SheetTitle>
                     </SheetHeader>
-                    <nav className="flex-1 flex flex-col items-center gap-4 px-2 sm:py-5">
+                    <nav className="flex-1 flex flex-col gap-2 p-2 overflow-y-auto">
                         {navItems.map(item => (
                             <Link 
                                 key={item.href} 
                                 href={item.href} 
-                                className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:h-8 md:w-8 ${
+                                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
                                     isActive(item.href)
                                     ? 'bg-accent text-accent-foreground'
-                                    : 'text-muted-foreground hover:text-foreground'
+                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                                 }`}
                                 onClick={() => setIsSheetOpen(false)}
-                                title={item.label}
                             >
-                                <item.icon className="h-5 w-5" />
-                                <span className="sr-only">{item.label}</span>
+                                <item.icon className="h-4 w-4" />
+                                {item.label}
                             </Link>
                         ))}
                     </nav>
-                     <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
+                     <nav className="mt-auto flex flex-col gap-2 p-2 border-t">
                         {bottomNavItems.map(item => (
                              <Link 
                                 key={item.href} 
                                 href={item.href} 
-                                className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:h-8 md:w-8 ${
+                                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
                                     isActive(item.href)
                                     ? 'bg-accent text-accent-foreground'
-                                    : 'text-muted-foreground hover:text-foreground'
+                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                                 }`}
                                 onClick={() => setIsSheetOpen(false)}
-                                title={item.label}
                             >
-                                <item.icon className="h-5 w-5" />
-                                <span className="sr-only">{item.label}</span>
+                                <item.icon className="h-4 w-4" />
+                                {item.label}
                             </Link>
                         ))}
                      </nav>
                 </SheetContent>
             </Sheet>
+            <div className="hidden md:block">
+                 <Logo />
+            </div>
         </div>
 
         <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
