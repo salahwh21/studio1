@@ -1,32 +1,22 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from 'next-themes';
-
 import { Tajawal } from 'next/font/google';
-const tajawal = Tajawal({ 
-  subsets: ['latin', 'arabic'], 
-  weight: ['400', '700'],
-  variable: '--font-tajawal' 
-});
-
-
-
-
-
-
-
-
-
-
+import { LoginExperienceProvider } from '@/context/LoginExperienceContext';
 
 // تهيئة خط Tajawal
-
+const tajawal = Tajawal({
+  subsets: ['latin', 'arabic'],
+  weight: ['400', '700'],
+  variable: '--font-tajawal',
+});
 
 export const metadata: Metadata = {
-  title: 'إدارة تسجيل الطلبات - الموقع',
+  title: 'إدارة تسجيل الطلبات - الوميض',
   description:
-    'حل شامل لإدارة تسجيل الطلبات والشؤون المالية والسائقين لشركة الموقع.',
+    'حل شامل لإدارة تسجيل الطلبات والشؤون المالية والسائقين لشركة الوميض.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -49,16 +39,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="font-sans antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster />
-        </ThemeProvider>
+        <LoginExperienceProvider>
+            <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+            >
+            {children}
+            <Toaster />
+            </ThemeProvider>
+        </LoginExperienceProvider>
       </body>
     </html>
   );
 }
+

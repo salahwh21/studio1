@@ -1,36 +1,57 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useContext } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Upload, Facebook, Instagram, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Upload, Facebook, Instagram, MessageSquare, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { LoginExperienceContext } from '@/context/LoginExperienceContext';
+import Image from 'next/image';
 
-const SocialInput = ({ id, label, icon: Icon, placeholder }: { id: string, label: string, icon: React.ElementType, placeholder: string }) => (
+const SocialInput = ({ id, label, icon: Icon, placeholder, value, onChange }: { id: string; label: string; icon: React.ElementType; placeholder: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
   <div className="space-y-2">
     <Label htmlFor={id}>{label}</Label>
     <div className="relative">
       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
         <Icon className="h-5 w-5 text-muted-foreground" />
       </div>
-      <Input id={id} placeholder={placeholder} className="pl-10" />
+      <Input id={id} name={id} placeholder={placeholder} className="pl-10" value={value} onChange={onChange} />
     </div>
   </div>
 );
 
-const FileUploadButton = ({ id, label }: { id: string, label: string }) => (
+const FileUploadButton = ({ id, label, fileSrc, onFileChange, onRemove }: { id: string, label: string, fileSrc: string | null, onFileChange: (id: string, file: File) => void, onRemove: (id: string) => void }) => (
     <div className="flex items-center justify-between rounded-lg border p-4">
-        <span className="text-sm font-medium">{label}</span>
+        <div className='flex items-center gap-4'>
+            {fileSrc ? (
+                <div className="relative h-10 w-10">
+                    <Image src={fileSrc} alt={`${label} preview`} layout="fill" objectFit="contain" className='rounded-md' />
+                     <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -right-3 -top-3 z-10 h-5 w-5 rounded-full"
+                        onClick={() => onRemove(id)}
+                    >
+                        <X className="h-3 w-3" />
+                    </Button>
+                </div>
+            ) : null}
+            <span className="text-sm font-medium">{label}</span>
+        </div>
         <Button variant="outline" size="sm" asChild>
             <Label htmlFor={id} className="cursor-pointer gap-2">
             <Upload className="h-4 w-4" />
-            <span>رفع</span>
-            <Input id={id} type="file" className="sr-only" />
+            <span>{fileSrc ? 'تغيير' : 'رفع'}</span>
+            <Input id={id} type="file" className="sr-only" onChange={(e) => {
+                if (e.target.files?.[0]) {
+                    onFileChange(id, e.target.files[0]);
+                }
+            }} />
             </Label>
         </Button>
     </div>
@@ -39,12 +60,35 @@ const FileUploadButton = ({ id, label }: { id: string, label: string }) => (
 
 export default function LoginExperiencePage() {
   const { toast } = useToast();
-  const [showForgotPassword, setShowForgotPassword] = useState(true);
+  const context = useContext(LoginExperienceContext);
+
+  if (!context) {
+    return <div>جاري تحميل إعدادات تجربة المستخدم...</div>;
+  }
+  
+  const { settings, setSetting, setSocialLink } = context;
+
+  const handleFileChange = (id: string, file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSetting(id, reader.result as string);
+       toast({
+        title: 'تم رفع الملف!',
+        description: `تم تحديث ${id === 'loginLogo' ? 'الشعار' : 'صورة الخلفية'}.`,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  const handleRemoveFile = (id: string) => {
+      setSetting(id, null);
+  }
 
   const handleSaveChanges = () => {
+    // Since settings are saved on change via context, this is for user feedback.
     toast({
       title: 'تم الحفظ بنجاح!',
-      description: 'تم تحديث إعدادات تجربة تسجيل الدخول.',
+      description: 'يتم حفظ تغييراتك تلقائيًا.',
     });
   };
 
@@ -68,17 +112,39 @@ export default function LoginExperiencePage() {
         <CardContent className="space-y-6 pt-6">
           <div className="space-y-2">
             <Label htmlFor="welcomeMessage">رسالة الترحيب</Label>
-            <Input id="welcomeMessage" defaultValue="أهلاً بعودتك!" />
+            <Input 
+              id="welcomeMessage" 
+              value={settings.welcomeMessage}
+              onChange={(e) => setSetting('welcomeMessage', e.target.value)}
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="cardColor">لون خلفية البطاقة</Label>
-            <Input id="cardColor" type="color" defaultValue="#ffffff" className="h-12 p-1" />
+            <Input 
+              id="cardColor" 
+              type="color" 
+              value={settings.cardColor} 
+              onChange={(e) => setSetting('cardColor', e.target.value)}
+              className="h-12 p-1" 
+             />
           </div>
 
           <div className="space-y-4 rounded-lg border p-4">
-            <FileUploadButton id="loginLogo" label="شعار مخصص لصفحة الدخول" />
-            <FileUploadButton id="loginBg" label="صورة خلفية لصفحة الدخول" />
+            <FileUploadButton 
+                id="loginLogo" 
+                label="شعار مخصص لصفحة الدخول" 
+                fileSrc={settings.loginLogo}
+                onFileChange={handleFileChange}
+                onRemove={handleRemoveFile}
+            />
+            <FileUploadButton 
+                id="loginBg" 
+                label="صورة خلفية لصفحة الدخول"
+                fileSrc={settings.loginBg}
+                onFileChange={handleFileChange}
+                onRemove={handleRemoveFile}
+            />
           </div>
 
           <div className="flex items-center justify-between rounded-lg border p-4">
@@ -87,17 +153,17 @@ export default function LoginExperiencePage() {
             </Label>
             <Switch
               id="showForgotPassword"
-              checked={showForgotPassword}
-              onCheckedChange={setShowForgotPassword}
+              checked={settings.showForgotPassword}
+              onCheckedChange={(checked) => setSetting('showForgotPassword', checked)}
             />
           </div>
 
           <div>
              <h3 className="mb-4 text-lg font-medium">روابط التواصل الاجتماعي</h3>
              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <SocialInput id="whatsapp" label="رقم واتساب" icon={MessageSquare} placeholder="9647..." />
-                <SocialInput id="instagram" label="رابط انستغرام" icon={Instagram} placeholder="https://instagram.com/..." />
-                <SocialInput id="facebook" label="رابط فيسبوك" icon={Facebook} placeholder="https://facebook.com/..." />
+                <SocialInput id="whatsapp" label="رقم واتساب" icon={MessageSquare} placeholder="9647..." value={settings.socialLinks.whatsapp} onChange={(e) => setSocialLink('whatsapp', e.target.value)} />
+                <SocialInput id="instagram" label="رابط انستغرام" icon={Instagram} placeholder="https://instagram.com/..." value={settings.socialLinks.instagram} onChange={(e) => setSocialLink('instagram', e.target.value)} />
+                <SocialInput id="facebook" label="رابط فيسبوك" icon={Facebook} placeholder="https://facebook.com/..." value={settings.socialLinks.facebook} onChange={(e) => setSocialLink('facebook', e.target.value)} />
              </div>
           </div>
         </CardContent>
@@ -109,3 +175,4 @@ export default function LoginExperiencePage() {
     </div>
   );
 }
+

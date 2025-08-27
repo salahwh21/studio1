@@ -1,5 +1,7 @@
+
 'use client';
 
+import { useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -8,27 +10,48 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Logo } from '@/components/logo';
+import { LoginExperienceContext } from '@/context/LoginExperienceContext';
+import { Facebook, Instagram, MessageSquare } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const context = useContext(LoginExperienceContext);
+
+  if (!context) {
+    // You can return a loader here if needed
+    return null;
+  }
+  
+  const { settings } = context;
+  const defaultBg = "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?q=80&w=2070&auto=format&fit=crop";
+
+  const socialLinksExist = settings.socialLinks.whatsapp || settings.socialLinks.instagram || settings.socialLinks.facebook;
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center p-4">
       <Image
-        src="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?q=80&w=2070&auto=format&fit=crop"
+        src={settings.loginBg || defaultBg}
         alt="Background"
         fill
         className="z-0 object-cover"
         data-ai-hint="hotel reception"
+        key={settings.loginBg} // Re-render image on change
       />
       <div className="absolute inset-0 z-10 bg-black/50 backdrop-blur-sm" />
       
-      <Card className="z-20 w-full max-w-md rounded-2xl border-0 bg-card/80 p-2 shadow-2xl backdrop-blur-lg">
+      <Card 
+        className="z-20 w-full max-w-md rounded-2xl border-0 p-2 shadow-2xl backdrop-blur-lg transition-colors"
+        style={{ backgroundColor: `${settings.cardColor}bf` }} // Add alpha for transparency
+      >
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">
-            <Logo />
+            {settings.loginLogo ? (
+                <Image src={settings.loginLogo} alt="Company Logo" width={150} height={50} style={{objectFit: 'contain'}} />
+            ) : (
+                <Logo />
+            )}
           </div>
-          <CardTitle className="text-2xl font-bold">مرحباً بك في الوميض</CardTitle>
+          <CardTitle className="text-2xl font-bold">{settings.welcomeMessage}</CardTitle>
           <CardDescription>نظام إدارة التوصيل</CardDescription>
         </CardHeader>
         <CardContent>
@@ -60,9 +83,35 @@ export default function LoginPage() {
               دخول كسائق
             </Button>
           </div>
-           <Button variant="link" size="sm" className="mx-auto mt-4 block">
-              هل نسيت كلمة المرور؟
-            </Button>
+           {settings.showForgotPassword && (
+              <Button variant="link" size="sm" className="mx-auto mt-4 block">
+                هل نسيت كلمة المرور؟
+              </Button>
+           )}
+          
+          {socialLinksExist && (
+            <>
+              <Separator className="my-4"/>
+              <div className="flex justify-center gap-4">
+                {settings.socialLinks.whatsapp && (
+                  <a href={`https://wa.me/${settings.socialLinks.whatsapp}`} target="_blank" rel="noopener noreferrer">
+                    <Button variant="ghost" size="icon"><MessageSquare className="h-5 w-5"/></Button>
+                  </a>
+                )}
+                {settings.socialLinks.instagram && (
+                  <a href={settings.socialLinks.instagram} target="_blank" rel="noopener noreferrer">
+                    <Button variant="ghost" size="icon"><Instagram className="h-5 w-5"/></Button>
+                  </a>
+                )}
+                 {settings.socialLinks.facebook && (
+                  <a href={settings.socialLinks.facebook} target="_blank" rel="noopener noreferrer">
+                    <Button variant="ghost" size="icon"><Facebook className="h-5 w-5"/></Button>
+                  </a>
+                )}
+              </div>
+            </>
+          )}
+
         </CardContent>
       </Card>
     </main>
