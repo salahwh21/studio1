@@ -26,7 +26,7 @@ const generalSettingsItems: {
     description: 'تخصيص صفحة تسجيل الدخول للمستخدمين.',
   },
   {
-    href: '#',
+    href: '/dashboard/settings/fonts-colors',
     icon: Palette,
     title: 'الألوان والخطوط',
     description: 'تغيير الألوان والخطوط لتناسب هويتك.',
