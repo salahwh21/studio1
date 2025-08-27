@@ -18,10 +18,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 
 const LoginPageSkeleton = () => (
-    <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
-         <Skeleton className="absolute inset-0 z-0" />
-         <div className="absolute inset-0 z-10 bg-black/50 backdrop-blur-sm" />
-         <Card className="z-20 w-full max-w-md rounded-2xl border-0 p-2 shadow-2xl backdrop-blur-lg">
+    <div className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-muted">
+         <Card className="z-20 w-full max-w-md rounded-2xl border-0 p-2 shadow-2xl bg-card">
              <CardHeader>
                 <Skeleton className="h-10 w-32 mx-auto mb-4" />
                 <Skeleton className="h-8 w-48 mx-auto" />
@@ -61,25 +59,13 @@ export default function LoginPage() {
   }
   
   const { settings } = context;
-  const defaultBg = "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?q=80&w=2070&auto=format&fit=crop";
-
+  
   const socialLinksExist = settings.socialLinks.whatsapp || settings.socialLinks.instagram || settings.socialLinks.facebook;
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center p-4">
-      <Image
-        src={settings.loginBg || defaultBg}
-        alt="Background"
-        fill
-        className="z-0 object-cover"
-        data-ai-hint="hotel reception"
-        key={settings.loginBg} // Re-render image on change
-      />
-      <div className="absolute inset-0 z-10 bg-black/50 backdrop-blur-sm" />
-      
+    <main className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-muted">
       <Card 
-        className="z-20 w-full max-w-md rounded-2xl border-0 p-2 shadow-2xl backdrop-blur-lg transition-colors"
-        style={{ backgroundColor: `${settings.cardColor}bf` }} // Add alpha for transparency
+        className="z-20 w-full max-w-md rounded-2xl border-0 p-2 shadow-2xl bg-card"
       >
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">
