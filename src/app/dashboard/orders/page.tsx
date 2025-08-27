@@ -214,7 +214,7 @@ function OrdersPageContent() {
     if (isMobile) {
         return (
             <div className="flex flex-col h-full">
-                <div className="p-2 flex-row items-center justify-between flex flex-wrap gap-2 border-b">
+                 <div className="p-2 flex-row items-center justify-between flex flex-wrap gap-2 border-b">
                      <div className="relative w-full max-w-xs">
                         <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="بحث شامل..." className="pr-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -411,22 +411,22 @@ function OrdersPageContent() {
                                 </TableRow>
                             )})}
                         </TableBody>
-                        <TableFooter className="sticky bottom-0 z-20 bg-muted/80 backdrop-blur">
+                        <TableFooter className="sticky bottom-[56px] z-20 bg-muted/80 backdrop-blur">
                             <TableRow>
-                                    <TableCell colSpan={11} className="p-2 border-l text-right font-semibold">
-                                        <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
-                                            {displayLabel}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="p-2 border-l text-right font-bold">{displayTotals.itemPrice.toFixed(2)}</TableCell>
-                                    <TableCell className="p-2 border-l text-right font-bold">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
-                                    <TableCell className="p-2 border-l text-right font-bold">{displayTotals.cod.toFixed(2)}</TableCell>
-                                    <TableCell className="p-2 border-l text-right"></TableCell>
+                                <TableCell colSpan={11} className="p-2 border-l text-right font-semibold">
+                                    <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
+                                        {displayLabel}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="p-2 border-l text-right font-bold">{displayTotals.itemPrice.toFixed(2)}</TableCell>
+                                <TableCell className="p-2 border-l text-right font-bold">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
+                                <TableCell className="p-2 border-l text-right font-bold">{displayTotals.cod.toFixed(2)}</TableCell>
+                                <TableCell className="p-2 border-l text-right"></TableCell>
                             </TableRow>
                         </TableFooter>
                     </Table>
                 </div>
-                <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
+                <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background sticky bottom-0 z-20">
                     <span className="text-xs text-muted-foreground">
                         عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
                     </span>
@@ -473,5 +473,3 @@ function OrdersPageContent() {
 export default function OrdersPage() {
     return <OrdersPageContent />
 }
-
-    
