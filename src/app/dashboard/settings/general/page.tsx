@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import type { LucideIcon } from "lucide-react";
-import { ArrowLeft, Palette, Building, LogIn, LayoutGrid, Languages, List } from "lucide-react";
+import { ArrowLeft, Palette, Building, LogIn, LayoutGrid, Languages, List, ReceiptText, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -47,13 +47,25 @@ const generalSettingsItems: {
     href: '#',
     icon: List,
     title: 'إدارة القوائم',
-    description: 'التحكم في قوائم التنقل والأقسام الظاهرة.',
+    description: 'التحكم في القوائم المتاحة لكل دور وظيفي.',
+  },
+   {
+    href: '#',
+    icon: ReceiptText,
+    title: 'إعدادات البوليصة',
+    description: 'تخصيص محتوى وتصميم بوليصة الشحن.',
+  },
+  {
+    href: '#',
+    icon: Package,
+    title: 'إعدادات الطلبات',
+    description: 'التحكم في دورة حياة الطلبات والأرشفة.',
   },
 ];
 
 const SettingsItemCard = ({ href, icon: Icon, title, description }: (typeof generalSettingsItems)[0]) => (
     <Link href={href} className="block hover:bg-muted/50 rounded-lg transition-colors">
-        <Card>
+        <Card className="h-full">
             <CardHeader className="flex flex-row items-center gap-4">
                 <div className="bg-accent/10 p-3 rounded-full">
                     <Icon className="h-6 w-6 text-accent-foreground" />
