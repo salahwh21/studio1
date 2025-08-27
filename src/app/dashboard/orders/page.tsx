@@ -105,6 +105,24 @@ type ModalState =
     | { type: 'assignDriver' }
     | { type: 'changeStatus' };
 
+function useMediaQuery(query: string) {
+    const [matches, setMatches] = useState(false);
+
+    useEffect(() => {
+        const media = window.matchMedia(query);
+        if (media.matches !== matches) {
+            setMatches(media.matches);
+        }
+        const listener = () => {
+            setMatches(media.matches);
+        };
+        media.addEventListener('change', listener);
+        return () => media.removeEventListener('change', listener);
+    }, [matches, query]);
+
+    return matches;
+}
+
 
 function OrdersPageContent() {
     const { toast } = useToast();
@@ -112,7 +130,7 @@ function OrdersPageContent() {
     const [orders, setOrders] = useState<Order[]>(initialOrders);
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
     const [modalState, setModalState] = useState<ModalState>({ type: 'none' });
-    const isMobile = useMediaQuery({ query: '(max-width: 1024px)' });
+    const isMobile = useMediaQuery('(max-width: 1024px)');
     const [searchQuery, setSearchQuery] = useState('');
     const [columnConfig, setColumnConfig] = useState<any[]>([]); // Simplified for brevity
 
@@ -138,7 +156,6 @@ function OrdersPageContent() {
     };
 
     const handleFieldChange = (orderId: string, field: keyof Order, value: any) => {
-        // This is a placeholder for the full logic
         setOrders(prev => prev.map(order => 
             order.id === orderId ? { ...order, [field]: value } : order
         ));
