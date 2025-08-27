@@ -79,7 +79,7 @@ export default function DriversMap({ drivers, selectedDriver }: DriversMapProps)
 
   return (
     <>
-      {!map && <div id="map-placeholder" style={{ display: 'none' }} />}
+      <div id="map-placeholder" style={{ display: 'none' }} />
       <MapContent drivers={drivers} selectedDriver={selectedDriver} setMap={setMap} />
     </>
   );
