@@ -351,7 +351,7 @@ function OrdersPageContent() {
 
                 <div className="flex-1 flex flex-col overflow-auto">
                     <Table className="min-w-full border-separate border-spacing-0">
-                        <TableHeader className="sticky top-0 z-20 bg-muted">
+                        <TableHeader className="sticky top-0 z-20">
                             <TableRow>
                                 <TableHead className="sticky right-0 px-4 border-l bg-[#C0C0C0] flex items-center justify-center z-30 w-12">
                                     <Checkbox
@@ -360,20 +360,20 @@ function OrdersPageContent() {
                                         className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                                     />
                                 </TableHead>
-                                <TableHead className="text-center whitespace-nowrap border-l w-40">رقم الطلب</TableHead>
-                                <TableHead className="text-center whitespace-nowrap border-l w-32">المصدر</TableHead>
-                                <TableHead className="text-center whitespace-nowrap border-l w-40">الرقم المرجعي</TableHead>
-                                <TableHead className="text-center whitespace-nowrap border-l w-48">المستلم</TableHead>
-                                <TableHead className="text-center whitespace-nowrap border-l w-40">الهاتف</TableHead>
-                                <TableHead className="text-center whitespace-nowrap border-l w-40">المنطقة</TableHead>
-                                <TableHead className="text-center whitespace-nowrap border-l w-32">المدينة</TableHead>
-                                <TableHead className="text-center whitespace-nowrap border-l w-48">المتجر</TableHead>
-                                <TableHead className="text-center whitespace-nowrap border-l w-48">الحالة</TableHead>
-                                <TableHead className="text-center whitespace-nowrap border-l w-48">السائق</TableHead>
-                                <TableHead className="text-center whitespace-nowrap border-l w-32">المستحق للتاجر</TableHead>
-                                <TableHead className="text-center whitespace-nowrap border-l w-32">أجور التوصيل</TableHead>
-                                <TableHead className="text-center whitespace-nowrap border-l w-32">قيمة التحصيل</TableHead>
-                                <TableHead className="text-center whitespace-nowrap border-l w-32 flex-1">التاريخ</TableHead>
+                                <TableHead className="text-center whitespace-nowrap border-l w-40 bg-[#C0C0C0]">رقم الطلب</TableHead>
+                                <TableHead className="text-center whitespace-nowrap border-l w-32 bg-[#C0C0C0]">المصدر</TableHead>
+                                <TableHead className="text-center whitespace-nowrap border-l w-40 bg-[#C0C0C0]">الرقم المرجعي</TableHead>
+                                <TableHead className="text-center whitespace-nowrap border-l w-48 bg-[#C0C0C0]">المستلم</TableHead>
+                                <TableHead className="text-center whitespace-nowrap border-l w-40 bg-[#C0C0C0]">الهاتف</TableHead>
+                                <TableHead className="text-center whitespace-nowrap border-l w-40 bg-[#C0C0C0]">المنطقة</TableHead>
+                                <TableHead className="text-center whitespace-nowrap border-l w-32 bg-[#C0C0C0]">المدينة</TableHead>
+                                <TableHead className="text-center whitespace-nowrap border-l w-48 bg-[#C0C0C0]">المتجر</TableHead>
+                                <TableHead className="text-center whitespace-nowrap border-l w-48 bg-[#C0C0C0]">الحالة</TableHead>
+                                <TableHead className="text-center whitespace-nowrap border-l w-48 bg-[#C0C0C0]">السائق</TableHead>
+                                <TableHead className="text-center whitespace-nowrap border-l w-32 bg-[#C0C0C0]">المستحق للتاجر</TableHead>
+                                <TableHead className="text-center whitespace-nowrap border-l w-32 bg-[#C0C0C0]">أجور التوصيل</TableHead>
+                                <TableHead className="text-center whitespace-nowrap border-l w-32 bg-[#C0C0C0]">قيمة التحصيل</TableHead>
+                                <TableHead className="text-center whitespace-nowrap border-l w-32 flex-1 bg-[#C0C0C0]">التاريخ</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -382,7 +382,7 @@ function OrdersPageContent() {
                                 const SourceIcon = sourceIcons[order.source] || LinkIcon;
                                 return (
                                 <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''}>
-                                    <TableCell className="sticky right-0 border-l bg-muted flex items-center justify-center z-10">
+                                    <TableCell className="sticky right-0 border-l bg-background flex items-center justify-center z-10">
                                         <Checkbox
                                             checked={selectedRows.includes(order.id)}
                                             onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
