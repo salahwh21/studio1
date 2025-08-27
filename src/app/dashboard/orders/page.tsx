@@ -11,7 +11,7 @@ import {
   Search,
   Trash2,
   Printer,
-  UserPlus,
+  UserCheck,
   RefreshCw,
   FileDown,
   CheckCircle2,
@@ -106,21 +106,18 @@ type ModalState =
 
 function useMediaQuery(query: string) {
     const [matches, setMatches] = useState(false);
-
     useEffect(() => {
         const media = window.matchMedia(query);
         if (media.matches !== matches) {
             setMatches(media.matches);
         }
-        const listener = () => {
-            setMatches(media.matches);
-        };
-        window.addEventListener('resize', listener);
-        return () => window.removeEventListener('resize', listener);
+        const listener = () => setMatches(media.matches);
+        window.addEventListener("resize", listener);
+        return () => window.removeEventListener("resize", listener);
     }, [matches, query]);
-
     return matches;
 }
+
 
 // Mobile-specific card component
 const MobileOrderCard = ({ order, isSelected, onCheckboxClick, openModal }: { order: Order, isSelected: boolean, onCheckboxClick: (id: string) => void, openModal: (state: ModalState) => void }) => {
@@ -226,20 +223,26 @@ function OrdersPageContent() {
             <div className="flex flex-col gap-4">
                 <Card>
                     <CardHeader className="p-2 border-b flex-row items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="icon"><RefreshCw /></Button>
-                            <Button variant="outline" size="icon"><Printer /></Button>
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="gap-1"><FileDown /><span>تصدير</span></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="start"><DropdownMenuItem>تصدير كـ CSV</DropdownMenuItem><DropdownMenuItem>تصدير كـ PDF</DropdownMenuItem></DropdownMenuContent>
-                            </DropdownMenu>
-                             <Button variant="outline" className="bg-orange-400 text-white hover:bg-orange-500">مسح الفلتر</Button>
-                        </div>
                          <div className="relative w-full max-w-xs">
                             <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input placeholder="بحث شامل..." className="pr-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                             <Button variant="outline" size="sm" className="gap-1 bg-orange-100 text-orange-600 border-orange-200 hover:bg-orange-200">
+                                <X className="h-4 w-4"/>
+                                <span>مسح الفلتر</span>
+                             </Button>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="gap-1"><FileDown /><span>تصدير</span></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem>تصدير كـ CSV</DropdownMenuItem>
+                                    <DropdownMenuItem>تصدير كـ PDF</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <Button variant="outline" size="sm"><Printer /></Button>
+                            <Button variant="outline" size="sm"><RefreshCw /></Button>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
@@ -256,13 +259,13 @@ function OrdersPageContent() {
                                 ))}
                             </div>
                         ) : (
-                           <div className="overflow-x-auto">
+                           <div className="overflow-x-auto max-h-[calc(100vh-250px)]">
                             <Table className="min-w-max">
-                                <TableHeader>
+                                <TableHeader className="sticky top-0 z-10">
                                     <TableRow className="bg-primary hover:bg-primary/90">
-                                        <TableHead className="w-10 p-0"></TableHead>
-                                        {['رقم الطلب', 'الرقم المرجعي', 'المصدر', 'المستلم', 'الهاتف', 'العنوان', 'المنطقة', 'المدينة', 'السائق', 'الحالة', 'المتجر', 'قيمة التحصيل', 'اجور التوصيل', 'المبلغ الصافي', 'التاريخ'].map(h => (
-                                            <TableHead key={h} className="p-1 align-top">
+                                        <TableHead className="w-10 p-1 bg-primary"></TableHead>
+                                        {['رقم الطلب', 'المصدر', 'الرقم المرجعي', 'المستلم', 'الهاتف', 'المنطقة', 'المدينة', 'المتجر', 'الحالة', 'السائق', 'المستحق للتاجر', 'أجور التوصيل', 'قيمة التحصيل', 'التاريخ'].map(h => (
+                                            <TableHead key={h} className="p-1 align-top bg-primary">
                                                 <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
                                             </TableHead>
                                         ))}
@@ -270,19 +273,18 @@ function OrdersPageContent() {
                                     <TableRow className="bg-muted/50 hover:bg-muted/80">
                                         <TableHead className="w-10"><Checkbox onCheckedChange={handleSelectAll} checked={selectedRows.length === filteredOrders.length && filteredOrders.length > 0} /></TableHead>
                                         <TableHead>رقم الطلب</TableHead>
-                                        <TableHead>الرقم المرجعي</TableHead>
                                         <TableHead>المصدر</TableHead>
+                                        <TableHead>الرقم المرجعي</TableHead>
                                         <TableHead>المستلم</TableHead>
                                         <TableHead>الهاتف</TableHead>
-                                        <TableHead>العنوان</TableHead>
                                         <TableHead>المنطقة</TableHead>
                                         <TableHead>المدينة</TableHead>
-                                        <TableHead>السائق</TableHead>
-                                        <TableHead>الحالة</TableHead>
                                         <TableHead>المتجر</TableHead>
+                                        <TableHead>الحالة</TableHead>
+                                        <TableHead>السائق</TableHead>
+                                        <TableHead>المستحق للتاجر</TableHead>
+                                        <TableHead>أجور التوصيل</TableHead>
                                         <TableHead>قيمة التحصيل</TableHead>
-                                        <TableHead>اجور التوصيل</TableHead>
-                                        <TableHead>المبلغ الصافي</TableHead>
                                         <TableHead>التاريخ</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -294,19 +296,18 @@ function OrdersPageContent() {
                                         <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''}>
                                             <TableCell><Checkbox checked={selectedRows.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}/></TableCell>
                                             <TableCell className="font-medium text-primary p-1"><Link href="#">{order.id}</Link></TableCell>
-                                            <TableCell className="p-1">{order.referenceNumber}</TableCell>
                                             <TableCell className="p-1">
                                                 <Badge variant="outline" className="gap-1.5 font-normal">
                                                     <SourceIcon className="h-3 w-3" />
                                                     {order.source}
                                                 </Badge>
                                             </TableCell>
+                                            <TableCell className="p-1">{order.referenceNumber}</TableCell>
                                             <TableCell className="p-1">{order.recipient}</TableCell>
                                             <TableCell className="p-1">{order.phone}</TableCell>
-                                            <TableCell className="p-1">{order.address}</TableCell>
                                             <TableCell className="p-1">{order.region}</TableCell>
                                             <TableCell className="p-1">{order.city}</TableCell>
-                                            <TableCell className="p-1">{order.driver}</TableCell>
+                                            <TableCell className="p-1">{order.merchant}</TableCell>
                                             <TableCell className="p-1">
                                                  <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
                                                     <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
@@ -319,10 +320,10 @@ function OrdersPageContent() {
                                                     </SelectContent>
                                                 </Select>
                                             </TableCell>
-                                            <TableCell className="p-1">{order.merchant}</TableCell>
-                                            <TableCell className="p-1">{order.cod.toFixed(2)}</TableCell>
-                                            <TableCell className="p-1">{order.deliveryFee.toFixed(2)}</TableCell>
+                                            <TableCell className="p-1">{order.driver}</TableCell>
                                             <TableCell className="p-1">{order.itemPrice.toFixed(2)}</TableCell>
+                                            <TableCell className="p-1">{order.deliveryFee.toFixed(2)}</TableCell>
+                                            <TableCell className="p-1">{order.cod.toFixed(2)}</TableCell>
                                             <TableCell className="p-1">{order.date}</TableCell>
                                         </TableRow>
                                     )})}
@@ -374,5 +375,3 @@ function OrdersPageContent() {
 export default function OrdersPage() {
     return <OrdersPageContent />
 }
-
-    
