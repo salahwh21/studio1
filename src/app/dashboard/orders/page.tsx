@@ -32,6 +32,9 @@ import {
   History,
   ChevronLeft,
   ChevronRight,
+  User,
+  MapPin,
+  MessageCircle,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
@@ -54,23 +57,24 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 // Mock Data
 const initialOrders = Array.from({ length: 85 }, (_, i) => ({
-  id: `#32${10 + i}`,
+  id: `ORD-171981000${1+i}`,
   source: (['Shopify', 'Manual', 'API', 'WooCommerce'] as const)[i % 4],
   referenceNumber: `REF-00${100+i}`,
-  recipient: ['محمد جاسم', 'سارة كريم', 'أحمد خالد', 'فاطمة علي', 'حسن محمود', 'نور الهدى', 'خالد وليد'][i % 7],
-  phone: `07${(701112233 + i * 1111111).toString().slice(0,8)}`,
-  address: `${['الصويفية', 'خلدا', 'تلاع العلي', 'حي معصوم', 'الجبيهة', 'الحي الشرقي', 'العبدلي'][i % 7]}`,
+  recipient: ['محمد جاسم', 'أحمد محمود', 'أحمد خالد', 'فاطمة علي', 'حسن محمود', 'نور الهدى', 'خالد وليد'][i % 7],
+  phone: `07${(791234567 + i * 1111111).toString().slice(0,8)}`,
+  address: `${['الصويفية', 'تلاع العلي', 'تلاع العلي', 'حي معصوم', 'الجبيهة', 'الحي الشرقي', 'العبدلي'][i % 7]}`,
   city: ['عمان', 'الزرقاء', 'إربد'][i % 3],
   region: ['الصويفية', 'خلدا', 'تلاع العلي', 'حي معصوم', 'الجبيهة', 'الحي الشرقي', 'العبدلي'][i % 7],
-  status: (['تم التسليم', 'جاري التوصيل', 'بالانتظار', 'راجع', 'مؤجل'] as const)[i % 5],
-  driver: ['علي الأحمد', 'فاطمة الزهراء', 'محمد الخالد', 'يوسف إبراهيم', 'عائشة بكر', 'غير معين'][i % 6],
-  merchant: ['تاجر أ', 'تاجر ب', 'تاجر ج', 'تاجر د'][i % 4],
-  cod: 50.00 + i * 5,
-  itemPrice: 45.00 + i * 5,
-  deliveryFee: 5.00,
+  status: (['تم التسليم', 'جاري التوصيل', 'بالانتظار', 'راجع', 'مؤجل', 'تم استلام المال في الفرع'] as const)[i % 6],
+  driver: ['علي الأحمد', 'ابو العبد', 'محمد الخالد', 'يوسف إبراهيم', 'عائشة بكر', 'غير معين'][i % 6],
+  merchant: ['تاجر أ', 'متجر العامري', 'تاجر ج', 'تاجر د'][i % 4],
+  cod: 35.50 + i * 5,
+  itemPrice: 34.00 + i * 5,
+  deliveryFee: 1.50,
   date: `2024-07-${(1 + i % 5).toString().padStart(2,'0')}`,
   notes: i % 3 === 0 ? 'اتصل قبل الوصول' : '',
 }));
@@ -104,6 +108,7 @@ const sourceIcons: Record<OrderSource, React.ElementType> = {
 
 const statusOptions: {value: Order['status'], label: string, icon: React.ElementType, color: string, bgColor: string}[] = [
     { value: 'تم التسليم', label: 'تم التسليم', icon: CheckCircle2, color: 'text-green-800', bgColor: 'bg-green-100' },
+    { value: 'تم استلام المال في الفرع', label: 'تم استلام المال في الفرع', icon: CheckCircle2, color: 'text-green-800', bgColor: 'bg-green-100' },
     { value: 'جاري التوصيل', label: 'جاري التوصيل', icon: Truck, color: 'text-blue-800', bgColor: 'bg-blue-100' },
     { value: 'بالانتظار', label: 'بالانتظار', icon: Clock, color: 'text-yellow-800', bgColor: 'bg-yellow-100' },
     { value: 'راجع', label: 'راجع', icon: Undo2, color: 'text-red-800', bgColor: 'bg-red-100' },
@@ -213,50 +218,99 @@ function OrdersPageContent() {
 
     if (isMobile) {
         return (
-            <div className="flex flex-col h-full">
-                 <div className="p-2 flex-row items-center justify-between flex flex-wrap gap-2 border-b">
+            <div className="flex flex-col h-full bg-muted/30">
+                 <div className="flex-none p-2 flex-row items-center justify-between flex flex-wrap gap-2 border-b bg-background">
                      <div className="relative w-full max-w-xs">
                         <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="بحث شامل..." className="pr-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                     </div>
                     <div className="flex items-center gap-2">
-                         <Button variant="outline" size="sm" className="gap-1 bg-orange-100 text-orange-600 border-orange-200 hover:bg-orange-200">
+                         <Button variant="outline" size="icon" className="h-9 w-9 bg-orange-100 text-orange-600 border-orange-200 hover:bg-orange-200">
                             <X className="h-4 w-4"/>
-                            <span>مسح الفلتر</span>
                          </Button>
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                 <Button variant="outline" size="icon" className="h-9 w-9"><ListFilter className="h-4 w-4"/></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem><PlusCircle className="ml-2 h-4 w-4" /> إضافة طلب</DropdownMenuItem>
+                                <DropdownMenuItem><FileDown className="ml-2 h-4 w-4" /> تصدير</DropdownMenuItem>
+                                <DropdownMenuItem><Printer className="ml-2 h-4 w-4" /> طباعة</DropdownMenuItem>
+                                <DropdownMenuItem><Trash2 className="ml-2 h-4 w-4" /> حذف المحدد</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
                  <div className="flex-1 overflow-y-auto p-2 space-y-3">
                     {paginatedOrders.map(order => {
                          const statusInfo = getStatusInfo(order.status);
+                         const DetailRow = ({ icon: Icon, label, value }: {icon: React.ElementType, label: string, value: string | number}) => (
+                            <div className="flex items-center gap-3 text-sm">
+                                <Icon className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-muted-foreground">{label}:</span>
+                                <span className="font-medium text-foreground">{value}</span>
+                            </div>
+                         );
+                         const ActionButton = ({ icon: Icon, label }: {icon: React.ElementType, label: string}) => (
+                            <div className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
+                                <Icon className="h-5 w-5" />
+                                <span>{label}</span>
+                            </div>
+                         );
                          return (
-                            <Card key={order.id} className={cn('overflow-hidden border-r-4', statusInfo.bgColor.replace('bg-', 'border-'))}>
-                                <CardHeader className="flex flex-row items-start gap-4 p-3 bg-muted/50">
-                                    <div className="flex items-center gap-3 flex-1">
-                                        <Checkbox checked={selectedRows.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} />
-                                        <div className="grid gap-0.5">
-                                            <Link href="#"><span className="font-semibold text-primary">{order.id}</span></Link>
-                                            <span className="text-xs text-muted-foreground">{order.recipient}</span>
+                            <Card key={order.id} className={cn('overflow-hidden border-r-4 shadow-sm bg-card', statusInfo.color.replace('text-','border-').replace('-800','-500'))}>
+                                <div className='p-3 space-y-3'>
+                                    <div className="flex items-center justify-between">
+                                        <Badge className={cn("gap-1.5", statusInfo.bgColor, statusInfo.color)}>{statusInfo.label}</Badge>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-mono text-xs text-primary">{order.id}</span>
+                                            <Checkbox checked={selectedRows.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} />
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-end gap-1">
-                                        <Badge variant="outline" className={cn(statusInfo.bgColor, statusInfo.color, "gap-1.5")}>
-                                            {React.createElement(statusInfo.icon, { className: "h-3 w-3" })}
-                                            {statusInfo.label}
-                                        </Badge>
-                                        <span className="font-bold text-sm">{order.cod.toFixed(2)} د.أ</span>
+
+                                    <div className="space-y-2.5">
+                                        <DetailRow icon={Store} label="المتجر" value={order.merchant} />
+                                        <DetailRow icon={User} label="المستلم" value={order.recipient} />
+                                        <DetailRow icon={Phone} label="الهاتف" value={order.phone} />
+                                        <DetailRow icon={MapPin} label="العنوان" value={`${order.address}, ${order.city}`} />
+                                        <DetailRow icon={Truck} label="السائق" value={order.driver} />
                                     </div>
-                                </CardHeader>
-                                <CardContent className="p-3 text-sm space-y-2">
-                                    <p><strong>الهاتف:</strong> {order.phone}</p>
-                                    <p><strong>العنوان:</strong> {order.address}</p>
-                                    <p><strong>السائق:</strong> {order.driver}</p>
-                                </CardContent>
+                                    
+                                    <Separator className='my-3' />
+
+                                    <div className="space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">المستحق للتاجر</span>
+                                            <span className="font-medium">{order.itemPrice.toFixed(2)} د.أ</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">أجور التوصيل</span>
+                                            <span className="font-medium">{order.deliveryFee.toFixed(2)} د.أ</span>
+                                        </div>
+                                    </div>
+
+                                    <Separator className='my-3' />
+
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-base font-bold">قيمة التحصيل</span>
+                                        <span className="text-lg font-bold text-primary">{order.cod.toFixed(2)} د.أ</span>
+                                    </div>
+                                </div>
+                                <CardFooter className='p-2 bg-muted/50 grid grid-cols-4 items-center justify-items-center'>
+                                     <div className="flex flex-col items-center gap-1">
+                                        <Avatar className='h-7 w-7 text-xs'>
+                                            <AvatarFallback>{order.driver.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                     </div>
+                                     <ActionButton icon={MessageCircle} label="واتساب" />
+                                     <ActionButton icon={History} label="سجل" />
+                                     <ActionButton icon={Printer} label="طباعة" />
+                                </CardFooter>
                             </Card>
                          )
                     })}
                 </div>
-                 <CardFooter className="flex items-center justify-between p-2 border-t bg-background">
+                 <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
                     <span className="text-xs text-muted-foreground">
                         عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
                     </span>
@@ -273,7 +327,7 @@ function OrdersPageContent() {
     return (
         <TooltipProvider>
             <div className="flex flex-col h-[calc(100vh-64px)] bg-background">
-                 <div className="flex-none p-4 flex-row items-center justify-between flex flex-wrap gap-2 border-b">
+                <div className="flex-none p-4 flex-row items-center justify-between flex flex-wrap gap-2 border-b">
                      <div className="relative w-full max-w-xs">
                         <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="بحث شامل..." className="pr-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -296,7 +350,7 @@ function OrdersPageContent() {
                         <Button variant="outline" size="sm"><RefreshCw /></Button>
                     </div>
                 </div>
-                <div className="flex-1 overflow-auto">
+                 <div className="flex-1 overflow-auto">
                     <Table className="min-w-full border-separate border-spacing-0">
                         <TableHeader className="sticky top-0 z-20 bg-background">
                             <TableRow>
@@ -412,7 +466,7 @@ function OrdersPageContent() {
                             )})}
                         </TableBody>
                         <TableFooter className="sticky bottom-[56px] z-20 bg-muted/80 backdrop-blur">
-                            <TableRow>
+                             <TableRow>
                                 <TableCell colSpan={11} className="p-2 border-l text-right font-semibold">
                                     <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
                                         {displayLabel}
@@ -473,3 +527,5 @@ function OrdersPageContent() {
 export default function OrdersPage() {
     return <OrdersPageContent />
 }
+
+    
