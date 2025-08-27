@@ -279,13 +279,12 @@ function OrdersPageContent() {
                         </div>
                     </CardContent>
                 </Card>
-                <div className="flex-1 flex flex-col overflow-auto">
-                    <div className="flex-1 overflow-x-auto">
+                <div className="flex-1 overflow-auto">
                         <Table className="min-w-max border-b">
                             <TableHeader className="sticky top-0 z-10">
                                 <TableRow className="bg-primary hover:bg-primary/90">
-                                    <TableHead className="sticky right-0 bg-primary border-l border-primary-foreground/20 text-right bg-muted">
-                                        {/* This cell is now empty */}
+                                    <TableHead className="sticky right-0 p-1 bg-primary border-l border-primary-foreground/20 text-right">
+                                        {/* empty for checkbox in next row */}
                                     </TableHead>
                                     <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
                                         <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
@@ -330,10 +329,10 @@ function OrdersPageContent() {
                                 <TableRow className="bg-muted/50 hover:bg-muted/80">
                                     <TableHead className="sticky right-0 w-12 px-4 border-l bg-muted text-right flex items-center justify-center">
                                             <Checkbox
-                                            onCheckedChange={handleSelectAll}
-                                            checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
-                                            className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                                        />
+                                                onCheckedChange={handleSelectAll}
+                                                checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
+                                                className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                            />
                                     </TableHead>
                                     <TableHead className="text-right border-l bg-muted">رقم الطلب</TableHead>
                                     <TableHead className="text-right border-l bg-muted">المصدر</TableHead>
@@ -396,9 +395,14 @@ function OrdersPageContent() {
                                     </TableRow>
                                 )})}
                             </TableBody>
-                            <TableFooter className="sticky bottom-0 bg-muted/95">
+                        </Table>
+                </div>
+                <div className="sticky bottom-0 z-10 bg-background border-t">
+                    <Table>
+                        <TableFooter>
                                 <TableRow>
-                                        <TableCell colSpan={11} className="p-1 border-l text-right font-semibold">
+                                    <TableCell className="sticky right-0 bg-muted"></TableCell>
+                                    <TableCell colSpan={10} className="p-1 border-l text-right font-semibold">
                                         <div className={`p-1 rounded text-xs ${selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800'}`}>
                                             {displayLabel}
                                         </div>
@@ -408,11 +412,9 @@ function OrdersPageContent() {
                                     <TableCell className="p-1 border-l text-right font-bold">{displayTotals.cod.toFixed(2)}</TableCell>
                                     <TableCell className="p-1 border-l text-right"></TableCell>
                                 </TableRow>
-                            </TableFooter>
-                        </Table>
-                    </div>
-
-                    <CardFooter className="flex items-center justify-between p-2 border-t bg-background">
+                        </TableFooter>
+                    </Table>
+                     <CardFooter className="flex items-center justify-between p-2 border-t">
                          <div className="text-sm text-muted-foreground">
                              عرض <strong>{paginatedOrders.length}</strong> من <strong>{filteredOrders.length}</strong> طلبات
                          </div>
