@@ -70,50 +70,52 @@ export function AppHeader({ navItems }: AppHeaderProps) {
                         <span className="sr-only">فتح القائمة</span>
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="flex flex-col">
-                    <SheetHeader>
+                <SheetContent side="right" className="flex flex-col p-2 w-20">
+                    <SheetHeader className="p-0 border-none text-center mt-2 mb-2">
                       <SheetTitle>
                         <Link 
                             href="/dashboard" 
-                            className="flex items-center gap-2 text-lg font-semibold mb-4"
+                            className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base mx-auto"
                             onClick={() => setIsSheetOpen(false)}
                         >
-                            <Logo />
+                           <Logo className="h-5 w-5 transition-all group-hover:scale-110" />
+                           <span className="sr-only">الوميض</span>
                         </Link>
                       </SheetTitle>
                     </SheetHeader>
-                    <nav className="flex-1 grid gap-2 text-base font-medium mt-4">
+                    <nav className="flex-1 flex flex-col items-center gap-4 px-2 sm:py-5">
                         {navItems.map(item => (
                             <Link 
                                 key={item.href} 
                                 href={item.href} 
-                                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary ${
+                                className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:h-8 md:w-8 ${
                                     isActive(item.href)
                                     ? 'bg-accent text-accent-foreground'
-                                    : 'text-muted-foreground'
+                                    : 'text-muted-foreground hover:text-foreground'
                                 }`}
                                 onClick={() => setIsSheetOpen(false)}
+                                title={item.label}
                             >
                                 <item.icon className="h-5 w-5" />
-                                {item.label}
+                                <span className="sr-only">{item.label}</span>
                             </Link>
                         ))}
                     </nav>
-                     <nav className="mt-auto grid gap-2 text-base font-medium">
-                        <Separator />
+                     <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
                         {bottomNavItems.map(item => (
                              <Link 
                                 key={item.href} 
                                 href={item.href} 
-                                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary ${
+                                className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:h-8 md:w-8 ${
                                     isActive(item.href)
                                     ? 'bg-accent text-accent-foreground'
-                                    : 'text-muted-foreground'
+                                    : 'text-muted-foreground hover:text-foreground'
                                 }`}
                                 onClick={() => setIsSheetOpen(false)}
+                                title={item.label}
                             >
                                 <item.icon className="h-5 w-5" />
-                                {item.label}
+                                <span className="sr-only">{item.label}</span>
                             </Link>
                         ))}
                      </nav>
