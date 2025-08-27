@@ -20,7 +20,7 @@ const generalSettingsItems: {
     description: 'إدارة اسم الشركة والشعارات المستخدمة في النظام.',
   },
   {
-    href: '#',
+    href: '/dashboard/settings/login-experience',
     icon: LogIn,
     title: 'تجربة تسجيل الدخول',
     description: 'تخصيص صفحة تسجيل الدخول للمستخدمين.',
