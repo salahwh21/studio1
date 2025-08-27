@@ -119,17 +119,17 @@ export default function LoginPage() {
               <div className="flex justify-center gap-4">
                 {settings.socialLinks.whatsapp && (
                   <a href={`https://wa.me/${settings.socialLinks.whatsapp}`} target="_blank" rel="noopener noreferrer">
-                    <Button variant="ghost" size="icon"><WhatsappIcon className="h-6 w-6"/></Button>
+                    <Button variant="ghost" size="icon" className="hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"><WhatsappIcon className="h-7 w-7"/></Button>
                   </a>
                 )}
                 {settings.socialLinks.instagram && (
                   <a href={settings.socialLinks.instagram} target="_blank" rel="noopener noreferrer">
-                    <Button variant="ghost" size="icon"><InstagramIcon className="h-6 w-6"/></Button>
+                    <Button variant="ghost" size="icon" className="hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"><InstagramIcon className="h-6 w-6"/></Button>
                   </a>
                 )}
                  {settings.socialLinks.facebook && (
                   <a href={settings.socialLinks.facebook} target="_blank" rel="noopener noreferrer">
-                    <Button variant="ghost" size="icon"><FacebookIcon className="h-6 w-6"/></Button>
+                    <Button variant="ghost" size="icon" className="hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"><FacebookIcon className="h-6 w-6"/></Button>
                   </a>
                 )}
               </div>
