@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -119,25 +120,25 @@ const SummaryDashboard = () => (
             <p className="text-xs text-muted-foreground">من الطلبات المكتملة</p>
           </CardContent>
         </Card>
-        <Card className="col-span-1 lg:col-span-2">
+        <Card className="col-span-1 md:col-span-2">
            <CardHeader>
                <CardTitle className="text-base">حالات الطلبات</CardTitle>
            </CardHeader>
            <CardContent className="h-[100px]">
                  <ChartContainer config={chartConfig} className="h-full w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart layout="vertical" margin={{ left: 50, right: 0, top: 0, bottom: 0}}>
+                    <PieChart>
                       <Tooltip
                         content={<ChartTooltipContent hideLabel />}
                       />
-                      <Pie data={summaryData.ordersByStatus} dataKey="value" nameKey="name" innerRadius="30%" outerRadius="80%" paddingAngle={2} startAngle={180} endAngle={-180}>
+                      <Pie data={summaryData.ordersByStatus} dataKey="value" nameKey="name" innerRadius="30%" startAngle={180} endAngle={-180}>
                       </Pie>
                       <Legend content={({ payload }) => (
                             <ul className="flex flex-wrap gap-x-4 justify-center text-xs mt-2">
                             {payload?.map((entry, index) => (
                                 <li key={`item-${index}`} className="flex items-center gap-1">
                                 <span className="w-2 h-2 rounded-full" style={{backgroundColor: entry.color}}></span>
-                                {entry.value}
+                                {entry.value} ({summaryData.ordersByStatus.find(d => d.name === entry.value)?.value})
                                 </li>
                             ))}
                             </ul>
