@@ -348,7 +348,7 @@ function OrdersPageContent() {
                     </CardContent>
                 </Card>
 
-                <div className="flex-1 overflow-auto border rounded-lg">
+                <div className="flex-1 relative border rounded-lg overflow-auto">
                     <Table className="min-w-full border-separate border-spacing-0">
                         <TableHeader className="sticky top-0 z-20 bg-muted/50 hover:bg-muted/80">
                             <TableRow>
@@ -482,7 +482,5 @@ function OrdersPageContent() {
 export default function OrdersPage() {
     return <OrdersPageContent />;
 }
-
-
 
     
