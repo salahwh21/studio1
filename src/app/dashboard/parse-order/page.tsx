@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { z } from 'zod';
 import { Bot, Image as ImageIcon, Loader2, Clipboard, FileText, Trash2, Send, Wand2 } from 'lucide-react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
 import { Button } from '@/components/ui/button';
@@ -27,12 +26,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
-const formSchema = z.object({
-  request: z.string().min(1, {
-    message: 'الرجاء إدخال نص الطلب أو تحميل صورة.',
-  }),
-});
 
 type OrderReviewItem = ParseOrderDetailsOutput & { id: number };
 
@@ -80,12 +73,11 @@ export default function AIOrderParsingPage() {
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const validation = formSchema.safeParse({ request: requestText || imageDataUri });
-     if (!validation.success) {
+    if (!requestText && !imageDataUri) {
         toast({
             variant: 'destructive',
             title: 'خطأ في الإدخال',
-            description: validation.error.flatten().fieldErrors.request?.join(', ') || 'الرجاء إدخال نص الطلب أو تحميل صورة.',
+            description: 'الرجاء إدخال نص الطلب أو تحميل صورة.',
         });
         return;
     }
@@ -93,7 +85,7 @@ export default function AIOrderParsingPage() {
     startTransition(async () => {
         const formData = new FormData();
         formData.append('request', requestText || imageDataUri || '');
-        const result = await parseOrderFromRequest(state, formData);
+        const result = await parseOrderFromRequest(initialState, formData);
         setState(result);
     });
   };
@@ -132,6 +124,7 @@ export default function AIOrderParsingPage() {
   };
 
   const handleConfirmOrders = () => {
+    // In a real app, this would likely send the confirmed orders to a database.
     setReviewList([]);
     toast({
       title: 'تم تأكيد الطلبات بنجاح!',
@@ -276,3 +269,5 @@ export default function AIOrderParsingPage() {
     </div>
   );
 }
+
+    
