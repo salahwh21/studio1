@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -14,6 +15,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuGroup,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -59,7 +61,7 @@ export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
 
         <nav className="hidden flex-1 items-center justify-center md:flex">
           <div className="flex items-center gap-2 rounded-full border bg-muted/50 p-1">
-            {allNavItems.map(item => (
+            {navItems.map(item => (
               <Tooltip key={item.href}>
                 <TooltipTrigger asChild>
                   <Button
@@ -82,38 +84,37 @@ export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
           </div>
         </nav>
         
-        {/* Mobile Navigation */}
-         <div className="md:hidden">
-            <Sheet>
-                <SheetTrigger asChild>
-                    <Button variant="outline" size="icon">
-                        <Menu className="h-5 w-5" />
-                        <span className="sr-only">فتح القائمة</span>
-                    </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="flex flex-col p-2 w-72">
-                    <nav className="flex-1 flex flex-col gap-2 p-2 overflow-y-auto">
-                        {allNavItems.map(item => (
-                            <Link 
-                                key={item.href} 
-                                href={item.href} 
-                                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
-                                    isActive(item.href)
-                                    ? 'bg-accent text-accent-foreground'
-                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                }`}
-                            >
-                                <item.icon className="h-4 w-4" />
-                                {item.label}
-                            </Link>
-                        ))}
-                    </nav>
-                </SheetContent>
-            </Sheet>
-        </div>
-
-
         <div className="flex items-center gap-2">
+            {/* Mobile Navigation */}
+             <div className="md:hidden">
+                <Sheet>
+                    <SheetTrigger asChild>
+                        <Button variant="outline" size="icon">
+                            <Menu className="h-5 w-5" />
+                            <span className="sr-only">فتح القائمة</span>
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="flex flex-col p-2 w-72">
+                        <nav className="flex-1 flex flex-col gap-2 p-2 overflow-y-auto">
+                            {allNavItems.map(item => (
+                                <Link 
+                                    key={item.href} 
+                                    href={item.href} 
+                                    className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
+                                        isActive(item.href)
+                                        ? 'bg-accent text-accent-foreground'
+                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                    }`}
+                                >
+                                    <item.icon className="h-4 w-4" />
+                                    {item.label}
+                                </Link>
+                            ))}
+                        </nav>
+                    </SheetContent>
+                </Sheet>
+            </div>
+
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="rounded-full">
