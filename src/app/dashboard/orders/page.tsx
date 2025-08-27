@@ -251,7 +251,7 @@ function OrdersPageContent() {
                             </div>
                         );
                         return (
-                            <Card key={order.id} className={cn('overflow-hidden border-r-4 shadow-sm bg-card', statusInfo.color.replace('text-','border-').replace('-800','-500'))}>
+                             <Card key={order.id} className={cn('overflow-hidden border-r-4 shadow-sm bg-card', statusInfo.color.replace('text-','border-').replace('-800','-500'))}>
                                 <div className='p-3 grid grid-cols-[auto_1fr_auto] gap-x-3 gap-y-2'>
                                     {/* Column 1: Checkbox */}
                                     <div className="row-span-3 flex items-center justify-center">
@@ -259,7 +259,7 @@ function OrdersPageContent() {
                                     </div>
                                     
                                     {/* Column 2: Order Info */}
-                                    <div className="col-span-1 space-y-1">
+                                    <div className="col-start-2 col-end-3 space-y-1">
                                         <div className="flex items-center gap-2 font-medium">
                                             <User className="h-4 w-4 text-muted-foreground"/>
                                             <span>{order.recipient}</span>
@@ -275,21 +275,22 @@ function OrdersPageContent() {
                                     </div>
                                     
                                     {/* Column 3: Status and Amount */}
-                                    <div className="col-span-1 row-span-2 flex flex-col items-end justify-start gap-1">
+                                    <div className="col-start-3 col-end-4 row-span-2 flex flex-col items-end justify-start gap-1">
                                         <Badge className={cn("gap-1.5", statusInfo.bgColor, statusInfo.color)}>{statusInfo.label}</Badge>
                                         <span className="text-lg font-bold text-primary">{order.cod.toFixed(2)} د.أ</span>
                                     </div>
 
                                     {/* Spanning ID and Date */}
-                                    <div className="col-span-full col-start-2 flex justify-between text-xs text-muted-foreground">
+                                    <div className="col-start-2 col-end-4 flex justify-between text-xs text-muted-foreground">
                                         <span className="font-mono text-primary">{order.id}</span>
                                         <span>{order.date}</span>
                                     </div>
                                 </div>
-                                <CardFooter className='p-2 bg-muted/50 grid grid-cols-3 items-center justify-items-center'>
+                                <CardFooter className='p-2 bg-muted/50 grid grid-cols-4 items-center justify-items-center'>
                                      <ActionButton icon={MessageCircle} label="واتساب" />
                                      <ActionButton icon={History} label="سجل" />
                                      <ActionButton icon={Printer} label="طباعة" />
+                                     <ActionButton icon={Edit} label="تعديل" />
                                 </CardFooter>
                             </Card>
                         )
@@ -348,103 +349,105 @@ function OrdersPageContent() {
                     </CardContent>
                 </Card>
 
-                <div className="flex-1 relative border rounded-lg overflow-auto">
-                    <Table className="min-w-full border-separate border-spacing-0">
-                        <TableHeader className="sticky top-0 z-20 bg-muted/50 hover:bg-muted/80">
-                            <TableRow>
-                                <TableHead className="sticky right-0 px-4 border-l bg-muted text-right flex items-center justify-center z-30 w-12">
-                                    <Checkbox
-                                        onCheckedChange={handleSelectAll}
-                                        checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
-                                        className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                                    />
-                                </TableHead>
-                                <TableHead className="text-right border-l w-40">رقم الطلب</TableHead>
-                                <TableHead className="text-right border-l w-32">المصدر</TableHead>
-                                <TableHead className="text-right border-l w-40">الرقم المرجعي</TableHead>
-                                <TableHead className="text-right border-l w-48">المستلم</TableHead>
-                                <TableHead className="text-right border-l w-40">الهاتف</TableHead>
-                                <TableHead className="text-right border-l w-40">المنطقة</TableHead>
-                                <TableHead className="text-right border-l w-32">المدينة</TableHead>
-                                <TableHead className="text-right border-l w-48">المتجر</TableHead>
-                                <TableHead className="text-right border-l w-48">الحالة</TableHead>
-                                <TableHead className="text-right border-l w-48">السائق</TableHead>
-                                <TableHead className="text-right border-l w-32">المستحق للتاجر</TableHead>
-                                <TableHead className="text-right border-l w-32">أجور التوصيل</TableHead>
-                                <TableHead className="text-right border-l w-32">قيمة التحصيل</TableHead>
-                                <TableHead className="text-right border-l w-32 flex-1">التاريخ</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {paginatedOrders.map(order => {
-                                const statusInfo = getStatusInfo(order.status);
-                                const SourceIcon = sourceIcons[order.source] || LinkIcon;
-                                return (
-                                <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''}>
-                                    <TableCell className="sticky right-0 border-l bg-background flex items-center justify-center z-10">
+                <Card className="flex-1 flex flex-col overflow-auto">
+                    <div className="flex-1 overflow-auto">
+                        <Table className="min-w-full border-separate border-spacing-0">
+                            <TableHeader className="sticky top-0 z-20 bg-muted/50 hover:bg-muted/80">
+                                <TableRow>
+                                    <TableHead className="sticky right-0 px-4 border-l bg-muted text-right flex items-center justify-center z-30 w-12">
                                         <Checkbox
-                                            checked={selectedRows.includes(order.id)}
-                                            onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
+                                            onCheckedChange={handleSelectAll}
+                                            checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
+                                            className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                                         />
-                                    </TableCell>
-                                    <TableCell className="font-medium text-primary p-1 border-l text-right"><Link href="#">{order.id}</Link></TableCell>
-                                    <TableCell className="p-1 border-l text-right">
-                                        <Badge variant="outline" className="gap-1.5 font-normal">
-                                            <SourceIcon className="h-3 w-3" />
-                                            {order.source}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="p-1 border-l text-right">{order.referenceNumber}</TableCell>
-                                    <TableCell className="p-1 border-l text-right">{order.recipient}</TableCell>
-                                    <TableCell className="p-1 border-l text-right">{order.phone}</TableCell>
-                                    <TableCell className="p-1 border-l text-right">{order.region}</TableCell>
-                                    <TableCell className="p-1 border-l text-right">{order.city}</TableCell>
-                                    <TableCell className="p-1 border-l text-right">{order.merchant}</TableCell>
-                                    <TableCell className="p-1 border-l text-right">
-                                            <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
-                                            <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
-                                                <SelectValue placeholder="الحالة" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                    <SelectGroup>
-                                                    {statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                                                    </SelectGroup>
-                                            </SelectContent>
-                                        </Select>
-                                    </TableCell>
-                                    <TableCell className="p-1 border-l text-right">{order.driver}</TableCell>
-                                    <TableCell className="p-1 border-l text-right">{order.itemPrice.toFixed(2)}</TableCell>
-                                    <TableCell className="p-1 border-l text-right">{order.deliveryFee.toFixed(2)}</TableCell>
-                                    <TableCell className="p-1 border-l text-right">{order.cod.toFixed(2)}</TableCell>
-                                    <TableCell className="p-1 border-l text-right">{order.date}</TableCell>
+                                    </TableHead>
+                                    <TableHead className="text-right border-l w-40">رقم الطلب</TableHead>
+                                    <TableHead className="text-right border-l w-32">المصدر</TableHead>
+                                    <TableHead className="text-right border-l w-40">الرقم المرجعي</TableHead>
+                                    <TableHead className="text-right border-l w-48">المستلم</TableHead>
+                                    <TableHead className="text-right border-l w-40">الهاتف</TableHead>
+                                    <TableHead className="text-right border-l w-40">المنطقة</TableHead>
+                                    <TableHead className="text-right border-l w-32">المدينة</TableHead>
+                                    <TableHead className="text-right border-l w-48">المتجر</TableHead>
+                                    <TableHead className="text-right border-l w-48">الحالة</TableHead>
+                                    <TableHead className="text-right border-l w-48">السائق</TableHead>
+                                    <TableHead className="text-right border-l w-32">المستحق للتاجر</TableHead>
+                                    <TableHead className="text-right border-l w-32">أجور التوصيل</TableHead>
+                                    <TableHead className="text-right border-l w-32">قيمة التحصيل</TableHead>
+                                    <TableHead className="text-right border-l w-32 flex-1">التاريخ</TableHead>
                                 </TableRow>
-                            )})}
-                        </TableBody>
-                        <TableFooter className="sticky bottom-0 bg-muted/95">
-                            <TableRow>
-                                <TableCell colSpan={11} className="text-right font-semibold">
-                                    <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
-                                        {displayLabel}
-                                    </div>
-                                </TableCell>
-                                <TableCell className="text-right font-bold">{displayTotals.itemPrice.toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-bold">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-bold">{displayTotals.cod.toFixed(2)}</TableCell>
-                                <TableCell></TableCell>
-                            </TableRow>
-                        </TableFooter>
-                    </Table>
-                </div>
-                 <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
-                    <span className="text-xs text-muted-foreground">
-                        عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
-                    </span>
-                    <div className="flex items-center gap-1">
-                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
-                        <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
-                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>التالي</Button>
+                            </TableHeader>
+                            <TableBody>
+                                {paginatedOrders.map(order => {
+                                    const statusInfo = getStatusInfo(order.status);
+                                    const SourceIcon = sourceIcons[order.source] || LinkIcon;
+                                    return (
+                                    <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''}>
+                                        <TableCell className="sticky right-0 border-l bg-background flex items-center justify-center z-10">
+                                            <Checkbox
+                                                checked={selectedRows.includes(order.id)}
+                                                onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="font-medium text-primary p-1 border-l text-right"><Link href="#">{order.id}</Link></TableCell>
+                                        <TableCell className="p-1 border-l text-right">
+                                            <Badge variant="outline" className="gap-1.5 font-normal">
+                                                <SourceIcon className="h-3 w-3" />
+                                                {order.source}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="p-1 border-l text-right">{order.referenceNumber}</TableCell>
+                                        <TableCell className="p-1 border-l text-right">{order.recipient}</TableCell>
+                                        <TableCell className="p-1 border-l text-right">{order.phone}</TableCell>
+                                        <TableCell className="p-1 border-l text-right">{order.region}</TableCell>
+                                        <TableCell className="p-1 border-l text-right">{order.city}</TableCell>
+                                        <TableCell className="p-1 border-l text-right">{order.merchant}</TableCell>
+                                        <TableCell className="p-1 border-l text-right">
+                                                <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
+                                                <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
+                                                    <SelectValue placeholder="الحالة" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                        <SelectGroup>
+                                                        {statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                                                        </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                        </TableCell>
+                                        <TableCell className="p-1 border-l text-right">{order.driver}</TableCell>
+                                        <TableCell className="p-1 border-l text-right">{order.itemPrice.toFixed(2)}</TableCell>
+                                        <TableCell className="p-1 border-l text-right">{order.deliveryFee.toFixed(2)}</TableCell>
+                                        <TableCell className="p-1 border-l text-right">{order.cod.toFixed(2)}</TableCell>
+                                        <TableCell className="p-1 border-l text-right">{order.date}</TableCell>
+                                    </TableRow>
+                                )})}
+                            </TableBody>
+                            <TableFooter className="sticky bottom-0 bg-muted/95">
+                                <TableRow>
+                                    <TableCell colSpan={11} className="text-right font-semibold">
+                                        <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
+                                            {displayLabel}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-right font-bold">{displayTotals.itemPrice.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-bold">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-bold">{displayTotals.cod.toFixed(2)}</TableCell>
+                                    <TableCell></TableCell>
+                                </TableRow>
+                            </TableFooter>
+                        </Table>
                     </div>
-                </CardFooter>
+                    <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
+                        <span className="text-xs text-muted-foreground">
+                            عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
+                        </span>
+                        <div className="flex items-center gap-1">
+                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
+                            <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
+                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>التالي</Button>
+                        </div>
+                    </CardFooter>
+                </Card>
             </div>
             
             {/* Modals */}
