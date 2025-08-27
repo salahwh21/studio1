@@ -353,7 +353,7 @@ function OrdersPageContent() {
                     <Table className="min-w-full border-separate border-spacing-0">
                         <TableHeader className="sticky top-0 z-20 bg-muted">
                             <TableRow>
-                                <TableHead className="sticky right-0 px-4 border-l bg-muted flex items-center justify-center z-30 w-12">
+                                <TableHead className="sticky right-0 px-4 border-l bg-[#C0C0C0] flex items-center justify-center z-30 w-12">
                                     <Checkbox
                                         onCheckedChange={handleSelectAll}
                                         checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
