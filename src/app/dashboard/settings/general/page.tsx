@@ -14,7 +14,7 @@ const generalSettingsItems: {
   description: string;
 }[] = [
   {
-    href: '#',
+    href: '/dashboard/settings/company',
     icon: Building,
     title: 'هوية الشركة والشعارات',
     description: 'إدارة اسم الشركة والشعارات المستخدمة في النظام.',
