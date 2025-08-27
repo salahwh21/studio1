@@ -68,14 +68,19 @@ export async function updateThemeAction(formData: FormData) {
     const cssFilePath = path.join(process.cwd(), 'src', 'app', 'globals.css');
     let cssContent = await fs.readFile(cssFilePath, 'utf-8');
 
-    if (primary && primary.trim() !== '') {
-      cssContent = cssContent.replace(/--primary:\s*[\d\s%]+;/g, `--primary: ${primary};`);
+    const primaryHsl = hexToHslString(primary || '');
+    const backgroundHsl = hexToHslString(background || '');
+    const accentHsl = hexToHslString(accent || '');
+
+    if (primaryHsl) {
+      cssContent = cssContent.replace(/--primary:\s*[\d\s%]+;/g, `--primary: ${primaryHsl};`);
+      cssContent = cssContent.replace(/--ring:\s*[\d\s%]+;/g, `--ring: ${primaryHsl};`);
     }
-    if (background && background.trim() !== '') {
-      cssContent = cssContent.replace(/--background:\s*[\d\s%]+;/g, `--background: ${background};`);
+    if (backgroundHsl) {
+      cssContent = cssContent.replace(/--background:\s*[\d\s%]+;/g, `--background: ${backgroundHsl};`);
     }
-    if (accent && accent.trim() !== '') {
-      cssContent = cssContent.replace(/--accent:\s*[\d\s%]+;/g, `--accent: ${accent};`);
+    if (accentHsl) {
+      cssContent = cssContent.replace(/--accent:\s*[\d\s%]+;/g, `--accent: ${accentHsl};`);
     }
      if (fontSize) {
       cssContent = cssContent.replace(/font-size:\s*[^;]+;/, `font-size: ${fontSize}px;`);
@@ -83,33 +88,31 @@ export async function updateThemeAction(formData: FormData) {
     
     await fs.writeFile(cssFilePath, cssContent, 'utf-8');
 
-    // Update tailwind.config.ts for font family
+    // Update tailwind.config.ts and layout.tsx for font family
     if (fontFamily) {
+        const fontVarName = `--font-${fontFamily.toLowerCase().replace(/\s/g, '-')}`;
+
+        // 1. Update tailwind.config.ts
         const tailwindConfigPath = path.join(process.cwd(), 'tailwind.config.ts');
         let tailwindConfigContent = await fs.readFile(tailwindConfigPath, 'utf-8');
-        
-        const fontVarName = `--font-${fontFamily.toLowerCase().replace(/[\s_]/g, '-')}`;
-
-        // More robust regex to handle different spacings and single/double quotes
         tailwindConfigContent = tailwindConfigContent.replace(
             /fontFamily:\s*{[^}]*sans:\s*\[[^\]]+\]/s,
-            `fontFamily: {\n        sans: ["var(${fontVarName})", 'sans-serif']`
+            `fontFamily: {\n        sans: ['var(${fontVarName})', 'sans-serif']`
         );
-
         await fs.writeFile(tailwindConfigPath, tailwindConfigContent, 'utf-8');
 
-         // Update layout.tsx
+        // 2. Update layout.tsx
         const layoutFilePath = path.join(process.cwd(), 'src', 'app', 'layout.tsx');
         let layoutContent = await fs.readFile(layoutFilePath, 'utf-8');
 
+        // Remove existing font imports from next/font/google and const declarations
+        layoutContent = layoutContent.replace(/import\s*{[^}]+}\s*from 'next\/font\/google';/gs, '');
+        layoutContent = layoutContent.replace(/const\s+\w+\s*=\s*\w+\({[^}]*}\);/gs, '');
+        
         const fontName = fontFamily.replace(/ /g, '_');
-        const fontConstName = `${fontName.toLowerCase().replace(/_/g, '')}`;
+        const fontConstName = `${fontName.toLowerCase()}`;
 
-        // Remove existing font imports from next/font/google
-        layoutContent = layoutContent.replace(/import\s*{[^}]+}\s*from 'next\/font\/google';/g, '');
-        // Remove existing font const declarations
-        layoutContent = layoutContent.replace(/const\s+\w+\s*=\s*\w+\([^)]+\);/g, '');
-
+        // Add new font import and const
         const newImport = `import { ${fontName} } from 'next/font/google';`;
         const newConst = `const ${fontConstName} = ${fontName}({ 
   subsets: ['latin', 'arabic'], 
@@ -121,13 +124,17 @@ export async function updateThemeAction(formData: FormData) {
         const lastImportIndex = layoutContent.lastIndexOf('import ');
         const endOfLastImportLine = layoutContent.indexOf('\n', lastImportIndex) + 1;
         
+        let importsAndConsts = `\n${newImport}\n\n${newConst}\n`;
         layoutContent = 
-            layoutContent.slice(0, endOfLastImportLine) + 
-            `\n${newImport}\n${newConst}\n` +
-            layoutContent.slice(endOfLastImportLine);
+            layoutContent.slice(0, endOfLastImportLine) +
+            importsAndConsts +
+            layoutContent.slice(endOfLastImportLine).trim();
         
-        // Update className in body, making sure not to add duplicate variables
-        layoutContent = layoutContent.replace(/className=\{`[^`]+`\}/, `className={\`${fontConstName}.variable font-sans antialiased\``);
+        // Update className in body
+        layoutContent = layoutContent.replace(
+            /className=\{`[^`]+`\}/, 
+            `className={\`\${${fontConstName}.variable} font-sans antialiased\``
+        );
         
         await fs.writeFile(layoutFilePath, layoutContent, 'utf-8');
     }
@@ -135,6 +142,7 @@ export async function updateThemeAction(formData: FormData) {
     return { success: true };
   } catch (error) {
     console.error('Error updating theme:', error);
-    return { success: false, error: 'Failed to update theme file(s).' };
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update theme file(s).';
+    return { success: false, error: errorMessage };
   }
 }
