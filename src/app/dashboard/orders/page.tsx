@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   ListFilter,
@@ -28,7 +28,9 @@ import {
   Package,
   GripVertical,
   X,
-  History
+  History,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
@@ -53,7 +55,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 // Mock Data
-const initialOrders = Array.from({ length: 15 }, (_, i) => ({
+const initialOrders = Array.from({ length: 85 }, (_, i) => ({
   id: `#32${10 + i}`,
   source: (['Shopify', 'Manual', 'API', 'WooCommerce'] as const)[i % 4],
   referenceNumber: `REF-00${100+i}`,
@@ -169,6 +171,8 @@ function OrdersPageContent() {
     const [modalState, setModalState] = useState<ModalState>({ type: 'none' });
     const isMobile = useMediaQuery('(max-width: 1024px)');
     const [searchQuery, setSearchQuery] = useState('');
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(15);
     
     useEffect(() => { setIsClient(true); }, []);
 
@@ -184,8 +188,15 @@ function OrdersPageContent() {
         });
     }, [orders, searchQuery]);
 
+    const paginatedOrders = useMemo(() => {
+        const startIndex = page * rowsPerPage;
+        return filteredOrders.slice(startIndex, startIndex + rowsPerPage);
+    }, [filteredOrders, page, rowsPerPage]);
+    
+    const totalPages = Math.ceil(filteredOrders.length / rowsPerPage);
+
     const handleSelectAll = (checked: boolean | 'indeterminate') => {
-        setSelectedRows(checked === true ? filteredOrders.map(o => o.id) : []);
+        setSelectedRows(checked === true ? paginatedOrders.map(o => o.id) : []);
     };
     
     const handleSelectRow = (id: string, checked: boolean) => {
@@ -251,7 +262,7 @@ function OrdersPageContent() {
                     <CardContent className="p-0">
                         {isMobile ? (
                             <div className="p-2 space-y-2">
-                                {filteredOrders.map(order => (
+                                {paginatedOrders.map(order => (
                                     <MobileOrderCard 
                                         key={order.id} 
                                         order={order}
@@ -262,13 +273,13 @@ function OrdersPageContent() {
                                 ))}
                             </div>
                         ) : (
-                           <div className="overflow-x-auto max-h-[calc(100vh-250px)]">
+                           <div className="overflow-x-auto max-h-[calc(100vh-300px)]">
                             <Table className="min-w-max">
                                 <TableHeader className="sticky top-0 z-10">
                                     <TableRow className="bg-primary hover:bg-primary/90">
                                         <TableHead className="w-12 p-1 bg-primary border-l border-primary-foreground/20 text-right px-4"><Checkbox
                                                 onCheckedChange={handleSelectAll}
-                                                checked={selectedRows.length === filteredOrders.length && filteredOrders.length > 0}
+                                                checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
                                                 className="border-white"
                                             /></TableHead>
                                         <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
@@ -332,7 +343,7 @@ function OrdersPageContent() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredOrders.map(order => {
+                                    {paginatedOrders.map(order => {
                                         const statusInfo = getStatusInfo(order.status);
                                         const SourceIcon = sourceIcons[order.source] || LinkIcon;
                                         return (
@@ -380,11 +391,34 @@ function OrdersPageContent() {
                            </div>
                         )}
                     </CardContent>
-                    <CardFooter className="justify-center p-2 border-t">
-                         <div className="text-xs text-muted-foreground">
-                            عرض <strong>{filteredOrders.length}</strong> من <strong>{orders.length}</strong> طلبات
-                        </div>
-                    </CardFooter>
+                    <CardFooter className="flex items-center justify-between p-2 border-t">
+                         <div className="text-sm text-muted-foreground">
+                             عرض <strong>{paginatedOrders.length}</strong> من <strong>{filteredOrders.length}</strong> طلبات
+                         </div>
+                         <div className="flex items-center gap-2">
+                             <Button
+                                 variant="outline"
+                                 size="sm"
+                                 onClick={() => setPage(prev => Math.max(prev - 1, 0))}
+                                 disabled={page === 0}
+                             >
+                                 <ChevronRight className="h-4 w-4" />
+                                 <span>السابق</span>
+                             </Button>
+                             <span className="text-sm text-muted-foreground">
+                                 صفحة {page + 1} من {totalPages}
+                             </span>
+                             <Button
+                                 variant="outline"
+                                 size="sm"
+                                 onClick={() => setPage(prev => Math.min(prev + 1, totalPages - 1))}
+                                 disabled={page >= totalPages - 1}
+                             >
+                                <span>التالي</span>
+                                 <ChevronLeft className="h-4 w-4" />
+                             </Button>
+                         </div>
+                     </CardFooter>
                 </Card>
             </div>
             
