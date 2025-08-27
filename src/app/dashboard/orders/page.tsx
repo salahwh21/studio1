@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -266,14 +265,56 @@ function OrdersPageContent() {
                                 <TableHeader className="sticky top-0 z-10">
                                     <TableRow className="bg-primary hover:bg-primary/90">
                                         <TableHead className="w-12 p-1 bg-primary border-l border-primary-foreground/20"></TableHead>
-                                        {['رقم الطلب', 'المصدر', 'الرقم المرجعي', 'المستلم', 'الهاتف', 'المنطقة', 'المدينة', 'المتجر', 'الحالة', 'السائق', 'المستحق للتاجر', 'أجور التوصيل', 'قيمة التحصيل', 'التاريخ'].map(h => (
-                                            <TableHead key={h} className="p-1 align-top bg-primary border-l border-primary-foreground/20">
-                                                <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                            </TableHead>
-                                        ))}
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                            <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                        </TableHead>
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                            <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                        </TableHead>
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                            <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                        </TableHead>
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                            <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                        </TableHead>
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                            <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                        </TableHead>
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                            <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                        </TableHead>
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                            <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                        </TableHead>
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                            <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                        </TableHead>
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                            <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                        </TableHead>
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                            <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                        </TableHead>
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                            <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                        </TableHead>
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                            <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                        </TableHead>
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                            <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                        </TableHead>
+                                        <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20">
+                                            <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                        </TableHead>
                                     </TableRow>
                                     <TableRow className="bg-muted/50 hover:bg-muted/80">
-                                        <TableHead className="w-12 px-4 border-l bg-muted"><Checkbox onCheckedChange={handleSelectAll} checked={selectedRows.length === filteredOrders.length && filteredOrders.length > 0} /></TableHead>
+                                        <TableHead className="w-12 px-4 border-l bg-muted">
+                                            <Checkbox
+                                                onCheckedChange={handleSelectAll}
+                                                checked={selectedRows.length === filteredOrders.length && filteredOrders.length > 0}
+                                            />
+                                        </TableHead>
                                         <TableHead className="text-right border-l bg-muted">رقم الطلب</TableHead>
                                         <TableHead className="text-right border-l bg-muted">المصدر</TableHead>
                                         <TableHead className="text-right border-l bg-muted">الرقم المرجعي</TableHead>
@@ -296,7 +337,12 @@ function OrdersPageContent() {
                                         const SourceIcon = sourceIcons[order.source] || LinkIcon;
                                         return (
                                         <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''}>
-                                            <TableCell className="px-4 border-l"><Checkbox checked={selectedRows.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}/></TableCell>
+                                            <TableCell className="px-4 border-l">
+                                                <Checkbox
+                                                    checked={selectedRows.includes(order.id)}
+                                                    onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
+                                                />
+                                            </TableCell>
                                             <TableCell className="font-medium text-primary p-1 border-l text-right"><Link href="#">{order.id}</Link></TableCell>
                                             <TableCell className="p-1 border-l text-right">
                                                 <Badge variant="outline" className="gap-1.5 font-normal">
