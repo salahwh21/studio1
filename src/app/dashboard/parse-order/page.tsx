@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useActionState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, useFormState as useReactHookFormState } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Bot, Image as ImageIcon, Loader2, Clipboard, FileText, User, Home, ShoppingBasket, Hash, Trash2, Send, Wand2 } from 'lucide-react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
@@ -112,11 +112,10 @@ export default function AIOrderParsingPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="flex flex-col gap-6">
-        <form onSubmit={form.handleSubmit((data) => {
-            const formData = new FormData();
-            formData.append('request', data.request);
-            formAction(formData);
-        })}>
+        <form
+            action={formAction}
+            onSubmit={form.handleSubmit(() => {})}
+        >
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
