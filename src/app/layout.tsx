@@ -11,6 +11,9 @@ const tajawal = Tajawal({
   variable: '--font-tajawal' 
 });
 
+
+
+
 export const metadata: Metadata = {
   title: 'إدارة توصيل الطلبات - الوميض',
   description: 'حل شامل لإدارة التوصيل والطلبات والشؤون المالية والسائقين لشركة الوميض.',
