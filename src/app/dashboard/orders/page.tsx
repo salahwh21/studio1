@@ -350,9 +350,9 @@ function OrdersPageContent() {
 
                 <div className="flex-1 overflow-auto border rounded-lg">
                     <Table className="min-w-full border-separate border-spacing-0">
-                        <TableHeader className="sticky top-0 z-10 bg-muted/50 hover:bg-muted/80">
+                        <TableHeader className="sticky top-0 z-20 bg-muted/50 hover:bg-muted/80">
                             <TableRow>
-                                <TableHead className="sticky right-0 px-4 border-l bg-muted text-right flex items-center justify-center z-20 w-12">
+                                <TableHead className="sticky right-0 px-4 border-l bg-muted text-right flex items-center justify-center z-30 w-12">
                                     <Checkbox
                                         onCheckedChange={handleSelectAll}
                                         checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
@@ -483,3 +483,6 @@ export default function OrdersPage() {
     return <OrdersPageContent />;
 }
 
+
+
+    
