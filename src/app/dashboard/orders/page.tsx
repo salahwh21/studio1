@@ -218,8 +218,8 @@ function OrdersPageContent() {
 
     if (isMobile) {
         return (
-             <div className="flex flex-col h-full">
-                 <div className="flex-none p-2 flex-row items-center justify-between flex flex-wrap gap-2 border-b bg-background">
+            <div className="flex flex-col h-full">
+                <div className="flex-none p-4 flex-row items-center justify-between flex flex-wrap gap-2 border-b bg-background">
                      <div className="relative w-full max-w-xs">
                         <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="بحث شامل..." className="pr-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -241,58 +241,50 @@ function OrdersPageContent() {
                         </DropdownMenu>
                     </div>
                 </div>
-                 <div className="flex-1 overflow-y-auto p-2 space-y-3">
+                <div className="flex-1 overflow-y-auto p-2 space-y-3">
                     {paginatedOrders.map(order => {
-                         const statusInfo = getStatusInfo(order.status);
-                         const ActionButton = ({ icon: Icon, label }: {icon: React.ElementType, label: string}) => (
+                        const statusInfo = getStatusInfo(order.status);
+                        const ActionButton = ({ icon: Icon, label }: {icon: React.ElementType, label: string}) => (
                             <div className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
                                 <Icon className="h-5 w-5" />
                                 <span>{label}</span>
                             </div>
-                         );
-                         return (
+                        );
+                        return (
                             <Card key={order.id} className={cn('overflow-hidden border-r-4 shadow-sm bg-card', statusInfo.color.replace('text-','border-').replace('-800','-500'))}>
-                                <div className='p-3 grid grid-cols-[1fr_auto] gap-x-3 gap-y-2'>
-                                    {/* Row 1 */}
-                                    <div className="col-span-1">
-                                        <Badge className={cn("gap-1.5", statusInfo.bgColor, statusInfo.color)}>{statusInfo.label}</Badge>
+                                <div className='p-3 grid grid-cols-[auto_1fr_auto] gap-x-3 gap-y-2'>
+                                    {/* Column 1: Checkbox */}
+                                    <div className="row-span-3 flex items-center justify-center">
+                                        <Checkbox checked={selectedRows.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} className="h-5 w-5"/>
                                     </div>
-                                    <div className="col-span-1 flex items-center justify-end gap-2">
-                                        <span className="font-mono text-xs text-primary">{order.id}</span>
-                                        <Checkbox checked={selectedRows.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} />
-                                    </div>
-
-                                    {/* Row 2 */}
-                                     <div className="col-span-2 space-y-1">
+                                    
+                                    {/* Column 2: Order Info */}
+                                    <div className="col-span-1 space-y-1">
                                         <div className="flex items-center gap-2 font-medium">
                                             <User className="h-4 w-4 text-muted-foreground"/>
                                             <span>{order.recipient}</span>
                                         </div>
-                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <Phone className="h-4 w-4"/>
                                             <span>{order.phone}</span>
                                         </div>
-                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <MapPin className="h-4 w-4"/>
                                             <span>{order.address}, {order.city}</span>
                                         </div>
                                     </div>
                                     
-                                    {/* Row 3 */}
-                                    <div className="col-span-2">
-                                        <Separator className='my-2' />
+                                    {/* Column 3: Status and Amount */}
+                                    <div className="col-span-1 row-span-2 flex flex-col items-end justify-start gap-1">
+                                        <Badge className={cn("gap-1.5", statusInfo.bgColor, statusInfo.color)}>{statusInfo.label}</Badge>
+                                        <span className="text-lg font-bold text-primary">{order.cod.toFixed(2)} د.أ</span>
                                     </div>
 
-                                    {/* Row 4 */}
-                                    <div className="col-span-1 flex flex-col justify-center">
-                                        <span className="text-base font-bold text-primary">{order.cod.toFixed(2)} د.أ</span>
-                                        <span className="text-xs text-muted-foreground">قيمة التحصيل</span>
+                                    {/* Spanning ID and Date */}
+                                    <div className="col-span-full col-start-2 flex justify-between text-xs text-muted-foreground">
+                                        <span className="font-mono text-primary">{order.id}</span>
+                                        <span>{order.date}</span>
                                     </div>
-                                     <div className="col-span-1 flex justify-end items-center">
-                                         <Avatar className='h-9 w-9 text-xs'>
-                                            <AvatarFallback>{order.driver.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                     </div>
                                 </div>
                                 <CardFooter className='p-2 bg-muted/50 grid grid-cols-3 items-center justify-items-center'>
                                      <ActionButton icon={MessageCircle} label="واتساب" />
@@ -300,10 +292,10 @@ function OrdersPageContent() {
                                      <ActionButton icon={Printer} label="طباعة" />
                                 </CardFooter>
                             </Card>
-                         )
+                        )
                     })}
                 </div>
-                 <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
+                <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
                     <span className="text-xs text-muted-foreground">
                         عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
                     </span>
@@ -319,8 +311,8 @@ function OrdersPageContent() {
 
     return (
         <TooltipProvider>
-            <div className="flex flex-col h-full bg-background">
-                <div className="flex-none p-4 flex-row items-center justify-between flex flex-wrap gap-2 border-b">
+            <div className="flex flex-col h-[calc(100vh-64px)] bg-background p-4 gap-4">
+                <div className="flex-none flex-row items-center justify-between flex flex-wrap gap-2">
                      <div className="relative w-full max-w-xs">
                         <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="بحث شامل..." className="pr-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -344,28 +336,19 @@ function OrdersPageContent() {
                     </div>
                 </div>
 
-                {/* Filters Row */}
-                <div className="flex-none px-2 py-1 bg-primary text-primary-foreground">
-                     <div className="flex items-center">
-                        <div className="p-1 text-right w-12 sticky right-0 z-30 bg-primary"></div>
-                        <div className="p-1 w-40"><Input placeholder="رقم الطلب..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
-                        <div className="p-1 w-32"><Input placeholder="المصدر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
-                        <div className="p-1 w-40"><Input placeholder="الرقم المرجعي..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
-                        <div className="p-1 w-48"><Input placeholder="المستلم..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
-                        <div className="p-1 w-40"><Input placeholder="الهاتف..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
-                        <div className="p-1 w-40"><Input placeholder="المنطقة..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
-                        <div className="p-1 w-32"><Input placeholder="المدينة..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
-                        <div className="p-1 w-48"><Input placeholder="المتجر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
-                        <div className="p-1 w-48"><Input placeholder="الحالة..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
-                        <div className="p-1 w-48"><Input placeholder="السائق..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
-                        <div className="p-1 w-32"><Input placeholder="المستحق..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
-                        <div className="p-1 w-32"><Input placeholder="الأجور..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
-                        <div className="p-1 w-32"><Input placeholder="التحصيل..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
-                        <div className="p-1 w-32 flex-1"><Input placeholder="التاريخ..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
-                    </div>
-                </div>
+                <Card>
+                    <CardContent className="p-2">
+                        <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr] gap-2 items-center">
+                            <div className="w-12"></div>
+                            <div><Input placeholder="رقم الطلب..." className="h-8"/></div>
+                            <div><Input placeholder="المصدر..." className="h-8"/></div>
+                            <div><Input placeholder="الرقم المرجعي..." className="h-8"/></div>
+                            <div><Input placeholder="المستلم..." className="h-8"/></div>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                <div className="flex-1 overflow-auto">
+                <div className="flex-1 overflow-auto border rounded-lg">
                     <Table className="min-w-full border-separate border-spacing-0">
                         <TableHeader className="sticky top-0 z-10 bg-muted/50 hover:bg-muted/80">
                             <TableRow>
@@ -437,7 +420,7 @@ function OrdersPageContent() {
                                 </TableRow>
                             )})}
                         </TableBody>
-                         <TableFooter>
+                        <TableFooter className="sticky bottom-0 bg-muted/95">
                             <TableRow>
                                 <TableCell colSpan={11} className="text-right font-semibold">
                                     <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
@@ -499,3 +482,4 @@ function OrdersPageContent() {
 export default function OrdersPage() {
     return <OrdersPageContent />;
 }
+
