@@ -32,7 +32,7 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { href: '/dashboard', icon: Home, label: 'لوحة التحكم' },
+  { href: '/dashboard', icon: LayoutDashboard, label: 'لوحة التحكم' },
   { href: '/dashboard/orders', icon: ShoppingCart, label: 'عرض الطلبات' },
   { href: '/dashboard/parse-order', icon: PackagePlus, label: 'إضافة طلبات' },
   { href: '/dashboard/returns', icon: Undo2, label: 'إدارة المرتجعات' },
