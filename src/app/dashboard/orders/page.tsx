@@ -325,7 +325,7 @@ function OrdersPageContent() {
 
     return (
         <TooltipProvider>
-            <div className="flex flex-col h-[calc(100vh-64px)] bg-background">
+            <div className="flex flex-col h-[calc(100vh-128px)] bg-background">
                 <div className="flex-none p-4 flex-row items-center justify-between flex flex-wrap gap-2 border-b">
                      <div className="relative w-full max-w-xs">
                         <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -464,7 +464,7 @@ function OrdersPageContent() {
                                 </TableRow>
                             )})}
                         </TableBody>
-                        <TableFooter className="sticky bottom-0 bg-muted/80">
+                        <TableFooter>
                             <TableRow>
                                 <TableCell colSpan={11} className="text-right font-semibold">
                                     <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
@@ -479,7 +479,7 @@ function OrdersPageContent() {
                         </TableFooter>
                     </Table>
                 </div>
-                <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
+                <CardFooter className="flex items-center justify-between p-2 border-t bg-background">
                     <span className="text-xs text-muted-foreground">
                         عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
                     </span>
