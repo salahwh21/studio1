@@ -84,4 +84,26 @@
     font-family: var(--font-sans);
     font-size: 14px;
   }
+  .custom-table-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .custom-table-scroll {
+    flex-grow: 1;
+    overflow: auto;
+  }
+  .custom-table thead, .custom-table tfoot {
+    position: sticky;
+    z-index: 10;
+  }
+  .custom-table thead {
+    top: 0;
+  }
+  .custom-table tfoot {
+    bottom: 56px; /* Height of pagination footer */
+  }
+
 }
+
+    

@@ -123,46 +123,6 @@ type ModalState =
     | { type: 'assignDriver' }
     | { type: 'changeStatus' };
 
-// Mobile-specific card component
-const MobileOrderCard = ({ order, isSelected, onCheckboxClick, openModal }: { order: Order, isSelected: boolean, onCheckboxClick: (id: string) => void, openModal: (state: ModalState) => void }) => {
-    const statusInfo = getStatusInfo(order.status);
-    const handleWhatsAppClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        openModal({ type: 'whatsapp', order });
-    }
-    
-    return (
-        <Card className={`overflow-hidden border-r-4 ${statusInfo.bgColor.replace('bg-', 'border-')}`}>
-            <CardHeader className="flex flex-row items-start gap-4 p-3 bg-muted/50">
-                <div className="flex items-center gap-3 flex-1">
-                    <Checkbox checked={isSelected} onCheckedChange={(checked) => onCheckboxClick(order.id)} />
-                    <div className="grid gap-0.5">
-                        <Link href="#"><span className="font-semibold text-primary">{order.id}</span></Link>
-                        <span className="text-xs text-muted-foreground">{order.recipient}</span>
-                    </div>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                    <Badge variant="outline" className={cn(statusInfo.bgColor, statusInfo.color, "gap-1.5")}>
-                        {React.createElement(statusInfo.icon, { className: "h-3 w-3" })}
-                        {statusInfo.label}
-                    </Badge>
-                    <span className="font-bold text-sm">{order.cod.toFixed(2)} د.أ</span>
-                </div>
-            </CardHeader>
-            <CardContent className="p-3 text-sm space-y-2">
-                <p><strong>الهاتف:</strong> {order.phone}</p>
-                <p><strong>العنوان:</strong> {order.address}</p>
-                <p><strong>السائق:</strong> {order.driver}</p>
-            </CardContent>
-            <CardFooter className="p-2 bg-muted/50 flex justify-end gap-1">
-                <Button variant="ghost" size="sm" onClick={() => openModal({ type: 'barcode', order })}>طباعة</Button>
-                <Button variant="ghost" size="sm" onClick={() => openModal({ type: 'history', order })}>سجل</Button>
-                <Button variant="ghost" size="sm" onClick={handleWhatsAppClick}>واتساب</Button>
-            </CardFooter>
-        </Card>
-    );
-}
-
 
 function OrdersPageContent() {
     const { toast } = useToast();
@@ -251,167 +211,233 @@ function OrdersPageContent() {
         return <Skeleton className="w-full h-screen" />;
     }
 
-    return (
-        <TooltipProvider>
-            <div className="flex flex-col h-[calc(100vh-64px)]">
-                 <Card className="sticky top-[64px] z-20 rounded-none border-x-0 border-t-0">
-                    <CardContent className="p-2 flex-row items-center justify-between flex flex-wrap gap-2">
-                         <div className="relative w-full max-w-xs">
-                            <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="بحث شامل..." className="pr-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                        </div>
-                        <div className="flex items-center gap-2">
-                             <Button variant="outline" size="sm" className="gap-1 bg-orange-100 text-orange-600 border-orange-200 hover:bg-orange-200">
-                                <X className="h-4 w-4"/>
-                                <span>مسح الفلتر</span>
-                             </Button>
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="gap-1"><FileDown /><span>تصدير</span></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem>تصدير كـ CSV</DropdownMenuItem>
-                                    <DropdownMenuItem>تصدير كـ PDF</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <Button variant="outline" size="sm"><Printer /></Button>
-                            <Button variant="outline" size="sm"><RefreshCw /></Button>
-                        </div>
-                    </CardContent>
-                </Card>
-                <div className="flex-1 relative overflow-auto">
-                    <div className="overflow-x-auto">
-                        <Table className="min-w-max border-b">
-                            <TableHeader className="sticky top-0 z-10 bg-background">
-                                <TableRow className="bg-primary hover:bg-primary/90">
-                                    <TableHead className="sticky right-0 p-1 bg-primary border-l border-primary-foreground/20 text-right">
-                                        {/* empty for checkbox in next row */}
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text_white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                    <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                        <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                    </TableHead>
-                                </TableRow>
-                                <TableRow className="bg-muted/50 hover:bg-muted/80">
-                                    <TableHead className="sticky right-0 w-12 px-4 border-l bg-muted text-right flex items-center justify-center">
-                                        <Checkbox
-                                            onCheckedChange={handleSelectAll}
-                                            checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
-                                            className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                                        />
-                                    </TableHead>
-                                    <TableHead className="text-right border-l bg-muted">رقم الطلب</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">المصدر</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">الرقم المرجعي</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">المستلم</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">الهاتف</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">المنطقة</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">المدينة</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">المتجر</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">الحالة</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">السائق</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">المستحق للتاجر</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">أجور التوصيل</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">قيمة التحصيل</TableHead>
-                                    <TableHead className="text-right border-l bg-muted">التاريخ</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {paginatedOrders.map(order => {
-                                    const statusInfo = getStatusInfo(order.status);
-                                    const SourceIcon = sourceIcons[order.source] || LinkIcon;
-                                    return (
-                                    <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''}>
-                                        <TableCell className="sticky right-0 border-l bg-muted flex items-center justify-center">
-                                            <Checkbox
-                                                checked={selectedRows.includes(order.id)}
-                                                onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
-                                            />
-                                        </TableCell>
-                                        <TableCell className="font-medium text-primary p-1 border-l text-right"><Link href="#">{order.id}</Link></TableCell>
-                                        <TableCell className="p-1 border-l text-right">
-                                            <Badge variant="outline" className="gap-1.5 font-normal">
-                                                <SourceIcon className="h-3 w-3" />
-                                                {order.source}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.referenceNumber}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.recipient}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.phone}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.region}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.city}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.merchant}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">
-                                                <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
-                                                <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
-                                                    <SelectValue placeholder="الحالة" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                        <SelectGroup>
-                                                        {statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                                                        </SelectGroup>
-                                                </SelectContent>
-                                            </Select>
-                                        </TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.driver}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.itemPrice.toFixed(2)}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.deliveryFee.toFixed(2)}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.cod.toFixed(2)}</TableCell>
-                                        <TableCell className="p-1 border-l text-right">{order.date}</TableCell>
-                                    </TableRow>
-                                )})}
-                            </TableBody>
-                            <TableFooter>
-                                <TableRow>
-                                    <TableCell colSpan={11} className="p-1 border-l text-right font-semibold">
-                                        <div className={`p-1 rounded text-xs ${selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800'}`}>
-                                            {displayLabel}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="p-1 border-l text-right font-bold">{displayTotals.itemPrice.toFixed(2)}</TableCell>
-                                    <TableCell className="p-1 border-l text-right font-bold">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
-                                    <TableCell className="p-1 border-l text-right font-bold">{displayTotals.cod.toFixed(2)}</TableCell>
-                                    <TableCell className="p-1 border-l text-right"></TableCell>
-                                </TableRow>
-                            </TableFooter>
-                        </Table>
+    if (isMobile) {
+        return (
+            <div className="flex flex-col h-full">
+                <div className="p-2 flex-row items-center justify-between flex flex-wrap gap-2 border-b">
+                     <div className="relative w-full max-w-xs">
+                        <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="بحث شامل..." className="pr-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                         <Button variant="outline" size="sm" className="gap-1 bg-orange-100 text-orange-600 border-orange-200 hover:bg-orange-200">
+                            <X className="h-4 w-4"/>
+                            <span>مسح الفلتر</span>
+                         </Button>
                     </div>
                 </div>
+                 <div className="flex-1 overflow-y-auto p-2 space-y-3">
+                    {paginatedOrders.map(order => {
+                         const statusInfo = getStatusInfo(order.status);
+                         return (
+                            <Card key={order.id} className={`overflow-hidden border-r-4 ${statusInfo.bgColor.replace('bg-', 'border-')}`}>
+                                <CardHeader className="flex flex-row items-start gap-4 p-3 bg-muted/50">
+                                    <div className="flex items-center gap-3 flex-1">
+                                        <Checkbox checked={selectedRows.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} />
+                                        <div className="grid gap-0.5">
+                                            <Link href="#"><span className="font-semibold text-primary">{order.id}</span></Link>
+                                            <span className="text-xs text-muted-foreground">{order.recipient}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <Badge variant="outline" className={cn(statusInfo.bgColor, statusInfo.color, "gap-1.5")}>
+                                            {React.createElement(statusInfo.icon, { className: "h-3 w-3" })}
+                                            {statusInfo.label}
+                                        </Badge>
+                                        <span className="font-bold text-sm">{order.cod.toFixed(2)} د.أ</span>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-3 text-sm space-y-2">
+                                    <p><strong>الهاتف:</strong> {order.phone}</p>
+                                    <p><strong>العنوان:</strong> {order.address}</p>
+                                    <p><strong>السائق:</strong> {order.driver}</p>
+                                </CardContent>
+                            </Card>
+                         )
+                    })}
+                </div>
+                 <CardFooter className="flex items-center justify-between p-2 border-t bg-background">
+                    <span className="text-xs text-muted-foreground">
+                        عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
+                    </span>
+                    <div className="flex items-center gap-1">
+                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
+                        <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
+                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>التالي</Button>
+                    </div>
+                </CardFooter>
+            </div>
+        )
+    }
+
+    return (
+        <TooltipProvider>
+            <div className="flex flex-col h-[calc(100vh-8rem)]">
+                 <div className="p-2 flex-row items-center justify-between flex flex-wrap gap-2 border-b">
+                     <div className="relative w-full max-w-xs">
+                        <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="بحث شامل..." className="pr-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                         <Button variant="outline" size="sm" className="gap-1 bg-orange-100 text-orange-600 border-orange-200 hover:bg-orange-200">
+                            <X className="h-4 w-4"/>
+                            <span>مسح الفلتر</span>
+                         </Button>
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="gap-1"><FileDown /><span>تصدير</span></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem>تصدير كـ CSV</DropdownMenuItem>
+                                <DropdownMenuItem>تصدير كـ PDF</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Button variant="outline" size="sm"><Printer /></Button>
+                        <Button variant="outline" size="sm"><RefreshCw /></Button>
+                    </div>
+                </div>
+                <div className="flex-1 overflow-auto custom-table-container">
+                    <Table className="min-w-max border-b custom-table">
+                        <TableHeader className="sticky top-0 z-10 bg-background">
+                            <TableRow className="bg-primary hover:bg-primary/90">
+                                <TableHead className="sticky right-0 p-1 bg-primary border-l border-primary-foreground/20 text-right">
+                                    {/* empty for checkbox in next row */}
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text_white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
+                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
+                                </TableHead>
+                            </TableRow>
+                            <TableRow className="bg-muted/50 hover:bg-muted/80">
+                                <TableHead className="sticky right-0 w-12 px-4 border-l bg-muted text-right flex items-center justify-center">
+                                    <Checkbox
+                                        onCheckedChange={handleSelectAll}
+                                        checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
+                                        className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                    />
+                                </TableHead>
+                                <TableHead className="text-right border-l bg-muted">رقم الطلب</TableHead>
+                                <TableHead className="text-right border-l bg-muted">المصدر</TableHead>
+                                <TableHead className="text-right border-l bg-muted">الرقم المرجعي</TableHead>
+                                <TableHead className="text-right border-l bg-muted">المستلم</TableHead>
+                                <TableHead className="text-right border-l bg-muted">الهاتف</TableHead>
+                                <TableHead className="text-right border-l bg-muted">المنطقة</TableHead>
+                                <TableHead className="text-right border-l bg-muted">المدينة</TableHead>
+                                <TableHead className="text-right border-l bg-muted">المتجر</TableHead>
+                                <TableHead className="text-right border-l bg-muted">الحالة</TableHead>
+                                <TableHead className="text-right border-l bg-muted">السائق</TableHead>
+                                <TableHead className="text-right border-l bg-muted">المستحق للتاجر</TableHead>
+                                <TableHead className="text-right border-l bg-muted">أجور التوصيل</TableHead>
+                                <TableHead className="text-right border-l bg-muted">قيمة التحصيل</TableHead>
+                                <TableHead className="text-right border-l bg-muted">التاريخ</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {paginatedOrders.map(order => {
+                                const statusInfo = getStatusInfo(order.status);
+                                const SourceIcon = sourceIcons[order.source] || LinkIcon;
+                                return (
+                                <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''}>
+                                    <TableCell className="sticky right-0 border-l bg-muted flex items-center justify-center">
+                                        <Checkbox
+                                            checked={selectedRows.includes(order.id)}
+                                            onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
+                                        />
+                                    </TableCell>
+                                    <TableCell className="font-medium text-primary p-1 border-l text-right"><Link href="#">{order.id}</Link></TableCell>
+                                    <TableCell className="p-1 border-l text-right">
+                                        <Badge variant="outline" className="gap-1.5 font-normal">
+                                            <SourceIcon className="h-3 w-3" />
+                                            {order.source}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.referenceNumber}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.recipient}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.phone}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.region}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.city}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.merchant}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">
+                                            <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
+                                            <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
+                                                <SelectValue placeholder="الحالة" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                    <SelectGroup>
+                                                    {statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                                                    </SelectGroup>
+                                            </SelectContent>
+                                        </Select>
+                                    </TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.driver}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.itemPrice.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.deliveryFee.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.cod.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 border-l text-right">{order.date}</TableCell>
+                                </TableRow>
+                            )})}
+                        </TableBody>
+                         <TableFooter className="sticky bottom-[56px] z-10">
+                            <TableRow>
+                                <TableCell className="sticky right-0 bg-muted"></TableCell>
+                                <TableCell colSpan={10} className="p-1 border-l text-right font-semibold">
+                                    <div className={`p-2 rounded text-xs ${selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800'}`}>
+                                        {displayLabel}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="p-2 border-l text-right font-bold">{displayTotals.itemPrice.toFixed(2)}</TableCell>
+                                <TableCell className="p-2 border-l text-right font-bold">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
+                                <TableCell className="p-2 border-l text-right font-bold">{displayTotals.cod.toFixed(2)}</TableCell>
+                                <TableCell className="p-2 border-l text-right"></TableCell>
+                            </TableRow>
+                        </TableFooter>
+                    </Table>
+                </div>
+                 <CardFooter className="flex items-center justify-between p-2 border-t bg-background sticky bottom-0 z-10">
+                    <span className="text-xs text-muted-foreground">
+                        عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
+                    </span>
+                    <div className="flex items-center gap-1">
+                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
+                        <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
+                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>التالي</Button>
+                    </div>
+                </CardFooter>
             </div>
             
             {/* Modals */}
@@ -449,3 +475,5 @@ function OrdersPageContent() {
 export default function OrdersPage() {
     return <OrdersPageContent />
 }
+
+    
