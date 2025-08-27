@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useActionState } from 'react';
 import { z } from 'zod';
 import { Bot, Image as ImageIcon, Loader2, Clipboard, FileText, Trash2, Send, Wand2 } from 'lucide-react';
@@ -31,7 +31,7 @@ import {
 
 const formSchema = z.object({
   request: z.string().min(1, {
-    message: 'الرجاء إدخال نص الطلب.',
+    message: 'الرجاء إدخال نص الطلب أو تحميل صورة.',
   }),
 });
 
@@ -48,12 +48,11 @@ export default function AIOrderParsingPage() {
   const [reviewList, setReviewList] = useState<OrderReviewItem[]>([]);
   const [requestText, setRequestText] = useState('');
   const [imageDataUri, setImageDataUri] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const [isPending, startTransition] = useTransition();
   const [formState, formAction] = useActionState(parseOrderFromRequest, initialState);
 
   useEffect(() => {
-    setIsSubmitting(false);
     if (formState.error) {
       toast({
         variant: 'destructive',
@@ -80,10 +79,10 @@ export default function AIOrderParsingPage() {
     }
   }, [formState, toast]);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const validation = formSchema.safeParse({ request: requestText || imageDataUri });
-    if (!validation.success) {
+     if (!validation.success) {
         toast({
             variant: 'destructive',
             title: 'خطأ في الإدخال',
@@ -91,11 +90,11 @@ export default function AIOrderParsingPage() {
         });
         return;
     }
-
-    setIsSubmitting(true);
-    const formData = new FormData();
-    formData.append('request', requestText || imageDataUri!);
-    formAction(formData);
+    
+    const formData = new FormData(event.currentTarget);
+    startTransition(() => {
+        formAction(formData);
+    });
   };
 
   const handlePasteFromClipboard = async () => {
@@ -140,7 +139,7 @@ export default function AIOrderParsingPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="flex flex-col gap-6">
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleFormSubmit}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -155,6 +154,7 @@ export default function AIOrderParsingPage() {
                     <Label htmlFor="request">نص الطلب أو الصورة</Label>
                     <Textarea
                       id="request"
+                      name="request"
                       placeholder="مثال: إرسال ٢ بيتزا حجم كبير إلى علي في ١٢٣ شارع الملك، الرياض. واحدة بيبروني وواحدة خضار."
                       className={`min-h-[150px] transition-colors ${formState.error ? 'border-red-500' : ''}`}
                       value={requestText}
@@ -162,7 +162,10 @@ export default function AIOrderParsingPage() {
                           setRequestText(e.target.value);
                           if(e.target.value) setImageDataUri(null);
                       }}
+                      disabled={!!imageDataUri}
                     />
+                    <input type="hidden" name="request" value={imageDataUri || requestText} />
+
                     {imageDataUri && (
                         <div className="relative mt-2 w-40 h-40">
                             <img src={imageDataUri} alt="Preview" className="rounded-md object-cover w-full h-full"/>
@@ -189,8 +192,8 @@ export default function AIOrderParsingPage() {
                   </div>
               </CardContent>
               <CardFooter>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? (
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       جاري التحليل...
@@ -215,13 +218,13 @@ export default function AIOrderParsingPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-           {isSubmitting && reviewList.length === 0 && (
+           {isPending && reviewList.length === 0 && (
              <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground min-h-[300px]">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p>يقوم الذكاء الاصطناعي بمعالجة أول طلب...</p>
              </div>
           )}
-          {!isSubmitting && reviewList.length === 0 && (
+          {!isPending && reviewList.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground min-h-[300px]">
                 <Bot className="h-8 w-8" />
                 <p>في انتظار إضافة طلبات للمراجعة.</p>
@@ -263,7 +266,7 @@ export default function AIOrderParsingPage() {
           )}
         </CardContent>
         <CardFooter className="flex justify-end">
-            <Button disabled={reviewList.length === 0 || isSubmitting} onClick={handleConfirmOrders}>
+            <Button disabled={reviewList.length === 0 || isPending} onClick={handleConfirmOrders}>
                 <Send className="mr-2 h-4 w-4"/> تأكيد كل الطلبات 
             </Button>
         </CardFooter>
