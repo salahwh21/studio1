@@ -12,6 +12,7 @@ import {
   Calculator,
   Settings,
   Wand2,
+  Map,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -34,6 +35,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard/orders', icon: ShoppingCart, label: 'عرض الطلبات' },
   { href: '/dashboard/parse-order', icon: PackagePlus, label: 'إضافة طلبات' },
   { href: '/dashboard/optimize', icon: Wand2, label: 'تحسين المسار' },
+  { href: '/dashboard/drivers-map', icon: Map, label: 'خريطة السائقين' },
   { href: '/dashboard/returns', icon: Undo2, label: 'إدارة المرتجعات' },
   { href: '/dashboard/financials', icon: Calculator, label: 'المحاسبة' },
 ];
