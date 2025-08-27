@@ -411,34 +411,6 @@ function OrdersPageContent() {
                                 </TableRow>
                             </TableFooter>
                         </Table>
-                         <CardFooter className="flex items-center justify-between p-2 border-t bg-background">
-                             <div className="text-sm text-muted-foreground">
-                                 عرض <strong>{paginatedOrders.length}</strong> من <strong>{filteredOrders.length}</strong> طلبات
-                             </div>
-                             <div className="flex items-center gap-2">
-                                 <Button
-                                     variant="outline"
-                                     size="sm"
-                                     onClick={() => setPage(prev => Math.max(prev - 1, 0))}
-                                     disabled={page === 0}
-                                 >
-                                     <ChevronRight className="h-4 w-4" />
-                                     <span>السابق</span>
-                                 </Button>
-                                 <span className="text-sm text-muted-foreground">
-                                     صفحة {page + 1} من {totalPages}
-                                 </span>
-                                 <Button
-                                     variant="outline"
-                                     size="sm"
-                                     onClick={() => setPage(prev => Math.min(prev + 1, totalPages - 1))}
-                                     disabled={page >= totalPages - 1}
-                                 >
-                                    <span>التالي</span>
-                                     <ChevronLeft className="h-4 w-4" />
-                                 </Button>
-                             </div>
-                         </CardFooter>
                     </div>
                 </div>
             </div>
