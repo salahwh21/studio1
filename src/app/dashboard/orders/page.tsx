@@ -272,8 +272,8 @@ function OrdersPageContent() {
 
     return (
         <TooltipProvider>
-            <div className="flex flex-col h-[calc(100vh-8rem)]">
-                 <div className="p-2 flex-row items-center justify-between flex flex-wrap gap-2 border-b">
+            <div className="flex flex-col h-[calc(100vh-8rem)] p-4">
+                 <div className="flex-none p-2 flex-row items-center justify-between flex flex-wrap gap-2 border-b">
                      <div className="relative w-full max-w-xs">
                         <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="بحث شامل..." className="pr-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -296,11 +296,11 @@ function OrdersPageContent() {
                         <Button variant="outline" size="sm"><RefreshCw /></Button>
                     </div>
                 </div>
-                <div className="flex-1 overflow-auto custom-table-container">
-                    <Table className="min-w-max border-b custom-table">
-                        <TableHeader className="sticky top-0 z-10 bg-background">
-                            <TableRow className="bg-primary hover:bg-primary/90">
-                                <TableHead className="sticky right-0 p-1 bg-primary border-l border-primary-foreground/20 text-right">
+                <div className="flex-1 relative overflow-auto">
+                    <Table className="min-w-full border-separate border-spacing-0">
+                        <TableHeader className="sticky top-0 z-20 bg-background">
+                            <TableRow>
+                                <TableHead className="sticky right-0 p-1 bg-primary border-l border-primary-foreground/20 text-right z-30 w-12">
                                     {/* empty for checkbox in next row */}
                                 </TableHead>
                                 <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
@@ -344,7 +344,7 @@ function OrdersPageContent() {
                                 </TableHead>
                             </TableRow>
                             <TableRow className="bg-muted/50 hover:bg-muted/80">
-                                <TableHead className="sticky right-0 w-12 px-4 border-l bg-muted text-right flex items-center justify-center">
+                                <TableHead className="sticky right-0 px-4 border-l bg-muted text-right flex items-center justify-center z-30 w-12">
                                     <Checkbox
                                         onCheckedChange={handleSelectAll}
                                         checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
@@ -373,7 +373,7 @@ function OrdersPageContent() {
                                 const SourceIcon = sourceIcons[order.source] || LinkIcon;
                                 return (
                                 <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''}>
-                                    <TableCell className="sticky right-0 border-l bg-muted flex items-center justify-center">
+                                    <TableCell className="sticky right-0 border-l bg-muted flex items-center justify-center z-10">
                                         <Checkbox
                                             checked={selectedRows.includes(order.id)}
                                             onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
@@ -412,9 +412,9 @@ function OrdersPageContent() {
                                 </TableRow>
                             )})}
                         </TableBody>
-                         <TableFooter className="sticky bottom-[56px] z-10">
+                        <TableFooter className="sticky bottom-[56px] z-20">
                             <TableRow>
-                                <TableCell className="sticky right-0 bg-muted"></TableCell>
+                                <TableCell className="sticky right-0 bg-muted z-30"></TableCell>
                                 <TableCell colSpan={10} className="p-1 border-l text-right font-semibold">
                                     <div className={`p-2 rounded text-xs ${selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800'}`}>
                                         {displayLabel}
@@ -428,7 +428,7 @@ function OrdersPageContent() {
                         </TableFooter>
                     </Table>
                 </div>
-                 <CardFooter className="flex items-center justify-between p-2 border-t bg-background sticky bottom-0 z-10">
+                 <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
                     <span className="text-xs text-muted-foreground">
                         عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
                     </span>
