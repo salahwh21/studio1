@@ -2,14 +2,17 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from 'next-themes';
+
 import { Tajawal } from 'next/font/google';
+const tajawal = Tajawal({ 
+  subsets: ['latin', 'arabic'], 
+  weight: ['400', '700'],
+  variable: '--font-tajawal' 
+});
+
 
 // تهيئة خط Tajawal
-const tajawal = Tajawal({
-  subsets: ['latin', 'arabic'],
-  weight: ['400', '700'],
-  variable: '--font-tajawal',
-});
+
 
 export const metadata: Metadata = {
   title: 'إدارة تسجيل الطلبات - الموقع',
