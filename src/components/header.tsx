@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Bell, LogOut, Moon, Settings, Sun, User, Menu, Undo2, type LucideIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
@@ -20,11 +21,13 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Logo } from './logo';
+import { Separator } from './ui/separator';
 
 
 type NavItem = {
@@ -40,6 +43,22 @@ interface AppHeaderProps {
 export function AppHeader({ navItems }: AppHeaderProps) {
   const { setTheme, theme } = useTheme();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const pathname = usePathname();
+
+  const isActive = (href: string) => {
+    if (href === '/dashboard') {
+      return pathname === href;
+    }
+     if (href.startsWith('/dashboard/orders')) {
+        return pathname.startsWith('/dashboard/orders');
+    }
+    return pathname.startsWith(href);
+  };
+
+
+  const bottomNavItems: NavItem[] = [
+    { href: '/dashboard/settings', icon: Settings, label: 'الإعدادات' },
+  ];
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6">
@@ -51,11 +70,11 @@ export function AppHeader({ navItems }: AppHeaderProps) {
                         <span className="sr-only">فتح القائمة</span>
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="right">
+                <SheetContent side="right" className="flex flex-col">
                     <SheetHeader>
                       <SheetTitle>
                         <Link 
-                            href="#" 
+                            href="/dashboard" 
                             className="flex items-center gap-2 text-lg font-semibold mb-4"
                             onClick={() => setIsSheetOpen(false)}
                         >
@@ -63,12 +82,16 @@ export function AppHeader({ navItems }: AppHeaderProps) {
                         </Link>
                       </SheetTitle>
                     </SheetHeader>
-                    <nav className="grid gap-6 text-lg font-medium mt-4">
+                    <nav className="flex-1 grid gap-2 text-base font-medium mt-4">
                         {navItems.map(item => (
                             <Link 
                                 key={item.href} 
                                 href={item.href} 
-                                className="text-muted-foreground hover:text-foreground flex items-center gap-2"
+                                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary ${
+                                    isActive(item.href)
+                                    ? 'bg-accent text-accent-foreground'
+                                    : 'text-muted-foreground'
+                                }`}
                                 onClick={() => setIsSheetOpen(false)}
                             >
                                 <item.icon className="h-5 w-5" />
@@ -76,6 +99,24 @@ export function AppHeader({ navItems }: AppHeaderProps) {
                             </Link>
                         ))}
                     </nav>
+                     <nav className="mt-auto grid gap-2 text-base font-medium">
+                        <Separator />
+                        {bottomNavItems.map(item => (
+                             <Link 
+                                key={item.href} 
+                                href={item.href} 
+                                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary ${
+                                    isActive(item.href)
+                                    ? 'bg-accent text-accent-foreground'
+                                    : 'text-muted-foreground'
+                                }`}
+                                onClick={() => setIsSheetOpen(false)}
+                            >
+                                <item.icon className="h-5 w-5" />
+                                {item.label}
+                            </Link>
+                        ))}
+                     </nav>
                 </SheetContent>
             </Sheet>
         </div>
