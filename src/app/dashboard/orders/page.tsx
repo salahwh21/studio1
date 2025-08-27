@@ -279,7 +279,7 @@ function OrdersPageContent() {
                                 <Table className="min-w-max border-b">
                                     <TableHeader className="sticky top-0 z-10">
                                         <TableRow className="bg-primary hover:bg-primary/90">
-                                            <TableHead className="sticky right-0 p-1 bg-primary border-l border-primary-foreground/20 text-right px-4">
+                                            <TableHead className="sticky right-0 p-1 bg-primary border-l border-primary-foreground/20 text-right px-4 bg-muted">
                                                 <Checkbox
                                                     onCheckedChange={handleSelectAll}
                                                     checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
@@ -327,7 +327,7 @@ function OrdersPageContent() {
                                             </TableHead>
                                         </TableRow>
                                         <TableRow className="bg-muted/50 hover:bg-muted/80">
-                                            <TableHead className="sticky right-0 w-12 px-4 border-l bg-muted text-right">
+                                            <TableHead className="sticky right-0 w-12 px-4 border-l bg-muted text-right flex items-center justify-center">
                                                 
                                             </TableHead>
                                             <TableHead className="text-right border-l bg-muted">رقم الطلب</TableHead>
@@ -352,7 +352,7 @@ function OrdersPageContent() {
                                             const SourceIcon = sourceIcons[order.source] || LinkIcon;
                                             return (
                                             <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''}>
-                                                <TableCell className="sticky right-0 px-4 border-l bg-card">
+                                                <TableCell className="sticky right-0 border-l bg-muted flex items-center justify-center">
                                                     <Checkbox
                                                         checked={selectedRows.includes(order.id)}
                                                         onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
