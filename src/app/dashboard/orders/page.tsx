@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -233,7 +234,7 @@ function OrdersPageContent() {
     return (
         <TooltipProvider>
             <div className="flex flex-col gap-4">
-                <Card>
+                 <Card>
                     <CardContent className="p-2 flex-row items-center justify-between flex flex-wrap gap-2">
                          <div className="relative w-full max-w-xs">
                             <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -273,9 +274,9 @@ function OrdersPageContent() {
                                 ))}
                             </div>
                         ) : (
-                           <div className="overflow-x-auto max-h-[calc(100vh-300px)]">
+                           <div className="overflow-x-auto">
                             <Table className="min-w-max">
-                                <TableHeader className="sticky top-0 z-10">
+                                <TableHeader>
                                     <TableRow className="bg-primary hover:bg-primary/90">
                                         <TableHead className="w-12 p-1 bg-primary border-l border-primary-foreground/20 text-right px-4"><Checkbox
                                                 onCheckedChange={handleSelectAll}
