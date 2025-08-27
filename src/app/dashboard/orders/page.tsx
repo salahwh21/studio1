@@ -259,7 +259,7 @@ function OrdersPageContent() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="border-0 shadow-none">
                     <CardContent className="p-0">
                         {isMobile ? (
                             <div className="p-2 space-y-2">
