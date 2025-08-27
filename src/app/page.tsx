@@ -11,7 +11,10 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Logo } from '@/components/logo';
 import { LoginExperienceContext } from '@/context/LoginExperienceContext';
-import { Facebook, Instagram, MessageSquare } from 'lucide-react';
+import { FacebookIcon } from '@/components/icons/facebook-icon';
+import { InstagramIcon } from '@/components/icons/instagram-icon';
+import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -95,17 +98,17 @@ export default function LoginPage() {
               <div className="flex justify-center gap-4">
                 {settings.socialLinks.whatsapp && (
                   <a href={`https://wa.me/${settings.socialLinks.whatsapp}`} target="_blank" rel="noopener noreferrer">
-                    <Button variant="ghost" size="icon"><MessageSquare className="h-5 w-5"/></Button>
+                    <Button variant="ghost" size="icon"><WhatsappIcon className="h-6 w-6"/></Button>
                   </a>
                 )}
                 {settings.socialLinks.instagram && (
                   <a href={settings.socialLinks.instagram} target="_blank" rel="noopener noreferrer">
-                    <Button variant="ghost" size="icon"><Instagram className="h-5 w-5"/></Button>
+                    <Button variant="ghost" size="icon"><InstagramIcon className="h-6 w-6"/></Button>
                   </a>
                 )}
                  {settings.socialLinks.facebook && (
                   <a href={settings.socialLinks.facebook} target="_blank" rel="noopener noreferrer">
-                    <Button variant="ghost" size="icon"><Facebook className="h-5 w-5"/></Button>
+                    <Button variant="ghost" size="icon"><FacebookIcon className="h-6 w-6"/></Button>
                   </a>
                 )}
               </div>
