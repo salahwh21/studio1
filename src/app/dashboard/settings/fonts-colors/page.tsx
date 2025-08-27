@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -42,9 +43,9 @@ export default function FontsColorsPage() {
   const { toast } = useToast();
   
   // Default colors are from the initial CSS file
-  const [primaryColor, setPrimaryColor] = useState(hslToHex(197, 71, 52));
-  const [backgroundColor, setBackgroundColor] = useState(hslToHex(200, 80, 95));
-  const [accentColor, setAccentColor] = useState(hslToHex(33, 87, 62));
+  const [primaryColor, setPrimaryColor] = useState('#29ABE2');
+  const [backgroundColor, setBackgroundColor] = useState('#E5F5FB');
+  const [accentColor, setAccentColor] = useState('#F2994A');
 
   const [fontFamily, setFontFamily] = useState('Tajawal');
   const [baseFontSize, setBaseFontSize] = useState(14);
@@ -193,7 +194,7 @@ export default function FontsColorsPage() {
           </CardHeader>
           <CardContent 
             style={previewStyle} 
-            className="space-y-6 font-[var(--preview-font-family)] text-[var(--preview-font-size)] rounded-lg border p-6 transition-colors duration-300"
+            className="space-y-6 rounded-lg border bg-[var(--preview-background)] p-6 font-[var(--preview-font-family)] text-[var(--preview-font-size)] text-[var(--preview-foreground-color)] transition-colors duration-300"
           >
             <div 
               className="p-6 rounded-lg transition-colors duration-300" 
@@ -240,3 +241,5 @@ export default function FontsColorsPage() {
     </div>
   );
 }
+
+    
