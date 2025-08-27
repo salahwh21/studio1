@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useActionState } from 'react';
@@ -68,7 +69,7 @@ export default function AIOrderParsingPage() {
         description: formState.error,
       });
     }
-    if (formState.data) {
+    if (formState.data && formState.data.customerName) {
       const newOrder: OrderReviewItem = {
         id: Date.now(),
         ...formState.data,
@@ -108,6 +109,16 @@ export default function AIOrderParsingPage() {
     }
   };
 
+  const handleConfirmOrders = () => {
+    // In a real application, this would send the orders to the backend.
+    // For this prototype, we'll just clear the list and show a confirmation.
+    setReviewList([]);
+    toast({
+      title: 'تم تأكيد الطلبات بنجاح!',
+      description: 'تم إرسال الطلبات إلى النظام.',
+    });
+  };
+
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -131,7 +142,7 @@ export default function AIOrderParsingPage() {
                     <Textarea
                       id="request"
                       placeholder="مثال: إرسال ٢ بيتزا حجم كبير إلى علي في ١٢٣ شارع الملك، الرياض. واحدة بيبروني وواحدة خضار."
-                      className={`min-h-[150px] transition-colors ${formState.error ? 'border-red-500' : formState.data ? 'border-green-500' : ''}`}
+                      className={`min-h-[150px] transition-colors ${formState.error ? 'border-red-500' : (formState.data && formState.data.customerName) ? 'border-green-500' : ''}`}
                       {...form.register('request')}
                     />
                     {form.formState.errors.request && <p className="text-sm text-red-600">{form.formState.errors.request.message}</p>}
@@ -206,7 +217,7 @@ export default function AIOrderParsingPage() {
                                 <TableCell>
                                     <div className="flex flex-wrap gap-2">
                                         {order.items.map((item, index) => (
-                                            <Badge key={index} variant="secondary">{item} (x{order.quantity[index]})</Badge>
+                                            <Badge key={index} variant="secondary">{item} (x{order.quantity[index] || 1})</Badge>
                                         ))}
                                     </div>
                                 </TableCell>
@@ -223,7 +234,7 @@ export default function AIOrderParsingPage() {
           )}
         </CardContent>
         <CardFooter className="flex justify-end">
-            <Button disabled={reviewList.length === 0 || isSubmitting}>
+            <Button disabled={reviewList.length === 0 || isSubmitting} onClick={handleConfirmOrders}>
                 <Send className="mr-2 h-4 w-4"/> تأكيد كل الطلبات 
             </Button>
         </CardFooter>
