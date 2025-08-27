@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Bell, LogOut, Moon, Settings, Sun, User, Menu, Undo2 } from 'lucide-react';
+import { Bell, LogOut, Moon, Settings, Sun, User, Menu, Undo2, type LucideIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -26,23 +26,24 @@ import {
 } from '@/components/ui/sheet';
 import { Logo } from './logo';
 
-const navItems = [
-    { href: '/dashboard', label: 'لوحة التحكم' },
-    { href: '/dashboard/orders', label: 'عرض الطلبات' },
-    { href: '/dashboard/parse-order', label: 'إضافة طلبات' },
-    { href: '/dashboard/orders/archive', label: 'الطلبات المؤرشفة' },
-    { href: '/dashboard/returns', label: 'إدارة المرتجعات' },
-    { href: '/dashboard/financials', label: 'المحاسبة' },
-    { href: '/dashboard/settings', label: 'الإعدادات' },
-];
 
-export function AppHeader() {
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+};
+
+interface AppHeaderProps {
+    navItems: NavItem[];
+}
+
+export function AppHeader({ navItems }: AppHeaderProps) {
   const { setTheme, theme } = useTheme();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6">
-        <div className="md:hidden">
+        <div className="sm:hidden">
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetTrigger asChild>
                     <Button variant="outline" size="icon">
@@ -67,9 +68,10 @@ export function AppHeader() {
                             <Link 
                                 key={item.href} 
                                 href={item.href} 
-                                className="text-muted-foreground hover:text-foreground"
+                                className="text-muted-foreground hover:text-foreground flex items-center gap-2"
                                 onClick={() => setIsSheetOpen(false)}
                             >
+                                <item.icon className="h-5 w-5" />
                                 {item.label}
                             </Link>
                         ))}

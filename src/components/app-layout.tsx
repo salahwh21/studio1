@@ -12,16 +12,16 @@ import {
   Undo2,
   Calculator,
   Settings,
+  Home,
+  Package,
 } from 'lucide-react';
-
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar';
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+
 import { AppHeader } from '@/components/header';
 import { Logo } from '@/components/logo';
 
@@ -32,67 +32,89 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'لوحة التحكم' },
-    { href: '/dashboard/orders', icon: ShoppingCart, label: 'عرض الطلبات' },
-    { href: '/dashboard/parse-order', icon: PackagePlus, label: 'إضافة طلبات' },
-    { href: '/dashboard/orders/archive', icon: Archive, label: 'الطلبات المؤرشفة' },
-    { href: '/dashboard/returns', icon: Undo2, label: 'إدارة المرتجعات' },
-    { href: '/dashboard/financials', icon: Calculator, label: 'المحاسبة' },
-    { href: '/dashboard/settings', icon: Settings, label: 'الإعدادات' },
+  { href: '/dashboard', icon: Home, label: 'لوحة التحكم' },
+  { href: '/dashboard/orders', icon: ShoppingCart, label: 'عرض الطلبات' },
+  { href: '/dashboard/parse-order', icon: PackagePlus, label: 'إضافة طلبات' },
+  { href: '/dashboard/returns', icon: Undo2, label: 'إدارة المرتجعات' },
+  { href: '/dashboard/financials', icon: Calculator, label: 'المحاسبة' },
 ];
 
+const bottomNavItems: NavItem[] = [
+    { href: '/dashboard/settings', icon: Settings, label: 'الإعدادات' },
+]
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
     if (href === '/dashboard') {
-        return pathname === href;
+      return pathname === href;
     }
-    if (href === '/dashboard/orders/archive') {
-        return pathname === href;
-    }
-    if (href.startsWith('/dashboard/orders')) {
-        return pathname.startsWith('/dashboard/orders') && !pathname.includes('archive');
+     if (href.startsWith('/dashboard/orders')) {
+        return pathname.startsWith('/dashboard/orders');
     }
     return pathname.startsWith(href);
   };
-  
+
   return (
-      <div className="flex h-screen bg-muted/40 overflow-hidden">
-        <Sidebar side="right" className="z-40 hidden md:flex flex-col">
-           <SidebarHeader>
-             <div className="flex h-16 items-center justify-center p-2">
-               <Link href="/dashboard" className="flex items-center gap-2">
-                 <Logo className="h-10 w-10" />
-               </Link>
-             </div>
-           </SidebarHeader>
-           <SidebarContent>
-             <SidebarMenu>
-               {navItems.map((item) => (
-                 <SidebarMenuItem key={item.href}>
-                   <SidebarMenuButton
-                     asChild
-                     isActive={isActive(item.href)}
-                     className="justify-start"
-                   >
-                     <Link href={item.href}>
-                       <item.icon className="h-5 w-5" />
-                       <span>{item.label}</span>
-                     </Link>
-                   </SidebarMenuButton>
-                 </SidebarMenuItem>
-               ))}
-             </SidebarMenu>
-           </SidebarContent>
-         </Sidebar>
-        <div className="flex flex-col flex-1 overflow-y-auto">
-          <AppHeader />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">
-            {children}
-          </main>
-        </div>
+    <div className="flex h-screen bg-muted/40 overflow-hidden">
+      <aside className="fixed inset-y-0 right-0 z-10 hidden w-16 flex-col border-l bg-card sm:flex">
+        <TooltipProvider>
+            <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
+            <Link
+                href="/dashboard"
+                className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
+            >
+                <Logo className="h-5 w-5 transition-all group-hover:scale-110" />
+                <span className="sr-only">الوميض</span>
+            </Link>
+            {navItems.map((item) => (
+                <Tooltip key={item.href}>
+                <TooltipTrigger asChild>
+                    <Link
+                    href={item.href}
+                    className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:h-8 md:w-8 ${
+                        isActive(item.href)
+                        ? 'bg-accent text-accent-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                    >
+                    <item.icon className="h-5 w-5" />
+                    <span className="sr-only">{item.label}</span>
+                    </Link>
+                </TooltipTrigger>
+                <TooltipContent side="left">{item.label}</TooltipContent>
+                </Tooltip>
+            ))}
+            </nav>
+            <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
+             {bottomNavItems.map((item) => (
+                <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>
+                    <Link
+                        href={item.href}
+                        className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:h-8 md:w-8 ${
+                        isActive(item.href)
+                            ? 'bg-accent text-accent-foreground'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        <item.icon className="h-5 w-5" />
+                        <span className="sr-only">{item.label}</span>
+                    </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">{item.label}</TooltipContent>
+                </Tooltip>
+             ))}
+            </nav>
+        </TooltipProvider>
+      </aside>
+      <div className="flex flex-col flex-1 overflow-y-auto sm:pr-16">
+        <AppHeader navItems={navItems} />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          {children}
+        </main>
       </div>
+    </div>
   );
 }
