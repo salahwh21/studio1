@@ -3,8 +3,6 @@
 
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 
-const isClient = typeof window !== 'undefined';
-
 // Define the shape of the settings
 interface SocialLinks {
   whatsapp: string;
@@ -26,6 +24,7 @@ interface LoginExperienceContextType {
   settings: LoginSettings;
   setSetting: <K extends keyof LoginSettings>(key: K, value: LoginSettings[K]) => void;
   setSocialLink: <K extends keyof SocialLinks>(key: K, value: SocialLinks[K]) => void;
+  isHydrated: boolean;
 }
 
 // Create the context
@@ -47,26 +46,33 @@ const defaultSettings: LoginSettings = {
 
 // Create the provider component
 export const LoginExperienceProvider = ({ children }: { children: ReactNode }) => {
-  const [settings, setSettings] = useState<LoginSettings>(() => {
-    if (!isClient) return defaultSettings;
+  const [settings, setSettings] = useState<LoginSettings>(defaultSettings);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Load settings from localStorage on initial client-side render
+  useEffect(() => {
     try {
       const item = window.localStorage.getItem('loginExperienceSettings');
-      return item ? JSON.parse(item) : defaultSettings;
+      if (item) {
+        setSettings(JSON.parse(item));
+      }
     } catch (error) {
-      console.error(error);
-      return defaultSettings;
+      console.error("Failed to load settings from localStorage", error);
+    } finally {
+        setIsHydrated(true);
     }
-  });
+  }, []);
 
   // Effect to save settings to localStorage whenever they change
   useEffect(() => {
-    if (!isClient) return;
-    try {
-      window.localStorage.setItem('loginExperienceSettings', JSON.stringify(settings));
-    } catch (error) {
-      console.error("Failed to save settings to localStorage", error);
+    if (isHydrated) {
+        try {
+            window.localStorage.setItem('loginExperienceSettings', JSON.stringify(settings));
+        } catch (error) {
+            console.error("Failed to save settings to localStorage", error);
+        }
     }
-  }, [settings]);
+  }, [settings, isHydrated]);
 
   // Generic function to update a top-level setting
   const setSetting = <K extends keyof LoginSettings>(key: K, value: LoginSettings[K]) => {
@@ -87,8 +93,10 @@ export const LoginExperienceProvider = ({ children }: { children: ReactNode }) =
       }))
   }
 
+  const value = { settings, setSetting, setSocialLink, isHydrated };
+
   return (
-    <LoginExperienceContext.Provider value={{ settings, setSetting, setSocialLink }}>
+    <LoginExperienceContext.Provider value={value}>
       {children}
     </LoginExperienceContext.Provider>
   );

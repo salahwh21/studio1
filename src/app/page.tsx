@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -14,15 +14,50 @@ import { LoginExperienceContext } from '@/context/LoginExperienceContext';
 import { FacebookIcon } from '@/components/icons/facebook-icon';
 import { InstagramIcon } from '@/components/icons/instagram-icon';
 import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
+import { Skeleton } from '@/components/ui/skeleton';
+
+
+const LoginPageSkeleton = () => (
+    <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
+         <Skeleton className="absolute inset-0 z-0" />
+         <div className="absolute inset-0 z-10 bg-black/50 backdrop-blur-sm" />
+         <Card className="z-20 w-full max-w-md rounded-2xl border-0 p-2 shadow-2xl backdrop-blur-lg">
+             <CardHeader>
+                <Skeleton className="h-10 w-32 mx-auto mb-4" />
+                <Skeleton className="h-8 w-48 mx-auto" />
+                <Skeleton className="h-4 w-32 mx-auto mt-2" />
+             </CardHeader>
+             <CardContent className="flex flex-col gap-4">
+                 <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-10 w-full" />
+                 </div>
+                 <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-10 w-full" />
+                 </div>
+                 <Skeleton className="h-11 w-full" />
+                 <div className="my-4 flex items-center">
+                    <Separator className="flex-1" />
+                    <span className="mx-4 text-xs text-muted-foreground">أو</span>
+                    <Separator className="flex-1" />
+                  </div>
+                   <div className="grid grid-cols-2 gap-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+             </CardContent>
+         </Card>
+    </div>
+);
 
 
 export default function LoginPage() {
   const router = useRouter();
   const context = useContext(LoginExperienceContext);
 
-  if (!context) {
-    // You can return a loader here if needed
-    return null;
+  if (!context || !context.isHydrated) {
+    return <LoginPageSkeleton />;
   }
   
   const { settings } = context;
