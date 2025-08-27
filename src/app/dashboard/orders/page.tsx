@@ -41,7 +41,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -226,6 +226,25 @@ function OrdersPageContent() {
         setModalState({type: 'none'});
     }
 
+    const totals = useMemo(() => {
+        const selectedOrders = orders.filter(o => selectedRows.includes(o.id));
+        const paginatedTotals = paginatedOrders.reduce((acc, order) => {
+            acc.cod += order.cod;
+            acc.itemPrice += order.itemPrice;
+            acc.deliveryFee += order.deliveryFee;
+            return acc;
+        }, { cod: 0, itemPrice: 0, deliveryFee: 0 });
+
+        const selectedTotals = selectedOrders.reduce((acc, order) => {
+            acc.cod += order.cod;
+            acc.itemPrice += order.itemPrice;
+            acc.deliveryFee += order.deliveryFee;
+            return acc;
+        }, { cod: 0, itemPrice: 0, deliveryFee: 0 });
+
+        return { paginated: paginatedTotals, selected: selectedTotals };
+    }, [orders, selectedRows, paginatedOrders]);
+
 
     if (!isClient) {
         return <Skeleton className="w-full h-screen" />;
@@ -324,7 +343,7 @@ function OrdersPageContent() {
                                         </TableRow>
                                         <TableRow className="bg-muted/50 hover:bg-muted/80">
                                             <TableHead className="sticky right-0 w-12 px-4 border-l bg-muted text-right flex items-center justify-center">
-                                                <Checkbox
+                                                 <Checkbox
                                                     onCheckedChange={handleSelectAll}
                                                     checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
                                                     className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
@@ -391,6 +410,26 @@ function OrdersPageContent() {
                                             </TableRow>
                                         )})}
                                     </TableBody>
+                                    <TableFooter className="sticky bottom-0 bg-muted/95">
+                                        <TableRow>
+                                            <TableCell colSpan={11} className="p-1 border-l text-right font-semibold">
+                                                <div className="p-1 rounded bg-blue-100 text-blue-800 text-xs">مجاميع المحددة ({selectedRows.length})</div>
+                                            </TableCell>
+                                            <TableCell className="p-1 border-l text-right font-bold">{totals.selected.itemPrice.toFixed(2)}</TableCell>
+                                            <TableCell className="p-1 border-l text-right font-bold">{totals.selected.deliveryFee.toFixed(2)}</TableCell>
+                                            <TableCell className="p-1 border-l text-right font-bold">{totals.selected.cod.toFixed(2)}</TableCell>
+                                            <TableCell className="p-1 border-l text-right"></TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell colSpan={11} className="p-1 border-l text-right font-semibold">
+                                                 <div className="p-1 rounded bg-gray-200 text-gray-800 text-xs">مجاميع الصفحة الحالية ({paginatedOrders.length})</div>
+                                            </TableCell>
+                                            <TableCell className="p-1 border-l text-right font-bold">{totals.paginated.itemPrice.toFixed(2)}</TableCell>
+                                            <TableCell className="p-1 border-l text-right font-bold">{totals.paginated.deliveryFee.toFixed(2)}</TableCell>
+                                            <TableCell className="p-1 border-l text-right font-bold">{totals.paginated.cod.toFixed(2)}</TableCell>
+                                            <TableCell className="p-1 border-l text-right"></TableCell>
+                                        </TableRow>
+                                    </TableFooter>
                                 </Table>
                                </div>
                             )}
@@ -462,3 +501,5 @@ function OrdersPageContent() {
 export default function OrdersPage() {
     return <OrdersPageContent />
 }
+
+    
