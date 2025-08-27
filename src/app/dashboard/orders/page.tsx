@@ -351,7 +351,7 @@ function OrdersPageContent() {
 
                 <div className="flex-1 flex flex-col overflow-auto">
                     <Table className="min-w-full border-separate border-spacing-0">
-                        <TableHeader className="sticky top-0 z-20 bg-muted/50 hover:bg-muted/80">
+                        <TableHeader className="sticky top-0 z-20 bg-muted">
                             <TableRow>
                                 <TableHead className="sticky right-0 px-4 border-l bg-muted text-right flex items-center justify-center z-30 w-12">
                                     <Checkbox
