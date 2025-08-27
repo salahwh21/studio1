@@ -177,13 +177,13 @@ const OrdersManagement = () => (
              <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>رقم الطلب</TableHead>
-                    <TableHead>العميل</TableHead>
-                    <TableHead>الهاتف</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>رسوم التوصيل</TableHead>
-                    <TableHead>تاريخ الطلب</TableHead>
-                    <TableHead>ملاحظات</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">رقم الطلب</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">العميل</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">الهاتف</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">رسوم التوصيل</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">تاريخ الطلب</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">ملاحظات</TableHead>
                     <TableHead>
                       <span className="sr-only">إجراءات</span>
                     </TableHead>
@@ -192,14 +192,14 @@ const OrdersManagement = () => (
                 <TableBody>
                   {ordersData.map((order) => (
                     <TableRow key={order.id} className={order.status === 'delayed' ? 'bg-red-50 dark:bg-red-900/20' : ''}>
-                      <TableCell className="font-medium">{order.id}</TableCell>
-                      <TableCell>{order.customer}</TableCell>
-                      <TableCell>{order.phone}</TableCell>
-                      <TableCell>{getStatusBadge(order.status)}</TableCell>
-                      <TableCell>{order.fee.toLocaleString('ar-JO')} د.أ</TableCell>
-                      <TableCell>{order.date}</TableCell>
-                      <TableCell>{order.notes}</TableCell>
-                      <TableCell>
+                      <TableCell className="font-medium text-center whitespace-nowrap">{order.id}</TableCell>
+                      <TableCell className="text-center whitespace-nowrap">{order.customer}</TableCell>
+                      <TableCell className="text-center whitespace-nowrap">{order.phone}</TableCell>
+                      <TableCell className="text-center whitespace-nowrap">{getStatusBadge(order.status)}</TableCell>
+                      <TableCell className="text-center whitespace-nowrap">{order.fee.toLocaleString('ar-JO')} د.أ</TableCell>
+                      <TableCell className="text-center whitespace-nowrap">{order.date}</TableCell>
+                      <TableCell className="text-center whitespace-nowrap">{order.notes}</TableCell>
+                      <TableCell className="text-center whitespace-nowrap">
                          <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button aria-haspopup="true" size="icon" variant="ghost">

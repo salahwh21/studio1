@@ -140,13 +140,13 @@ export default function ReturnsManagementPage() {
                 <TableHead padding="checkbox">
                   <Checkbox onCheckedChange={handleSelectAll} checked={isAllSelected || isIndeterminate} aria-label="Select all rows" />
                 </TableHead>
-                <TableHead>رقم المرتجع</TableHead>
-                <TableHead>العميل</TableHead>
-                <TableHead>التاجر</TableHead>
-                <TableHead>السائق</TableHead>
-                <TableHead>تاريخ الإرجاع</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead>سبب الإرجاع</TableHead>
+                <TableHead className="text-center whitespace-nowrap">رقم المرتجع</TableHead>
+                <TableHead className="text-center whitespace-nowrap">العميل</TableHead>
+                <TableHead className="text-center whitespace-nowrap">التاجر</TableHead>
+                <TableHead className="text-center whitespace-nowrap">السائق</TableHead>
+                <TableHead className="text-center whitespace-nowrap">تاريخ الإرجاع</TableHead>
+                <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
+                <TableHead className="text-center whitespace-nowrap">سبب الإرجاع</TableHead>
                 <TableHead><span className="sr-only">إجراءات</span></TableHead>
               </TableRow>
             </TableHeader>
@@ -156,14 +156,14 @@ export default function ReturnsManagementPage() {
                   <TableCell padding="checkbox">
                     <Checkbox onCheckedChange={(checked) => handleSelectRow(item.id, !!checked)} checked={selectedRows.includes(item.id)} aria-label={`Select row ${item.id}`} />
                   </TableCell>
-                  <TableCell className="font-medium">{item.orderId}</TableCell>
-                  <TableCell>{item.customer}</TableCell>
-                  <TableCell>{item.merchant}</TableCell>
-                  <TableCell>{item.driver}</TableCell>
-                  <TableCell>{item.date}</TableCell>
-                  <TableCell>{getStatusBadge(item.status)}</TableCell>
-                  <TableCell>{item.reason}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-medium text-center whitespace-nowrap">{item.orderId}</TableCell>
+                  <TableCell className="text-center whitespace-nowrap">{item.customer}</TableCell>
+                  <TableCell className="text-center whitespace-nowrap">{item.merchant}</TableCell>
+                  <TableCell className="text-center whitespace-nowrap">{item.driver}</TableCell>
+                  <TableCell className="text-center whitespace-nowrap">{item.date}</TableCell>
+                  <TableCell className="text-center whitespace-nowrap">{getStatusBadge(item.status)}</TableCell>
+                  <TableCell className="text-center whitespace-nowrap">{item.reason}</TableCell>
+                  <TableCell className="text-center whitespace-nowrap">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button aria-haspopup="true" size="icon" variant="ghost">

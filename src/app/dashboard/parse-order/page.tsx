@@ -230,25 +230,25 @@ export default function AIOrderParsingPage() {
                  <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>العميل</TableHead>
-                            <TableHead>العنوان</TableHead>
-                            <TableHead>المنتجات</TableHead>
-                            <TableHead className="text-right">إجراء</TableHead>
+                            <TableHead className="text-center whitespace-nowrap">العميل</TableHead>
+                            <TableHead className="text-center whitespace-nowrap">العنوان</TableHead>
+                            <TableHead className="text-center whitespace-nowrap">المنتجات</TableHead>
+                            <TableHead className="text-center whitespace-nowrap">إجراء</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {reviewList.map(order => (
                            <TableRow key={order.id} className="bg-blue-50 dark:bg-blue-900/20">
-                                <TableCell className="font-medium">{order.customerName}</TableCell>
-                                <TableCell>{order.address}</TableCell>
-                                <TableCell>
-                                    <div className="flex flex-wrap gap-2">
+                                <TableCell className="font-medium text-center whitespace-nowrap">{order.customerName}</TableCell>
+                                <TableCell className="text-center whitespace-nowrap">{order.address}</TableCell>
+                                <TableCell className="text-center whitespace-nowrap">
+                                    <div className="flex flex-wrap gap-2 justify-center">
                                         {order.items.map((item, index) => (
                                             <Badge key={index} variant="secondary">{item} (x{order.quantity[index] || 1})</Badge>
                                         ))}
                                     </div>
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-center whitespace-nowrap">
                                     <Button variant="ghost" size="icon" onClick={() => setReviewList(prev => prev.filter(o => o.id !== order.id))}>
                                         <Trash2 className="h-4 w-4 text-destructive"/>
                                     </Button>
@@ -269,5 +269,3 @@ export default function AIOrderParsingPage() {
     </div>
   );
 }
-
-    

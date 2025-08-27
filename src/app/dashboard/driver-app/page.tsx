@@ -180,25 +180,25 @@ export default function DriverWebAppPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>رقم الطلب</TableHead>
-                    <TableHead>العميل</TableHead>
-                    <TableHead>العنوان</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>المبلغ</TableHead>
-                    <TableHead>ملاحظات</TableHead>
-                    <TableHead className="text-center">إجراءات</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">رقم الطلب</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">العميل</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">العنوان</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">المبلغ</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">ملاحظات</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {driver.orders.map((order) => (
                     <TableRow key={order.id}>
-                      <TableCell className="font-medium">{order.id}</TableCell>
-                      <TableCell>{order.customer}</TableCell>
-                      <TableCell>{order.address}</TableCell>
-                      <TableCell>{getStatusBadge(order.status)}</TableCell>
-                      <TableCell>{order.amount.toLocaleString('ar-JO')} د.أ</TableCell>
-                       <TableCell>{order.notes || '-'}</TableCell>
-                      <TableCell className="flex items-center justify-center gap-2">
+                      <TableCell className="font-medium text-center whitespace-nowrap">{order.id}</TableCell>
+                      <TableCell className="text-center whitespace-nowrap">{order.customer}</TableCell>
+                      <TableCell className="text-center whitespace-nowrap">{order.address}</TableCell>
+                      <TableCell className="text-center whitespace-nowrap">{getStatusBadge(order.status)}</TableCell>
+                      <TableCell className="text-center whitespace-nowrap">{order.amount.toLocaleString('ar-JO')} د.أ</TableCell>
+                       <TableCell className="text-center whitespace-nowrap">{order.notes || '-'}</TableCell>
+                      <TableCell className="flex items-center justify-center gap-2 text-center whitespace-nowrap">
                         <Button variant="outline" size="icon" title="اتصال بالعميل">
                             <Phone className="h-4 w-4" />
                         </Button>

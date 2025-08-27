@@ -98,25 +98,25 @@ const DriverAccountingTab = () => (
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>اسم السائق</TableHead>
-                        <TableHead>الرصيد المستحق</TableHead>
-                        <TableHead>الحالة</TableHead>
-                        <TableHead className="text-right">إجراء</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">اسم السائق</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">الرصيد المستحق</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">إجراء</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {driverAccountingData.map(driver => (
                         <TableRow key={driver.id}>
-                            <TableCell className="font-medium">{driver.name}</TableCell>
-                            <TableCell className={driver.balance >= 0 ? 'text-green-600' : 'text-red-600'}>
+                            <TableCell className="font-medium text-center whitespace-nowrap">{driver.name}</TableCell>
+                            <TableCell className={driver.balance >= 0 ? 'text-green-600 text-center whitespace-nowrap' : 'text-red-600 text-center whitespace-nowrap'}>
                                 {driver.balance.toLocaleString('ar-JO')} د.أ
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="text-center whitespace-nowrap">
                                 <Badge variant={driver.status === 'due' ? 'secondary' : 'default'} className={driver.status === 'due' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}>
                                     {driver.status === 'due' ? 'مستحق' : 'مدفوع'}
                                 </Badge>
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-center whitespace-nowrap">
                                 <Button variant="outline" size="sm">عرض التفاصيل</Button>
                             </TableCell>
                         </TableRow>
@@ -137,23 +137,23 @@ const MerchantAccountingTab = () => (
              <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>اسم التاجر</TableHead>
-                        <TableHead>المبلغ المستحق</TableHead>
-                        <TableHead>الحالة</TableHead>
-                        <TableHead className="text-right">إجراء</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">اسم التاجر</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">المبلغ المستحق</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">إجراء</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {merchantAccountingData.map(merchant => (
                         <TableRow key={merchant.id} className={merchant.status === 'overdue' ? 'bg-red-50 dark:bg-red-900/20' : ''}>
-                            <TableCell className="font-medium">{merchant.name}</TableCell>
-                            <TableCell>{merchant.amountDue.toLocaleString('ar-JO')} د.أ</TableCell>
-                            <TableCell>
+                            <TableCell className="font-medium text-center whitespace-nowrap">{merchant.name}</TableCell>
+                            <TableCell className="text-center whitespace-nowrap">{merchant.amountDue.toLocaleString('ar-JO')} د.أ</TableCell>
+                            <TableCell className="text-center whitespace-nowrap">
                                  <Badge variant={merchant.status === 'paid' ? 'default' : (merchant.status === 'due' ? 'secondary' : 'destructive')} className={merchant.status === 'paid' ? 'bg-green-100 text-green-800' : (merchant.status === 'due' ? 'bg-yellow-100 text-yellow-800' : '')}>
                                     {merchant.status === 'paid' ? 'مدفوع' : (merchant.status === 'due' ? 'مستحق' : 'متأخر')}
                                 </Badge>
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-center whitespace-nowrap">
                                 <Button variant="outline" size="sm">عرض التفاصيل</Button>
                             </TableCell>
                         </TableRow>
