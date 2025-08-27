@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Logo } from './logo';
 import { Separator } from './ui/separator';
 
@@ -98,9 +98,10 @@ export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
                         </Button>
                     </SheetTrigger>
                     <SheetContent side="right" className="flex flex-col p-2 w-72">
-                         <div className="p-4">
+                         <SheetHeader className='p-4'>
+                            <SheetTitle className='sr-only'>Main Menu</SheetTitle>
                             <Logo />
-                        </div>
+                        </SheetHeader>
                         <Separator />
                         <nav className="flex-1 flex flex-col gap-2 p-2 overflow-y-auto">
                             {allNavItems.map(item => (
