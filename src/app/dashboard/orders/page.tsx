@@ -325,7 +325,7 @@ function OrdersPageContent() {
 
     return (
         <TooltipProvider>
-            <div className="flex flex-col h-[calc(100vh-128px)] bg-background">
+            <div className="flex flex-col bg-background">
                 <div className="flex-none p-4 flex-row items-center justify-between flex flex-wrap gap-2 border-b">
                      <div className="relative w-full max-w-xs">
                         <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -526,3 +526,5 @@ function OrdersPageContent() {
 export default function OrdersPage() {
     return <OrdersPageContent />
 }
+
+    
