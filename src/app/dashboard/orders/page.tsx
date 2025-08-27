@@ -234,9 +234,9 @@ function OrdersPageContent() {
             return acc;
         }, { cod: 0, itemPrice: 0, deliveryFee: 0 });
 
-        const selectedOrders = orders.filter(o => selectedRows.includes(o.id));
+        const selectedOrdersList = orders.filter(o => selectedRows.includes(o.id));
         const paginatedTotals = calculateTotals(paginatedOrders);
-        const selectedTotals = calculateTotals(selectedOrders);
+        const selectedTotals = calculateTotals(selectedOrdersList);
 
         return { paginated: paginatedTotals, selected: selectedTotals };
     }, [orders, selectedRows, paginatedOrders]);
@@ -279,9 +279,10 @@ function OrdersPageContent() {
                         </div>
                     </CardContent>
                 </Card>
-                <div className="flex-1 overflow-auto">
+                <div className="flex-1 relative overflow-auto">
+                    <div className="overflow-x-auto">
                         <Table className="min-w-max border-b">
-                            <TableHeader className="sticky top-0 z-10">
+                            <TableHeader className="sticky top-0 z-10 bg-background">
                                 <TableRow className="bg-primary hover:bg-primary/90">
                                     <TableHead className="sticky right-0 p-1 bg-primary border-l border-primary-foreground/20 text-right">
                                         {/* empty for checkbox in next row */}
@@ -328,11 +329,11 @@ function OrdersPageContent() {
                                 </TableRow>
                                 <TableRow className="bg-muted/50 hover:bg-muted/80">
                                     <TableHead className="sticky right-0 w-12 px-4 border-l bg-muted text-right flex items-center justify-center">
-                                            <Checkbox
-                                                onCheckedChange={handleSelectAll}
-                                                checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
-                                                className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                                            />
+                                        <Checkbox
+                                            onCheckedChange={handleSelectAll}
+                                            checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
+                                            className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                        />
                                     </TableHead>
                                     <TableHead className="text-right border-l bg-muted">رقم الطلب</TableHead>
                                     <TableHead className="text-right border-l bg-muted">المصدر</TableHead>
@@ -395,11 +396,7 @@ function OrdersPageContent() {
                                     </TableRow>
                                 )})}
                             </TableBody>
-                        </Table>
-                </div>
-                <div className="sticky bottom-0 z-10 bg-background border-t">
-                    <Table>
-                        <TableFooter>
+                            <TableFooter>
                                 <TableRow>
                                     <TableCell className="sticky right-0 bg-muted"></TableCell>
                                     <TableCell colSpan={10} className="p-1 border-l text-right font-semibold">
@@ -412,36 +409,37 @@ function OrdersPageContent() {
                                     <TableCell className="p-1 border-l text-right font-bold">{displayTotals.cod.toFixed(2)}</TableCell>
                                     <TableCell className="p-1 border-l text-right"></TableCell>
                                 </TableRow>
-                        </TableFooter>
-                    </Table>
-                     <CardFooter className="flex items-center justify-between p-2 border-t">
-                         <div className="text-sm text-muted-foreground">
-                             عرض <strong>{paginatedOrders.length}</strong> من <strong>{filteredOrders.length}</strong> طلبات
-                         </div>
-                         <div className="flex items-center gap-2">
-                             <Button
-                                 variant="outline"
-                                 size="sm"
-                                 onClick={() => setPage(prev => Math.max(prev - 1, 0))}
-                                 disabled={page === 0}
-                             >
-                                 <ChevronRight className="h-4 w-4" />
-                                 <span>السابق</span>
-                             </Button>
-                             <span className="text-sm text-muted-foreground">
-                                 صفحة {page + 1} من {totalPages}
-                             </span>
-                             <Button
-                                 variant="outline"
-                                 size="sm"
-                                 onClick={() => setPage(prev => Math.min(prev + 1, totalPages - 1))}
-                                 disabled={page >= totalPages - 1}
-                             >
-                                <span>التالي</span>
-                                 <ChevronLeft className="h-4 w-4" />
-                             </Button>
-                         </div>
-                     </CardFooter>
+                            </TableFooter>
+                        </Table>
+                         <CardFooter className="flex items-center justify-between p-2 border-t bg-background">
+                             <div className="text-sm text-muted-foreground">
+                                 عرض <strong>{paginatedOrders.length}</strong> من <strong>{filteredOrders.length}</strong> طلبات
+                             </div>
+                             <div className="flex items-center gap-2">
+                                 <Button
+                                     variant="outline"
+                                     size="sm"
+                                     onClick={() => setPage(prev => Math.max(prev - 1, 0))}
+                                     disabled={page === 0}
+                                 >
+                                     <ChevronRight className="h-4 w-4" />
+                                     <span>السابق</span>
+                                 </Button>
+                                 <span className="text-sm text-muted-foreground">
+                                     صفحة {page + 1} من {totalPages}
+                                 </span>
+                                 <Button
+                                     variant="outline"
+                                     size="sm"
+                                     onClick={() => setPage(prev => Math.min(prev + 1, totalPages - 1))}
+                                     disabled={page >= totalPages - 1}
+                                 >
+                                    <span>التالي</span>
+                                     <ChevronLeft className="h-4 w-4" />
+                                 </Button>
+                             </div>
+                         </CardFooter>
+                    </div>
                 </div>
             </div>
             
