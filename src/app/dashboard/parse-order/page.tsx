@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useActionState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useFormState as useReactHookFormState } from 'react-hook-form';
-import { useFormState } from 'react-dom';
 import { z } from 'zod';
 import { Bot, Image as ImageIcon, Loader2, Clipboard, FileText, User, Home, ShoppingBasket, Hash, Trash2, Send, Wand2 } from 'lucide-react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
@@ -50,7 +49,7 @@ export default function AIOrderParsingPage() {
   const { toast } = useToast();
   const [reviewList, setReviewList] = useState<OrderReviewItem[]>([]);
   
-  const [formState, formAction] = useFormState(parseOrderFromRequest, initialState);
+  const [formState, formAction] = useActionState(parseOrderFromRequest, initialState);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
