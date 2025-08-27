@@ -64,8 +64,8 @@ export default function FontsColorsPage() {
   const handleSaveChanges = async () => {
     setIsSaving(true);
     const formData = new FormData();
-    formData.append('primary', hexToHsl(primaryColor));
     // Pass accent and background as null to not update them from this page
+    formData.append('primary', hexToHsl(primaryColor));
     formData.append('accent', ''); 
     formData.append('background', '');
     formData.append('fontFamily', fontFamily);
