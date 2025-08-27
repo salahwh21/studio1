@@ -1,14 +1,17 @@
+
 'use client';
 
 import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Settings, Users, MapPin, ListChecks, Bell } from "lucide-react";
+import { Settings, Users, MapPin, ListChecks, Bell, Trash2, Edit, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 
 type Panel = 'general' | 'users' | 'areas' | 'statuses' | 'notifications';
 
@@ -91,6 +94,70 @@ const GeneralSettingsPanel = () => {
   );
 };
 
+const AreasSettingsPanel = () => {
+    const [areas, setAreas] = useState([
+        { id: 1, province: 'بغداد', area: 'كل المناطق', price: 5000 },
+        { id: 2, province: 'البصرة', area: 'كل المناطق', price: 8000 },
+        { id: 3, province: 'أربيل', area: 'كل المناطق', price: 10000 },
+        { id: 4, province: 'الأنبار', area: 'كل المناطق', price: 9000 },
+    ]);
+
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>المناطق وقوائم الأسعار</CardTitle>
+                        <CardDescription>إدارة مناطق التوصيل وأسعارها.</CardDescription>
+                    </div>
+                    <Button size="sm"><PlusCircle className="mr-2 h-4 w-4"/>إضافة منطقة جديدة</Button>
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="space-y-2 max-w-sm">
+                    <Label htmlFor="defaultPrice">سعر التوصيل الافتراضي</Label>
+                    <Input id="defaultPrice" type="number" placeholder="ادخل السعر الافتراضي" defaultValue="6000"/>
+                    <p className="text-xs text-muted-foreground">السعر المستخدم في حال لم تكن للمنطقة سعر مخصص.</p>
+                </div>
+                <Separator />
+                <div>
+                  <h3 className="text-lg font-medium mb-2">أسعار خاصة بالمناطق</h3>
+                  <div className="border rounded-md">
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                                  <TableHead>المحافظة</TableHead>
+                                  <TableHead>المنطقة</TableHead>
+                                  <TableHead>سعر التوصيل (د.ع)</TableHead>
+                                  <TableHead className="text-right">إجراءات</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {areas.map(area => (
+                                  <TableRow key={area.id}>
+                                      <TableCell className="font-medium">{area.province}</TableCell>
+                                      <TableCell>{area.area}</TableCell>
+                                      <TableCell>{area.price.toLocaleString('ar-IQ')}</TableCell>
+                                      <TableCell className="text-right">
+                                          <Button variant="ghost" size="icon">
+                                              <Edit className="h-4 w-4" />
+                                          </Button>
+                                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                              <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                      </TableCell>
+                                  </TableRow>
+                              ))}
+                          </TableBody>
+                      </Table>
+                  </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
+
+
 const PlaceholderPanel = ({ title }: { title: string }) => {
   return (
     <Card className="flex items-center justify-center min-h-[300px]">
@@ -137,7 +204,7 @@ export default function SettingsPage() {
         <div className="md:col-span-3">
           {activePanel === 'general' && <GeneralSettingsPanel />}
           {activePanel === 'users' && <PlaceholderPanel title="إدارة المستخدمين والتجار" />}
-          {activePanel === 'areas' && <PlaceholderPanel title="إدارة المناطق وقوائم الأسعار" />}
+          {activePanel === 'areas' && <AreasSettingsPanel />}
           {activePanel === 'statuses' && <PlaceholderPanel title="إدارة حالات الطلب" />}
           {activePanel === 'notifications' && <PlaceholderPanel title="إدارة الإشعارات والتكامل" />}
         </div>
