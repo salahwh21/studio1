@@ -218,7 +218,7 @@ function OrdersPageContent() {
 
     if (isMobile) {
         return (
-             <div className="flex flex-col h-full bg-muted/30">
+             <div className="flex flex-col h-full">
                  <div className="flex-none p-2 flex-row items-center justify-between flex flex-wrap gap-2 border-b bg-background">
                      <div className="relative w-full max-w-xs">
                         <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -244,13 +244,6 @@ function OrdersPageContent() {
                  <div className="flex-1 overflow-y-auto p-2 space-y-3">
                     {paginatedOrders.map(order => {
                          const statusInfo = getStatusInfo(order.status);
-                         const DetailRow = ({ icon: Icon, label, value }: {icon: React.ElementType, label: string, value: string | number}) => (
-                            <div className="flex items-center gap-3 text-sm">
-                                <Icon className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-muted-foreground">{label}:</span>
-                                <span className="font-medium text-foreground">{value}</span>
-                            </div>
-                         );
                          const ActionButton = ({ icon: Icon, label }: {icon: React.ElementType, label: string}) => (
                             <div className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
                                 <Icon className="h-5 w-5" />
@@ -259,48 +252,49 @@ function OrdersPageContent() {
                          );
                          return (
                             <Card key={order.id} className={cn('overflow-hidden border-r-4 shadow-sm bg-card', statusInfo.color.replace('text-','border-').replace('-800','-500'))}>
-                                <div className='p-3 space-y-3'>
-                                    <div className="flex items-center justify-between">
+                                <div className='p-3 grid grid-cols-[1fr_auto] gap-x-3 gap-y-2'>
+                                    {/* Row 1 */}
+                                    <div className="col-span-1">
                                         <Badge className={cn("gap-1.5", statusInfo.bgColor, statusInfo.color)}>{statusInfo.label}</Badge>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-mono text-xs text-primary">{order.id}</span>
-                                            <Checkbox checked={selectedRows.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} />
-                                        </div>
+                                    </div>
+                                    <div className="col-span-1 flex items-center justify-end gap-2">
+                                        <span className="font-mono text-xs text-primary">{order.id}</span>
+                                        <Checkbox checked={selectedRows.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} />
                                     </div>
 
-                                    <div className="space-y-2.5">
-                                        <DetailRow icon={Store} label="المتجر" value={order.merchant} />
-                                        <DetailRow icon={User} label="المستلم" value={order.recipient} />
-                                        <DetailRow icon={Phone} label="الهاتف" value={order.phone} />
-                                        <DetailRow icon={MapPin} label="العنوان" value={`${order.address}, ${order.city}`} />
+                                    {/* Row 2 */}
+                                     <div className="col-span-2 space-y-1">
+                                        <div className="flex items-center gap-2 font-medium">
+                                            <User className="h-4 w-4 text-muted-foreground"/>
+                                            <span>{order.recipient}</span>
+                                        </div>
+                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Phone className="h-4 w-4"/>
+                                            <span>{order.phone}</span>
+                                        </div>
+                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <MapPin className="h-4 w-4"/>
+                                            <span>{order.address}, {order.city}</span>
+                                        </div>
                                     </div>
                                     
-                                    <Separator className='my-3' />
-
-                                    <div className="space-y-2 text-sm">
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">المستحق للتاجر</span>
-                                            <span className="font-medium">{order.itemPrice.toFixed(2)} د.أ</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">أجور التوصيل</span>
-                                            <span className="font-medium">{order.deliveryFee.toFixed(2)} د.أ</span>
-                                        </div>
+                                    {/* Row 3 */}
+                                    <div className="col-span-2">
+                                        <Separator className='my-2' />
                                     </div>
 
-                                    <Separator className='my-3' />
-
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-base font-bold">قيمة التحصيل</span>
-                                        <span className="text-lg font-bold text-primary">{order.cod.toFixed(2)} د.أ</span>
+                                    {/* Row 4 */}
+                                    <div className="col-span-1 flex flex-col justify-center">
+                                        <span className="text-base font-bold text-primary">{order.cod.toFixed(2)} د.أ</span>
+                                        <span className="text-xs text-muted-foreground">قيمة التحصيل</span>
                                     </div>
-                                </div>
-                                <CardFooter className='p-2 bg-muted/50 grid grid-cols-4 items-center justify-items-center'>
-                                     <div className="flex flex-col items-center gap-1">
-                                        <Avatar className='h-7 w-7 text-xs'>
+                                     <div className="col-span-1 flex justify-end items-center">
+                                         <Avatar className='h-9 w-9 text-xs'>
                                             <AvatarFallback>{order.driver.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                      </div>
+                                </div>
+                                <CardFooter className='p-2 bg-muted/50 grid grid-cols-3 items-center justify-items-center'>
                                      <ActionButton icon={MessageCircle} label="واتساب" />
                                      <ActionButton icon={History} label="سجل" />
                                      <ActionButton icon={Printer} label="طباعة" />
@@ -325,7 +319,7 @@ function OrdersPageContent() {
 
     return (
         <TooltipProvider>
-            <div className="flex flex-col bg-background">
+            <div className="flex flex-col h-full bg-background">
                 <div className="flex-none p-4 flex-row items-center justify-between flex flex-wrap gap-2 border-b">
                      <div className="relative w-full max-w-xs">
                         <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -349,74 +343,53 @@ function OrdersPageContent() {
                         <Button variant="outline" size="sm"><RefreshCw /></Button>
                     </div>
                 </div>
-                 <div className="flex-1 overflow-auto">
+
+                {/* Filters Row */}
+                <div className="flex-none px-2 py-1 bg-primary text-primary-foreground">
+                     <div className="flex items-center">
+                        <div className="p-1 text-right w-12 sticky right-0 z-30 bg-primary"></div>
+                        <div className="p-1 w-40"><Input placeholder="رقم الطلب..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
+                        <div className="p-1 w-32"><Input placeholder="المصدر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
+                        <div className="p-1 w-40"><Input placeholder="الرقم المرجعي..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
+                        <div className="p-1 w-48"><Input placeholder="المستلم..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
+                        <div className="p-1 w-40"><Input placeholder="الهاتف..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
+                        <div className="p-1 w-40"><Input placeholder="المنطقة..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
+                        <div className="p-1 w-32"><Input placeholder="المدينة..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
+                        <div className="p-1 w-48"><Input placeholder="المتجر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
+                        <div className="p-1 w-48"><Input placeholder="الحالة..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
+                        <div className="p-1 w-48"><Input placeholder="السائق..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
+                        <div className="p-1 w-32"><Input placeholder="المستحق..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
+                        <div className="p-1 w-32"><Input placeholder="الأجور..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
+                        <div className="p-1 w-32"><Input placeholder="التحصيل..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
+                        <div className="p-1 w-32 flex-1"><Input placeholder="التاريخ..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/></div>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-auto">
                     <Table className="min-w-full border-separate border-spacing-0">
-                        <TableHeader className="sticky top-0 z-20 bg-background">
+                        <TableHeader className="sticky top-0 z-10 bg-muted/50 hover:bg-muted/80">
                             <TableRow>
-                                <TableHead className="sticky right-0 p-1 bg-primary border-l border-primary-foreground/20 text-right z-30 w-12">
-                                </TableHead>
-                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                </TableHead>
-                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                </TableHead>
-                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                </TableHead>
-                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                </TableHead>
-                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                </TableHead>
-                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                </TableHead>
-                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                </TableHead>
-                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                </TableHead>
-                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                </TableHead>
-                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                </TableHead>
-                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                </TableHead>
-                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                </TableHead>
-                                <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
-                                    <Input placeholder="فلتر..." className="h-8 bg-primary-foreground/20 text-white placeholder:text-white/70 border-white/50"/>
-                                </TableHead>
-                            </TableRow>
-                            <TableRow className="bg-muted/50 hover:bg-muted/80">
-                                <TableHead className="sticky right-0 px-4 border-l bg-muted text-right flex items-center justify-center z-30 w-12">
+                                <TableHead className="sticky right-0 px-4 border-l bg-muted text-right flex items-center justify-center z-20 w-12">
                                     <Checkbox
                                         onCheckedChange={handleSelectAll}
                                         checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
                                         className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                                     />
                                 </TableHead>
-                                <TableHead className="text-right border-l bg-muted">رقم الطلب</TableHead>
-                                <TableHead className="text-right border-l bg-muted">المصدر</TableHead>
-                                <TableHead className="text-right border-l bg-muted">الرقم المرجعي</TableHead>
-                                <TableHead className="text-right border-l bg-muted">المستلم</TableHead>
-                                <TableHead className="text-right border-l bg-muted">الهاتف</TableHead>
-                                <TableHead className="text-right border-l bg-muted">المنطقة</TableHead>
-                                <TableHead className="text-right border-l bg-muted">المدينة</TableHead>
-                                <TableHead className="text-right border-l bg-muted">المتجر</TableHead>
-                                <TableHead className="text-right border-l bg-muted">الحالة</TableHead>
-                                <TableHead className="text-right border-l bg-muted">السائق</TableHead>
-                                <TableHead className="text-right border-l bg-muted">المستحق للتاجر</TableHead>
-                                <TableHead className="text-right border-l bg-muted">أجور التوصيل</TableHead>
-                                <TableHead className="text-right border-l bg-muted">قيمة التحصيل</TableHead>
-                                <TableHead className="text-right border-l bg-muted">التاريخ</TableHead>
+                                <TableHead className="text-right border-l w-40">رقم الطلب</TableHead>
+                                <TableHead className="text-right border-l w-32">المصدر</TableHead>
+                                <TableHead className="text-right border-l w-40">الرقم المرجعي</TableHead>
+                                <TableHead className="text-right border-l w-48">المستلم</TableHead>
+                                <TableHead className="text-right border-l w-40">الهاتف</TableHead>
+                                <TableHead className="text-right border-l w-40">المنطقة</TableHead>
+                                <TableHead className="text-right border-l w-32">المدينة</TableHead>
+                                <TableHead className="text-right border-l w-48">المتجر</TableHead>
+                                <TableHead className="text-right border-l w-48">الحالة</TableHead>
+                                <TableHead className="text-right border-l w-48">السائق</TableHead>
+                                <TableHead className="text-right border-l w-32">المستحق للتاجر</TableHead>
+                                <TableHead className="text-right border-l w-32">أجور التوصيل</TableHead>
+                                <TableHead className="text-right border-l w-32">قيمة التحصيل</TableHead>
+                                <TableHead className="text-right border-l w-32 flex-1">التاريخ</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -425,7 +398,7 @@ function OrdersPageContent() {
                                 const SourceIcon = sourceIcons[order.source] || LinkIcon;
                                 return (
                                 <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''}>
-                                    <TableCell className="sticky right-0 border-l bg-muted flex items-center justify-center z-10">
+                                    <TableCell className="sticky right-0 border-l bg-background flex items-center justify-center z-10">
                                         <Checkbox
                                             checked={selectedRows.includes(order.id)}
                                             onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
@@ -524,7 +497,5 @@ function OrdersPageContent() {
 }
 
 export default function OrdersPage() {
-    return <OrdersPageContent />
+    return <OrdersPageContent />;
 }
-
-    
