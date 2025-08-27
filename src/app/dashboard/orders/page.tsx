@@ -388,20 +388,20 @@ function OrdersPageContent() {
                                             onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
                                         />
                                     </TableCell>
-                                    <TableCell className="font-medium text-primary p-1 text-center whitespace-nowrap border-l"><Link href="#">{order.id}</Link></TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">
+                                    <TableCell className="font-medium text-primary p-1 text-center whitespace-nowrap border-l bg-background"><Link href="#">{order.id}</Link></TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l bg-background">
                                         <Badge variant="outline" className="gap-1.5 font-normal">
                                             <SourceIcon className="h-3 w-3" />
                                             {order.source}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.referenceNumber}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.recipient}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.phone}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.region}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.city}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.merchant}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l bg-background">{order.referenceNumber}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l bg-background">{order.recipient}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l bg-background">{order.phone}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l bg-background">{order.region}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l bg-background">{order.city}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l bg-background">{order.merchant}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l bg-background">
                                             <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
                                             <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
                                                 <SelectValue placeholder="الحالة" />
@@ -413,11 +413,11 @@ function OrdersPageContent() {
                                             </SelectContent>
                                         </Select>
                                     </TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.driver}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.itemPrice.toFixed(2)}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.deliveryFee.toFixed(2)}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.cod.toFixed(2)}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.date}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l bg-background">{order.driver}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l bg-background">{order.itemPrice.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l bg-background">{order.deliveryFee.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l bg-background">{order.cod.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l bg-background">{order.date}</TableCell>
                                 </TableRow>
                             )})}
                         </TableBody>
