@@ -94,7 +94,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
-        <div className="flex flex-1 flex-col overflow-auto">
+        <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
           <AppHeader />
           <main className="flex-1 p-4 sm:p-6 lg:p-8 bg-muted/40">
             {children}
