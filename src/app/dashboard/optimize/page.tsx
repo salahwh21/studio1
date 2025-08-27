@@ -28,6 +28,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { optimizeRouteAction } from '@/app/actions/optimize-route';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Badge } from '@/components/ui/badge';
 
 const routeOptimizationSchema = z.object({
   driverId: z.string().min(1, 'الرجاء اختيار سائق.'),
