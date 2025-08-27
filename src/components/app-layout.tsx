@@ -61,7 +61,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
      <SidebarProvider>
       <div className="flex h-screen bg-background overflow-hidden">
-        <Sidebar side="right" collapsible="icon" className="z-40">
+        <Sidebar side="left" collapsible="icon" className="z-40">
           <SidebarHeader>
             <div className="flex h-16 items-center justify-center p-2 group-data-[collapsible=icon]:h-12">
               <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
@@ -79,7 +79,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     className="justify-start"
                     tooltip={{
                       children: item.label,
-                      side: 'left',
+                      side: 'right',
                       align: 'center',
                       className: 'bg-primary/90 text-primary-foreground',
                     }}
