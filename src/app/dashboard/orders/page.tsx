@@ -225,25 +225,26 @@ function OrdersPageContent() {
         setSelectedRows([]);
         setModalState({type: 'none'});
     }
-
+    
     const totals = useMemo(() => {
-        const selectedOrders = orders.filter(o => selectedRows.includes(o.id));
-        const paginatedTotals = paginatedOrders.reduce((acc, order) => {
+        const calculateTotals = (orderList: Order[]) => orderList.reduce((acc, order) => {
             acc.cod += order.cod;
             acc.itemPrice += order.itemPrice;
             acc.deliveryFee += order.deliveryFee;
             return acc;
         }, { cod: 0, itemPrice: 0, deliveryFee: 0 });
 
-        const selectedTotals = selectedOrders.reduce((acc, order) => {
-            acc.cod += order.cod;
-            acc.itemPrice += order.itemPrice;
-            acc.deliveryFee += order.deliveryFee;
-            return acc;
-        }, { cod: 0, itemPrice: 0, deliveryFee: 0 });
+        const selectedOrders = orders.filter(o => selectedRows.includes(o.id));
+        const paginatedTotals = calculateTotals(paginatedOrders);
+        const selectedTotals = calculateTotals(selectedOrders);
 
         return { paginated: paginatedTotals, selected: selectedTotals };
     }, [orders, selectedRows, paginatedOrders]);
+
+    const displayTotals = selectedRows.length > 0 ? totals.selected : totals.paginated;
+    const displayLabel = selectedRows.length > 0 
+        ? `مجاميع المحددة (${selectedRows.length})` 
+        : `مجاميع الصفحة الحالية (${paginatedOrders.length})`;
 
 
     if (!isClient) {
@@ -298,7 +299,7 @@ function OrdersPageContent() {
                                 <Table className="min-w-max border-b">
                                     <TableHeader className="sticky top-0 z-10">
                                         <TableRow className="bg-primary hover:bg-primary/90">
-                                            <TableHead className="sticky right-0 p-1 bg-primary border-l border-primary-foreground/20 text-right bg-muted">
+                                            <TableHead className="sticky right-0 bg-primary border-l border-primary-foreground/20 text-right bg-muted">
                                                 {/* This cell is now empty */}
                                             </TableHead>
                                             <TableHead className="p-1 align-top bg-primary border-l border-primary-foreground/20 text-right">
@@ -412,21 +413,14 @@ function OrdersPageContent() {
                                     </TableBody>
                                     <TableFooter className="sticky bottom-0 bg-muted/95">
                                         <TableRow>
-                                            <TableCell colSpan={11} className="p-1 border-l text-right font-semibold">
-                                                <div className="p-1 rounded bg-blue-100 text-blue-800 text-xs">مجاميع المحددة ({selectedRows.length})</div>
+                                             <TableCell colSpan={11} className="p-1 border-l text-right font-semibold">
+                                                <div className={`p-1 rounded text-xs ${selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800'}`}>
+                                                    {displayLabel}
+                                                </div>
                                             </TableCell>
-                                            <TableCell className="p-1 border-l text-right font-bold">{totals.selected.itemPrice.toFixed(2)}</TableCell>
-                                            <TableCell className="p-1 border-l text-right font-bold">{totals.selected.deliveryFee.toFixed(2)}</TableCell>
-                                            <TableCell className="p-1 border-l text-right font-bold">{totals.selected.cod.toFixed(2)}</TableCell>
-                                            <TableCell className="p-1 border-l text-right"></TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell colSpan={11} className="p-1 border-l text-right font-semibold">
-                                                 <div className="p-1 rounded bg-gray-200 text-gray-800 text-xs">مجاميع الصفحة الحالية ({paginatedOrders.length})</div>
-                                            </TableCell>
-                                            <TableCell className="p-1 border-l text-right font-bold">{totals.paginated.itemPrice.toFixed(2)}</TableCell>
-                                            <TableCell className="p-1 border-l text-right font-bold">{totals.paginated.deliveryFee.toFixed(2)}</TableCell>
-                                            <TableCell className="p-1 border-l text-right font-bold">{totals.paginated.cod.toFixed(2)}</TableCell>
+                                            <TableCell className="p-1 border-l text-right font-bold">{displayTotals.itemPrice.toFixed(2)}</TableCell>
+                                            <TableCell className="p-1 border-l text-right font-bold">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
+                                            <TableCell className="p-1 border-l text-right font-bold">{displayTotals.cod.toFixed(2)}</TableCell>
                                             <TableCell className="p-1 border-l text-right"></TableCell>
                                         </TableRow>
                                     </TableFooter>
@@ -501,5 +495,3 @@ function OrdersPageContent() {
 export default function OrdersPage() {
     return <OrdersPageContent />
 }
-
-    
