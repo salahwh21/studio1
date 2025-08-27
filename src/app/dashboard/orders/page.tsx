@@ -428,9 +428,9 @@ function OrdersPageContent() {
                                         {displayLabel}
                                     </div>
                                 </TableCell>
-                                <TableCell className="text-right font-bold">{displayTotals.itemPrice.toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-bold">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-bold">{displayTotals.cod.toFixed(2)}</TableCell>
+                                <TableCell className="font-bold text-center whitespace-nowrap">{displayTotals.itemPrice.toFixed(2)}</TableCell>
+                                <TableCell className="font-bold text-center whitespace-nowrap">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
+                                <TableCell className="font-bold text-center whitespace-nowrap">{displayTotals.cod.toFixed(2)}</TableCell>
                                 <TableCell></TableCell>
                             </TableRow>
                         </TableFooter>
