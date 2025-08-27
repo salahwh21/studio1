@@ -58,7 +58,7 @@ export default function AIOrderParsingPage() {
     },
   });
   
-  const { isPending } = useReactHookFormState({ control: form.control });
+  const { isSubmitting } = form.formState;
 
   useEffect(() => {
     if (formState.error) {
@@ -112,7 +112,11 @@ export default function AIOrderParsingPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="flex flex-col gap-6">
-        <form action={formAction}>
+        <form onSubmit={form.handleSubmit((data) => {
+            const formData = new FormData();
+            formData.append('request', data.request);
+            formAction(formData);
+        })}>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -127,7 +131,6 @@ export default function AIOrderParsingPage() {
                     <Label htmlFor="request">نص الطلب</Label>
                     <Textarea
                       id="request"
-                      name="request"
                       placeholder="مثال: إرسال ٢ بيتزا حجم كبير إلى علي في ١٢٣ شارع الملك، الرياض. واحدة بيبروني وواحدة خضار."
                       className={`min-h-[150px] transition-colors ${formState.error ? 'border-red-500' : formState.data ? 'border-green-500' : ''}`}
                       {...form.register('request')}
@@ -147,8 +150,8 @@ export default function AIOrderParsingPage() {
                   </div>
               </CardContent>
               <CardFooter>
-                <Button type="submit" disabled={isPending}>
-                  {isPending ? (
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       جاري التحليل...
@@ -173,13 +176,13 @@ export default function AIOrderParsingPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-           {isPending && reviewList.length === 0 && (
+           {isSubmitting && reviewList.length === 0 && (
              <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground min-h-[300px]">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p>يقوم الذكاء الاصطناعي بمعالجة أول طلب...</p>
              </div>
           )}
-          {!isPending && reviewList.length === 0 && (
+          {!isSubmitting && reviewList.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground min-h-[300px]">
                 <Bot className="h-8 w-8" />
                 <p>في انتظار إضافة طلبات للمراجعة.</p>
@@ -221,7 +224,7 @@ export default function AIOrderParsingPage() {
           )}
         </CardContent>
         <CardFooter className="flex justify-end">
-            <Button disabled={reviewList.length === 0 || isPending}>
+            <Button disabled={reviewList.length === 0 || isSubmitting}>
                 <Send className="mr-2 h-4 w-4"/> تأكيد كل الطلبات 
             </Button>
         </CardFooter>
