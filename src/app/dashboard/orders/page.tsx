@@ -382,7 +382,7 @@ function OrdersPageContent() {
                                 const SourceIcon = sourceIcons[order.source] || LinkIcon;
                                 return (
                                 <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''}>
-                                    <TableCell className="sticky right-0 border-l bg-background flex items-center justify-center z-10">
+                                    <TableCell className="sticky right-0 border-l bg-muted flex items-center justify-center z-10">
                                         <Checkbox
                                             checked={selectedRows.includes(order.id)}
                                             onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
@@ -484,4 +484,5 @@ export default function OrdersPage() {
     return <OrdersPageContent />;
 }
 
+    
     
