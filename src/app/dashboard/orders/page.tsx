@@ -54,6 +54,8 @@ import { CSS } from '@dnd-kit/utilities';
 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
+import { useOrdersStore, type Order } from '@/store/orders-store';
+
 
 // ShadCN UI Components
 import { Badge } from '@/components/ui/badge';
@@ -75,27 +77,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-// Mock Data
-const initialOrders = Array.from({ length: 85 }, (_, i) => ({
-  id: `ORD-171981000${1+i}`,
-  source: (['Shopify', 'Manual', 'API', 'WooCommerce'] as const)[i % 4],
-  referenceNumber: `REF-00${100+i}`,
-  recipient: ['محمد جاسم', 'أحمد محمود', 'أحمد خالد', 'فاطمة علي', 'حسن محمود', 'نور الهدى', 'خالد وليد'][i % 7],
-  phone: `07${(791234567 + i * 1111111).toString().slice(0,8)}`,
-  address: `${['الصويفية', 'تلاع العلي', 'تلاع العلي', 'حي معصوم', 'الجبيهة', 'الحي الشرقي', 'العبدلي'][i % 7]}`,
-  city: ['عمان', 'الزرقاء', 'إربد'][i % 3],
-  region: ['الصويفية', 'خلدا', 'تلاع العلي', 'حي معصوم', 'الجبيهة', 'الحي الشرقي', 'العبدلي'][i % 7],
-  status: (['تم التسليم', 'جاري التوصيل', 'بالانتظار', 'راجع', 'مؤجل', 'تم استلام المال في الفرع'] as const)[i % 6],
-  driver: ['علي الأحمد', 'ابو العبد', 'محمد الخالد', 'يوسف إبراهيم', 'عائشة بكر', 'غير معين'][i % 6],
-  merchant: ['تاجر أ', 'متجر العامري', 'تاجر ج', 'تاجر د'][i % 4],
-  cod: 35.50 + i * 5,
-  itemPrice: 34.00 + i * 5,
-  deliveryFee: 1.50,
-  date: `2024-07-${(1 + i % 5).toString().padStart(2,'0')}`,
-  notes: i % 3 === 0 ? 'اتصل قبل الوصول' : '',
-}));
 
-type Order = typeof initialOrders[0];
 type OrderSource = Order['source'];
 type ColumnConfig = { key: keyof Order | 'id-link'; label: string; type?: 'default' | 'financial' };
 
@@ -184,7 +166,10 @@ const SortableColumn = ({ id, label, onToggle, isVisible }: { id: string; label:
 export default function OrdersPageContent() {
     const { toast } = useToast();
     const [isClient, setIsClient] = useState(false);
-    const [orders, setOrders] = useState<Order[]>(initialOrders);
+    
+    // Zustand store integration
+    const { orders, setOrders, updateOrderStatus, deleteOrders } = useOrdersStore();
+    
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
     const [modalState, setModalState] = useState<ModalState>({ type: 'none' });
     const isMobile = useMediaQuery('(max-width: 1024px)');
@@ -229,22 +214,30 @@ export default function OrdersPageContent() {
     };
 
     const handleFieldChange = (orderId: string, field: keyof Order, value: any) => {
-        setOrders(prev => prev.map(order => 
-            order.id === orderId ? { ...order, [field]: value } : order
-        ));
+        // Using the action from the store
+        if (field === 'status') {
+            updateOrderStatus(orderId, value);
+        }
     };
 
     const handleDeleteSelected = () => {
-        setOrders(prev => prev.filter(o => !selectedRows.includes(o.id)));
+        // Using the action from the store
+        deleteOrders(selectedRows);
         toast({ title: `تم حذف ${selectedRows.length} طلبات بنجاح` });
         setSelectedRows([]);
         setModalState({type: 'none'});
     };
 
     const handleBulkUpdate = (field: keyof Order, value: any) => {
-        setOrders(prev => prev.map(order => 
-            selectedRows.includes(order.id) ? { ...order, [field]: value } : order
-        ));
+        // This would be a new action in the store, e.g., bulkUpdateOrders
+        // For now, let's update them one by one
+        selectedRows.forEach(id => {
+            if (field === 'status') {
+                updateOrderStatus(id, value);
+            }
+            // Add other bulk updates here
+        });
+
         toast({ title: `تم تحديث ${selectedRows.length} طلبات` });
         setSelectedRows([]);
         setModalState({type: 'none'});
@@ -501,7 +494,7 @@ export default function OrdersPageContent() {
                                         }
                                         if (col.key === 'status') {
                                              const sInfo = getStatusInfo(value as string);
-                                             return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l"><Select value={value as string} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}><SelectTrigger className={cn("border-0 h-8", sInfo.bgColor, sInfo.color)}><SelectValue placeholder="الحالة" /></SelectTrigger><SelectContent><SelectGroup>{statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectGroup></SelectContent></Select></TableCell>
+                                             return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l"><Select value={value as string} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus as Order['status'])}><SelectTrigger className={cn("border-0 h-8", sInfo.bgColor, sInfo.color)}><SelectValue placeholder="الحالة" /></SelectTrigger><SelectContent><SelectGroup>{statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectGroup></SelectContent></Select></TableCell>
                                         }
                                         if (col.type === 'financial' && typeof value === 'number') {
                                             return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l">{value.toFixed(2)}</TableCell>
@@ -513,24 +506,25 @@ export default function OrdersPageContent() {
                               })}
                             
                               {/* سطر المجاميع */}
-                              <TableRow className="bg-muted/20 font-bold">
-                                <TableCell className="sticky right-0 z-10 bg-muted/20 border-l p-1 text-center">
-                                    <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
-                                        {displayLabel}
-                                    </div>
-                                </TableCell>
-                                {visibleColumns.map(col => {
-                                  if (col.type === 'financial') {
-                                    const totalValue = displayTotals[col.key as string] || 0;
-                                    return (
-                                      <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l">
-                                        {totalValue.toFixed(2)}
-                                      </TableCell>
-                                    );
-                                  }
-                                  return <TableCell key={col.key} className="border-l"></TableCell>;
-                                })}
-                              </TableRow>
+                               <TableRow className="bg-muted/20 font-bold">
+                                    <TableCell className="sticky right-0 z-10 bg-muted/20 p-1 text-center border-l">
+                                        <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
+                                            {displayLabel}
+                                        </div>
+                                    </TableCell>
+                                    {visibleColumns.map(col => {
+                                        if (col.type === 'financial') {
+                                            const totalValue = displayTotals[col.key as string] || 0;
+                                            return (
+                                                <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l">
+                                                    {totalValue.toFixed(2)}
+                                                </TableCell>
+                                            );
+                                        }
+                                        // Render an empty cell for non-financial columns to maintain alignment
+                                        return <TableCell key={col.key} className="border-l"></TableCell>;
+                                    })}
+                                </TableRow>
                             </TableBody>
 
                         </table>
