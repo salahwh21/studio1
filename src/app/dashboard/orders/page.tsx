@@ -340,7 +340,7 @@ function OrdersPageContent() {
 
                 {/* Table Container */}
                 <div className="flex-1 relative overflow-auto border rounded-lg">
-                    <table className="w-full border-collapse">
+                    <table className="w-full border-collapse text-sm">
                         <thead className="sticky top-0 z-10">
                             <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
                                 <TableHead className="sticky right-0 z-20 bg-[#4A5568] text-white p-1 text-center border-b border-l w-12">
@@ -411,21 +411,21 @@ function OrdersPageContent() {
                                 </TableRow>
                             )})}
                         </TableBody>
+                        <TableFooter className="bg-muted/95">
+                            <TableRow>
+                                <TableCell className="sticky right-0 z-10 bg-muted/95 font-bold p-1 text-center border-l">
+                                    <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
+                                      {displayLabel}
+                                    </div>
+                                </TableCell>
+                                <TableCell colSpan={10} className="font-bold p-1 text-center border-l"></TableCell>
+                                <TableCell className="font-bold p-1 text-center whitespace-nowrap border-l">{displayTotals.itemPrice.toFixed(2)}</TableCell>
+                                <TableCell className="font-bold p-1 text-center whitespace-nowrap border-l">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
+                                <TableCell className="font-bold p-1 text-center whitespace-nowrap border-l">{displayTotals.cod.toFixed(2)}</TableCell>
+                                <TableCell className="font-bold p-1 text-center border-l"></TableCell>
+                            </TableRow>
+                        </TableFooter>
                     </table>
-                </div>
-                
-                {/* Footer Totals */}
-                 <div className="flex-none grid grid-cols-[auto_1fr_auto_auto_auto_auto] items-center text-sm font-bold bg-muted/95 p-1 rounded-b-lg border-t">
-                    <div className="px-3">
-                        <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
-                            {displayLabel}
-                        </div>
-                    </div>
-                    <div className="text-center"></div> {/* Spacer */}
-                    <div className="px-2 text-center whitespace-nowrap">{displayTotals.itemPrice.toFixed(2)}</div>
-                    <div className="px-2 text-center whitespace-nowrap">{displayTotals.deliveryFee.toFixed(2)}</div>
-                    <div className="px-2 text-center whitespace-nowrap">{displayTotals.cod.toFixed(2)}</div>
-                    <div className="px-2 text-center w-32"></div> {/* Spacer for date column */}
                 </div>
 
                 {/* Pagination Footer */}
@@ -477,3 +477,4 @@ export default function OrdersPage() {
     return <OrdersPageContent />;
 }
 
+    
