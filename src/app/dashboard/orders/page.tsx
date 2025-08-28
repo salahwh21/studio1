@@ -387,71 +387,68 @@ export default function OrdersPageContent() {
                             </thead>
 
                             <TableBody>
-  {paginatedOrders.map(order => {
-    const statusInfo = getStatusInfo(order.status);
-    const SourceIcon = sourceIcons[order.source] || LinkIcon;
-    return (
-      <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
-        <TableCell className="sticky right-0 z-10 bg-background data-[state=selected]:bg-muted p-1 text-center border-l">
-          <Checkbox
-            checked={selectedRows.includes(order.id)}
-            onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
-          />
-        </TableCell>
-        <TableCell className="font-medium text-primary p-1 text-center whitespace-nowrap border-l"><Link href="#">{order.id}</Link></TableCell>
-        <TableCell className="p-1 text-center whitespace-nowrap border-l">
-          <Badge variant="outline" className="gap-1.5 font-normal">
-            <SourceIcon className="h-3 w-3" />
-            {order.source}
-          </Badge>
-        </TableCell>
-        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.referenceNumber}</TableCell>
-        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.recipient}</TableCell>
-        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.phone}</TableCell>
-        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.region}</TableCell>
-        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.city}</TableCell>
-        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.merchant}</TableCell>
-        <TableCell className="p-1 text-center whitespace-nowrap border-l">
-          <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
-            <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
-              <SelectValue placeholder="الحالة" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </TableCell>
-        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.driver}</TableCell>
-        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.itemPrice.toFixed(2)}</TableCell>
-        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.deliveryFee.toFixed(2)}</TableCell>
-        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.cod.toFixed(2)}</TableCell>
-        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.date}</TableCell>
-      </TableRow>
-    )
-  })}
-
-  {/* سطر المجاميع */}
-  <TableRow className="bg-muted/20 font-bold">
-    {/* الخلية الثابتة لعمود الاختيار */}
-    <TableCell className="sticky right-0 z-10 bg-muted/20 border-l"></TableCell>
-
-    {/* كلمة المجاميع تمتد على كل الأعمدة غير المالية */}
-    <TableCell colSpan={columns.length - columns.filter(c => c.type === 'financial').length} className="p-1 text-center">
-      {selectedRows.length > 0 
-        ? `مجاميع المحددة (${selectedRows.length})` 
-        : `مجاميع الصفحة الحالية (${paginatedOrders.length})`}
-    </TableCell>
-
-    {/* الأعمدة المالية */}
-    {columns.filter(c => c.type === 'financial').map(col => (
-      <TableCell key={col.key} className="p-1 text-center whitespace-nowrap">
-        {displayTotals[col.key as keyof typeof displayTotals].toFixed(2)}
-      </TableCell>
-    ))}
-  </TableRow>
-</TableBody>
+                              {paginatedOrders.map(order => {
+                                const statusInfo = getStatusInfo(order.status);
+                                const SourceIcon = sourceIcons[order.source] || LinkIcon;
+                                return (
+                                  <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
+                                    <TableCell className="sticky right-0 z-10 bg-background data-[state=selected]:bg-muted p-1 text-center border-l">
+                                      <Checkbox
+                                        checked={selectedRows.includes(order.id)}
+                                        onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="font-medium text-primary p-1 text-center whitespace-nowrap border-l"><Link href="#">{order.id}</Link></TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">
+                                      <Badge variant="outline" className="gap-1.5 font-normal">
+                                        <SourceIcon className="h-3 w-3" />
+                                        {order.source}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.referenceNumber}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.recipient}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.phone}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.region}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.city}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.merchant}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">
+                                      <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
+                                        <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
+                                          <SelectValue placeholder="الحالة" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectGroup>
+                                            {statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                                          </SelectGroup>
+                                        </SelectContent>
+                                      </Select>
+                                    </TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.driver}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.itemPrice.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.deliveryFee.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.cod.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.date}</TableCell>
+                                  </TableRow>
+                                )
+                              })}
+                            
+                              {/* سطر المجاميع */}
+                              <TableRow className="bg-muted/20 font-bold">
+                                <TableCell className="sticky right-0 z-10 bg-muted/20 border-l p-1 text-center">
+                                  {displayLabel}
+                                </TableCell>
+                                {columns.map(col => {
+                                  if (col.type === 'financial') {
+                                    return (
+                                      <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l">
+                                        {(displayTotals[col.key as keyof typeof displayTotals] || 0).toFixed(2)}
+                                      </TableCell>
+                                    );
+                                  }
+                                  return <TableCell key={col.key} className="border-l"></TableCell>;
+                                })}
+                              </TableRow>
+                            </TableBody>
 
                         </table>
                     </div>
@@ -501,3 +498,4 @@ export default function OrdersPageContent() {
         </>
     );
 }
+
