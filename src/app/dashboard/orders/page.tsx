@@ -312,7 +312,7 @@ function OrdersPageContent() {
 
     return (
         <TooltipProvider>
-            <div className="flex flex-col h-[calc(100vh-64px)] bg-background p-4 gap-4">
+            <Card className="flex flex-col h-[calc(100vh-8rem)] bg-background p-4 gap-4 overflow-hidden">
                 {/* Header */}
                 <div className="flex-none flex-row items-center justify-between flex flex-wrap gap-2">
                      <div className="relative w-full max-w-xs">
@@ -339,59 +339,59 @@ function OrdersPageContent() {
                 </div>
 
                 {/* Table Container */}
-                <div className="flex-1 overflow-auto border rounded-lg">
-                    <Table className="min-w-full border-separate" style={{ borderSpacing: 0 }}>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="sticky top-0 right-0 z-20 bg-[#4A5568] text-white p-1 text-center border-b border-l w-12">
+                <div className="flex-1 relative overflow-auto border rounded-lg">
+                    <table className="w-full border-collapse">
+                        <thead className="sticky top-0 z-10">
+                            <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
+                                <TableHead className="sticky right-0 z-20 bg-[#4A5568] text-white p-1 text-center border-b border-l w-12">
                                     <Checkbox
                                         onCheckedChange={handleSelectAll}
                                         checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
                                         className="border-white data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                                     />
                                 </TableHead>
-                                <TableHead className="sticky top-0 bg-[#4A5568] text-white p-1 text-center whitespace-nowrap border-b border-l">رقم الطلب</TableHead>
-                                <TableHead className="sticky top-0 bg-[#4A5568] text-white p-1 text-center whitespace-nowrap border-b border-l">المصدر</TableHead>
-                                <TableHead className="sticky top-0 bg-[#4A5568] text-white p-1 text-center whitespace-nowrap border-b border-l">الرقم المرجعي</TableHead>
-                                <TableHead className="sticky top-0 bg-[#4A5568] text-white p-1 text-center whitespace-nowrap border-b border-l">المستلم</TableHead>
-                                <TableHead className="sticky top-0 bg-[#4A5568] text-white p-1 text-center whitespace-nowrap border-b border-l">الهاتف</TableHead>
-                                <TableHead className="sticky top-0 bg-[#4A5568] text-white p-1 text-center whitespace-nowrap border-b border-l">المنطقة</TableHead>
-                                <TableHead className="sticky top-0 bg-[#4A5568] text-white p-1 text-center whitespace-nowrap border-b border-l">المدينة</TableHead>
-                                <TableHead className="sticky top-0 bg-[#4A5568] text-white p-1 text-center whitespace-nowrap border-b border-l">المتجر</TableHead>
-                                <TableHead className="sticky top-0 bg-[#4A5568] text-white p-1 text-center whitespace-nowrap border-b border-l">الحالة</TableHead>
-                                <TableHead className="sticky top-0 bg-[#4A5568] text-white p-1 text-center whitespace-nowrap border-b border-l">السائق</TableHead>
-                                <TableHead className="sticky top-0 bg-[#4A5568] text-white p-1 text-center whitespace-nowrap border-b border-l">المستحق للتاجر</TableHead>
-                                <TableHead className="sticky top-0 bg-[#4A5568] text-white p-1 text-center whitespace-nowrap border-b border-l">أجور التوصيل</TableHead>
-                                <TableHead className="sticky top-0 bg-[#4A5568] text-white p-1 text-center whitespace-nowrap border-b border-l">قيمة التحصيل</TableHead>
-                                <TableHead className="sticky top-0 bg-[#4A5568] text-white p-1 text-center whitespace-nowrap border-b border-l w-32">التاريخ</TableHead>
+                                <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">رقم الطلب</TableHead>
+                                <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">المصدر</TableHead>
+                                <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">الرقم المرجعي</TableHead>
+                                <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">المستلم</TableHead>
+                                <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">الهاتف</TableHead>
+                                <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">المنطقة</TableHead>
+                                <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">المدينة</TableHead>
+                                <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">المتجر</TableHead>
+                                <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">الحالة</TableHead>
+                                <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">السائق</TableHead>
+                                <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">المستحق للتاجر</TableHead>
+                                <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">أجور التوصيل</TableHead>
+                                <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">قيمة التحصيل</TableHead>
+                                <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l w-32">التاريخ</TableHead>
                             </TableRow>
-                        </TableHeader>
+                        </thead>
                         <TableBody>
                             {paginatedOrders.map(order => {
                                 const statusInfo = getStatusInfo(order.status);
                                 const SourceIcon = sourceIcons[order.source] || LinkIcon;
                                 return (
-                                <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50">
-                                    <TableCell className="sticky right-0 z-10 bg-background data-[state=selected]:bg-muted p-1 text-center border-b border-l">
+                                <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
+                                    <TableCell className="sticky right-0 z-10 bg-background data-[state=selected]:bg-muted p-1 text-center border-l">
                                         <Checkbox
                                             checked={selectedRows.includes(order.id)}
                                             onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
                                         />
                                     </TableCell>
-                                    <TableCell className="font-medium text-primary p-1 text-center whitespace-nowrap border-b border-l"><Link href="#">{order.id}</Link></TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-b border-l">
+                                    <TableCell className="font-medium text-primary p-1 text-center whitespace-nowrap border-l"><Link href="#">{order.id}</Link></TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">
                                         <Badge variant="outline" className="gap-1.5 font-normal">
                                             <SourceIcon className="h-3 w-3" />
                                             {order.source}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-b border-l">{order.referenceNumber}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-b border-l">{order.recipient}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-b border-l">{order.phone}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-b border-l">{order.region}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-b border-l">{order.city}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-b border-l">{order.merchant}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-b border-l">
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.referenceNumber}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.recipient}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.phone}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.region}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.city}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.merchant}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">
                                             <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
                                             <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
                                                 <SelectValue placeholder="الحالة" />
@@ -403,35 +403,33 @@ function OrdersPageContent() {
                                             </SelectContent>
                                         </Select>
                                     </TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-b border-l">{order.driver}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-b border-l">{order.itemPrice.toFixed(2)}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-b border-l">{order.deliveryFee.toFixed(2)}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-b border-l">{order.cod.toFixed(2)}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-b border-l">{order.date}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.driver}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.itemPrice.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.deliveryFee.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.cod.toFixed(2)}</TableCell>
+                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.date}</TableCell>
                                 </TableRow>
                             )})}
                         </TableBody>
-                        <TableFooter>
-                            <TableRow className="hover:bg-muted/50 sticky bottom-0 z-10 bg-muted/95">
-                                <TableCell className="sticky right-0 z-20 bg-muted/95 p-1 text-center border-b border-l">
-                                    <div className={cn('p-2 rounded text-xs')}></div>
-                                </TableCell>
-                                <TableCell colSpan={10} className="p-1 text-center font-semibold border-b border-l">
-                                     <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
-                                        {displayLabel}
-                                    </div>
-                                </TableCell>
-                                <TableCell className="p-1 text-center font-bold whitespace-nowrap border-b border-l">{displayTotals.itemPrice.toFixed(2)}</TableCell>
-                                <TableCell className="p-1 text-center font-bold whitespace-nowrap border-b border-l">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
-                                <TableCell className="p-1 text-center font-bold whitespace-nowrap border-b border-l">{displayTotals.cod.toFixed(2)}</TableCell>
-                                <TableCell className="p-1 text-center whitespace-nowrap border-b border-l"></TableCell>
-                            </TableRow>
-                        </TableFooter>
-                    </Table>
+                    </table>
                 </div>
                 
-                {/* Footer */}
-                <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
+                {/* Footer Totals */}
+                 <div className="flex-none grid grid-cols-[auto_1fr_auto_auto_auto_auto] items-center text-sm font-bold bg-muted/95 p-1 rounded-b-lg border-t">
+                    <div className="px-3">
+                        <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
+                            {displayLabel}
+                        </div>
+                    </div>
+                    <div className="text-center"></div> {/* Spacer */}
+                    <div className="px-2 text-center whitespace-nowrap">{displayTotals.itemPrice.toFixed(2)}</div>
+                    <div className="px-2 text-center whitespace-nowrap">{displayTotals.deliveryFee.toFixed(2)}</div>
+                    <div className="px-2 text-center whitespace-nowrap">{displayTotals.cod.toFixed(2)}</div>
+                    <div className="px-2 text-center w-32"></div> {/* Spacer for date column */}
+                </div>
+
+                {/* Pagination Footer */}
+                <CardFooter className="flex-none flex items-center justify-between p-2 border-t">
                     <span className="text-xs text-muted-foreground">
                         عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
                     </span>
@@ -441,7 +439,7 @@ function OrdersPageContent() {
                         <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>التالي</Button>
                     </div>
                 </CardFooter>
-            </div>
+            </Card>
             
             {/* Modals */}
             <AlertDialog open={modalState.type === 'delete'} onOpenChange={(open) => !open && setModalState({ type: 'none' })}>
@@ -479,4 +477,3 @@ export default function OrdersPage() {
     return <OrdersPageContent />;
 }
 
-    
