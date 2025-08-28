@@ -386,103 +386,73 @@ export default function OrdersPageContent() {
                             </TableRow>
                             </thead>
 
-                            {/* جسم الجدول */}
                             <TableBody>
-                            {paginatedOrders.map(order => {
-                                const statusInfo = getStatusInfo(order.status);
-                                const SourceIcon = sourceIcons[order.source] || LinkIcon;
-                                return (
-                                <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
-                                    <TableCell className="sticky right-0 z-10 bg-background data-[state=selected]:bg-muted p-1 text-center border-l">
-                                    <Checkbox
-                                        checked={selectedRows.includes(order.id)}
-                                        onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
-                                    />
-                                    </TableCell>
+  {paginatedOrders.map(order => {
+    const statusInfo = getStatusInfo(order.status);
+    const SourceIcon = sourceIcons[order.source] || LinkIcon;
+    return (
+      <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
+        <TableCell className="sticky right-0 z-10 bg-background data-[state=selected]:bg-muted p-1 text-center border-l">
+          <Checkbox
+            checked={selectedRows.includes(order.id)}
+            onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
+          />
+        </TableCell>
+        <TableCell className="font-medium text-primary p-1 text-center whitespace-nowrap border-l"><Link href="#">{order.id}</Link></TableCell>
+        <TableCell className="p-1 text-center whitespace-nowrap border-l">
+          <Badge variant="outline" className="gap-1.5 font-normal">
+            <SourceIcon className="h-3 w-3" />
+            {order.source}
+          </Badge>
+        </TableCell>
+        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.referenceNumber}</TableCell>
+        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.recipient}</TableCell>
+        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.phone}</TableCell>
+        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.region}</TableCell>
+        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.city}</TableCell>
+        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.merchant}</TableCell>
+        <TableCell className="p-1 text-center whitespace-nowrap border-l">
+          <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
+            <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
+              <SelectValue placeholder="الحالة" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </TableCell>
+        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.driver}</TableCell>
+        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.itemPrice.toFixed(2)}</TableCell>
+        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.deliveryFee.toFixed(2)}</TableCell>
+        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.cod.toFixed(2)}</TableCell>
+        <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.date}</TableCell>
+      </TableRow>
+    )
+  })}
 
-                                    {columns.map((col, idx) => {
-                                        const cellValue = order[col.key as keyof Order];
-                                        if (col.key === 'id') {
-                                            return (
-                                                 <TableCell key={idx} className="font-medium text-primary p-1 text-center whitespace-nowrap border-l">
-                                                    <Link href="#">{cellValue}</Link>
-                                                </TableCell>
-                                            )
-                                        } else if (col.key === 'status') {
-                                            return (
-                                            <TableCell key={idx} className="p-1 text-center whitespace-nowrap border-l">
-                                                <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
-                                                <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
-                                                    <SelectValue placeholder="الحالة" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectGroup>
-                                                    {statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                                                    </SelectGroup>
-                                                </SelectContent>
-                                                </Select>
-                                            </TableCell>
-                                            )
-                                        } else if (col.key === 'source') {
-                                            return (
-                                            <TableCell key={idx} className="p-1 text-center whitespace-nowrap border-l">
-                                                <Badge variant="outline" className="gap-1.5 font-normal">
-                                                <SourceIcon className="h-3 w-3" />
-                                                {cellValue}
-                                                </Badge>
-                                            </TableCell>
-                                            )
-                                        } else if (col.type === 'financial') {
-                                            return (
-                                            <TableCell key={idx} className="p-1 text-center whitespace-nowrap border-l">
-                                                {(cellValue as number).toFixed(2)}
-                                            </TableCell>
-                                            )
-                                        } else {
-                                            return (
-                                            <TableCell key={idx} className="p-1 text-center whitespace-nowrap border-l">
-                                                {cellValue as React.ReactNode}
-                                            </TableCell>
-                                            )
-                                        }
-                                    })}
-                                </TableRow>
-                                )
-                            })}
-                            </TableBody>
+  {/* سطر المجاميع */}
+  <TableRow className="bg-muted/20 font-bold">
+    {/* الخلية الثابتة لعمود الاختيار */}
+    <TableCell className="sticky right-0 z-10 bg-muted/20 border-l"></TableCell>
 
-                            {/* Footer ديناميكي للمجاميع */}
-                            <TableFooter className="bg-muted/95 sticky bottom-0 z-20">
-                            <TableRow>
-                                <TableCell className="sticky right-0 z-30 bg-muted/95 font-bold p-1 text-center border-l">
-                                <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
-                                    {displayLabel}
-                                </div>
-                                </TableCell>
-                                
-                                {columns.map((col, idx) => {
-                                    if (col.type === 'financial') {
-                                        const value = displayTotals[col.key as keyof typeof displayTotals].toFixed(2);
-                                        return (
-                                        <TableCell key={idx} className="font-bold p-1 text-center whitespace-nowrap border-l">
-                                            {value}
-                                        </TableCell>
-                                        )
-                                    }
-                                    // Find index of first financial column to adjust colSpan
-                                    const firstFinancialIndex = columns.findIndex(c => c.type === 'financial');
-                                    if (idx === 0) { // Render one cell to span non-financial columns
-                                        return (
-                                            <TableCell key="spanning-cell" colSpan={firstFinancialIndex -1} className="font-bold p-1 text-center border-l"></TableCell>
-                                        )
-                                    }
-                                    if (idx > 0 && idx < firstFinancialIndex) { // Render nothing for other non-financials
-                                        return null;
-                                    }
-                                    return null; // Should not be reached
-                                })}
-                            </TableRow>
-                            </TableFooter>
+    {/* كلمة المجاميع تمتد على كل الأعمدة غير المالية */}
+    <TableCell colSpan={columns.length - columns.filter(c => c.type === 'financial').length} className="p-1 text-center">
+      {selectedRows.length > 0 
+        ? `مجاميع المحددة (${selectedRows.length})` 
+        : `مجاميع الصفحة الحالية (${paginatedOrders.length})`}
+    </TableCell>
+
+    {/* الأعمدة المالية */}
+    {columns.filter(c => c.type === 'financial').map(col => (
+      <TableCell key={col.key} className="p-1 text-center whitespace-nowrap">
+        {displayTotals[col.key as keyof typeof displayTotals].toFixed(2)}
+      </TableCell>
+    ))}
+  </TableRow>
+</TableBody>
+
                         </table>
                     </div>
 
@@ -531,4 +501,3 @@ export default function OrdersPageContent() {
         </>
     );
 }
-
