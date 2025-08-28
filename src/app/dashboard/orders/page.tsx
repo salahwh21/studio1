@@ -36,6 +36,22 @@ import {
   MapPin,
   MessageCircle,
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 
@@ -81,9 +97,10 @@ const initialOrders = Array.from({ length: 85 }, (_, i) => ({
 
 type Order = typeof initialOrders[0];
 type OrderSource = Order['source'];
+type ColumnConfig = { key: keyof Order | 'id-link'; label: string; type?: 'default' | 'financial' };
 
-// Dynamic Columns Definition
-const columns: { key: keyof Order | 'id-link'; label: string; type?: 'default' | 'financial' }[] = [
+// Initial columns configuration
+const ALL_COLUMNS: ColumnConfig[] = [
     { key: 'id', label: 'رقم الطلب' },
     { key: 'source', label: 'المصدر' },
     { key: 'referenceNumber', label: 'الرقم المرجعي' },
@@ -99,7 +116,6 @@ const columns: { key: keyof Order | 'id-link'; label: string; type?: 'default' |
     { key: 'cod', label: 'قيمة التحصيل', type: 'financial' },
     { key: 'date', label: 'التاريخ' },
 ];
-
 
 function useMediaQuery(query: string) {
     const [matches, setMatches] = useState(false);
@@ -147,6 +163,23 @@ type ModalState =
     | { type: 'assignDriver' }
     | { type: 'changeStatus' };
 
+const SortableColumn = ({ id, label, onToggle, isVisible }: { id: string; label: string; onToggle: (id: string, checked: boolean) => void; isVisible: boolean; }) => {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+    const style = { transform: CSS.Transform.toString(transform), transition };
+    return (
+        <div ref={setNodeRef} style={style} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
+            <GripVertical {...attributes} {...listeners} className="h-5 w-5 cursor-grab text-muted-foreground" />
+            <DropdownMenuCheckboxItem
+                className="w-full p-0"
+                checked={isVisible}
+                onCheckedChange={(checked) => onToggle(id, checked)}
+                onSelect={(e) => e.preventDefault()} // Prevent menu from closing
+            >
+                {label}
+            </DropdownMenuCheckboxItem>
+        </div>
+    );
+};
 
 export default function OrdersPageContent() {
     const { toast } = useToast();
@@ -159,7 +192,14 @@ export default function OrdersPageContent() {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(15);
     
+    // State for column management
+    const [columns, setColumns] = useState<ColumnConfig[]>(ALL_COLUMNS);
+    const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[]>(ALL_COLUMNS.map(c => c.key));
+    const sensors = useSensors(useSensor(PointerSensor));
+
     useEffect(() => { setIsClient(true); }, []);
+    
+    const visibleColumns = useMemo(() => columns.filter(c => visibleColumnKeys.includes(c.key)), [columns, visibleColumnKeys]);
     
     const filteredOrders = useMemo(() => {
         return orders.filter(order => {
@@ -211,25 +251,52 @@ export default function OrdersPageContent() {
     }
     
     const totals = useMemo(() => {
-        const calculateTotals = (orderList: Order[]) => orderList.reduce((acc, order) => {
-            acc.cod += order.cod;
-            acc.itemPrice += order.itemPrice;
-            acc.deliveryFee += order.deliveryFee;
-            return acc;
-        }, { cod: 0, itemPrice: 0, deliveryFee: 0 });
+        const calculateTotals = (orderList: Order[]) => {
+            const totalsResult = visibleColumns.reduce((acc, col) => {
+                if (col.type === 'financial') {
+                    acc[col.key as string] = 0;
+                }
+                return acc;
+            }, {} as Record<string, number>);
 
+            for (const order of orderList) {
+                for (const col of visibleColumns) {
+                    if (col.type === 'financial') {
+                        totalsResult[col.key as string] += order[col.key as keyof Order] as number;
+                    }
+                }
+            }
+            return totalsResult;
+        };
         const selectedOrdersList = orders.filter(o => selectedRows.includes(o.id));
-        const paginatedTotals = calculateTotals(paginatedOrders);
-        const selectedTotals = calculateTotals(selectedOrdersList);
-
-        return { paginated: paginatedTotals, selected: selectedTotals };
-    }, [orders, selectedRows, paginatedOrders]);
+        return {
+            paginated: calculateTotals(paginatedOrders),
+            selected: calculateTotals(selectedOrdersList),
+        };
+    }, [orders, selectedRows, paginatedOrders, visibleColumns]);
 
     const displayTotals = selectedRows.length > 0 ? totals.selected : totals.paginated;
     const displayLabel = selectedRows.length > 0 
         ? `مجاميع المحددة (${selectedRows.length})` 
         : `مجاميع الصفحة الحالية (${paginatedOrders.length})`;
 
+
+    const handleColumnVisibilityChange = (key: string, checked: boolean) => {
+        setVisibleColumnKeys(prev => 
+            checked ? [...prev, key] : prev.filter(k => k !== key)
+        );
+    };
+
+    const handleColumnDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setColumns((currentColumns) => {
+                const oldIndex = currentColumns.findIndex(c => c.key === active.id);
+                const newIndex = currentColumns.findIndex(c => c.key === over.id);
+                return arrayMove(currentColumns, oldIndex, newIndex);
+            });
+        }
+    };
 
     if (!isClient) {
         return <Skeleton className="w-full h-screen" />;
@@ -350,6 +417,31 @@ export default function OrdersPageContent() {
                             <span>مسح الفلتر</span>
                             </Button>
                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="gap-1">
+                                    <ListOrdered className="h-4 w-4" />
+                                    <span>تخصيص الأعمدة</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-64">
+                                    <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
+                                        <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
+                                            {columns.map((column) => (
+                                                <SortableColumn
+                                                    key={column.key}
+                                                    id={column.key}
+                                                    label={column.label}
+                                                    isVisible={visibleColumnKeys.includes(column.key)}
+                                                    onToggle={handleColumnVisibilityChange}
+                                                />
+                                            ))}
+                                        </SortableContext>
+                                    </DndContext>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm" className="gap-1">
                                 <FileDown /><span>تصدير</span>
@@ -378,8 +470,8 @@ export default function OrdersPageContent() {
                                     className="border-white data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                                 />
                                 </TableHead>
-                                {columns.map((col, idx) => (
-                                <TableHead key={idx} className="text-white p-1 text-center whitespace-nowrap border-b border-l">
+                                {visibleColumns.map((col) => (
+                                <TableHead key={col.key} className="text-white p-1 text-center whitespace-nowrap border-b border-l">
                                     {col.label}
                                 </TableHead>
                                 ))}
@@ -398,36 +490,24 @@ export default function OrdersPageContent() {
                                         onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
                                       />
                                     </TableCell>
-                                    <TableCell className="font-medium text-primary p-1 text-center whitespace-nowrap border-l"><Link href="#">{order.id}</Link></TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">
-                                      <Badge variant="outline" className="gap-1.5 font-normal">
-                                        <SourceIcon className="h-3 w-3" />
-                                        {order.source}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.referenceNumber}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.recipient}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.phone}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.region}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.city}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.merchant}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">
-                                      <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
-                                        <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
-                                          <SelectValue placeholder="الحالة" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectGroup>
-                                            {statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                                          </SelectGroup>
-                                        </SelectContent>
-                                      </Select>
-                                    </TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.driver}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.itemPrice.toFixed(2)}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.deliveryFee.toFixed(2)}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.cod.toFixed(2)}</TableCell>
-                                    <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.date}</TableCell>
+                                    {visibleColumns.map(col => {
+                                        const value = order[col.key as keyof Order];
+                                        if (col.key === 'id') {
+                                            return <TableCell key={col.key} className="font-medium text-primary p-1 text-center whitespace-nowrap border-l"><Link href="#">{value}</Link></TableCell>
+                                        }
+                                        if (col.key === 'source') {
+                                            const Icon = sourceIcons[value as OrderSource] || LinkIcon;
+                                            return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l"><Badge variant="outline" className="gap-1.5 font-normal"><Icon className="h-3 w-3" />{value}</Badge></TableCell>
+                                        }
+                                        if (col.key === 'status') {
+                                             const sInfo = getStatusInfo(value as string);
+                                             return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l"><Select value={value as string} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}><SelectTrigger className={cn("border-0 h-8", sInfo.bgColor, sInfo.color)}><SelectValue placeholder="الحالة" /></SelectTrigger><SelectContent><SelectGroup>{statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectGroup></SelectContent></Select></TableCell>
+                                        }
+                                        if (col.type === 'financial' && typeof value === 'number') {
+                                            return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l">{value.toFixed(2)}</TableCell>
+                                        }
+                                        return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l">{value as React.ReactNode}</TableCell>
+                                    })}
                                   </TableRow>
                                 )
                               })}
@@ -435,13 +515,16 @@ export default function OrdersPageContent() {
                               {/* سطر المجاميع */}
                               <TableRow className="bg-muted/20 font-bold">
                                 <TableCell className="sticky right-0 z-10 bg-muted/20 border-l p-1 text-center">
-                                  {displayLabel}
+                                    <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
+                                        {displayLabel}
+                                    </div>
                                 </TableCell>
-                                {columns.map(col => {
+                                {visibleColumns.map(col => {
                                   if (col.type === 'financial') {
+                                    const totalValue = displayTotals[col.key as string] || 0;
                                     return (
                                       <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l">
-                                        {(displayTotals[col.key as keyof typeof displayTotals] || 0).toFixed(2)}
+                                        {totalValue.toFixed(2)}
                                       </TableCell>
                                     );
                                   }
@@ -498,4 +581,3 @@ export default function OrdersPageContent() {
         </>
     );
 }
-
