@@ -32,7 +32,7 @@ export const LoginExperienceContext = createContext<LoginExperienceContextType |
 
 // Default settings
 const defaultSettings: LoginSettings = {
-  welcomeMessage: 'أهلاً بعودتك!',
+  welcomeMessage: 'مرحباً',
   cardColor: '#ffffff',
   loginLogo: null,
   loginBg: null,
