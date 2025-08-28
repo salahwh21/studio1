@@ -82,6 +82,25 @@ const initialOrders = Array.from({ length: 85 }, (_, i) => ({
 type Order = typeof initialOrders[0];
 type OrderSource = Order['source'];
 
+// Dynamic Columns Definition
+const columns: { key: keyof Order | 'id-link'; label: string; type?: 'default' | 'financial' }[] = [
+    { key: 'id', label: 'رقم الطلب' },
+    { key: 'source', label: 'المصدر' },
+    { key: 'referenceNumber', label: 'الرقم المرجعي' },
+    { key: 'recipient', label: 'المستلم' },
+    { key: 'phone', label: 'الهاتف' },
+    { key: 'region', label: 'المنطقة' },
+    { key: 'city', label: 'المدينة' },
+    { key: 'merchant', label: 'المتجر' },
+    { key: 'status', label: 'الحالة' },
+    { key: 'driver', label: 'السائق' },
+    { key: 'itemPrice', label: 'المستحق للتاجر', type: 'financial' },
+    { key: 'deliveryFee', label: 'أجور التوصيل', type: 'financial' },
+    { key: 'cod', label: 'قيمة التحصيل', type: 'financial' },
+    { key: 'date', label: 'التاريخ' },
+];
+
+
 function useMediaQuery(query: string) {
     const [matches, setMatches] = useState(false);
     useEffect(() => {
@@ -316,7 +335,7 @@ export default function OrdersPageContent() {
                 <Card className="flex flex-col h-[calc(100vh-8rem)] bg-background p-4 gap-4 overflow-hidden">
                     {/* Header */}
                     <div className="flex-none flex-row items-center justify-between flex flex-wrap gap-2">
-                        <div className="relative w-full max-w-xs">
+                         <div className="relative w-full max-w-xs">
                             <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
                             placeholder="بحث شامل..."
@@ -348,99 +367,125 @@ export default function OrdersPageContent() {
 
                     {/* Table Container */}
                     <div className="flex-1 relative overflow-auto border rounded-lg">
-                    <table className="w-full border-collapse text-sm">
-                        {/* رأس الجدول ثابت */}
-                        <thead className="sticky top-0 z-20">
-                        <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
-                            <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l w-12">
-                            <Checkbox
-                                onCheckedChange={handleSelectAll}
-                                checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
-                                className="border-white data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                            />
-                            </TableHead>
-                            <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">رقم الطلب</TableHead>
-                            <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">المصدر</TableHead>
-                            <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">الرقم المرجعي</TableHead>
-                            <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">المستلم</TableHead>
-                            <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">الهاتف</TableHead>
-                            <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">المنطقة</TableHead>
-                            <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">المدينة</TableHead>
-                            <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">المتجر</TableHead>
-                            <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">الحالة</TableHead>
-                            <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">السائق</TableHead>
-                            <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">المستحق للتاجر</TableHead>
-                            <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">أجور التوصيل</TableHead>
-                            <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l">قيمة التحصيل</TableHead>
-                            <TableHead className="text-white p-1 text-center whitespace-nowrap border-b border-l w-32">التاريخ</TableHead>
-                        </TableRow>
-                        </thead>
-
-                        {/* جسم الجدول */}
-                        <TableBody>
-                        {paginatedOrders.map(order => {
-                            const statusInfo = getStatusInfo(order.status);
-                            const SourceIcon = sourceIcons[order.source] || LinkIcon;
-                            return (
-                            <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
-                                <TableCell className="sticky right-0 z-10 bg-background data-[state=selected]:bg-muted p-1 text-center border-l">
+                        <table className="w-full border-collapse text-sm">
+                            {/* رأس الجدول ثابت */}
+                            <thead className="sticky top-0 z-20">
+                            <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
+                                <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l w-12">
                                 <Checkbox
-                                    checked={selectedRows.includes(order.id)}
-                                    onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
+                                    onCheckedChange={handleSelectAll}
+                                    checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
+                                    className="border-white data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                                 />
-                                </TableCell>
-                                <TableCell className="font-medium text-primary p-1 text-center whitespace-nowrap border-l"><Link href="#">{order.id}</Link></TableCell>
-                                <TableCell className="p-1 text-center whitespace-nowrap border-l">
-                                <Badge variant="outline" className="gap-1.5 font-normal">
-                                    <SourceIcon className="h-3 w-3" />
-                                    {order.source}
-                                </Badge>
-                                </TableCell>
-                                <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.referenceNumber}</TableCell>
-                                <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.recipient}</TableCell>
-                                <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.phone}</TableCell>
-                                <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.region}</TableCell>
-                                <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.city}</TableCell>
-                                <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.merchant}</TableCell>
-                                <TableCell className="p-1 text-center whitespace-nowrap border-l">
-                                <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
-                                    <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
-                                    <SelectValue placeholder="الحالة" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                    <SelectGroup>
-                                        {statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                                    </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                                </TableCell>
-                                <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.driver}</TableCell>
-                                <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.itemPrice.toFixed(2)}</TableCell>
-                                <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.deliveryFee.toFixed(2)}</TableCell>
-                                <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.cod.toFixed(2)}</TableCell>
-                                <TableCell className="p-1 text-center whitespace-nowrap border-l">{order.date}</TableCell>
+                                </TableHead>
+                                {columns.map((col, idx) => (
+                                <TableHead key={idx} className="text-white p-1 text-center whitespace-nowrap border-b border-l">
+                                    {col.label}
+                                </TableHead>
+                                ))}
                             </TableRow>
-                            )
-                        })}
-                        </TableBody>
+                            </thead>
 
-                        {/* Footer مدمج مع محتوى الجدول */}
-                        <TableFooter className="bg-muted/95 sticky bottom-0 z-20">
-                        <TableRow>
-                            <TableCell className="sticky right-0 z-10 bg-muted/95 font-bold p-1 text-center border-l">
-                            <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
-                                {displayLabel}
-                            </div>
-                            </TableCell>
-                            <TableCell colSpan={10} className="font-bold p-1 text-center border-l"></TableCell>
-                            <TableCell className="font-bold p-1 text-center whitespace-nowrap border-l">{displayTotals.itemPrice.toFixed(2)}</TableCell>
-                            <TableCell className="font-bold p-1 text-center whitespace-nowrap border-l">{displayTotals.deliveryFee.toFixed(2)}</TableCell>
-                            <TableCell className="font-bold p-1 text-center whitespace-nowrap border-l">{displayTotals.cod.toFixed(2)}</TableCell>
-                            <TableCell className="font-bold p-1 text-center border-l"></TableCell>
-                        </TableRow>
-                        </TableFooter>
-                    </table>
+                            {/* جسم الجدول */}
+                            <TableBody>
+                            {paginatedOrders.map(order => {
+                                const statusInfo = getStatusInfo(order.status);
+                                const SourceIcon = sourceIcons[order.source] || LinkIcon;
+                                return (
+                                <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
+                                    <TableCell className="sticky right-0 z-10 bg-background data-[state=selected]:bg-muted p-1 text-center border-l">
+                                    <Checkbox
+                                        checked={selectedRows.includes(order.id)}
+                                        onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
+                                    />
+                                    </TableCell>
+
+                                    {columns.map((col, idx) => {
+                                        const cellValue = order[col.key as keyof Order];
+                                        if (col.key === 'id') {
+                                            return (
+                                                 <TableCell key={idx} className="font-medium text-primary p-1 text-center whitespace-nowrap border-l">
+                                                    <Link href="#">{cellValue}</Link>
+                                                </TableCell>
+                                            )
+                                        } else if (col.key === 'status') {
+                                            return (
+                                            <TableCell key={idx} className="p-1 text-center whitespace-nowrap border-l">
+                                                <Select value={order.status} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus)}>
+                                                <SelectTrigger className={cn("border-0 h-8", statusInfo.bgColor, statusInfo.color)}>
+                                                    <SelectValue placeholder="الحالة" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                    {statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                                </Select>
+                                            </TableCell>
+                                            )
+                                        } else if (col.key === 'source') {
+                                            return (
+                                            <TableCell key={idx} className="p-1 text-center whitespace-nowrap border-l">
+                                                <Badge variant="outline" className="gap-1.5 font-normal">
+                                                <SourceIcon className="h-3 w-3" />
+                                                {cellValue}
+                                                </Badge>
+                                            </TableCell>
+                                            )
+                                        } else if (col.type === 'financial') {
+                                            return (
+                                            <TableCell key={idx} className="p-1 text-center whitespace-nowrap border-l">
+                                                {(cellValue as number).toFixed(2)}
+                                            </TableCell>
+                                            )
+                                        } else {
+                                            return (
+                                            <TableCell key={idx} className="p-1 text-center whitespace-nowrap border-l">
+                                                {cellValue as React.ReactNode}
+                                            </TableCell>
+                                            )
+                                        }
+                                    })}
+                                </TableRow>
+                                )
+                            })}
+                            </TableBody>
+
+                            {/* Footer ديناميكي للمجاميع */}
+                            <TableFooter className="bg-muted/95 sticky bottom-0 z-20">
+                            <TableRow>
+                                <TableCell className="sticky right-0 z-30 bg-muted/95 font-bold p-1 text-center border-l">
+                                <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
+                                    {displayLabel}
+                                </div>
+                                </TableCell>
+                                
+                                {columns.map((col, idx) => {
+                                    if (col.type === 'financial') {
+                                        const value = displayTotals[col.key as keyof typeof displayTotals].toFixed(2);
+                                        return (
+                                        <TableCell key={idx} className="font-bold p-1 text-center whitespace-nowrap border-l">
+                                            {value}
+                                        </TableCell>
+                                        )
+                                    }
+                                    // Find index of first financial column to adjust colSpan
+                                    const firstFinancialIndex = columns.findIndex(c => c.type === 'financial');
+                                    if (idx === 0) { // Render one cell to span non-financial columns
+                                        return (
+                                            <TableCell key="spanning-cell" colSpan={firstFinancialIndex -1} className="font-bold p-1 text-center border-l"></TableCell>
+                                        )
+                                    }
+                                    if (idx > 0 && idx < firstFinancialIndex) { // Render nothing for other non-financials
+                                        return null;
+                                    }
+                                    return null; // Should not be reached
+                                })}
+                            </TableRow>
+                            </TableFooter>
+                        </table>
                     </div>
+
 
                     {/* Pagination Footer */}
                     <CardFooter className="flex-none flex items-center justify-between p-2 border-t">
@@ -487,4 +532,3 @@ export default function OrdersPageContent() {
     );
 }
 
-  
