@@ -162,7 +162,7 @@ const SortableColumn = ({ id, label, onToggle, isVisible }: { id: string; label:
             <GripVertical {...attributes} {...listeners} className="h-5 w-5 cursor-grab text-muted-foreground" />
             <div className="flex-1 flex items-center justify-between cursor-pointer" onClick={() => onToggle(id, !isVisible)}>
                 <span>{label}</span>
-                {isVisible && <Check className="h-4 w-4 text-primary" />}
+                <Checkbox checked={isVisible} className="h-4 w-4" />
             </div>
         </div>
     );
@@ -491,7 +491,7 @@ export default function OrdersPageContent() {
                             </DropdownMenuContent>
                             </DropdownMenu>
                             <Button variant="outline" size="sm"><Printer /></Button>
-                            <Button variant="outline" size="sm" onClick={handleRefresh}><RefreshCw /></Button>
+                            <Button variant="outline" size="sm" onClick={handleRefresh}><RefreshCw className="h-4 w-4"/></Button>
                         </div>
                     </div>
 
@@ -559,12 +559,15 @@ export default function OrdersPageContent() {
                             
                               {/* سطر المجاميع */}
                                <TableRow className="bg-muted/20 font-bold">
-                                    <TableCell colSpan={2} className="sticky right-0 z-10 bg-muted/20 p-1 text-center border-l">
-                                        <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
+                                    <TableCell className="sticky right-0 z-10 bg-muted/20 p-1 text-center border-l">
+                                       
+                                    </TableCell>
+                                    <TableCell className="p-1 text-center border-l">
+                                         <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
                                             {displayLabel}
                                         </div>
                                     </TableCell>
-                                    {visibleColumns.slice(1).map(col => {
+                                    {visibleColumns.slice(2).map(col => {
                                         if (col.type === 'financial') {
                                             const totalValue = displayTotals[col.key as string] || 0;
                                             return (
@@ -627,3 +630,5 @@ export default function OrdersPageContent() {
         </>
     );
 }
+
+    
