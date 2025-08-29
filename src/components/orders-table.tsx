@@ -377,7 +377,7 @@ export function OrdersTable() {
         const SourceIcon = sourceIcons[order.source] || LinkIcon;
         return (
             <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
-                <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#DADDE0'}}>
+                <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-card">
                     <div className="flex items-center justify-center gap-2">
                         <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
                         <Checkbox
@@ -407,6 +407,27 @@ export function OrdersTable() {
             </TableRow>
         )
     }
+    
+    const FooterRow = () => (
+        <TableRow className="font-bold bg-muted hover:bg-muted/80">
+            <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-muted">
+                <div className='p-2 rounded text-xs bg-slate-600 text-white'>
+                    {selectedRows.length > 0 ? `المحدد (${selectedRows.length})` : `المجموع (${displayCount})`}
+                </div>
+            </TableCell>
+            {visibleColumns.map(col => {
+                if (col.type === 'financial') {
+                    const totalValue = displayTotals[col.key as string] || 0;
+                    return (
+                        <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l text-foreground">
+                            {totalValue.toFixed(2)}
+                        </TableCell>
+                    );
+                }
+                return <TableCell key={col.key} className="border-l"></TableCell>;
+            })}
+        </TableRow>
+    );
 
     if (!isClient) {
         return <Skeleton className="w-full h-screen" />;
@@ -605,14 +626,15 @@ export function OrdersTable() {
                     <div className="flex-1 relative overflow-auto border rounded-lg">
                         <Table className="w-full border-collapse text-sm">
                             {/* رأس الجدول ثابت */}
-                            <TableHeader className="sticky top-0 z-20">
+                            <TableHeader className="sticky top-0 z-20 bg-card">
                             <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
                                 <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l w-24">
                                   <div className="flex items-center justify-center gap-2">
                                     <span className="text-sm font-bold">#</span>
                                     <Checkbox
                                         onCheckedChange={handleSelectAll}
-                                        checked={isAllSelected || isIndeterminate}
+                                        checked={isAllSelected}
+                                        indeterminate={isIndeterminate}
                                         aria-label="Select all rows"
                                     />
                                   </div>
@@ -633,8 +655,7 @@ export function OrdersTable() {
                             </TableHeader>
                             
                             {groupBy ? (
-                                <Accordion type="multiple" asChild>
-                                    <TableBody>
+                                <TableBody>
                                     {Object.entries(groupedAndSortedOrders as GroupedOrders).map(([groupKey, groupOrders]) => {
                                         const groupTotals = visibleColumns.reduce((acc, col) => {
                                             if (col.type === 'financial') {
@@ -644,80 +665,43 @@ export function OrdersTable() {
                                         }, {} as Record<string, number>);
 
                                         return (
-                                        <AccordionItem value={groupKey} key={groupKey}>
-                                                <TableRow className='bg-muted/70 hover:bg-muted/90 font-semibold'>
-                                                    <TableCell colSpan={visibleColumns.length + 1} className="p-0">
-                                                        <AccordionTrigger className="flex items-center justify-between w-full px-4 py-2 text-sm hover:no-underline">
-                                                            <div className="flex items-center gap-2">
-                                                                <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                                                                <span>{groupKey} ({groupOrders.length})</span>
-                                                            </div>
-                                                            <div className='flex'>
-                                                                {visibleColumns.map(col => (
-                                                                    <div key={col.key} className="text-center px-4 w-28">
-                                                                        {col.type === 'financial' ? `${groupTotals[col.key]?.toFixed(2)}` : ''}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </AccordionTrigger>
-                                                    </TableCell>
-                                                </TableRow>
-                                                <AccordionContent asChild>
-                                                  <React.Fragment>
-                                                    {groupOrders.map((order, index) => renderOrderRow(order, index))}
-                                                  </React.Fragment>
-                                                </AccordionContent>
-                                        </AccordionItem>
+                                        <Accordion type="single" collapsible className="w-full" key={groupKey}>
+                                          <AccordionItem value={groupKey} className="border-b">
+                                            <AccordionTrigger asChild>
+                                                <tr className="font-semibold text-base w-full hover:bg-muted/80">
+                                                    <td colSpan={visibleColumns.length + 1} className="p-0">
+                                                        <div className="flex items-center justify-between w-full px-4 py-3">
+                                                          <div className="flex items-center gap-4">
+                                                            <ChevronDown className="h-5 w-5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                                            <span>{groupKey} ({groupOrders.length})</span>
+                                                          </div>
+                                                          <div className="flex items-center">
+                                                            {visibleColumns.map(col => (
+                                                                <div key={col.key} className="text-center px-4 w-32 font-mono">
+                                                                    {col.type === 'financial' ? `${groupTotals[col.key]?.toFixed(2)}` : ''}
+                                                                </div>
+                                                            ))}
+                                                          </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </AccordionTrigger>
+                                            <AccordionContent>
+                                                {groupOrders.map((order, index) => renderOrderRow(order, index))}
+                                            </AccordionContent>
+                                          </AccordionItem>
+                                        </Accordion>
                                         )
                                     })}
                                     </TableBody>
-                                </Accordion>
-
                             ) : (
                                 <TableBody>
                                 {Array.isArray(paginatedOrders) && paginatedOrders.map((order, index) => renderOrderRow(order, index))}
                                 </TableBody>
                             )}
 
-                             <TableFooter>
-                                {selectedRows.length > 0 && (
-                                    <TableRow className="bg-blue-100 font-bold hover:bg-blue-200">
-                                        <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#DADDE0'}}>
-                                            <div className='p-2 rounded text-xs bg-blue-800 text-white'>
-                                                المحدد ({selectedRows.length})
-                                            </div>
-                                        </TableCell>
-                                        {visibleColumns.map(col => {
-                                            if (col.type === 'financial') {
-                                                const totalValue = totals.selected[col.key as string] || 0;
-                                                return (
-                                                    <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l text-blue-900">
-                                                        {totalValue.toFixed(2)}
-                                                    </TableCell>
-                                                );
-                                            }
-                                            return <TableCell key={col.key} className="border-l"></TableCell>;
-                                        })}
-                                    </TableRow>
-                                )}
-                                <TableRow className="bg-muted/20 font-bold">
-                                     <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#DADDE0'}}>
-                                          <div className='p-2 rounded text-xs bg-slate-600 text-white'>
-                                             المجموع ({displayCount})
-                                         </div>
-                                     </TableCell>
-                                     {visibleColumns.map(col => {
-                                         if (col.type === 'financial') {
-                                             const totalValue = totals.paginated[col.key as string] || 0;
-                                             return (
-                                                 <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l bg-[#4A5568] text-white">
-                                                     {totalValue.toFixed(2)}
-                                                 </TableCell>
-                                             );
-                                         }
-                                         return <TableCell key={col.key} className="border-l"></TableCell>;
-                                     })}
-                                 </TableRow>
+                             <TableFooter className="sticky bottom-0 z-10">
+                                <FooterRow />
                              </TableFooter>
                         </Table>
                     </div>
