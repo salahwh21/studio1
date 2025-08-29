@@ -415,16 +415,16 @@ export function OrdersTable() {
         )
     }
     
-    const FooterRow = ({ totals, label, count }: { totals: Record<string, number>, label: string, count: number }) => (
+    const FooterRow = () => (
         <TableRow className="font-bold bg-muted hover:bg-muted/80">
              <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-muted">
                  <div className='p-2 rounded text-xs bg-slate-600 text-white'>
-                    {label} ({count})
+                    {displayLabel} ({displayCount})
                 </div>
             </TableCell>
             {visibleColumns.map(col => {
                 if (col.type === 'financial') {
-                    const totalValue = totals[col.key as string] || 0;
+                    const totalValue = displayTotals[col.key as string] || 0;
                     return (
                         <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l text-foreground">
                             {totalValue.toFixed(2)}
@@ -662,7 +662,7 @@ export function OrdersTable() {
                              <TableBody>
                                 {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
                                     Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
-                                        const isGroupOpen = openGroups[groupKey] ?? true; // Default to open
+                                        const isGroupOpen = openGroups[groupKey] ?? false; // Default to collapsed
                                         const groupTotals = visibleColumns.reduce((acc, col) => {
                                             if (col.type === 'financial') {
                                                 acc[col.key as string] = groupOrders.reduce((sum, order) => sum + (order[col.key as keyof Order] as number), 0);
@@ -672,22 +672,15 @@ export function OrdersTable() {
 
                                         return (
                                             <React.Fragment key={groupKey}>
-                                                <TableRow 
+                                                <TableRow
                                                     onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
                                                     className="font-bold text-base bg-muted/70 hover:bg-muted/90 cursor-pointer"
                                                 >
-                                                    <TableCell colSpan={visibleColumns.length + 1} className="p-0">
+                                                     <TableCell colSpan={visibleColumns.length + 1} className="p-0">
                                                         <div className="flex items-center justify-between w-full px-4 py-3">
                                                             <div className="flex items-center gap-4">
                                                                 <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
                                                                 <span className="font-semibold text-base">{groupKey} ({groupOrders.length})</span>
-                                                            </div>
-                                                            <div className="flex items-center font-mono text-sm gap-4">
-                                                                {visibleColumns.map(col => (
-                                                                    <div key={col.key} className="text-center px-4 w-28">
-                                                                        {col.type === 'financial' ? `${groupTotals[col.key]?.toFixed(2) || '0.00'}` : ''}
-                                                                    </div>
-                                                                ))}
                                                             </div>
                                                         </div>
                                                     </TableCell>
@@ -702,12 +695,7 @@ export function OrdersTable() {
                             </TableBody>
 
                              <TableFooter className="sticky bottom-0 z-10">
-                                { selectedRows.length > 0 ? (
-                                    <FooterRow totals={totals.selected} label="المحدد" count={selectedRows.length}/>
-                                 ) : !groupBy && (
-                                    <FooterRow totals={totals.paginated} label="الإجمالي" count={paginatedOrders.length}/>
-                                 )
-                                }
+                                { !groupBy && <FooterRow /> }
                              </TableFooter>
                         </Table>
                     </div>
