@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -625,44 +626,44 @@ export function OrdersTable() {
                     <div className="flex-1 relative overflow-auto border rounded-lg">
                         <Table className="w-full border-collapse text-sm">
                             <TableHeader className="sticky top-0 z-20 bg-card">
-                            <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
-                                <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l w-24">
-                                  <div className="flex items-center justify-center gap-2">
-                                    <span className="text-sm font-bold">#</span>
-                                    <Checkbox
-                                        onCheckedChange={handleSelectAll}
-                                        checked={isAllSelected}
-                                        indeterminate={isIndeterminate}
-                                        aria-label="Select all rows"
-                                    />
-                                  </div>
-                                </TableHead>
-                                {visibleColumns.map((col) => (
-                                <TableHead key={col.key} className="text-white p-1 text-center whitespace-nowrap border-b border-l">
-                                    {col.sortable ? (
-                                        <Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-white/20 hover:text-white w-full p-0 h-auto">
-                                            {col.label}
-                                            <ArrowUpDown className="mr-2 h-3 w-3" />
-                                        </Button>
-                                    ) : (
-                                        col.label
-                                    )}
-                                </TableHead>
-                                ))}
-                            </TableRow>
+                                <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
+                                    <TableHead className="sticky right-0 z-30 bg-inherit text-white p-1 text-center border-b border-l w-24">
+                                      <div className="flex items-center justify-center gap-2">
+                                        <span className="text-sm font-bold">#</span>
+                                        <Checkbox
+                                            onCheckedChange={handleSelectAll}
+                                            checked={isAllSelected}
+                                            indeterminate={isIndeterminate}
+                                            aria-label="Select all rows"
+                                        />
+                                      </div>
+                                    </TableHead>
+                                    {visibleColumns.map((col) => (
+                                    <TableHead key={col.key} className="text-white p-1 text-center whitespace-nowrap border-b border-l bg-inherit">
+                                        {col.sortable ? (
+                                            <Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-white/20 hover:text-white w-full p-0 h-auto">
+                                                {col.label}
+                                                <ArrowUpDown className="mr-2 h-3 w-3" />
+                                            </Button>
+                                        ) : (
+                                            col.label
+                                        )}
+                                    </TableHead>
+                                    ))}
+                                </TableRow>
                             </TableHeader>
                              <TableBody>
                                 {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
                                     Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
-                                        const isGroupOpen = openGroups[groupKey] ?? false;
+                                        const isGroupOpen = openGroups[groupKey] ?? true; // Default to open
                                         return (
                                             <React.Fragment key={groupKey}>
                                                 <TableRow 
                                                   onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))} 
-                                                  className="font-bold text-lg w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border"
+                                                  className="font-bold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border sticky top-[48px] z-10"
                                                 >
                                                     <TableCell colSpan={visibleColumns.length + 1} className="p-0">
-                                                        <div className="flex items-center justify-start w-full px-4 py-3 gap-4">
+                                                        <div className="flex items-center w-full px-4 py-3 gap-4">
                                                             <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
                                                             <span>{groupKey} ({groupOrders.length})</span>
                                                         </div>
