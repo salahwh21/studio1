@@ -645,7 +645,7 @@ export default function OrdersPageContent() {
 
                                         return (
                                         <AccordionItem value={groupKey} key={groupKey} asChild>
-                                            <React.Fragment key={groupKey}>
+                                            <React.Fragment>
                                                 <TableRow className='bg-muted/70 hover:bg-muted/90 font-semibold'>
                                                     <AccordionTrigger asChild>
                                                         <TableCell colSpan={visibleColumns.length + 1} className="p-0">
@@ -666,9 +666,9 @@ export default function OrdersPageContent() {
                                                     </AccordionTrigger>
                                                 </TableRow>
                                                 <AccordionContent asChild>
-                                                    <>
+                                                    <React.Fragment>
                                                         {groupOrders.map((order, index) => renderOrderRow(order, index))}
-                                                    </>
+                                                    </React.Fragment>
                                                 </AccordionContent>
                                             </React.Fragment>
                                         </AccordionItem>
@@ -683,7 +683,7 @@ export default function OrdersPageContent() {
                                 </TableBody>
                             )}
 
-                             <tfoot>
+                             <TableFooter>
                                 {selectedRows.length > 0 && (
                                     <TableRow className="bg-blue-100 font-bold hover:bg-blue-200">
                                         <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#DADDE0'}}>
@@ -722,7 +722,7 @@ export default function OrdersPageContent() {
                                          return <TableCell key={col.key} className="border-l"></TableCell>;
                                      })}
                                  </TableRow>
-                             </tfoot>
+                             </TableFooter>
                         </Table>
                     </div>
 
@@ -772,6 +772,3 @@ export default function OrdersPageContent() {
         </>
     );
 }
-
-
-    
