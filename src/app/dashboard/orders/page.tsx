@@ -35,6 +35,7 @@ import {
   User,
   MapPin,
   MessageCircle,
+  Check,
 } from 'lucide-react';
 import {
   DndContext,
@@ -148,17 +149,19 @@ type ModalState =
 const SortableColumn = ({ id, label, onToggle, isVisible }: { id: string; label: string; onToggle: (id: string, checked: boolean) => void; isVisible: boolean; }) => {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
     const style = { transform: CSS.Transform.toString(transform), transition };
+
     return (
-        <div ref={setNodeRef} style={style} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
+        <div
+            ref={setNodeRef}
+            style={style}
+            className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-default"
+            onClick={() => onToggle(id, !isVisible)}
+        >
             <GripVertical {...attributes} {...listeners} className="h-5 w-5 cursor-grab text-muted-foreground" />
-            <DropdownMenuCheckboxItem
-                className="w-full p-0"
-                checked={isVisible}
-                onCheckedChange={(checked) => onToggle(id, checked)}
-                onSelect={(e) => e.preventDefault()} // Prevent menu from closing
-            >
-                {label}
-            </DropdownMenuCheckboxItem>
+            <div className="flex-1 flex items-center justify-between">
+                <span>{label}</span>
+                {isVisible && <Check className="h-4 w-4 text-primary" />}
+            </div>
         </div>
     );
 };
@@ -416,7 +419,7 @@ export default function OrdersPageContent() {
                                     <span>تخصيص الأعمدة</span>
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-64">
+                                <DropdownMenuContent align="end" className="w-64 p-2">
                                     <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
                                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
