@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -373,10 +374,8 @@ export function OrdersTable() {
     }
 
     const renderOrderRow = (order: Order, index: number) => {
-        const statusInfo = getStatusInfo(order.status);
-        const SourceIcon = sourceIcons[order.source] || LinkIcon;
         return (
-            <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b bg-card">
+            <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 bg-card">
                 <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-inherit">
                     <div className="flex items-center justify-center gap-2">
                         <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
@@ -388,35 +387,42 @@ export function OrdersTable() {
                 </TableCell>
                 {visibleColumns.map(col => {
                     const value = order[col.key as keyof Order];
-                    if (col.key === 'id') {
-                        return <TableCell key={col.key} className="font-medium text-primary p-1 text-center whitespace-nowrap border-l"><Link href="#">{value as string}</Link></TableCell>
-                    }
-                    if (col.key === 'source') {
-                        const Icon = sourceIcons[value as OrderSource] || LinkIcon;
-                        return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l"><Badge variant="outline" className="gap-1.5 font-normal"><Icon className="h-3 w-3" />{value as string}</Badge></TableCell>
-                    }
-                    if (col.key === 'status') {
+                    let content: React.ReactNode;
+                    switch (col.key) {
+                        case 'id':
+                            content = <Link href="#" className="text-primary">{value as string}</Link>;
+                            break;
+                        case 'source':
+                            const Icon = sourceIcons[value as OrderSource] || LinkIcon;
+                            content = <Badge variant="outline" className="gap-1.5 font-normal"><Icon className="h-3 w-3" />{value as string}</Badge>;
+                            break;
+                        case 'status':
                             const sInfo = getStatusInfo(value as string);
-                            return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l"><Select value={value as string} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus as Order['status'])}><SelectTrigger className={cn("border-0 h-8", sInfo.bgColor, sInfo.color)}><SelectValue placeholder="الحالة" /></SelectTrigger><SelectContent><SelectGroup>{statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectGroup></SelectContent></Select></TableCell>
+                            content = <Select value={value as string} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus as Order['status'])}><SelectTrigger className={cn("border-0 h-8", sInfo.bgColor, sInfo.color)}><SelectValue placeholder="الحالة" /></SelectTrigger><SelectContent><SelectGroup>{statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectGroup></SelectContent></Select>;
+                            break;
+                        case 'itemPrice':
+                        case 'deliveryFee':
+                        case 'cod':
+                            content = (value as number).toFixed(2);
+                            break;
+                        default:
+                            content = value as React.ReactNode;
                     }
-                    if (col.type === 'financial' && typeof value === 'number') {
-                        return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l">{value.toFixed(2)}</TableCell>
-                    }
-                    return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l">{value as React.ReactNode}</TableCell>
+                    return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l">{content}</TableCell>
                 })}
             </TableRow>
         )
     }
     
     const FooterRow = () => (
-        <TableRow className="font-bold bg-muted hover:bg-muted/80">
-             <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-muted">
+         <TableRow className="font-bold bg-muted hover:bg-muted/80">
+             <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-inherit">
                  <div className='p-2 rounded text-xs bg-slate-600 text-white'>
                     {displayLabel} ({displayCount})
                 </div>
             </TableCell>
             {visibleColumns.map(col => {
-                if (col.type === 'financial') {
+                 if (col.type === 'financial') {
                     const totalValue = displayTotals[col.key as string] || 0;
                     return (
                         <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l text-foreground">
@@ -424,7 +430,7 @@ export function OrdersTable() {
                         </TableCell>
                     );
                 }
-                return <TableCell key={col.key} className="border-l"></TableCell>;
+                return <TableCell key={col.key} className="p-1 border-l"></TableCell>;
             })}
         </TableRow>
     );
@@ -625,74 +631,64 @@ export function OrdersTable() {
                     </div>
 
                     {/* Table Container */}
-                     <div className="flex-1 border rounded-lg overflow-hidden flex flex-col">
-                        <div className='overflow-x-auto'>
-                            <Table>
-                                <TableHeader className="sticky top-0 z-20 bg-[#4A5568] hover:bg-[#4A5568]">
-                                    <TableRow>
-                                        <TableHead className="sticky right-0 z-30 bg-inherit text-white p-1 text-center border-b border-l w-24">
-                                          <div className="flex items-center justify-center gap-2">
-                                            <span className="text-sm font-bold">#</span>
-                                            <Checkbox
-                                                onCheckedChange={handleSelectAll}
-                                                checked={isAllSelected}
-                                                indeterminate={isIndeterminate}
-                                                aria-label="Select all rows"
-                                            />
-                                          </div>
-                                        </TableHead>
-                                        {visibleColumns.map((col) => (
-                                        <TableHead key={col.key} className="text-white p-1 text-center whitespace-nowrap border-b border-l bg-inherit">
-                                            {col.sortable ? (
-                                                <Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-white/20 hover:text-white w-full p-0 h-auto">
-                                                    {col.label}
-                                                    <ArrowUpDown className="mr-2 h-3 w-3" />
-                                                </Button>
-                                            ) : (
-                                                col.label
-                                            )}
-                                        </TableHead>
-                                        ))}
-                                    </TableRow>
-                                </TableHeader>
-                            </Table>
-                         </div>
-                         <div className='overflow-auto flex-1'>
-                             <Table>
-                                <TableBody>
-                                    {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
-                                        Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
-                                            const isGroupOpen = openGroups[groupKey] ?? true;
-                                            return (
-                                                <React.Fragment key={groupKey}>
-                                                    <TableRow
-                                                        onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
-                                                        className="font-bold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border"
-                                                    >
-                                                        <TableCell colSpan={visibleColumns.length + 1} className="p-0">
-                                                            <div className="flex items-center w-full px-4 py-3 gap-4">
-                                                                <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
-                                                                <span>{groupKey} ({groupOrders.length})</span>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                    {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
-                                                </React.Fragment>
-                                            );
-                                        })
-                                    ) : Array.isArray(paginatedOrders) ? (
-                                        paginatedOrders.map((order, index) => renderOrderRow(order, index))
-                                    ) : null}
-                                </TableBody>
-                             </Table>
-                         </div>
-                        <div>
-                         <Table>
-                             <TableFooter>
+                     <div className="flex-1 border rounded-lg overflow-auto flex flex-col">
+                        <Table>
+                            <TableHeader className="sticky top-0 z-20 bg-[#4A5568] hover:bg-[#4A5568]">
+                                <TableRow>
+                                    <TableHead className="sticky right-0 z-30 bg-inherit text-white p-1 text-center border-b border-l w-24">
+                                      <div className="flex items-center justify-center gap-2">
+                                        <span className="text-sm font-bold">#</span>
+                                        <Checkbox
+                                            onCheckedChange={handleSelectAll}
+                                            checked={isAllSelected}
+                                            indeterminate={isIndeterminate}
+                                            aria-label="Select all rows"
+                                        />
+                                      </div>
+                                    </TableHead>
+                                    {visibleColumns.map((col) => (
+                                    <TableHead key={col.key} className="text-white p-1 text-center whitespace-nowrap border-b border-l bg-inherit">
+                                        {col.sortable ? (
+                                            <Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-white/20 hover:text-white w-full p-0 h-auto">
+                                                {col.label}
+                                                <ArrowUpDown className="mr-2 h-3 w-3" />
+                                            </Button>
+                                        ) : (
+                                            col.label
+                                        )}
+                                    </TableHead>
+                                    ))}
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
+                                    Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
+                                        const isGroupOpen = openGroups[groupKey] ?? true;
+                                        return (
+                                            <React.Fragment key={groupKey}>
+                                                <TableRow
+                                                    onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
+                                                    className="font-bold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border"
+                                                >
+                                                    <TableCell colSpan={visibleColumns.length + 2} className="p-0">
+                                                        <div className="flex items-center w-full px-4 py-3 gap-4">
+                                                            <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
+                                                            <span>{groupKey} ({groupOrders.length})</span>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                                {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
+                                            </React.Fragment>
+                                        );
+                                    })
+                                ) : Array.isArray(paginatedOrders) ? (
+                                    paginatedOrders.map((order, index) => renderOrderRow(order, index))
+                                ) : null}
+                            </TableBody>
+                             <TableFooter className="sticky bottom-0 bg-muted">
                                 {(!groupBy || (groupBy && Object.keys(groupedAndSortedOrders).length > 0)) && <FooterRow />}
                              </TableFooter>
                          </Table>
-                        </div>
                     </div>
 
                     {/* Pagination Footer */}
@@ -741,5 +737,3 @@ export function OrdersTable() {
         </>
     );
 }
-
-    
