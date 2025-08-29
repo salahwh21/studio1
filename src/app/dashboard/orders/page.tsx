@@ -173,7 +173,7 @@ export default function OrdersPageContent() {
     const [isClient, setIsClient] = useState(false);
     
     // Zustand store integration
-    const { orders, setOrders, updateOrderStatus, deleteOrders } = useOrdersStore();
+    const { orders, setOrders, updateOrderStatus, deleteOrders, refreshOrders } = useOrdersStore();
     
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
     const [modalState, setModalState] = useState<ModalState>({ type: 'none' });
@@ -327,6 +327,14 @@ export default function OrdersPageContent() {
             });
         }
     };
+    
+    const handleRefresh = () => {
+        refreshOrders();
+        toast({
+            title: "تم تحديث البيانات",
+            description: "تم إعادة تحميل قائمة الطلبات بنجاح.",
+        })
+    }
 
     if (!isClient) {
         return <Skeleton className="w-full h-screen" />;
@@ -483,7 +491,7 @@ export default function OrdersPageContent() {
                             </DropdownMenuContent>
                             </DropdownMenu>
                             <Button variant="outline" size="sm"><Printer /></Button>
-                            <Button variant="outline" size="sm"><RefreshCw /></Button>
+                            <Button variant="outline" size="sm" onClick={handleRefresh}><RefreshCw /></Button>
                         </div>
                     </div>
 
@@ -551,12 +559,12 @@ export default function OrdersPageContent() {
                             
                               {/* سطر المجاميع */}
                                <TableRow className="bg-muted/20 font-bold">
-                                    <TableCell className="sticky right-0 z-10 bg-muted/20 p-1 text-center border-l">
+                                    <TableCell colSpan={2} className="sticky right-0 z-10 bg-muted/20 p-1 text-center border-l">
                                         <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
                                             {displayLabel}
                                         </div>
                                     </TableCell>
-                                    {visibleColumns.map(col => {
+                                    {visibleColumns.slice(1).map(col => {
                                         if (col.type === 'financial') {
                                             const totalValue = displayTotals[col.key as string] || 0;
                                             return (

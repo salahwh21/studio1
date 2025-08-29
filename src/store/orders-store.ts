@@ -30,6 +30,7 @@ type OrdersState = {
   updateOrderStatus: (orderId: string, newStatus: Order['status']) => void;
   deleteOrders: (orderIds: string[]) => void;
   addOrder: (order: Order) => void;
+  refreshOrders: () => void;
 };
 
 // Create the store
@@ -53,5 +54,7 @@ export const useOrdersStore = create<OrdersState>((set) => ({
   addOrder: (order) => 
     set((state) => ({
         orders: [order, ...state.orders]
-    }))
+    })),
+    
+  refreshOrders: () => set({ orders: initialOrders }),
 }));
