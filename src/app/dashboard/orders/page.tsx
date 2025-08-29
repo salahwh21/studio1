@@ -499,11 +499,11 @@ export default function OrdersPageContent() {
                             {/* رأس الجدول ثابت */}
                             <thead className="sticky top-0 z-20">
                             <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
-                                <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l">
+                                <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l w-24">
                                 <Checkbox
                                     onCheckedChange={handleSelectAll}
                                     checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
-                                    className="border-white data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground mx-4"
+                                    className="mx-4"
                                 />
                                 </TableHead>
                                 {visibleColumns.map((col) => (
@@ -522,17 +522,19 @@ export default function OrdersPageContent() {
                             </thead>
 
                             <TableBody>
-                              {paginatedOrders.map(order => {
+                              {paginatedOrders.map((order, index) => {
                                 const statusInfo = getStatusInfo(order.status);
                                 const SourceIcon = sourceIcons[order.source] || LinkIcon;
                                 return (
                                   <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
                                     <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#A4AAB3'}}>
-                                      <Checkbox
-                                        checked={selectedRows.includes(order.id)}
-                                        onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
-                                        className="mx-4"
-                                      />
+                                      <div className="flex items-center justify-center gap-2">
+                                        <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
+                                        <Checkbox
+                                            checked={selectedRows.includes(order.id)}
+                                            onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
+                                        />
+                                      </div>
                                     </TableCell>
                                     {visibleColumns.map(col => {
                                         const value = order[col.key as keyof Order];
@@ -558,15 +560,12 @@ export default function OrdersPageContent() {
                             
                               {/* سطر المجاميع */}
                                <TableRow className="bg-muted/20 font-bold">
-                                    <TableCell className="sticky right-0 z-10 bg-muted/20 p-1 text-center border-l" style={{backgroundColor: '#A4AAB3'}}>
-                                       
-                                    </TableCell>
-                                    <TableCell className="p-1 text-center border-l">
-                                         <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
+                                    <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#A4AAB3'}}>
+                                         <div className={cn('p-2 rounded text-xs text-white', selectedRows.length > 0 ? 'bg-blue-800' : 'bg-slate-600')}>
                                             {displayLabel}
                                         </div>
                                     </TableCell>
-                                    {visibleColumns.slice(1).map(col => {
+                                    {visibleColumns.map(col => {
                                         if (col.type === 'financial') {
                                             const totalValue = displayTotals[col.key as string] || 0;
                                             return (
@@ -629,3 +628,4 @@ export default function OrdersPageContent() {
         </>
     );
 }
+
