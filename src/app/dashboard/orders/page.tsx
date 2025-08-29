@@ -602,12 +602,12 @@ export default function OrdersPageContent() {
                             {/* رأس الجدول ثابت */}
                             <TableHeader className="sticky top-0 z-20">
                             <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
-                                <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l">
+                                <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l w-24">
                                   <div className="flex items-center justify-center gap-2">
-                                    <span className="text-xs font-mono text-white">#</span>
+                                    <span className="text-sm font-bold">#</span>
                                     <Checkbox
                                         onCheckedChange={handleSelectAll}
-                                        checked={(selectedRows.length === sortedOrders.length && sortedOrders.length > 0) || (selectedRows.length > 0 && selectedRows.length < sortedOrders.length)}
+                                        checked={isAllSelected || isIndeterminate}
                                         aria-label="Select all rows"
                                     />
                                   </div>
@@ -640,7 +640,7 @@ export default function OrdersPageContent() {
 
                                         return (
                                         <AccordionItem value={groupKey} key={groupKey} asChild>
-                                            <>
+                                            <React.Fragment key={groupKey}>
                                                 <TableRow className='bg-muted/70 hover:bg-muted/90 font-semibold'>
                                                     <AccordionTrigger asChild>
                                                         <TableCell colSpan={visibleColumns.length + 1} className="p-0">
@@ -665,7 +665,7 @@ export default function OrdersPageContent() {
                                                         {groupOrders.map((order, index) => renderOrderRow(order, index))}
                                                     </>
                                                 </AccordionContent>
-                                            </>
+                                            </React.Fragment>
                                         </AccordionItem>
                                         )
                                     })}
@@ -678,27 +678,46 @@ export default function OrdersPageContent() {
                                 </TableBody>
                             )}
 
-                            {/* Table Footer with Totals */}
-                            <TableFooter>
-                               <TableRow className="bg-muted/20 font-bold">
-                                    <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#DADDE0'}}>
-                                         <div className={cn('p-2 rounded text-xs text-white', selectedRows.length > 0 ? 'bg-blue-800' : 'bg-slate-600')}>
-                                            {displayLabel}
-                                        </div>
-                                    </TableCell>
-                                    {visibleColumns.map(col => {
-                                        if (col.type === 'financial') {
-                                            const totalValue = displayTotals[col.key as string] || 0;
-                                            return (
-                                                <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l bg-[#4A5568] text-white">
-                                                    {totalValue.toFixed(2)}
-                                                </TableCell>
-                                            );
-                                        }
-                                        return <TableCell key={col.key} className="border-l"></TableCell>;
-                                    })}
-                                </TableRow>
-                            </TableFooter>
+                             <tfoot>
+                                {selectedRows.length > 0 && (
+                                    <TableRow className="bg-blue-100 font-bold hover:bg-blue-200">
+                                        <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#DADDE0'}}>
+                                            <div className='p-2 rounded text-xs bg-blue-800 text-white'>
+                                                المحدد ({selectedRows.length})
+                                            </div>
+                                        </TableCell>
+                                        {visibleColumns.map(col => {
+                                            if (col.type === 'financial') {
+                                                const totalValue = totals.selected[col.key as string] || 0;
+                                                return (
+                                                    <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l text-blue-900">
+                                                        {totalValue.toFixed(2)}
+                                                    </TableCell>
+                                                );
+                                            }
+                                            return <TableCell key={col.key} className="border-l"></TableCell>;
+                                        })}
+                                    </TableRow>
+                                )}
+                                <TableRow className="bg-muted/20 font-bold">
+                                     <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#DADDE0'}}>
+                                          <div className='p-2 rounded text-xs bg-slate-600 text-white'>
+                                             المجموع ({displayCount})
+                                         </div>
+                                     </TableCell>
+                                     {visibleColumns.map(col => {
+                                         if (col.type === 'financial') {
+                                             const totalValue = totals.paginated[col.key as string] || 0;
+                                             return (
+                                                 <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l bg-[#4A5568] text-white">
+                                                     {totalValue.toFixed(2)}
+                                                 </TableCell>
+                                             );
+                                         }
+                                         return <TableCell key={col.key} className="border-l"></TableCell>;
+                                     })}
+                                 </TableRow>
+                             </tfoot>
                         </Table>
                     </div>
 
