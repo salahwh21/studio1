@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -341,16 +340,16 @@ export function OrdersTable() {
             return totalsResult;
         };
         const selectedOrdersList = orders.filter(o => selectedRows.includes(o.id));
-        const paginatedList = Array.isArray(paginatedOrders) ? paginatedOrders : Object.values(paginatedOrders).flat();
+        const listForCalculation = groupBy ? sortedOrders : (Array.isArray(paginatedOrders) ? paginatedOrders : Object.values(paginatedOrders).flat());
 
         return {
-            paginated: calculateTotals(paginatedList),
+            main: calculateTotals(listForCalculation),
             selected: calculateTotals(selectedOrdersList),
         };
-    }, [orders, selectedRows, paginatedOrders, visibleColumns]);
+    }, [orders, selectedRows, paginatedOrders, visibleColumns, sortedOrders, groupBy]);
 
-    const displayTotals = selectedRows.length > 0 ? totals.selected : totals.paginated;
-    const displayCount = selectedRows.length > 0 ? selectedRows.length : (Array.isArray(paginatedOrders) ? paginatedOrders.length : sortedOrders.length);
+    const displayTotals = selectedRows.length > 0 ? totals.selected : totals.main;
+    const displayCount = selectedRows.length > 0 ? selectedRows.length : sortedOrders.length;
     const displayLabel = selectedRows.length > 0 ? 'المحدد' : 'الإجمالي';
 
 
@@ -379,11 +378,11 @@ export function OrdersTable() {
         })
     }
 
-    const renderOrderRow = (order: Order, index: number) => {
+    const renderOrderRow = (order: Order, index: number, isGrouped: boolean = false) => {
         const statusInfo = getStatusInfo(order.status);
         const SourceIcon = sourceIcons[order.source] || LinkIcon;
         return (
-            <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
+            <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className={cn("hover:bg-muted/50 border-b", isGrouped ? "bg-card" : "")}>
                 <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-card">
                     <div className="flex items-center justify-center gap-2">
                         <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
@@ -662,40 +661,28 @@ export function OrdersTable() {
                              <TableBody>
                                 {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
                                     Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
-                                        const isGroupOpen = openGroups[groupKey] ?? false; // Default to collapsed
-                                        const groupTotals = visibleColumns.reduce((acc, col) => {
-                                            if (col.type === 'financial') {
-                                                acc[col.key as string] = groupOrders.reduce((sum, order) => sum + (order[col.key as keyof Order] as number), 0);
-                                            }
-                                            return acc;
-                                        }, {} as Record<string, number>);
-
+                                        const isGroupOpen = openGroups[groupKey] ?? false;
                                         return (
                                             <React.Fragment key={groupKey}>
-                                                <TableRow
-                                                    onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
-                                                    className="font-bold text-base bg-muted/70 hover:bg-muted/90 cursor-pointer"
-                                                >
-                                                     <TableCell colSpan={visibleColumns.length + 1} className="p-0">
-                                                        <div className="flex items-center justify-between w-full px-4 py-3">
-                                                            <div className="flex items-center gap-4">
-                                                                <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
-                                                                <span className="font-semibold text-base">{groupKey} ({groupOrders.length})</span>
-                                                            </div>
+                                                <TableRow onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))} className="font-semibold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border">
+                                                    <TableCell colSpan={visibleColumns.length + 1} className="p-0">
+                                                        <div className="flex items-center justify-start w-full px-4 py-3 gap-4">
+                                                            <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
+                                                            <span className="font-bold text-lg">{groupKey} ({groupOrders.length})</span>
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
-                                                {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
+                                                {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index, true))}
                                             </React.Fragment>
                                         );
                                     })
                                 ) : Array.isArray(paginatedOrders) ? (
-                                    paginatedOrders.map((order, index) => renderOrderRow(order, index))
+                                    paginatedOrders.map((order, index) => renderOrderRow(order, index, false))
                                 ) : null}
                             </TableBody>
 
                              <TableFooter className="sticky bottom-0 z-10">
-                                { !groupBy && <FooterRow /> }
+                                <FooterRow />
                              </TableFooter>
                         </Table>
                     </div>
