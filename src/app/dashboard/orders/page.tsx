@@ -304,9 +304,7 @@ export default function OrdersPageContent() {
     }, [orders, selectedRows, paginatedOrders, visibleColumns]);
 
     const displayTotals = selectedRows.length > 0 ? totals.selected : totals.paginated;
-    const displayLabel = selectedRows.length > 0 
-        ? `مجاميع المحددة (${selectedRows.length})` 
-        : `مجاميع الصفحة الحالية (${paginatedOrders.length})`;
+    const displayLabel = `المجموع (${selectedRows.length > 0 ? selectedRows.length : paginatedOrders.length})`;
 
 
     const handleColumnVisibilityChange = (key: string, checked: boolean) => {
@@ -499,7 +497,7 @@ export default function OrdersPageContent() {
                             {/* رأس الجدول ثابت */}
                             <thead className="sticky top-0 z-20">
                             <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
-                                <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l w-24">
+                                <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l">
                                 <Checkbox
                                     onCheckedChange={handleSelectAll}
                                     checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
