@@ -53,7 +53,6 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
@@ -195,6 +194,8 @@ export function OrdersTable() {
     const [rowsPerPage, setRowsPerPage] = useState(15);
     const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
     const [groupBy, setGroupBy] = useState<GroupByOption>(null);
+    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+
     
     // State for column management
     const [columns, setColumns] = useState<ColumnConfig[]>(ALL_COLUMNS);
@@ -202,6 +203,11 @@ export function OrdersTable() {
     const sensors = useSensors(useSensor(PointerSensor));
 
     useEffect(() => { setIsClient(true); }, []);
+
+    // Reset open groups when groupBy changes
+    useEffect(() => {
+        setOpenGroups({});
+    }, [groupBy]);
     
     const visibleColumns = useMemo(() => columns.filter(c => visibleColumnKeys.includes(c.key)), [columns, visibleColumnKeys]);
     
@@ -410,9 +416,9 @@ export function OrdersTable() {
     
     const FooterRow = () => (
         <TableRow className="font-bold bg-muted hover:bg-muted/80">
-            <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-muted">
-                <div className='p-2 rounded text-xs bg-slate-600 text-white'>
-                    {selectedRows.length > 0 ? `المحدد (${selectedRows.length})` : `المجموع (${displayCount})`}
+             <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-muted">
+                 <div className='p-2 rounded text-xs bg-slate-600 text-white'>
+                    {displayLabel}
                 </div>
             </TableCell>
             {visibleColumns.map(col => {
@@ -625,7 +631,6 @@ export function OrdersTable() {
                     {/* Table Container */}
                     <div className="flex-1 relative overflow-auto border rounded-lg">
                         <Table className="w-full border-collapse text-sm">
-                            {/* رأس الجدول ثابت */}
                             <TableHeader className="sticky top-0 z-20 bg-card">
                             <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
                                 <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l w-24">
@@ -653,10 +658,10 @@ export function OrdersTable() {
                                 ))}
                             </TableRow>
                             </TableHeader>
-                            
-                            {groupBy ? (
-                                <TableBody>
-                                    {Object.entries(groupedAndSortedOrders as GroupedOrders).map(([groupKey, groupOrders]) => {
+                             <TableBody>
+                                {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
+                                    Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
+                                        const isGroupOpen = openGroups[groupKey] ?? false;
                                         const groupTotals = visibleColumns.reduce((acc, col) => {
                                             if (col.type === 'financial') {
                                                 acc[col.key as string] = groupOrders.reduce((sum, order) => sum + (order[col.key as keyof Order] as number), 0);
@@ -665,43 +670,38 @@ export function OrdersTable() {
                                         }, {} as Record<string, number>);
 
                                         return (
-                                        <Accordion type="single" collapsible className="w-full" key={groupKey}>
-                                          <AccordionItem value={groupKey} className="border-b">
-                                            <AccordionTrigger asChild>
-                                                <tr className="font-semibold text-base w-full hover:bg-muted/80">
-                                                    <td colSpan={visibleColumns.length + 1} className="p-0">
+                                            <React.Fragment key={groupKey}>
+                                                <TableRow 
+                                                    onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
+                                                    className="font-bold text-base bg-muted/70 hover:bg-muted/90 cursor-pointer"
+                                                >
+                                                    <TableCell colSpan={visibleColumns.length + 1} className="p-0">
                                                         <div className="flex items-center justify-between w-full px-4 py-3">
-                                                          <div className="flex items-center gap-4">
-                                                            <ChevronDown className="h-5 w-5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                                                            <span>{groupKey} ({groupOrders.length})</span>
-                                                          </div>
-                                                          <div className="flex items-center">
-                                                            {visibleColumns.map(col => (
-                                                                <div key={col.key} className="text-center px-4 w-32 font-mono">
-                                                                    {col.type === 'financial' ? `${groupTotals[col.key]?.toFixed(2)}` : ''}
-                                                                </div>
-                                                            ))}
-                                                          </div>
+                                                            <div className="flex items-center gap-3">
+                                                                <ChevronDown className={cn("h-5 w-5 transition-transform", isGroupOpen && "-rotate-180")} />
+                                                                <span>{groupKey} ({groupOrders.length})</span>
+                                                            </div>
+                                                            <div className="flex items-center font-mono text-sm">
+                                                                {visibleColumns.map(col => (
+                                                                    <div key={col.key} className="text-center px-4 w-32">
+                                                                        {col.type === 'financial' ? `${groupTotals[col.key]?.toFixed(2) || '0.00'}` : ''}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
                                                         </div>
-                                                    </td>
-                                                </tr>
-                                            </AccordionTrigger>
-                                            <AccordionContent>
-                                                {groupOrders.map((order, index) => renderOrderRow(order, index))}
-                                            </AccordionContent>
-                                          </AccordionItem>
-                                        </Accordion>
-                                        )
-                                    })}
-                                    </TableBody>
-                            ) : (
-                                <TableBody>
-                                {Array.isArray(paginatedOrders) && paginatedOrders.map((order, index) => renderOrderRow(order, index))}
-                                </TableBody>
-                            )}
+                                                    </TableCell>
+                                                </TableRow>
+                                                {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
+                                            </React.Fragment>
+                                        );
+                                    })
+                                ) : Array.isArray(paginatedOrders) ? (
+                                    paginatedOrders.map((order, index) => renderOrderRow(order, index))
+                                ) : null}
+                            </TableBody>
 
                              <TableFooter className="sticky bottom-0 z-10">
-                                <FooterRow />
+                                { selectedRows.length > 0 && <FooterRow /> }
                              </TableFooter>
                         </Table>
                     </div>
