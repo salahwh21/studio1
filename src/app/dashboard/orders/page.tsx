@@ -269,6 +269,10 @@ export default function OrdersPageContent() {
             setSortConfig({ key, direction: 'ascending' });
         }
     };
+    
+    const currentOrderList = Array.isArray(paginatedOrders) ? paginatedOrders : Object.values(paginatedOrders).flat();
+    const isAllSelected = currentOrderList.length > 0 && selectedRows.length === currentOrderList.length;
+    const isIndeterminate = selectedRows.length > 0 && selectedRows.length < currentOrderList.length;
 
     const handleSelectAll = (checked: boolean | 'indeterminate') => {
         // When grouped, select all visible orders. Otherwise, paginated.
@@ -607,7 +611,8 @@ export default function OrdersPageContent() {
                                     <span className="text-sm font-bold">#</span>
                                     <Checkbox
                                         onCheckedChange={handleSelectAll}
-                                        checked={isAllSelected || isIndeterminate}
+                                        checked={isAllSelected}
+                                        indeterminate={isIndeterminate}
                                         aria-label="Select all rows"
                                     />
                                   </div>
@@ -767,3 +772,4 @@ export default function OrdersPageContent() {
         </>
     );
 }
+
