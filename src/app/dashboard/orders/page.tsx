@@ -501,7 +501,6 @@ export default function OrdersPageContent() {
                                 <Checkbox
                                     onCheckedChange={handleSelectAll}
                                     checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
-                                    className="mx-4"
                                 />
                                 </TableHead>
                                 {visibleColumns.map((col) => (
@@ -527,7 +526,7 @@ export default function OrdersPageContent() {
                                   <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
                                     <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#DADDE0'}}>
                                       <div className="flex items-center justify-center gap-2">
-                                        <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
+                                        <span className="text-xs font-mono text-white">{page * rowsPerPage + index + 1}</span>
                                         <Checkbox
                                             checked={selectedRows.includes(order.id)}
                                             onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
