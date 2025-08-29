@@ -646,7 +646,7 @@ export function OrdersTable() {
 
                                         return (
                                         <AccordionItem value={groupKey} key={groupKey} asChild>
-                                            <React.Fragment>
+                                            <>
                                                 <TableRow className='bg-muted/70 hover:bg-muted/90 font-semibold'>
                                                     <AccordionTrigger asChild>
                                                         <TableCell colSpan={visibleColumns.length + 1} className="p-0">
@@ -667,11 +667,11 @@ export function OrdersTable() {
                                                     </AccordionTrigger>
                                                 </TableRow>
                                                 <AccordionContent asChild>
-                                                    <React.Fragment>
+                                                    <>
                                                         {groupOrders.map((order, index) => renderOrderRow(order, index))}
-                                                    </React.Fragment>
+                                                    </>
                                                 </AccordionContent>
-                                            </React.Fragment>
+                                            </>
                                         </AccordionItem>
                                         )
                                     })}
@@ -729,14 +729,14 @@ export function OrdersTable() {
 
                     {/* Pagination Footer */}
                     {!groupBy && (
-                        <CardFooter className="flex-none flex items-center justify-between p-2 border-t">
+                        <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
                             <span className="text-xs text-muted-foreground">
                                 عرض {Array.isArray(paginatedOrders) ? paginatedOrders.length : 0} من {sortedOrders.length} طلبات
                             </span>
                             <div className="flex items-center gap-1">
                                 <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
                                 <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
-                                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>التالي</Button>
+                                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>التالي</Button>
                             </div>
                         </CardFooter>
                     )}
