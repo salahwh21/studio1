@@ -626,7 +626,7 @@ export function OrdersTable() {
                     </div>
 
                     {/* Table Container */}
-                    <div className="flex-1 relative overflow-auto border rounded-lg">
+                    <div className="flex-1 relative overflow-auto border rounded-lg max-h-[calc(100vh-16rem)]">
                         <Table className="w-full border-collapse text-sm">
                             <TableHeader className="sticky top-0 z-20 bg-card">
                                 <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
@@ -732,5 +732,7 @@ export function OrdersTable() {
         </>
     );
 }
+
+    
 
     
