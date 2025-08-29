@@ -53,7 +53,6 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
@@ -590,7 +589,7 @@ export function OrdersTable() {
                                         <DropdownMenuContent align="end" className="w-64 p-2">
                                             <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
                                             <DropdownMenuSeparator />
-                                            <ScrollArea className="h-72">
+                                            <ScrollArea className="max-h-72">
                                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
                                                     <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
                                                         {columns.map((column) => (
@@ -626,11 +625,11 @@ export function OrdersTable() {
                     </div>
 
                     {/* Table Container */}
-                    <div className="flex-1 relative overflow-auto border rounded-lg max-h-[calc(100vh-16rem)]">
-                        <Table className="w-full border-collapse text-sm">
-                            <TableHeader className="sticky top-0 z-20 bg-card">
+                     <div className="flex-1 border rounded-lg overflow-hidden flex flex-col">
+                        <Table>
+                            <TableHeader className="bg-card">
                                 <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
-                                    <TableHead className="sticky right-0 z-30 bg-inherit text-white p-1 text-center border-b border-l w-24">
+                                    <TableHead className="sticky right-0 z-10 bg-inherit text-white p-1 text-center border-b border-l w-24">
                                       <div className="flex items-center justify-center gap-2">
                                         <span className="text-sm font-bold">#</span>
                                         <Checkbox
@@ -655,35 +654,41 @@ export function OrdersTable() {
                                     ))}
                                 </TableRow>
                             </TableHeader>
-                            <TableBody>
-                                {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
-                                    Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
-                                        const isGroupOpen = openGroups[groupKey] ?? false;
-                                        return (
-                                            <React.Fragment key={groupKey}>
-                                                <TableRow
-                                                    onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
-                                                    className="font-bold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border sticky top-[48px] z-10"
-                                                >
-                                                    <TableCell colSpan={visibleColumns.length + 1} className="p-0">
-                                                        <div className="flex items-center w-full px-4 py-3 gap-4">
-                                                            <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
-                                                            <span>{groupKey} ({groupOrders.length})</span>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                                {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
-                                            </React.Fragment>
-                                        );
-                                    })
-                                ) : Array.isArray(paginatedOrders) ? (
-                                    paginatedOrders.map((order, index) => renderOrderRow(order, index))
-                                ) : null}
-                            </TableBody>
-                            <TableFooter className="sticky bottom-0 z-10">
-                                {(!groupBy || (groupBy && Object.keys(groupedAndSortedOrders).length > 0)) && <FooterRow />}
-                            </TableFooter>
                         </Table>
+                         <ScrollArea className="flex-1">
+                             <Table>
+                                <TableBody>
+                                    {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
+                                        Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
+                                            const isGroupOpen = openGroups[groupKey] ?? true;
+                                            return (
+                                                <React.Fragment key={groupKey}>
+                                                    <TableRow
+                                                        onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
+                                                        className="font-bold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border"
+                                                    >
+                                                        <TableCell colSpan={visibleColumns.length + 1} className="p-0">
+                                                            <div className="flex items-center w-full px-4 py-3 gap-4">
+                                                                <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
+                                                                <span>{groupKey} ({groupOrders.length})</span>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                    {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
+                                                </React.Fragment>
+                                            );
+                                        })
+                                    ) : Array.isArray(paginatedOrders) ? (
+                                        paginatedOrders.map((order, index) => renderOrderRow(order, index))
+                                    ) : null}
+                                </TableBody>
+                             </Table>
+                         </ScrollArea>
+                        <Table>
+                             <TableFooter>
+                                {(!groupBy || (groupBy && Object.keys(groupedAndSortedOrders).length > 0)) && <FooterRow />}
+                             </TableFooter>
+                         </Table>
                     </div>
 
                     {/* Pagination Footer */}
@@ -732,7 +737,3 @@ export function OrdersTable() {
         </>
     );
 }
-
-    
-
-    
