@@ -37,6 +37,7 @@ import {
   MessageCircle,
   Check,
   ArrowUpDown,
+  ListTree,
 } from 'lucide-react';
 import {
   DndContext,
@@ -82,6 +83,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 type OrderSource = Order['source'];
 type ColumnConfig = { key: keyof Order | 'id-link'; label: string; type?: 'default' | 'financial'; sortable?: boolean };
+type GroupByOption = keyof Order | null;
 
 // Initial columns configuration
 const ALL_COLUMNS: ColumnConfig[] = [
@@ -99,6 +101,16 @@ const ALL_COLUMNS: ColumnConfig[] = [
     { key: 'deliveryFee', label: 'أجور التوصيل', type: 'financial' },
     { key: 'cod', label: 'قيمة التحصيل', type: 'financial' },
     { key: 'date', label: 'التاريخ', sortable: true },
+];
+
+const GROUP_BY_OPTIONS: { value: GroupByOption; label: string }[] = [
+    { value: null, label: 'بدون تجميع' },
+    { value: 'merchant', label: 'التاجر' },
+    { value: 'status', label: 'الحالة' },
+    { value: 'region', label: 'المنطقة' },
+    { value: 'city', label: 'المدينة' },
+    { value: 'driver', label: 'السائق' },
+    { value: 'date', label: 'التاريخ' },
 ];
 
 function useMediaQuery(query: string) {
@@ -149,6 +161,8 @@ type ModalState =
 
 type SortConfig = { key: keyof Order; direction: 'ascending' | 'descending' };
 
+type GroupedOrders = { [key: string]: Order[] };
+
 const SortableColumn = ({ id, label, onToggle, isVisible }: { id: string; label: string; onToggle: (id: string, checked: boolean) => void; isVisible: boolean; }) => {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
     const style = { transform: CSS.Transform.toString(transform), transition };
@@ -180,6 +194,7 @@ export default function OrdersPageContent() {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(15);
     const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+    const [groupBy, setGroupBy] = useState<GroupByOption>(null);
     
     // State for column management
     const [columns, setColumns] = useState<ColumnConfig[]>(ALL_COLUMNS);
@@ -221,12 +236,27 @@ export default function OrdersPageContent() {
         return sortableItems;
     }, [filteredOrders, sortConfig]);
 
+    const groupedAndSortedOrders = useMemo(() => {
+        if (!groupBy) {
+            return sortedOrders;
+        }
+        return sortedOrders.reduce((acc: GroupedOrders, order) => {
+            const key = order[groupBy] as string;
+            if (!acc[key]) {
+                acc[key] = [];
+            }
+            acc[key].push(order);
+            return acc;
+        }, {});
+    }, [sortedOrders, groupBy]);
+
     const paginatedOrders = useMemo(() => {
+        if (groupBy) return groupedAndSortedOrders;
         const startIndex = page * rowsPerPage;
         return sortedOrders.slice(startIndex, startIndex + rowsPerPage);
-    }, [sortedOrders, page, rowsPerPage]);
+    }, [sortedOrders, page, rowsPerPage, groupBy, groupedAndSortedOrders]);
     
-    const totalPages = Math.ceil(sortedOrders.length / rowsPerPage);
+    const totalPages = groupBy ? 1 : Math.ceil(sortedOrders.length / rowsPerPage);
 
     const handleSort = (key: keyof Order) => {
         if (sortConfig && sortConfig.key === key) {
@@ -241,7 +271,9 @@ export default function OrdersPageContent() {
     };
 
     const handleSelectAll = (checked: boolean | 'indeterminate') => {
-        setSelectedRows(checked === true ? paginatedOrders.map(o => o.id) : []);
+        // When grouped, select all visible orders. Otherwise, paginated.
+        const orderList = Array.isArray(paginatedOrders) ? paginatedOrders : Object.values(paginatedOrders).flat();
+        setSelectedRows(checked === true ? orderList.map(o => o.id) : []);
     };
     
     const handleSelectRow = (id: string, checked: boolean) => {
@@ -297,14 +329,17 @@ export default function OrdersPageContent() {
             return totalsResult;
         };
         const selectedOrdersList = orders.filter(o => selectedRows.includes(o.id));
+        const paginatedList = Array.isArray(paginatedOrders) ? paginatedOrders : Object.values(paginatedOrders).flat();
+
         return {
-            paginated: calculateTotals(paginatedOrders),
+            paginated: calculateTotals(paginatedList),
             selected: calculateTotals(selectedOrdersList),
         };
     }, [orders, selectedRows, paginatedOrders, visibleColumns]);
 
     const displayTotals = selectedRows.length > 0 ? totals.selected : totals.paginated;
-    const displayLabel = `المجموع (${selectedRows.length > 0 ? selectedRows.length : paginatedOrders.length})`;
+    const displayCount = selectedRows.length > 0 ? selectedRows.length : (Array.isArray(paginatedOrders) ? paginatedOrders.length : sortedOrders.length);
+    const displayLabel = `المجموع (${displayCount})`;
 
 
     const handleColumnVisibilityChange = (key: string, checked: boolean) => {
@@ -330,6 +365,42 @@ export default function OrdersPageContent() {
             title: "تم تحديث البيانات",
             description: "تم إعادة تحميل قائمة الطلبات بنجاح.",
         })
+    }
+
+    const renderOrderRow = (order: Order, index: number) => {
+        const statusInfo = getStatusInfo(order.status);
+        const SourceIcon = sourceIcons[order.source] || LinkIcon;
+        return (
+            <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
+                <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#DADDE0'}}>
+                    <div className="flex items-center justify-center gap-2">
+                        <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
+                        <Checkbox
+                            checked={selectedRows.includes(order.id)}
+                            onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
+                        />
+                    </div>
+                </TableCell>
+                {visibleColumns.map(col => {
+                    const value = order[col.key as keyof Order];
+                    if (col.key === 'id') {
+                        return <TableCell key={col.key} className="font-medium text-primary p-1 text-center whitespace-nowrap border-l"><Link href="#">{value as string}</Link></TableCell>
+                    }
+                    if (col.key === 'source') {
+                        const Icon = sourceIcons[value as OrderSource] || LinkIcon;
+                        return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l"><Badge variant="outline" className="gap-1.5 font-normal"><Icon className="h-3 w-3" />{value as string}</Badge></TableCell>
+                    }
+                    if (col.key === 'status') {
+                            const sInfo = getStatusInfo(value as string);
+                            return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l"><Select value={value as string} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus as Order['status'])}><SelectTrigger className={cn("border-0 h-8", sInfo.bgColor, sInfo.color)}><SelectValue placeholder="الحالة" /></SelectTrigger><SelectContent><SelectGroup>{statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectGroup></SelectContent></Select></TableCell>
+                    }
+                    if (col.type === 'financial' && typeof value === 'number') {
+                        return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l">{value.toFixed(2)}</TableCell>
+                    }
+                    return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l">{value as React.ReactNode}</TableCell>
+                })}
+            </TableRow>
+        )
     }
 
     if (!isClient) {
@@ -362,7 +433,7 @@ export default function OrdersPageContent() {
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-2 space-y-3">
-                    {paginatedOrders.map(order => {
+                    {Array.isArray(paginatedOrders) && paginatedOrders.map(order => {
                         const statusInfo = getStatusInfo(order.status);
                         const ActionButton = ({ icon: Icon, label }: {icon: React.ElementType, label: string}) => (
                             <div className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
@@ -418,13 +489,15 @@ export default function OrdersPageContent() {
                 </div>
                 <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
                     <span className="text-xs text-muted-foreground">
-                        عرض {paginatedOrders.length} من {sortedOrders.length} طلبات
+                        عرض {Array.isArray(paginatedOrders) ? paginatedOrders.length : sortedOrders.length} من {sortedOrders.length} طلبات
                     </span>
-                    <div className="flex items-center gap-1">
-                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
-                        <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
-                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>التالي</Button>
-                    </div>
+                    {!groupBy && (
+                        <div className="flex items-center gap-1">
+                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
+                            <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
+                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>التالي</Button>
+                        </div>
+                    )}
                 </CardFooter>
             </div>
         )
@@ -458,15 +531,33 @@ export default function OrdersPageContent() {
                                     />
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Button variant="outline" size="sm" className="gap-1 bg-orange-100 text-orange-600 border-orange-200 hover:bg-orange-200">
-                                    <X className="h-4 w-4" />
-                                    <span>مسح الفلتر</span>
-                                    </Button>
+                                     <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" size="sm" className="gap-1">
+                                            <ListTree className="h-4 w-4" />
+                                            <span>التجميع حسب</span>
+                                            {groupBy && <Badge variant="secondary" className='mr-1'>{GROUP_BY_OPTIONS.find(o => o.value === groupBy)?.label}</Badge>}
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuLabel>اختر حقل للتجميع</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            {GROUP_BY_OPTIONS.map(option => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={option.label}
+                                                    checked={groupBy === option.value}
+                                                    onSelect={() => setGroupBy(option.value)}
+                                                >
+                                                    {option.label}
+                                                </DropdownMenuCheckboxItem>
+                                            ))}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="outline" size="sm" className="gap-1">
                                             <ListOrdered className="h-4 w-4" />
-                                            <span>تخصيص الأعمدة</span>
+                                            <span>الأعمدة</span>
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="w-64 p-2">
@@ -507,16 +598,17 @@ export default function OrdersPageContent() {
 
                     {/* Table Container */}
                     <div className="flex-1 relative overflow-auto border rounded-lg">
-                        <table className="w-full border-collapse text-sm">
+                        <Table className="w-full border-collapse text-sm">
                             {/* رأس الجدول ثابت */}
-                            <thead className="sticky top-0 z-20">
+                            <TableHeader className="sticky top-0 z-20">
                             <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
                                 <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l">
                                   <div className="flex items-center justify-center gap-2">
                                     <span className="text-xs font-mono text-white">#</span>
                                     <Checkbox
                                         onCheckedChange={handleSelectAll}
-                                        checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
+                                        checked={(selectedRows.length === sortedOrders.length && sortedOrders.length > 0) || (selectedRows.length > 0 && selectedRows.length < sortedOrders.length)}
+                                        aria-label="Select all rows"
                                     />
                                   </div>
                                 </TableHead>
@@ -533,46 +625,61 @@ export default function OrdersPageContent() {
                                 </TableHead>
                                 ))}
                             </TableRow>
-                            </thead>
+                            </TableHeader>
 
-                            <TableBody>
-                              {paginatedOrders.map((order, index) => {
-                                const statusInfo = getStatusInfo(order.status);
-                                const SourceIcon = sourceIcons[order.source] || LinkIcon;
-                                return (
-                                  <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
-                                    <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#DADDE0'}}>
-                                      <div className="flex items-center justify-center gap-2">
-                                        <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
-                                        <Checkbox
-                                            checked={selectedRows.includes(order.id)}
-                                            onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
-                                        />
-                                      </div>
-                                    </TableCell>
-                                    {visibleColumns.map(col => {
-                                        const value = order[col.key as keyof Order];
-                                        if (col.key === 'id') {
-                                            return <TableCell key={col.key} className="font-medium text-primary p-1 text-center whitespace-nowrap border-l"><Link href="#">{value}</Link></TableCell>
-                                        }
-                                        if (col.key === 'source') {
-                                            const Icon = sourceIcons[value as OrderSource] || LinkIcon;
-                                            return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l"><Badge variant="outline" className="gap-1.5 font-normal"><Icon className="h-3 w-3" />{value}</Badge></TableCell>
-                                        }
-                                        if (col.key === 'status') {
-                                             const sInfo = getStatusInfo(value as string);
-                                             return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l"><Select value={value as string} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus as Order['status'])}><SelectTrigger className={cn("border-0 h-8", sInfo.bgColor, sInfo.color)}><SelectValue placeholder="الحالة" /></SelectTrigger><SelectContent><SelectGroup>{statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectGroup></SelectContent></Select></TableCell>
-                                        }
-                                        if (col.type === 'financial' && typeof value === 'number') {
-                                            return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l">{value.toFixed(2)}</TableCell>
-                                        }
-                                        return <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l">{value as React.ReactNode}</TableCell>
+                            {groupBy ? (
+                                <Accordion type="multiple" asChild className='w-full'>
+                                    <TableBody>
+                                    {Object.entries(groupedAndSortedOrders as GroupedOrders).map(([groupKey, groupOrders]) => {
+                                        const groupTotals = visibleColumns.reduce((acc, col) => {
+                                            if (col.type === 'financial') {
+                                                acc[col.key as string] = groupOrders.reduce((sum, order) => sum + (order[col.key as keyof Order] as number), 0);
+                                            }
+                                            return acc;
+                                        }, {} as Record<string, number>);
+
+                                        return (
+                                        <AccordionItem value={groupKey} key={groupKey} asChild>
+                                            <>
+                                                <TableRow className='bg-muted/70 hover:bg-muted/90 font-semibold'>
+                                                    <AccordionTrigger asChild>
+                                                        <TableCell colSpan={visibleColumns.length + 1} className="p-0">
+                                                            <div className="flex items-center justify-between w-full px-4 py-2 text-sm">
+                                                                <div className="flex items-center gap-2">
+                                                                    <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                                                    <span>{groupKey} ({groupOrders.length})</span>
+                                                                </div>
+                                                                <div className='flex'>
+                                                                    {visibleColumns.map(col => (
+                                                                        <div key={col.key} className="text-center px-4 w-28">
+                                                                            {col.type === 'financial' ? `${groupTotals[col.key]?.toFixed(2)}` : ''}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </TableCell>
+                                                    </AccordionTrigger>
+                                                </TableRow>
+                                                <AccordionContent asChild>
+                                                    <>
+                                                        {groupOrders.map((order, index) => renderOrderRow(order, index))}
+                                                    </>
+                                                </AccordionContent>
+                                            </>
+                                        </AccordionItem>
+                                        )
                                     })}
-                                  </TableRow>
-                                )
-                              })}
-                            
-                              {/* سطر المجاميع */}
+                                    </TableBody>
+                                </Accordion>
+
+                            ) : (
+                                <TableBody>
+                                {Array.isArray(paginatedOrders) && paginatedOrders.map((order, index) => renderOrderRow(order, index))}
+                                </TableBody>
+                            )}
+
+                            {/* Table Footer with Totals */}
+                            <TableFooter>
                                <TableRow className="bg-muted/20 font-bold">
                                     <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#DADDE0'}}>
                                          <div className={cn('p-2 rounded text-xs text-white', selectedRows.length > 0 ? 'bg-blue-800' : 'bg-slate-600')}>
@@ -588,27 +695,26 @@ export default function OrdersPageContent() {
                                                 </TableCell>
                                             );
                                         }
-                                        // Render an empty cell for non-financial columns to maintain alignment
                                         return <TableCell key={col.key} className="border-l"></TableCell>;
                                     })}
                                 </TableRow>
-                            </TableBody>
-
-                        </table>
+                            </TableFooter>
+                        </Table>
                     </div>
-
 
                     {/* Pagination Footer */}
-                    <CardFooter className="flex-none flex items-center justify-between p-2 border-t">
-                    <span className="text-xs text-muted-foreground">
-                        عرض {paginatedOrders.length} من {sortedOrders.length} طلبات
-                    </span>
-                    <div className="flex items-center gap-1">
-                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
-                        <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
-                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>التالي</Button>
-                    </div>
-                    </CardFooter>
+                    {!groupBy && (
+                        <CardFooter className="flex-none flex items-center justify-between p-2 border-t">
+                            <span className="text-xs text-muted-foreground">
+                                عرض {Array.isArray(paginatedOrders) ? paginatedOrders.length : 0} من {sortedOrders.length} طلبات
+                            </span>
+                            <div className="flex items-center gap-1">
+                                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
+                                <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
+                                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>التالي</Button>
+                            </div>
+                        </CardFooter>
+                    )}
                 </Card>
             </TooltipProvider>
 
