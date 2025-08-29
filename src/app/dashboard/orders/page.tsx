@@ -231,11 +231,15 @@ export default function OrdersPageContent() {
     const totalPages = Math.ceil(sortedOrders.length / rowsPerPage);
 
     const handleSort = (key: keyof Order) => {
-        let direction: 'ascending' | 'descending' = 'ascending';
-        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
-            direction = 'descending';
+        if (sortConfig && sortConfig.key === key) {
+            if (sortConfig.direction === 'ascending') {
+                setSortConfig({ key, direction: 'descending' });
+            } else {
+                setSortConfig(null);
+            }
+        } else {
+            setSortConfig({ key, direction: 'ascending' });
         }
-        setSortConfig({ key, direction });
     };
 
     const handleSelectAll = (checked: boolean | 'indeterminate') => {
