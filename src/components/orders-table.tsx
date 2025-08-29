@@ -53,6 +53,7 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
@@ -164,7 +165,7 @@ type GroupedOrders = { [key: string]: Order[] };
 
 const SortableColumn = ({ id, label, onToggle, isVisible }: { id: string; label: string; onToggle: (id: string, checked: boolean) => void; isVisible: boolean; }) => {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
-    const style = { transform: CSS.Transform.toString(transform), transition };
+    const style = { transform: transform ? CSS.Transform.toString(transform) : undefined, transition };
 
     return (
         <div
@@ -350,7 +351,7 @@ export function OrdersTable() {
 
     const displayTotals = selectedRows.length > 0 ? totals.selected : totals.paginated;
     const displayCount = selectedRows.length > 0 ? selectedRows.length : (Array.isArray(paginatedOrders) ? paginatedOrders.length : sortedOrders.length);
-    const displayLabel = `المجموع (${displayCount})`;
+    const displayLabel = selectedRows.length > 0 ? 'المحدد' : 'الإجمالي';
 
 
     const handleColumnVisibilityChange = (key: string, checked: boolean) => {
@@ -414,16 +415,16 @@ export function OrdersTable() {
         )
     }
     
-    const FooterRow = () => (
+    const FooterRow = ({ totals, label, count }: { totals: Record<string, number>, label: string, count: number }) => (
         <TableRow className="font-bold bg-muted hover:bg-muted/80">
              <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-muted">
                  <div className='p-2 rounded text-xs bg-slate-600 text-white'>
-                    {displayLabel}
+                    {label} ({count})
                 </div>
             </TableCell>
             {visibleColumns.map(col => {
                 if (col.type === 'financial') {
-                    const totalValue = displayTotals[col.key as string] || 0;
+                    const totalValue = totals[col.key as string] || 0;
                     return (
                         <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l text-foreground">
                             {totalValue.toFixed(2)}
@@ -661,7 +662,7 @@ export function OrdersTable() {
                              <TableBody>
                                 {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
                                     Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
-                                        const isGroupOpen = openGroups[groupKey] ?? false;
+                                        const isGroupOpen = openGroups[groupKey] ?? true; // Default to open
                                         const groupTotals = visibleColumns.reduce((acc, col) => {
                                             if (col.type === 'financial') {
                                                 acc[col.key as string] = groupOrders.reduce((sum, order) => sum + (order[col.key as keyof Order] as number), 0);
@@ -677,13 +678,13 @@ export function OrdersTable() {
                                                 >
                                                     <TableCell colSpan={visibleColumns.length + 1} className="p-0">
                                                         <div className="flex items-center justify-between w-full px-4 py-3">
-                                                            <div className="flex items-center gap-3">
-                                                                <ChevronDown className={cn("h-5 w-5 transition-transform", isGroupOpen && "-rotate-180")} />
-                                                                <span>{groupKey} ({groupOrders.length})</span>
+                                                            <div className="flex items-center gap-4">
+                                                                <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
+                                                                <span className="font-semibold text-base">{groupKey} ({groupOrders.length})</span>
                                                             </div>
-                                                            <div className="flex items-center font-mono text-sm">
+                                                            <div className="flex items-center font-mono text-sm gap-4">
                                                                 {visibleColumns.map(col => (
-                                                                    <div key={col.key} className="text-center px-4 w-32">
+                                                                    <div key={col.key} className="text-center px-4 w-28">
                                                                         {col.type === 'financial' ? `${groupTotals[col.key]?.toFixed(2) || '0.00'}` : ''}
                                                                     </div>
                                                                 ))}
@@ -701,7 +702,12 @@ export function OrdersTable() {
                             </TableBody>
 
                              <TableFooter className="sticky bottom-0 z-10">
-                                { selectedRows.length > 0 && <FooterRow /> }
+                                { selectedRows.length > 0 ? (
+                                    <FooterRow totals={totals.selected} label="المحدد" count={selectedRows.length}/>
+                                 ) : !groupBy && (
+                                    <FooterRow totals={totals.paginated} label="الإجمالي" count={paginatedOrders.length}/>
+                                 )
+                                }
                              </TableFooter>
                         </Table>
                     </div>
