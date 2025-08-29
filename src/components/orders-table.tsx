@@ -646,7 +646,7 @@ export function OrdersTable() {
 
                                         return (
                                         <AccordionItem value={groupKey} key={groupKey} asChild>
-                                            <React.Fragment>
+                                            <>
                                                 <TableRow className='bg-muted/70 hover:bg-muted/90 font-semibold'>
                                                     <TableCell colSpan={visibleColumns.length + 1} className="p-0">
                                                         <AccordionTrigger className="flex items-center justify-between w-full px-4 py-2 text-sm hover:no-underline">
@@ -665,11 +665,11 @@ export function OrdersTable() {
                                                     </TableCell>
                                                 </TableRow>
                                                 <AccordionContent asChild>
-                                                    <React.Fragment>
+                                                    <>
                                                         {groupOrders.map((order, index) => renderOrderRow(order, index))}
-                                                    </React.Fragment>
+                                                    </>
                                                 </AccordionContent>
-                                            </React.Fragment>
+                                            </>
                                         </AccordionItem>
                                         )
                                     })}
@@ -771,5 +771,6 @@ export function OrdersTable() {
         </>
     );
 }
+
 
     
