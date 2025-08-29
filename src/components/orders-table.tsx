@@ -646,32 +646,30 @@ export function OrdersTable() {
 
                                         return (
                                         <AccordionItem value={groupKey} key={groupKey} asChild>
-                                            <>
+                                            <React.Fragment>
                                                 <TableRow className='bg-muted/70 hover:bg-muted/90 font-semibold'>
-                                                    <AccordionTrigger asChild>
-                                                        <TableCell colSpan={visibleColumns.length + 1} className="p-0">
-                                                            <div className="flex items-center justify-between w-full px-4 py-2 text-sm">
-                                                                <div className="flex items-center gap-2">
-                                                                    <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                                                                    <span>{groupKey} ({groupOrders.length})</span>
-                                                                </div>
-                                                                <div className='flex'>
-                                                                    {visibleColumns.map(col => (
-                                                                        <div key={col.key} className="text-center px-4 w-28">
-                                                                            {col.type === 'financial' ? `${groupTotals[col.key]?.toFixed(2)}` : ''}
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
+                                                    <TableCell colSpan={visibleColumns.length + 1} className="p-0">
+                                                        <AccordionTrigger className="flex items-center justify-between w-full px-4 py-2 text-sm hover:no-underline">
+                                                            <div className="flex items-center gap-2">
+                                                                <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                                                                <span>{groupKey} ({groupOrders.length})</span>
                                                             </div>
-                                                        </TableCell>
-                                                    </AccordionTrigger>
+                                                            <div className='flex'>
+                                                                {visibleColumns.map(col => (
+                                                                    <div key={col.key} className="text-center px-4 w-28">
+                                                                        {col.type === 'financial' ? `${groupTotals[col.key]?.toFixed(2)}` : ''}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </AccordionTrigger>
+                                                    </TableCell>
                                                 </TableRow>
                                                 <AccordionContent asChild>
-                                                    <>
+                                                    <React.Fragment>
                                                         {groupOrders.map((order, index) => renderOrderRow(order, index))}
-                                                    </>
+                                                    </React.Fragment>
                                                 </AccordionContent>
-                                            </>
+                                            </React.Fragment>
                                         </AccordionItem>
                                         )
                                     })}
