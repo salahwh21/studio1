@@ -532,7 +532,7 @@ export function OrdersTable() {
     return (
         <>
             <TooltipProvider>
-                <Card className="flex flex-col h-[calc(100vh-8rem)] bg-background p-4 gap-4 overflow-hidden">
+                <Card className="flex flex-col h-[calc(100vh-8rem)] bg-background p-4 gap-4">
                     {/* Header */}
                     <div className="flex-none flex-row items-center justify-between flex flex-wrap gap-2">
                         {selectedRows.length > 0 ? (
@@ -655,7 +655,7 @@ export function OrdersTable() {
                             <TableBody>
                                 {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
                                     Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
-                                        const isGroupOpen = openGroups[groupKey] ?? false; // Default to closed
+                                        const isGroupOpen = openGroups[groupKey] ?? false;
                                         return (
                                             <React.Fragment key={groupKey}>
                                                 <TableRow
@@ -729,3 +729,5 @@ export function OrdersTable() {
         </>
     );
 }
+
+    
