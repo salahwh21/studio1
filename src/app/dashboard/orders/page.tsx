@@ -527,7 +527,7 @@ export default function OrdersPageContent() {
                                 const SourceIcon = sourceIcons[order.source] || LinkIcon;
                                 return (
                                   <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
-                                    <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#A4AAB3'}}>
+                                    <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#DADDE0'}}>
                                       <div className="flex items-center justify-center gap-2">
                                         <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
                                         <Checkbox
@@ -560,7 +560,7 @@ export default function OrdersPageContent() {
                             
                               {/* سطر المجاميع */}
                                <TableRow className="bg-muted/20 font-bold">
-                                    <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#A4AAB3'}}>
+                                    <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#DADDE0'}}>
                                          <div className={cn('p-2 rounded text-xs text-white', selectedRows.length > 0 ? 'bg-blue-800' : 'bg-slate-600')}>
                                             {displayLabel}
                                         </div>
@@ -628,4 +628,3 @@ export default function OrdersPageContent() {
         </>
     );
 }
-
