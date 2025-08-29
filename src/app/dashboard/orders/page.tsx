@@ -499,7 +499,7 @@ export default function OrdersPageContent() {
                             {/* رأس الجدول ثابت */}
                             <thead className="sticky top-0 z-20">
                             <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
-                                <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l w-16">
+                                <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l w-32">
                                 <Checkbox
                                     onCheckedChange={handleSelectAll}
                                     checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
@@ -527,7 +527,7 @@ export default function OrdersPageContent() {
                                 const SourceIcon = sourceIcons[order.source] || LinkIcon;
                                 return (
                                   <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
-                                    <TableCell className="sticky right-0 z-10 bg-background data-[state=selected]:bg-muted p-1 text-center border-l w-16">
+                                    <TableCell className="sticky right-0 z-10 bg-background data-[state=selected]:bg-muted p-1 text-center border-l w-32">
                                       <Checkbox
                                         checked={selectedRows.includes(order.id)}
                                         onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
@@ -557,7 +557,7 @@ export default function OrdersPageContent() {
                             
                               {/* سطر المجاميع */}
                                <TableRow className="bg-muted/20 font-bold">
-                                    <TableCell className="sticky right-0 z-10 bg-muted/20 p-1 text-center border-l w-16">
+                                    <TableCell className="sticky right-0 z-10 bg-muted/20 p-1 text-center border-l w-32">
                                        
                                     </TableCell>
                                     <TableCell className="p-1 text-center border-l" colSpan={1}>
@@ -628,5 +628,3 @@ export default function OrdersPageContent() {
         </>
     );
 }
-
-    
