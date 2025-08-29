@@ -343,8 +343,8 @@ export function OrdersTable() {
     }, [orders, selectedRows, paginatedOrders, visibleColumns, sortedOrders, groupBy]);
 
     const displayTotals = selectedRows.length > 0 ? totals.selected : totals.main;
-    const displayCount = selectedRows.length > 0 ? selectedRows.length : sortedOrders.length;
-    const displayLabel = selectedRows.length > 0 ? 'المحدد' : 'الإجمالي';
+    const displayCount = selectedRows.length > 0 ? selectedRows.length : (groupBy ? sortedOrders.length : paginatedOrders.length);
+    const displayLabel = selectedRows.length > 0 ? 'المحدد' : (groupBy ? 'الإجمالي الكلي' : 'إجمالي الصفحة');
 
 
     const handleColumnVisibilityChange = (key: string, checked: boolean) => {
@@ -652,15 +652,15 @@ export function OrdersTable() {
                                     ))}
                                 </TableRow>
                             </TableHeader>
-                             <TableBody>
+                            <TableBody>
                                 {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
                                     Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
-                                        const isGroupOpen = openGroups[groupKey] ?? true; // Default to open
+                                        const isGroupOpen = openGroups[groupKey] ?? false; // Default to closed
                                         return (
                                             <React.Fragment key={groupKey}>
-                                                <TableRow 
-                                                  onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))} 
-                                                  className="font-bold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border sticky top-[48px] z-10"
+                                                <TableRow
+                                                    onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
+                                                    className="font-bold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border sticky top-[48px] z-10"
                                                 >
                                                     <TableCell colSpan={visibleColumns.length + 1} className="p-0">
                                                         <div className="flex items-center w-full px-4 py-3 gap-4">
@@ -677,10 +677,9 @@ export function OrdersTable() {
                                     paginatedOrders.map((order, index) => renderOrderRow(order, index))
                                 ) : null}
                             </TableBody>
-
-                             <TableFooter className="sticky bottom-0 z-10">
-                                <FooterRow />
-                             </TableFooter>
+                            <TableFooter className="sticky bottom-0 z-10">
+                                {(!groupBy || (groupBy && Object.keys(groupedAndSortedOrders).length > 0)) && <FooterRow />}
+                            </TableFooter>
                         </Table>
                     </div>
 
