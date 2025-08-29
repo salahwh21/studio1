@@ -626,36 +626,38 @@ export function OrdersTable() {
 
                     {/* Table Container */}
                      <div className="flex-1 border rounded-lg overflow-hidden flex flex-col">
-                        <Table>
-                            <TableHeader className="bg-card">
-                                <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
-                                    <TableHead className="sticky right-0 z-10 bg-inherit text-white p-1 text-center border-b border-l w-24">
-                                      <div className="flex items-center justify-center gap-2">
-                                        <span className="text-sm font-bold">#</span>
-                                        <Checkbox
-                                            onCheckedChange={handleSelectAll}
-                                            checked={isAllSelected}
-                                            indeterminate={isIndeterminate}
-                                            aria-label="Select all rows"
-                                        />
-                                      </div>
-                                    </TableHead>
-                                    {visibleColumns.map((col) => (
-                                    <TableHead key={col.key} className="text-white p-1 text-center whitespace-nowrap border-b border-l bg-inherit">
-                                        {col.sortable ? (
-                                            <Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-white/20 hover:text-white w-full p-0 h-auto">
-                                                {col.label}
-                                                <ArrowUpDown className="mr-2 h-3 w-3" />
-                                            </Button>
-                                        ) : (
-                                            col.label
-                                        )}
-                                    </TableHead>
-                                    ))}
-                                </TableRow>
-                            </TableHeader>
-                        </Table>
-                         <ScrollArea className="flex-1">
+                        <div className='overflow-x-auto'>
+                            <Table>
+                                <TableHeader className="sticky top-0 z-20 bg-[#4A5568] hover:bg-[#4A5568]">
+                                    <TableRow>
+                                        <TableHead className="sticky right-0 z-30 bg-inherit text-white p-1 text-center border-b border-l w-24">
+                                          <div className="flex items-center justify-center gap-2">
+                                            <span className="text-sm font-bold">#</span>
+                                            <Checkbox
+                                                onCheckedChange={handleSelectAll}
+                                                checked={isAllSelected}
+                                                indeterminate={isIndeterminate}
+                                                aria-label="Select all rows"
+                                            />
+                                          </div>
+                                        </TableHead>
+                                        {visibleColumns.map((col) => (
+                                        <TableHead key={col.key} className="text-white p-1 text-center whitespace-nowrap border-b border-l bg-inherit">
+                                            {col.sortable ? (
+                                                <Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-white/20 hover:text-white w-full p-0 h-auto">
+                                                    {col.label}
+                                                    <ArrowUpDown className="mr-2 h-3 w-3" />
+                                                </Button>
+                                            ) : (
+                                                col.label
+                                            )}
+                                        </TableHead>
+                                        ))}
+                                    </TableRow>
+                                </TableHeader>
+                            </Table>
+                         </div>
+                         <div className='overflow-auto flex-1'>
                              <Table>
                                 <TableBody>
                                     {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
@@ -683,12 +685,14 @@ export function OrdersTable() {
                                     ) : null}
                                 </TableBody>
                              </Table>
-                         </ScrollArea>
-                        <Table>
+                         </div>
+                        <div>
+                         <Table>
                              <TableFooter>
                                 {(!groupBy || (groupBy && Object.keys(groupedAndSortedOrders).length > 0)) && <FooterRow />}
                              </TableFooter>
                          </Table>
+                        </div>
                     </div>
 
                     {/* Pagination Footer */}
@@ -737,3 +741,5 @@ export function OrdersTable() {
         </>
     );
 }
+
+    
