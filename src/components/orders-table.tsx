@@ -67,7 +67,6 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -282,8 +281,7 @@ export function OrdersTable() {
 
 
     const handleSelectAll = (checked: boolean | 'indeterminate') => {
-        // When grouped, select all visible orders. Otherwise, paginated.
-        const orderList = Array.isArray(paginatedOrders) ? paginatedOrders : Object.values(paginatedOrders).flat();
+        const orderList = groupBy ? sortedOrders : (Array.isArray(paginatedOrders) ? paginatedOrders : Object.values(paginatedOrders).flat());
         setSelectedRows(checked === true ? orderList.map(o => o.id) : []);
     };
     
@@ -292,14 +290,12 @@ export function OrdersTable() {
     };
 
     const handleFieldChange = (orderId: string, field: keyof Order, value: any) => {
-        // Using the action from the store
         if (field === 'status') {
             updateOrderStatus(orderId, value);
         }
     };
 
     const handleDeleteSelected = () => {
-        // Using the action from the store
         deleteOrders(selectedRows);
         toast({ title: `تم حذف ${selectedRows.length} طلبات بنجاح` });
         setSelectedRows([]);
@@ -307,13 +303,10 @@ export function OrdersTable() {
     };
 
     const handleBulkUpdate = (field: keyof Order, value: any) => {
-        // This would be a new action in the store, e.g., bulkUpdateOrders
-        // For now, let's update them one by one
         selectedRows.forEach(id => {
             if (field === 'status') {
                 updateOrderStatus(id, value);
             }
-            // Add other bulk updates here
         });
 
         toast({ title: `تم تحديث ${selectedRows.length} طلبات` });
@@ -378,12 +371,12 @@ export function OrdersTable() {
         })
     }
 
-    const renderOrderRow = (order: Order, index: number, isGrouped: boolean = false) => {
+    const renderOrderRow = (order: Order, index: number) => {
         const statusInfo = getStatusInfo(order.status);
         const SourceIcon = sourceIcons[order.source] || LinkIcon;
         return (
-            <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className={cn("hover:bg-muted/50 border-b", isGrouped ? "bg-card" : "")}>
-                <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-card">
+            <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b bg-card">
+                <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-inherit">
                     <div className="flex items-center justify-center gap-2">
                         <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
                         <Checkbox
@@ -664,20 +657,23 @@ export function OrdersTable() {
                                         const isGroupOpen = openGroups[groupKey] ?? false;
                                         return (
                                             <React.Fragment key={groupKey}>
-                                                <TableRow onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))} className="font-semibold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border">
+                                                <TableRow 
+                                                  onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))} 
+                                                  className="font-bold text-lg w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border"
+                                                >
                                                     <TableCell colSpan={visibleColumns.length + 1} className="p-0">
                                                         <div className="flex items-center justify-start w-full px-4 py-3 gap-4">
                                                             <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
-                                                            <span className="font-bold text-lg">{groupKey} ({groupOrders.length})</span>
+                                                            <span>{groupKey} ({groupOrders.length})</span>
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
-                                                {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index, true))}
+                                                {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
                                             </React.Fragment>
                                         );
                                     })
                                 ) : Array.isArray(paginatedOrders) ? (
-                                    paginatedOrders.map((order, index) => renderOrderRow(order, index, false))
+                                    paginatedOrders.map((order, index) => renderOrderRow(order, index))
                                 ) : null}
                             </TableBody>
 
