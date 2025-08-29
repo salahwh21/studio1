@@ -501,7 +501,7 @@ export default function OrdersPageContent() {
                             {/* رأس الجدول ثابت */}
                             <thead className="sticky top-0 z-20">
                             <TableRow className="bg-[#4A5568] hover:bg-[#4A5568]">
-                                <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l w-12">
+                                <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l w-16">
                                 <Checkbox
                                     onCheckedChange={handleSelectAll}
                                     checked={selectedRows.length === paginatedOrders.length && paginatedOrders.length > 0}
@@ -562,12 +562,12 @@ export default function OrdersPageContent() {
                                     <TableCell className="sticky right-0 z-10 bg-muted/20 p-1 text-center border-l">
                                        
                                     </TableCell>
-                                    <TableCell className="p-1 text-center border-l">
+                                    <TableCell colSpan={visibleColumns.length > 1 ? 1 : 1} className="p-1 text-center border-l">
                                          <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
                                             {displayLabel}
                                         </div>
                                     </TableCell>
-                                    {visibleColumns.slice(2).map(col => {
+                                    {visibleColumns.slice(1).map(col => {
                                         if (col.type === 'financial') {
                                             const totalValue = displayTotals[col.key as string] || 0;
                                             return (
@@ -631,4 +631,3 @@ export default function OrdersPageContent() {
     );
 }
 
-    
