@@ -436,59 +436,73 @@ export default function OrdersPageContent() {
                 <Card className="flex flex-col h-[calc(100vh-8rem)] bg-background p-4 gap-4 overflow-hidden">
                     {/* Header */}
                     <div className="flex-none flex-row items-center justify-between flex flex-wrap gap-2">
-                         <div className="relative w-full max-w-xs">
-                            <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                            placeholder="بحث شامل..."
-                            className="pr-8"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="gap-1 bg-orange-100 text-orange-600 border-orange-200 hover:bg-orange-200">
-                            <X className="h-4 w-4" />
-                            <span>مسح الفلتر</span>
-                            </Button>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="gap-1">
-                                    <ListOrdered className="h-4 w-4" />
-                                    <span>تخصيص الأعمدة</span>
+                        {selectedRows.length > 0 ? (
+                             <div className='flex items-center gap-2'>
+                                <span className='text-sm font-semibold text-muted-foreground'>{selectedRows.length} طلبات محددة</span>
+                                <Separator orientation="vertical" className="h-6 mx-1" />
+                                 <Button variant="outline" size="sm" onClick={() => setModalState({ type: 'assignDriver' })}><UserCheck className="ml-2 h-4 w-4" /> تعيين سائق</Button>
+                                <Button variant="outline" size="sm" onClick={() => setModalState({ type: 'changeStatus' })}><RefreshCw className="ml-2 h-4 w-4" /> تغيير الحالة</Button>
+                                <Button variant="outline" size="sm"><Printer className="ml-2 h-4 w-4" /> طباعة</Button>
+                                <Button variant="destructive" size="sm" onClick={() => setModalState({ type: 'delete' })}><Trash2 className="ml-2 h-4 w-4" /> حذف</Button>
+                                <Button variant="ghost" size="icon" onClick={() => setSelectedRows([])}><X className="h-4 w-4" /></Button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="relative w-full max-w-xs">
+                                    <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                    placeholder="بحث شامل..."
+                                    className="pr-8"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button variant="outline" size="sm" className="gap-1 bg-orange-100 text-orange-600 border-orange-200 hover:bg-orange-200">
+                                    <X className="h-4 w-4" />
+                                    <span>مسح الفلتر</span>
                                     </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-64 p-2">
-                                    <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
-                                        <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
-                                            {columns.map((column) => (
-                                                <SortableColumn
-                                                    key={column.key}
-                                                    id={column.key}
-                                                    label={column.label}
-                                                    isVisible={visibleColumnKeys.includes(column.key)}
-                                                    onToggle={handleColumnVisibilityChange}
-                                                />
-                                            ))}
-                                        </SortableContext>
-                                    </DndContext>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="gap-1">
-                                <FileDown /><span>تصدير</span>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem>تصدير كـ CSV</DropdownMenuItem>
-                                <DropdownMenuItem>تصدير كـ PDF</DropdownMenuItem>
-                            </DropdownMenuContent>
-                            </DropdownMenu>
-                            <Button variant="outline" size="sm"><Printer /></Button>
-                            <Button variant="outline" size="sm" onClick={handleRefresh}><RefreshCw className="h-4 w-4"/></Button>
-                        </div>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" size="sm" className="gap-1">
+                                            <ListOrdered className="h-4 w-4" />
+                                            <span>تخصيص الأعمدة</span>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-64 p-2">
+                                            <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
+                                                <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
+                                                    {columns.map((column) => (
+                                                        <SortableColumn
+                                                            key={column.key}
+                                                            id={column.key}
+                                                            label={column.label}
+                                                            isVisible={visibleColumnKeys.includes(column.key)}
+                                                            onToggle={handleColumnVisibilityChange}
+                                                        />
+                                                    ))}
+                                                </SortableContext>
+                                            </DndContext>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="gap-1">
+                                        <FileDown /><span>تصدير</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem>تصدير كـ CSV</DropdownMenuItem>
+                                        <DropdownMenuItem>تصدير كـ PDF</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <Button variant="outline" size="sm"><Printer /></Button>
+                                    <Button variant="outline" size="sm" onClick={handleRefresh}><RefreshCw className="h-4 w-4"/></Button>
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     {/* Table Container */}
@@ -529,7 +543,7 @@ export default function OrdersPageContent() {
                                   <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
                                     <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#DADDE0'}}>
                                       <div className="flex items-center justify-center gap-2">
-                                        <span className="text-xs font-mono text-slate-600">{page * rowsPerPage + index + 1}</span>
+                                        <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
                                         <Checkbox
                                             checked={selectedRows.includes(order.id)}
                                             onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
