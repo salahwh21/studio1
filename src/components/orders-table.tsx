@@ -78,6 +78,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 type OrderSource = Order['source'];
@@ -589,19 +590,21 @@ export function OrdersTable() {
                                         <DropdownMenuContent align="end" className="w-64 p-2">
                                             <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
                                             <DropdownMenuSeparator />
-                                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
-                                                <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
-                                                    {columns.map((column) => (
-                                                        <SortableColumn
-                                                            key={column.key}
-                                                            id={column.key}
-                                                            label={column.label}
-                                                            isVisible={visibleColumnKeys.includes(column.key)}
-                                                            onToggle={handleColumnVisibilityChange}
-                                                        />
-                                                    ))}
-                                                </SortableContext>
-                                            </DndContext>
+                                            <ScrollArea className="h-72">
+                                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
+                                                    <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
+                                                        {columns.map((column) => (
+                                                            <SortableColumn
+                                                                key={column.key}
+                                                                id={column.key}
+                                                                label={column.label}
+                                                                isVisible={visibleColumnKeys.includes(column.key)}
+                                                                onToggle={handleColumnVisibilityChange}
+                                                            />
+                                                        ))}
+                                                    </SortableContext>
+                                                </DndContext>
+                                            </ScrollArea>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                     <DropdownMenu>
