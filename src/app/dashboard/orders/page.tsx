@@ -160,10 +160,8 @@ const SortableColumn = ({ id, label, onToggle, isVisible }: { id: string; label:
             className="flex items-center gap-2 p-2 rounded-md hover:bg-muted"
         >
             <GripVertical {...attributes} {...listeners} className="h-5 w-5 cursor-grab text-muted-foreground" />
-            <div className="flex-1 flex items-center justify-between cursor-pointer" onClick={() => onToggle(id, !isVisible)}>
-                <span>{label}</span>
-                <Checkbox checked={isVisible} className="h-4 w-4" />
-            </div>
+            <Checkbox checked={isVisible} id={`col-${id}`} onCheckedChange={(checked) => onToggle(id, !!checked)} className="h-4 w-4" />
+            <Label htmlFor={`col-${id}`} className="flex-1 cursor-pointer">{label}</Label>
         </div>
     );
 };
@@ -529,7 +527,7 @@ export default function OrdersPageContent() {
                                 const SourceIcon = sourceIcons[order.source] || LinkIcon;
                                 return (
                                   <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
-                                    <TableCell className="sticky right-0 z-10 bg-background data-[state=selected]:bg-muted p-1 text-center border-l">
+                                    <TableCell className="sticky right-0 z-10 bg-background data-[state=selected]:bg-muted p-1 text-center border-l w-16">
                                       <Checkbox
                                         checked={selectedRows.includes(order.id)}
                                         onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
@@ -559,10 +557,10 @@ export default function OrdersPageContent() {
                             
                               {/* سطر المجاميع */}
                                <TableRow className="bg-muted/20 font-bold">
-                                    <TableCell className="sticky right-0 z-10 bg-muted/20 p-1 text-center border-l">
+                                    <TableCell className="sticky right-0 z-10 bg-muted/20 p-1 text-center border-l w-16">
                                        
                                     </TableCell>
-                                    <TableCell colSpan={visibleColumns.length > 1 ? 1 : 1} className="p-1 text-center border-l">
+                                    <TableCell className="p-1 text-center border-l">
                                          <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
                                             {displayLabel}
                                         </div>
@@ -571,7 +569,7 @@ export default function OrdersPageContent() {
                                         if (col.type === 'financial') {
                                             const totalValue = displayTotals[col.key as string] || 0;
                                             return (
-                                                <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l">
+                                                <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l bg-[#4A5568] text-white">
                                                     {totalValue.toFixed(2)}
                                                 </TableCell>
                                             );
@@ -630,4 +628,3 @@ export default function OrdersPageContent() {
         </>
     );
 }
-
