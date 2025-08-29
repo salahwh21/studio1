@@ -36,6 +36,7 @@ import {
   MapPin,
   MessageCircle,
   Check,
+  ArrowUpDown,
 } from 'lucide-react';
 import {
   DndContext,
@@ -80,24 +81,24 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 
 type OrderSource = Order['source'];
-type ColumnConfig = { key: keyof Order | 'id-link'; label: string; type?: 'default' | 'financial' };
+type ColumnConfig = { key: keyof Order | 'id-link'; label: string; type?: 'default' | 'financial'; sortable?: boolean };
 
 // Initial columns configuration
 const ALL_COLUMNS: ColumnConfig[] = [
     { key: 'id', label: 'رقم الطلب' },
-    { key: 'source', label: 'المصدر' },
+    { key: 'source', label: 'المصدر', sortable: true },
     { key: 'referenceNumber', label: 'الرقم المرجعي' },
     { key: 'recipient', label: 'المستلم' },
     { key: 'phone', label: 'الهاتف' },
-    { key: 'region', label: 'المنطقة' },
-    { key: 'city', label: 'المدينة' },
-    { key: 'merchant', label: 'المتجر' },
-    { key: 'status', label: 'الحالة' },
-    { key: 'driver', label: 'السائق' },
+    { key: 'region', label: 'المنطقة', sortable: true },
+    { key: 'city', label: 'المدينة', sortable: true },
+    { key: 'merchant', label: 'المتجر', sortable: true },
+    { key: 'status', label: 'الحالة', sortable: true },
+    { key: 'driver', label: 'السائق', sortable: true },
     { key: 'itemPrice', label: 'المستحق للتاجر', type: 'financial' },
     { key: 'deliveryFee', label: 'أجور التوصيل', type: 'financial' },
     { key: 'cod', label: 'قيمة التحصيل', type: 'financial' },
-    { key: 'date', label: 'التاريخ' },
+    { key: 'date', label: 'التاريخ', sortable: true },
 ];
 
 function useMediaQuery(query: string) {
@@ -146,6 +147,8 @@ type ModalState =
     | { type: 'assignDriver' }
     | { type: 'changeStatus' };
 
+type SortConfig = { key: keyof Order; direction: 'ascending' | 'descending' };
+
 const SortableColumn = ({ id, label, onToggle, isVisible }: { id: string; label: string; onToggle: (id: string, checked: boolean) => void; isVisible: boolean; }) => {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
     const style = { transform: CSS.Transform.toString(transform), transition };
@@ -154,11 +157,10 @@ const SortableColumn = ({ id, label, onToggle, isVisible }: { id: string; label:
         <div
             ref={setNodeRef}
             style={style}
-            className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-default"
-            onClick={() => onToggle(id, !isVisible)}
+            className="flex items-center gap-2 p-2 rounded-md hover:bg-muted"
         >
             <GripVertical {...attributes} {...listeners} className="h-5 w-5 cursor-grab text-muted-foreground" />
-            <div className="flex-1 flex items-center justify-between">
+            <div className="flex-1 flex items-center justify-between cursor-pointer" onClick={() => onToggle(id, !isVisible)}>
                 <span>{label}</span>
                 {isVisible && <Check className="h-4 w-4 text-primary" />}
             </div>
@@ -179,6 +181,7 @@ export default function OrdersPageContent() {
     const [searchQuery, setSearchQuery] = useState('');
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(15);
+    const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
     
     // State for column management
     const [columns, setColumns] = useState<ColumnConfig[]>(ALL_COLUMNS);
@@ -200,13 +203,40 @@ export default function OrdersPageContent() {
                 order.referenceNumber.toLowerCase().includes(searchLower);
         });
     }, [orders, searchQuery]);
+    
+    const sortedOrders = useMemo(() => {
+        let sortableItems = [...filteredOrders];
+        if (sortConfig !== null) {
+            sortableItems.sort((a, b) => {
+                const valA = a[sortConfig.key];
+                const valB = b[sortConfig.key];
+                
+                if (valA < valB) {
+                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                }
+                if (valA > valB) {
+                    return sortConfig.direction === 'ascending' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        return sortableItems;
+    }, [filteredOrders, sortConfig]);
 
     const paginatedOrders = useMemo(() => {
         const startIndex = page * rowsPerPage;
-        return filteredOrders.slice(startIndex, startIndex + rowsPerPage);
-    }, [filteredOrders, page, rowsPerPage]);
+        return sortedOrders.slice(startIndex, startIndex + rowsPerPage);
+    }, [sortedOrders, page, rowsPerPage]);
     
-    const totalPages = Math.ceil(filteredOrders.length / rowsPerPage);
+    const totalPages = Math.ceil(sortedOrders.length / rowsPerPage);
+
+    const handleSort = (key: keyof Order) => {
+        let direction: 'ascending' | 'descending' = 'ascending';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
 
     const handleSelectAll = (checked: boolean | 'indeterminate') => {
         setSelectedRows(checked === true ? paginatedOrders.map(o => o.id) : []);
@@ -380,7 +410,7 @@ export default function OrdersPageContent() {
                 </div>
                 <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
                     <span className="text-xs text-muted-foreground">
-                        عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
+                        عرض {paginatedOrders.length} من {sortedOrders.length} طلبات
                     </span>
                     <div className="flex items-center gap-1">
                         <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
@@ -468,7 +498,14 @@ export default function OrdersPageContent() {
                                 </TableHead>
                                 {visibleColumns.map((col) => (
                                 <TableHead key={col.key} className="text-white p-1 text-center whitespace-nowrap border-b border-l">
-                                    {col.label}
+                                    {col.sortable ? (
+                                        <Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-white/20 hover:text-white w-full p-0 h-auto">
+                                            {col.label}
+                                            <ArrowUpDown className="mr-2 h-3 w-3" />
+                                        </Button>
+                                    ) : (
+                                        col.label
+                                    )}
                                 </TableHead>
                                 ))}
                             </TableRow>
@@ -537,7 +574,7 @@ export default function OrdersPageContent() {
                     {/* Pagination Footer */}
                     <CardFooter className="flex-none flex items-center justify-between p-2 border-t">
                     <span className="text-xs text-muted-foreground">
-                        عرض {paginatedOrders.length} من {filteredOrders.length} طلبات
+                        عرض {paginatedOrders.length} من {sortedOrders.length} طلبات
                     </span>
                     <div className="flex items-center gap-1">
                         <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
