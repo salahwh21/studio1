@@ -612,8 +612,7 @@ export function OrdersTable() {
                                     <span className="text-sm font-bold">#</span>
                                     <Checkbox
                                         onCheckedChange={handleSelectAll}
-                                        checked={isAllSelected}
-                                        indeterminate={isIndeterminate}
+                                        checked={isAllSelected || isIndeterminate}
                                         aria-label="Select all rows"
                                     />
                                   </div>
@@ -632,9 +631,9 @@ export function OrdersTable() {
                                 ))}
                             </TableRow>
                             </TableHeader>
-
+                            
                             {groupBy ? (
-                                <Accordion type="multiple" asChild className='w-full'>
+                                <Accordion type="multiple" asChild>
                                     <TableBody>
                                     {Object.entries(groupedAndSortedOrders as GroupedOrders).map(([groupKey, groupOrders]) => {
                                         const groupTotals = visibleColumns.reduce((acc, col) => {
@@ -645,8 +644,7 @@ export function OrdersTable() {
                                         }, {} as Record<string, number>);
 
                                         return (
-                                        <AccordionItem value={groupKey} key={groupKey} asChild>
-                                            <>
+                                        <AccordionItem value={groupKey} key={groupKey}>
                                                 <TableRow className='bg-muted/70 hover:bg-muted/90 font-semibold'>
                                                     <TableCell colSpan={visibleColumns.length + 1} className="p-0">
                                                         <AccordionTrigger className="flex items-center justify-between w-full px-4 py-2 text-sm hover:no-underline">
@@ -665,11 +663,10 @@ export function OrdersTable() {
                                                     </TableCell>
                                                 </TableRow>
                                                 <AccordionContent asChild>
-                                                    <>
-                                                        {groupOrders.map((order, index) => renderOrderRow(order, index))}
-                                                    </>
+                                                  <React.Fragment>
+                                                    {groupOrders.map((order, index) => renderOrderRow(order, index))}
+                                                  </React.Fragment>
                                                 </AccordionContent>
-                                            </>
                                         </AccordionItem>
                                         )
                                     })}
@@ -727,16 +724,16 @@ export function OrdersTable() {
 
                     {/* Pagination Footer */}
                     {!groupBy && (
-                        <CardFooter className="flex-none flex items-center justify-between p-2 border-t bg-background">
-                            <span className="text-xs text-muted-foreground">
-                                عرض {Array.isArray(paginatedOrders) ? paginatedOrders.length : 0} من {sortedOrders.length} طلبات
-                            </span>
-                            <div className="flex items-center gap-1">
-                                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
-                                <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
-                                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>التالي</Button>
-                            </div>
-                        </CardFooter>
+                         <div className="flex-none flex items-center justify-between p-2 border-t">
+                             <span className="text-xs text-muted-foreground">
+                                 عرض {Array.isArray(paginatedOrders) ? paginatedOrders.length : 0} من {sortedOrders.length} طلبات
+                             </span>
+                             <div className="flex items-center gap-1">
+                                 <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
+                                 <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
+                                 <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>التالي</Button>
+                             </div>
+                         </div>
                     )}
                 </Card>
             </TooltipProvider>
@@ -771,6 +768,3 @@ export function OrdersTable() {
         </>
     );
 }
-
-
-    
