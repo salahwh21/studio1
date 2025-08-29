@@ -527,7 +527,7 @@ export default function OrdersPageContent() {
                                 const SourceIcon = sourceIcons[order.source] || LinkIcon;
                                 return (
                                   <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 border-b">
-                                    <TableCell className="sticky right-0 z-10 bg-background data-[state=selected]:bg-muted p-1 text-center border-l">
+                                    <TableCell className="sticky right-0 z-10 p-1 text-center border-l" style={{backgroundColor: '#A4AAB3'}}>
                                       <Checkbox
                                         checked={selectedRows.includes(order.id)}
                                         onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
@@ -558,10 +558,10 @@ export default function OrdersPageContent() {
                             
                               {/* سطر المجاميع */}
                                <TableRow className="bg-muted/20 font-bold">
-                                    <TableCell className="sticky right-0 z-10 bg-muted/20 p-1 text-center border-l">
+                                    <TableCell className="sticky right-0 z-10 bg-muted/20 p-1 text-center border-l" style={{backgroundColor: '#A4AAB3'}}>
                                        
                                     </TableCell>
-                                    <TableCell className="p-1 text-center border-l" colSpan={1}>
+                                    <TableCell className="p-1 text-center border-l">
                                          <div className={cn('p-2 rounded text-xs', selectedRows.length > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800')}>
                                             {displayLabel}
                                         </div>
@@ -629,5 +629,3 @@ export default function OrdersPageContent() {
         </>
     );
 }
-
-    
