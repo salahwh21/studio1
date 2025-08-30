@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -684,23 +683,24 @@ export function OrdersTable() {
                                                     onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
                                                     className="font-bold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border"
                                                 >
-                                                    <TableCell colSpan={visibleColumns.length + 1} className="p-0">
-                                                        <div className="flex items-center w-full">
-                                                            <div className="flex-none p-4 sticky right-0 z-10 bg-muted/50 border-l">
-                                                                <div className="flex items-center gap-4">
-                                                                    <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex-grow p-4 flex justify-between items-center">
-                                                                <span>{groupKey} ({groupOrders.length})</span>
-                                                                <div className='flex items-center gap-x-6 text-sm font-mono'>
-                                                                    <span>المستحق للتاجر: <span className='text-primary'>{groupTotals.itemPrice.toFixed(2)}</span></span>
-                                                                    <span>أجور التوصيل: <span className='text-primary'>{groupTotals.deliveryFee.toFixed(2)}</span></span>
-                                                                    <span>قيمة التحصيل: <span className='text-primary'>{groupTotals.cod.toFixed(2)}</span></span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                                    <TableCell className="sticky right-0 p-4 border-l bg-muted/50">
+                                                      <div className="flex items-center gap-2">
+                                                        <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
+                                                        <span>{groupKey} ({groupOrders.length})</span>
+                                                      </div>
                                                     </TableCell>
+                                                    {visibleColumns.map((col) => {
+                                                        const isFinancial = col.type === 'financial';
+                                                        let totalValue: number | undefined;
+                                                        if (isFinancial) {
+                                                            totalValue = groupOrders.reduce((sum, order) => sum + (order[col.key as keyof Order] as number), 0);
+                                                        }
+                                                        return (
+                                                          <TableCell key={col.key} className="p-5 text-center whitespace-nowrap border-l text-primary font-mono text-base">
+                                                            {isFinancial && totalValue !== undefined ? totalValue.toFixed(2) : ''}
+                                                          </TableCell>
+                                                        );
+                                                      })}
                                                 </TableRow>
                                                 {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
                                             </React.Fragment>
