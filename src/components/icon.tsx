@@ -64,11 +64,11 @@ const iconMapping: { [key in keyof typeof LucideIcons]?: { feather?: keyof typeo
   SlidersHorizontal: { feather: 'Sliders', hero: 'AdjustmentsHorizontalIcon' },
   Square: { feather: 'Square', hero: 'StopIcon' },
   Circle: { feather: 'Circle', hero: 'CheckCircleIcon' }, // Not a direct match
-  Paintbrush: { feather: 'Brush', hero: 'PaintBrushIcon' },
+  Paintbrush: { feather: 'PenTool', hero: 'PaintBrushIcon' },
   TextSelect: { feather: 'Type', hero: 'BarsArrowUpIcon' }, // Not a direct match
   Feather: { feather: 'Feather', hero: 'PencilIcon' },
   Star: { feather: 'Star', hero: 'StarIcon' },
-  HomeIcon: { feather: 'Home', hero: 'HomeIcon' }, // Added for ui-customization page
+  // HomeIcon is not a Lucide icon, special handling
 };
 
 
@@ -106,28 +106,40 @@ const Icon = ({ name, ...props }: IconProps) => {
 
   let IconComponent: React.ElementType | null = null;
   const lucideName = name as keyof typeof LucideIcons;
-  const featherName = iconMapping[lucideName]?.feather;
-  const heroName = iconMapping[lucideName]?.hero;
 
+  if (name === 'HomeIcon') { // Special case for HeroHomeIcon
+      if (library === 'heroicons') {
+          IconComponent = HeroIcons.HomeIcon;
+      } else if (library === 'feather') {
+          IconComponent = FeatherIcons.Home;
+      } else {
+          IconComponent = LucideIcons.Home;
+      }
+  } else {
+    const featherName = iconMapping[lucideName]?.feather;
+    const heroName = iconMapping[lucideName]?.hero;
 
-  switch (library) {
-    case 'feather':
-      IconComponent = featherName ? FeatherIcons[featherName] : LucideIcons[lucideName];
-      break;
-    case 'heroicons':
-      IconComponent = heroName ? HeroIcons[heroName] : LucideIcons[lucideName];
-      break;
-    case 'lucide':
-    default:
-      IconComponent = LucideIcons[lucideName];
-      break;
+    switch (library) {
+      case 'feather':
+        IconComponent = featherName ? FeatherIcons[featherName] : LucideIcons[lucideName];
+        break;
+      case 'heroicons':
+        IconComponent = heroName ? HeroIcons[heroName] : LucideIcons[lucideName];
+        break;
+      case 'lucide':
+      default:
+        IconComponent = LucideIcons[lucideName];
+        break;
+    }
   }
   
   if (!IconComponent) {
-    return null; // or a fallback icon
+    const FallbackIcon = LucideIcons[name as keyof typeof LucideIcons] || LucideIcons.HelpCircle;
+    return <FallbackIcon strokeWidth={strokeWidth} {...props} />;
   }
 
   return <IconComponent strokeWidth={strokeWidth} {...props} />;
 };
 
 export default Icon;
+
