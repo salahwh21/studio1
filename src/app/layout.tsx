@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from 'next-themes';
 
 import { LoginExperienceProvider } from '@/context/LoginExperienceContext';
+import { RegionalSettingsProvider } from '@/context/RegionalSettingsContext';
 
 import { 
   Tajawal,
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body>
         <LoginExperienceProvider>
+          <RegionalSettingsProvider>
             <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -43,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
             <Toaster />
             </ThemeProvider>
+          </RegionalSettingsProvider>
         </LoginExperienceProvider>
       </body>
     </html>

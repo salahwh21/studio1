@@ -17,7 +17,7 @@ const generalSettingsItems: {
   { href: '/dashboard/settings/login-experience', iconName: 'LogIn', title: 'تجربة تسجيل الدخول', description: 'تخصيص صفحة تسجيل الدخول للمستخدمين.' },
   { href: '/dashboard/settings/fonts-colors', iconName: 'Palette', title: 'الألوان والخطوط', description: 'تغيير الألوان والخطوط لتناسب هويتك.' },
   { href: '/dashboard/settings/ui-customization', iconName: 'Brush', title: 'تخصيص الواجهة', description: 'تعديل شكل الواجهة، كثافة العرض، ونمط الأيقونات.' },
-  { href: '#', iconName: 'Languages', title: 'الإعدادات الإقليمية', description: 'إدارة اللغة، العملة، والمنطقة الزمنية للنظام.' },
+  { href: '/dashboard/settings/regional', iconName: 'Languages', title: 'الإعدادات الإقليمية', description: 'إدارة اللغة، العملة، والمنطقة الزمنية للنظام.' },
   { href: '#', iconName: 'List', title: 'إدارة القوائم', description: 'التحكم في القوائم المتاحة لكل دور وظيفي.' },
   { href: '#', iconName: 'ReceiptText', title: 'إعدادات البوليصة', description: 'تخصيص محتوى وتصميم بوليصة الشحن.' },
   { href: '#', iconName: 'Package', title: 'إعدادات الطلبات', description: 'التحكم في دورة حياة الطلبات والأرشفة.' },
