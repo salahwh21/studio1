@@ -2,19 +2,43 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, Brush, Component, Droplets, SlidersHorizontal, Square, Circle, Paintbrush, TextSelect } from 'lucide-react';
+import { ArrowLeft, Brush, Component, Droplets, SlidersHorizontal, Square, Circle, Paintbrush, TextSelect, Save, Feather, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
+import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 
+// A placeholder for FontAwesome icon if it were to be used
+const FontAwesomeIcon = ({className}: {className?: string}) => <Star className={className} />;
+
+
 export default function InterfaceCustomizationPage() {
+  const { toast } = useToast();
   const [density, setDensity] = useState('comfortable');
   const [borderRadius, setBorderRadius] = useState('0.5');
-  const [cardStyle, setCardStyle] = useState('shadow');
   const [iconStrokeWidth, setIconStrokeWidth] = useState(2);
+  const [iconLibrary, setIconLibrary] = useState('lucide');
+
+
+  const handleSaveChanges = () => {
+    toast({
+      title: 'تم حفظ الإعدادات!',
+      description: 'تم حفظ تفضيلات الواجهة بنجاح.',
+    });
+  };
+
+  const getIconExample = (library: string) => {
+    switch(library) {
+      case 'feather': return <Feather style={{strokeWidth: iconStrokeWidth}}/>;
+      case 'fontawesome': return <FontAwesomeIcon style={{strokeWidth: iconStrokeWidth}}/>;
+      case 'lucide':
+      default:
+        return <Brush style={{strokeWidth: iconStrokeWidth}}/>;
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -36,7 +60,7 @@ export default function InterfaceCustomizationPage() {
         </CardHeader>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
@@ -44,7 +68,7 @@ export default function InterfaceCustomizationPage() {
               <CardDescription>اختر بين عرض مريح أو مضغوط لعرض المزيد من البيانات.</CardDescription>
             </CardHeader>
             <CardContent>
-              <RadioGroup value={density} onValueChange={setDensity} className="flex gap-4">
+              <RadioGroup value={density} onValueChange={setDensity} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Label className="flex-1 cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[&_div[data-state=checked]]:border-primary">
                   <RadioGroupItem value="comfortable" id="r1" className="sr-only" />
                   <span className="text-2xl mb-2 block">📄</span>
@@ -60,13 +84,33 @@ export default function InterfaceCustomizationPage() {
               </RadioGroup>
             </CardContent>
           </Card>
-
+          
            <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg"><Paintbrush /> نمط الأيقونات</CardTitle>
               <CardDescription>تحكم في مظهر الأيقونات في جميع أنحاء النظام.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+                <div>
+                    <Label>مكتبة الأيقونات</Label>
+                    <RadioGroup value={iconLibrary} onValueChange={setIconLibrary} className="grid grid-cols-3 gap-4 mt-2">
+                        <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[&_div[data-state=checked]]:border-primary">
+                            <RadioGroupItem value="lucide" id="il1" className="sr-only" />
+                            <Brush className="h-8 w-8 mb-2"/>
+                            <span className="font-medium text-sm">Lucide</span>
+                        </Label>
+                        <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[&_div[data-state=checked]]:border-primary">
+                            <RadioGroupItem value="feather" id="il2" className="sr-only" />
+                            <Feather className="h-8 w-8 mb-2"/>
+                            <span className="font-medium text-sm">Feather</span>
+                        </Label>
+                        <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[&_div[data-state=checked]]:border-primary disabled:opacity-50 disabled:cursor-not-allowed">
+                            <RadioGroupItem value="fontawesome" id="il3" className="sr-only" disabled/>
+                            <FontAwesomeIcon className="h-8 w-8 mb-2"/>
+                            <span className="font-medium text-sm">Font Awesome</span>
+                        </Label>
+                    </RadioGroup>
+                </div>
                 <div>
                     <Label htmlFor="icon-stroke">سماكة خط الأيقونة: {iconStrokeWidth.toFixed(1)}px</Label>
                     <div className="flex items-center gap-4 pt-2">
@@ -130,7 +174,7 @@ export default function InterfaceCustomizationPage() {
                         } as React.CSSProperties}
                     >
                          <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-                            <Brush style={{strokeWidth: iconStrokeWidth}}/>
+                            {getIconExample(iconLibrary)}
                             <span>عنوان البطاقة</span>
                         </h3>
                         <p className="text-sm text-muted-foreground">هذا مثال لعرض النص داخل البطاقة مع الإعدادات المطبقة.</p>
@@ -143,6 +187,11 @@ export default function InterfaceCustomizationPage() {
             </Card>
         </div>
       </div>
+       <div className="flex justify-start pt-6 mt-6 border-t">
+          <Button size="lg" onClick={handleSaveChanges}>
+            <Save className="ml-2 h-4 w-4" /> حفظ التغييرات
+          </Button>
+        </div>
     </div>
   );
 }
