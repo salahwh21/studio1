@@ -413,27 +413,6 @@ export function OrdersTable() {
             </TableRow>
         )
     }
-    
-    const FooterRow = () => (
-         <TableRow className="font-bold bg-muted hover:bg-muted/80">
-             <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-inherit">
-                 <div className='p-2 rounded text-xs bg-slate-600 text-white'>
-                    {displayLabel} ({displayCount})
-                </div>
-            </TableCell>
-            {visibleColumns.map(col => {
-                 if (col.type === 'financial') {
-                    const totalValue = displayTotals[col.key as string] || 0;
-                    return (
-                        <TableCell key={col.key} className="p-1 text-center whitespace-nowrap border-l text-foreground">
-                            {totalValue.toFixed(2)}
-                        </TableCell>
-                    );
-                }
-                return <TableCell key={col.key} className="p-1 border-l"></TableCell>;
-            })}
-        </TableRow>
-    );
 
     if (!isClient) {
         return <Skeleton className="w-full h-screen" />;
@@ -685,24 +664,35 @@ export function OrdersTable() {
                                     paginatedOrders.map((order, index) => renderOrderRow(order, index))
                                 ) : null}
                             </TableBody>
-                             <TableFooter className="sticky bottom-0 bg-muted">
-                                {(!groupBy || (groupBy && Object.keys(groupedAndSortedOrders).length > 0)) && <FooterRow />}
-                             </TableFooter>
                          </Table>
                     </div>
 
-                    {/* Pagination Footer */}
+                    {/* Pagination and Totals Footer */}
                     {!groupBy && (
-                         <div className="flex-none flex items-center justify-between p-2 border-t">
-                             <span className="text-xs text-muted-foreground">
-                                 عرض {Array.isArray(paginatedOrders) ? paginatedOrders.length : 0} من {sortedOrders.length} طلبات
-                             </span>
-                             <div className="flex items-center gap-1">
-                                 <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
-                                 <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
-                                 <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>التالي</Button>
-                             </div>
-                         </div>
+                        <div className="flex-none flex items-center justify-between p-2 border-t">
+                            <div className="flex items-center gap-4 text-xs font-medium">
+                                <div className='p-2 rounded text-xs bg-slate-600 text-white'>
+                                    {displayLabel} ({displayCount})
+                                </div>
+                                {visibleColumns.map(col => {
+                                    if (col.type === 'financial') {
+                                        const totalValue = displayTotals[col.key as string] || 0;
+                                        return (
+                                            <div key={col.key} className="flex items-center gap-1">
+                                                <span className="text-muted-foreground">{col.label}:</span>
+                                                <span className="font-bold text-primary">{totalValue.toFixed(2)}</span>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })}
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
+                                <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
+                                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>التالي</Button>
+                            </div>
+                        </div>
                     )}
                 </Card>
             </TooltipProvider>
