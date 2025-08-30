@@ -421,7 +421,7 @@ export function OrdersTable() {
     const renderOrderRow = (order: Order, index: number) => {
         return (
             <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50">
-                <TableCell className="sticky right-0 z-10 p-4 text-center border-l bg-card dark:bg-muted data-[state=selected]:bg-primary/20">
+                <TableCell className="sticky right-0 z-10 p-4 text-center border-l bg-card dark:bg-slate-900 data-[state=selected]:bg-primary/20">
                     <div className="flex items-center justify-center gap-2">
                         <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
                         <Checkbox
@@ -453,7 +453,7 @@ export function OrdersTable() {
                         default:
                             content = value as React.ReactNode;
                     }
-                    return <TableCell key={col.key} className="p-4 text-center whitespace-nowrap border-l text-base">{content}</TableCell>
+                    return <TableCell key={col.key} className="p-5 text-center whitespace-nowrap border-l text-base">{content}</TableCell>
                 })}
             </TableRow>
         )
@@ -657,9 +657,9 @@ export function OrdersTable() {
                     {/* Table Container */}
                      <div className="flex-1 border rounded-lg overflow-auto flex flex-col">
                         <Table>
-                            <TableHeader className="sticky top-0 z-20 bg-muted hover:bg-muted">
-                                <TableRow>
-                                    <TableHead className="sticky right-0 z-30 p-4 text-center border-b border-l w-24 bg-muted">
+                            <TableHeader className="sticky top-0 z-20">
+                                <TableRow className="hover:bg-transparent">
+                                    <TableHead className="sticky right-0 z-30 p-4 text-center border-b border-l w-24 bg-slate-800 text-white">
                                       <div className="flex items-center justify-center gap-2">
                                         <span className="text-sm font-bold">#</span>
                                         <Checkbox
@@ -667,13 +667,14 @@ export function OrdersTable() {
                                             checked={isAllSelected}
                                             indeterminate={isIndeterminate}
                                             aria-label="Select all rows"
+                                            className='border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-800 data-[state=indeterminate]:bg-white data-[state=indeterminate]:text-slate-800'
                                         />
                                       </div>
                                     </TableHead>
                                     {visibleColumns.map((col) => (
-                                    <TableHead key={col.key} className="p-4 text-center whitespace-nowrap border-b border-l bg-muted hover:bg-primary/10 transition-colors duration-200">
+                                    <TableHead key={col.key} className="p-5 text-center whitespace-nowrap border-b border-l bg-slate-800 text-white hover:bg-slate-700 transition-colors duration-200">
                                         {col.sortable ? (
-                                            <Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-foreground hover:bg-transparent hover:text-foreground w-full p-0 h-auto">
+                                            <Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-transparent hover:text-white w-full p-0 h-auto">
                                                 {col.label}
                                                 <ArrowUpDown className="mr-2 h-3 w-3" />
                                             </Button>
@@ -787,5 +788,3 @@ export function OrdersTable() {
         </>
     );
 }
-
-    
