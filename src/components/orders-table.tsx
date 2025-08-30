@@ -54,6 +54,7 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
@@ -82,7 +83,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 type OrderSource = Order['source'];
-type ColumnConfig = { key: keyof Order | 'id-link'; label: string; type?: 'default' | 'financial'; sortable?: boolean };
+type ColumnConfig = { key: keyof Order | 'id-link' | 'notes'; label: string; type?: 'default' | 'financial'; sortable?: boolean };
 type GroupByOption = keyof Order | null;
 
 // Initial columns configuration
@@ -92,6 +93,7 @@ const ALL_COLUMNS: ColumnConfig[] = [
     { key: 'referenceNumber', label: 'الرقم المرجعي' },
     { key: 'recipient', label: 'المستلم' },
     { key: 'phone', label: 'الهاتف' },
+    { key: 'address', label: 'العنوان' },
     { key: 'region', label: 'المنطقة', sortable: true },
     { key: 'city', label: 'المدينة', sortable: true },
     { key: 'merchant', label: 'المتجر', sortable: true },
@@ -101,6 +103,7 @@ const ALL_COLUMNS: ColumnConfig[] = [
     { key: 'deliveryFee', label: 'أجور التوصيل', type: 'financial' },
     { key: 'cod', label: 'قيمة التحصيل', type: 'financial' },
     { key: 'date', label: 'التاريخ', sortable: true },
+    { key: 'notes', label: 'ملاحظات' },
 ];
 
 const GROUP_BY_OPTIONS: { value: GroupByOption; label: string }[] = [
@@ -570,11 +573,16 @@ export function OrdersTable() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="w-64 p-2">
                                             <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
+                                            <div className='flex items-center gap-2 p-1'>
+                                                <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(ALL_COLUMNS.map(c => c.key))}>إظهار الكل</Button>
+                                                <Separator orientation="vertical" className="h-4" />
+                                                <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(['id', 'recipient', 'status'])}>إخفاء الكل</Button>
+                                            </div>
                                             <DropdownMenuSeparator />
                                             <ScrollArea className="max-h-72">
                                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
-                                                    <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
-                                                        {columns.map((column) => (
+                                                    <SortableContext items={ALL_COLUMNS.map(c => c.key)} strategy={verticalListSortingStrategy}>
+                                                        {ALL_COLUMNS.map((column) => (
                                                             <SortableColumn
                                                                 key={column.key}
                                                                 id={column.key}
@@ -648,27 +656,32 @@ export function OrdersTable() {
                                                     onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
                                                     className="font-bold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border"
                                                 >
-                                                    <TableCell className="sticky right-0 p-4 border-l bg-muted/50 data-[state=selected]:bg-primary/20">
-                                                      <div className="flex items-center gap-2">
-                                                        <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
-                                                        <span>{groupKey} ({groupOrders.length})</span>
-                                                      </div>
+                                                    <TableCell colSpan={visibleColumns.length + 1} className="p-4">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="flex items-center gap-2">
+                                                                <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
+                                                                <span>{groupKey} ({groupOrders.length})</span>
+                                                            </div>
+                                                            <div className='flex items-center gap-x-6 text-sm font-mono'>
+                                                                {visibleColumns.filter(c => c.type === 'financial').map(col => {
+                                                                    const ordersToSum = selectedRows.length > 0
+                                                                        ? groupOrders.filter(order => selectedRows.includes(order.id))
+                                                                        : groupOrders;
+                                                                    
+                                                                    if (ordersToSum.length === 0) return null;
+
+                                                                    const totalValue = ordersToSum.reduce((sum, order) => sum + (order[col.key as keyof Order] as number), 0);
+                                                                    
+                                                                    return (
+                                                                        <div key={col.key} className="flex items-center gap-1">
+                                                                            <span className="text-muted-foreground">{col.label}:</span>
+                                                                            <span className="text-primary">{totalValue.toFixed(2)}</span>
+                                                                        </div>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                        </div>
                                                     </TableCell>
-                                                    {visibleColumns.map((col) => {
-                                                        const isFinancial = col.type === 'financial';
-                                                        let totalValue: number | undefined;
-                                                        if (isFinancial) {
-                                                            const ordersToSum = selectedRows.length > 0 
-                                                                ? groupOrders.filter(order => selectedRows.includes(order.id))
-                                                                : groupOrders;
-                                                            totalValue = ordersToSum.reduce((sum, order) => sum + (order[col.key as keyof Order] as number), 0);
-                                                        }
-                                                        return (
-                                                          <TableCell key={col.key} className="p-5 text-center whitespace-nowrap border-l text-primary font-mono text-base">
-                                                            {isFinancial && totalValue !== undefined ? totalValue.toFixed(2) : ''}
-                                                          </TableCell>
-                                                        );
-                                                      })}
                                                 </TableRow>
                                                 {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
                                             </React.Fragment>
@@ -744,3 +757,5 @@ export function OrdersTable() {
         </>
     );
 }
+
+    
