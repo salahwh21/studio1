@@ -22,9 +22,9 @@ import { updateThemeAction } from '@/app/actions/update-theme';
 export default function FontsColorsPage() {
   const { toast } = useToast();
   
-  const [primaryColor, setPrimaryColor] = useState('#ff9f00'); // Orange from image
-  const [backgroundColor, setBackgroundColor] = useState('#ffffff');
-  const [accentColor, setAccentColor] = useState('#ff9f00'); 
+  const [primaryColor, setPrimaryColor] = useState('#29ABE2');
+  const [backgroundColor, setBackgroundColor] = useState('#E5F5FB');
+  const [accentColor, setAccentColor] = useState('#F2994A'); 
 
   const [fontFamily, setFontFamily] = useState('Tajawal');
   const [baseFontSize, setBaseFontSize] = useState(14);
@@ -97,11 +97,23 @@ export default function FontsColorsPage() {
             <CardHeader>
               <CardTitle>1. اختر اللون الأساسي</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="primaryColor">اللون الأساسي</Label>
                  <div className="relative">
                   <Input id="primaryColor" type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-full h-12 p-1 cursor-pointer"/>
+                </div>
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="backgroundColor">لون الخلفية</Label>
+                 <div className="relative">
+                  <Input id="backgroundColor" type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} className="w-full h-12 p-1 cursor-pointer"/>
+                </div>
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="accentColor">اللون الثانوي</Label>
+                 <div className="relative">
+                  <Input id="accentColor" type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="w-full h-12 p-1 cursor-pointer"/>
                 </div>
               </div>
             </CardContent>
@@ -119,28 +131,8 @@ export default function FontsColorsPage() {
                     <SelectValue placeholder="اختر خطًا" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Cairo">Cairo</SelectItem>
-                    <SelectItem value="Tajawal">Tajawal</SelectItem>
-                    <SelectItem value="Almarai">Almarai</SelectItem>
-                    <SelectItem value="Lalezar">Lalezar</SelectItem>
-                    <SelectItem value="Markazi_Text">Markazi Text</SelectItem>
-                    <SelectItem value="Changa">Changa</SelectItem>
-                    <SelectItem value="Lemonada">Lemonada</SelectItem>
-                    <SelectItem value="El_Messiri">El Messiri</SelectItem>
-                    <SelectItem value="Scheherazade_New">Scheherazade New</SelectItem>
-                    <SelectItem value="Mada">Mada</SelectItem>
-                    <SelectItem value="Reem_Kufi">Reem Kufi</SelectItem>
-                    <SelectItem value="IBM_Plex_Sans_Arabic">IBM Plex Sans Arabic</SelectItem>
-                    <SelectItem value="Noto_Sans_Arabic">Noto Sans Arabic</SelectItem>
-                    <SelectItem value="Noto_Kufi_Arabic">Noto Kufi Arabic</SelectItem>
-                    <SelectItem value="Amiri">Amiri</SelectItem>
-                    <SelectItem value="Lateef">Lateef</SelectItem>
-                    <SelectItem value="Kufam">Kufam</SelectItem>
-                    <SelectItem value="Harmattan">Harmattan</SelectItem>
-                    <SelectItem value="Aref_Ruqaa">Aref Ruqaa</SelectItem>
-                    <SelectItem value="Vazirmatn">Vazirmatn</SelectItem>
-                    {/* Non-arabic */}
-                    <SelectItem value="Inter">Inter</SelectItem>
+                    <SelectItem value="Tajawal">Tajawal (العربية)</SelectItem>
+                    <SelectItem value="Inter">Inter (English)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
