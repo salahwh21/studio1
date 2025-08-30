@@ -69,7 +69,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -271,7 +271,7 @@ export function OrdersTable() {
         const financialKeys = visibleColumns
             .filter(c => c.type === 'financial')
             .map(c => c.key as keyof Order);
-
+        
         const calculateTotalsForList = (orderList: Order[]) => {
             return orderList.reduce((acc, order) => {
                 financialKeys.forEach(key => {
@@ -282,14 +282,17 @@ export function OrdersTable() {
         };
     
         const result: { [key: string]: Record<string, number> } = {};
+        const selectedIdsSet = new Set(selectedRows);
+
         for (const groupKey in groupedAndSortedOrders) {
             const groupOrders = groupedAndSortedOrders[groupKey];
-            const selectedInGroup = groupOrders.filter(o => selectedRows.includes(o.id));
+            const selectedInGroup = groupOrders.filter(o => selectedIdsSet.has(o.id));
             
             const listForCalculation = selectedInGroup.length > 0 ? selectedInGroup : groupOrders;
             result[groupKey] = calculateTotalsForList(listForCalculation);
         }
         return result;
+
     }, [groupedAndSortedOrders, groupBy, selectedRows, visibleColumns]);
 
 
