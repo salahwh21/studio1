@@ -19,6 +19,7 @@ import { AppHeader } from '@/components/header';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from './ui/button';
+import { useEffect, useState } from 'react';
 
 
 type NavItem = {
@@ -55,6 +56,12 @@ const mobileMoreItems: NavItem[] = [
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
 
     const isActive = (href: string) => {
         if (href === '/dashboard') return pathname === href;
@@ -66,7 +73,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <>
       <div className="flex min-h-screen w-full flex-col bg-muted/40">
         <AppHeader navItems={navItems} bottomNavItems={[]} />
-        <main className="flex flex-1 flex-col gap-4 bg-background p-4 sm:p-6 md:p-8 mb-16 md:mb-0">
+        <main 
+            className={cn(
+                "flex flex-1 flex-col gap-4 bg-background p-4 mb-16",
+                isClient && "sm:p-6 md:p-8 md:mb-0"
+            )}
+        >
             {children}
         </main>
       </div>
