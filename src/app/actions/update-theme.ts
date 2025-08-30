@@ -75,6 +75,7 @@ export async function updateThemeAction(formData: FormData) {
     if (primaryHsl) {
       cssContent = cssContent.replace(/--primary:\s*[\d\s%]+;/g, `--primary: ${primaryHsl};`);
       cssContent = cssContent.replace(/--ring:\s*[\d\s%]+;/g, `--ring: ${primaryHsl};`);
+      cssContent = cssContent.replace(/--chart-1:\s*[\d\s%]+;/g, `--chart-1: ${primaryHsl};`);
     }
     if (backgroundHsl) {
       cssContent = cssContent.replace(/--background:\s*[\d\s%]+;/g, `--background: ${backgroundHsl};`);
@@ -86,65 +87,18 @@ export async function updateThemeAction(formData: FormData) {
       // Use a more robust regex to find the font-size in the body
       cssContent = cssContent.replace(/(body\s*{[^}]*font-size:\s*)[^;]+(;[^}]*})/s, `$1${fontSize}px$2`);
     }
-    
-    await fs.writeFile(cssFilePath, cssContent, 'utf-8');
 
-    // Update tailwind.config.ts and layout.tsx for font family
     if (fontFamily) {
         const fontVarName = `--font-${fontFamily.toLowerCase().replace(/ /g, '-')}`;
-
-        // 1. Update tailwind.config.ts
-        const tailwindConfigPath = path.join(process.cwd(), 'tailwind.config.ts');
-        let tailwindConfigContent = await fs.readFile(tailwindConfigPath, 'utf-8');
-        
-        // This regex is more robust to handle different formatting
-        tailwindConfigContent = tailwindConfigContent.replace(
-            /fontFamily:\s*{[^}]*sans:\s*\[([^\]]+)\]/s,
-            `fontFamily: {\n        sans: ["var(${fontVarName})", "sans-serif"]`
+        // This regex will replace the font-family in the body tag.
+        // It's designed to be robust against different formatting.
+        cssContent = cssContent.replace(
+            /(body\s*{[^}]*font-family:\s*)[^;]+(;[^}]*})/s,
+            `$1var(${fontVarName}), sans-serif$2`
         );
-        await fs.writeFile(tailwindConfigPath, tailwindConfigContent, 'utf-8');
-
-
-        // 2. Update layout.tsx
-        const layoutFilePath = path.join(process.cwd(), 'src', 'app', 'layout.tsx');
-        let layoutContent = await fs.readFile(layoutFilePath, 'utf-8');
-
-        const fontImportName = fontFamily.replace(/ /g, '_');
-        const fontConstName = `${fontFamily.toLowerCase().replace(/ /g, '_')}`;
-
-        // Replace the existing font import
-        layoutContent = layoutContent.replace(
-            /import\s*{[^}]+}\s*from 'next\/font\/google';/,
-            `import { ${fontImportName} } from 'next/font/google';`
-        );
-        
-        // Replace the existing font const declaration
-        layoutContent = layoutContent.replace(
-            /const\s+\w+\s*=\s*\w+\({[^)]+\({[^)]+\)}\);/gs,
-            `const ${fontConstName} = ${fontImportName}({ 
-  subsets: ['latin', 'arabic'], 
-  weight: ['400', '700'],
-  variable: '${fontVarName}' 
-});`
-        );
-         layoutContent = layoutContent.replace(
-            /const\s+\w+\s*=\s*\w+\({[^}]+}\);/gs, // Fallback for old structure
-            `const ${fontConstName} = ${fontImportName}({ 
-  subsets: ['latin', 'arabic'], 
-  weight: ['400', '700'],
-  variable: '${fontVarName}' 
-});`
-        );
-
-
-        // Replace the font variable in the body/html className
-        layoutContent = layoutContent.replace(
-            /\${[^}]+.variable}/,
-            `\${${fontConstName}.variable}`
-        );
-
-        await fs.writeFile(layoutFilePath, layoutContent, 'utf-8');
     }
+    
+    await fs.writeFile(cssFilePath, cssContent, 'utf-8');
     
     return { success: true };
   } catch (error) {

@@ -34,9 +34,11 @@ export default function FontsColorsPage() {
     '--preview-primary': primaryColor,
     '--preview-background': backgroundColor,
     '--preview-accent': accentColor,
-    '--preview-font-family': `${fontFamily.replace(/_/g, ' ')}, sans-serif`,
     '--preview-font-size': `${baseFontSize}px`,
-  } as React.CSSProperties), [primaryColor, backgroundColor, accentColor, fontFamily, baseFontSize]);
+  } as React.CSSProperties), [primaryColor, backgroundColor, accentColor, baseFontSize]);
+  
+  const fontVarName = `var(--font-${fontFamily.toLowerCase().replace(/ /g, '-')})`;
+
 
   const handleSaveChanges = async () => {
     setIsSaving(true);
@@ -159,8 +161,8 @@ export default function FontsColorsPage() {
             <CardTitle>معاينة حية</CardTitle>
           </CardHeader>
           <CardContent 
-            style={previewStyle} 
-            className="space-y-6 rounded-lg bg-[var(--preview-background)] p-6 font-[var(--preview-font-family)] text-[var(--preview-font-size)] text-gray-800 transition-colors duration-300"
+            style={{ ...previewStyle, fontFamily: fontVarName }} 
+            className="space-y-6 rounded-lg bg-[var(--preview-background)] text-[var(--preview-font-size)] text-gray-800 transition-colors duration-300"
           >
             <h4 className="text-xl font-bold" style={{ color: 'var(--preview-primary)', fontSize: `${baseFontSize * 1.5}px` }}>هذا عنوان رئيسي H4</h4>
             <h6 className="text-lg" style={{ fontSize: `${baseFontSize * 1.1}px` }}>وهذا عنوان فرعي H6</h6>
