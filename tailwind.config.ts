@@ -11,7 +11,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-changa)", "sans-serif"],
+        sans: ["var(--font-tajawal)", "sans-serif"],
       },
       colors: {
         background: 'hsl(var(--background))',

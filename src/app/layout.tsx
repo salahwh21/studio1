@@ -6,12 +6,16 @@ import { ThemeProvider } from 'next-themes';
 
 import { LoginExperienceProvider } from '@/context/LoginExperienceContext';
 
-import { Changa } from 'next/font/google';
-const changa = Changa({ 
+import { Tajawal } from 'next/font/google';
+const tajawal = Tajawal({ 
   subsets: ['latin', 'arabic'], 
   weight: ['400', '700'],
-  variable: '--font-changa' 
+  variable: '--font-tajawal' 
 });
+
+
+
+
 
 
 
@@ -30,7 +34,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning className={`${changa.variable} font-sans antialiased`>
+    <html lang="ar" dir="rtl" suppressHydrationWarning className={`${tajawal.variable} font-sans antialiased`>
       <head>
         {/* Leaflet CSS */}
         <link
