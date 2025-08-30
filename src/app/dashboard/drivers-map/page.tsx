@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { ArrowLeft, Bell, HelpCircle, Search, Wifi, WifiOff } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import Icon from '@/components/icon';
 
 const DriversMap = dynamic(() => import('@/components/drivers-map'), {
   ssr: false,
@@ -50,7 +51,7 @@ export default function DriversMapPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Button variant="outline" size="icon">
-                <ArrowLeft className="h-4 w-4" />
+                <Icon name="ArrowLeft" className="h-4 w-4" />
               </Button>
               <h2 className="text-lg font-bold">خريطة السائقين</h2>
             </div>
@@ -66,7 +67,7 @@ export default function DriversMapPage() {
               ))}
             </div>
             <Button variant="secondary" className="bg-orange-100 text-orange-600 border-orange-300 hover:bg-orange-200">
-              <Bell className="h-4 w-4 ml-2" />
+              <Icon name="Bell" className="h-4 w-4 ml-2" />
               <span>(0) طلب تفعيل التتبع</span>
             </Button>
           </div>
@@ -80,7 +81,7 @@ export default function DriversMapPage() {
           <div className="p-4">
             <h3 className="text-base font-semibold">قائمة السائقين</h3>
              <div className="relative mt-2">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="بحث..." className="pr-10" />
             </div>
           </div>

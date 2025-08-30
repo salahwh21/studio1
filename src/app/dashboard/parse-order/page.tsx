@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { Bot, Image as ImageIcon, Loader2, Clipboard, FileText, Trash2, Send, Wand2 } from 'lucide-react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import Icon from '@/components/icon';
 
 type OrderReviewItem = ParseOrderDetailsOutput & { id: number };
 
@@ -139,7 +139,7 @@ export default function AIOrderParsingPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Wand2 /> إدخال الطلب
+                  <Icon name="Wand2" /> إدخال الطلب
                 </CardTitle>
                 <CardDescription>
                   الصق نص الطلب من واتساب أو أي مصدر آخر، أو قم بتحميل صورة. سيقوم الذكاء الاصطناعي بالباقي.
@@ -169,18 +169,18 @@ export default function AIOrderParsingPage() {
                                 const fileInput = document.getElementById('image-upload') as HTMLInputElement;
                                 if(fileInput) fileInput.value = '';
                              }}>
-                                <Trash2 className="h-4 w-4"/>
+                                <Icon name="Trash2" className="h-4 w-4"/>
                              </Button>
                         </div>
                     )}
                   </div>
                   <div className="flex gap-2">
                     <Button type="button" variant="outline" size="sm" onClick={handlePasteFromClipboard} className="gap-2">
-                        <Clipboard className="h-4 w-4" /> لصق
+                        <Icon name="Clipboard" className="h-4 w-4" /> لصق
                     </Button>
                      <Button type="button" variant="outline" size="sm" asChild className="gap-2">
                         <Label htmlFor="image-upload" className="cursor-pointer">
-                            <ImageIcon className="h-4 w-4" /> تحميل صورة
+                            <Icon name="Image" className="h-4 w-4" /> تحميل صورة
                             <input id="image-upload" type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
                         </Label>
                     </Button>
@@ -190,12 +190,12 @@ export default function AIOrderParsingPage() {
                 <Button type="submit" disabled={isPending || (!requestText && !imageDataUri)}>
                   {isPending ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Icon name="Loader2" className="mr-2 h-4 w-4 animate-spin" />
                       جاري التحليل...
                     </>
                   ) : (
                     <>
-                      <Bot className="mr-2 h-4 w-4" />
+                      <Icon name="Bot" className="mr-2 h-4 w-4" />
                       تحليل وإضافة للمراجعة
                     </>
                   )}
@@ -207,7 +207,7 @@ export default function AIOrderParsingPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><FileText/> طلبات قيد المراجعة</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Icon name="FileText"/> طلبات قيد المراجعة</CardTitle>
           <CardDescription>
             تحقق من الطلبات التي تم تحليلها. يمكنك تعديلها أو حذفها قبل تأكيدها بشكل نهائي.
           </CardDescription>
@@ -215,13 +215,13 @@ export default function AIOrderParsingPage() {
         <CardContent className="space-y-4">
            {isPending && reviewList.length === 0 && (
              <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground min-h-[300px]">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <Icon name="Loader2" className="h-8 w-8 animate-spin text-primary" />
                 <p>يقوم الذكاء الاصطناعي بمعالجة أول طلب...</p>
              </div>
           )}
           {!isPending && reviewList.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground min-h-[300px]">
-                <Bot className="h-8 w-8" />
+                <Icon name="Bot" className="h-8 w-8" />
                 <p>في انتظار إضافة طلبات للمراجعة.</p>
              </div>
           )}
@@ -250,7 +250,7 @@ export default function AIOrderParsingPage() {
                                 </TableCell>
                                 <TableCell className="text-center whitespace-nowrap">
                                     <Button variant="ghost" size="icon" onClick={() => setReviewList(prev => prev.filter(o => o.id !== order.id))}>
-                                        <Trash2 className="h-4 w-4 text-destructive"/>
+                                        <Icon name="Trash2" className="h-4 w-4 text-destructive"/>
                                     </Button>
                                 </TableCell>
                            </TableRow>
@@ -262,7 +262,7 @@ export default function AIOrderParsingPage() {
         </CardContent>
         <CardFooter className="flex justify-end">
             <Button disabled={reviewList.length === 0 || isPending} onClick={handleConfirmOrders}>
-                <Send className="mr-2 h-4 w-4"/> تأكيد كل الطلبات 
+                <Icon name="Send" className="mr-2 h-4 w-4"/> تأكيد كل الطلبات 
             </Button>
         </CardFooter>
       </Card>

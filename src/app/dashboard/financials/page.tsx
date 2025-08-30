@@ -2,12 +2,7 @@
 'use client';
 
 import {
-  DollarSign,
   TrendingUp,
-  Users,
-  Store,
-  FileText,
-  Download,
 } from 'lucide-react';
 import {
   Card,
@@ -33,20 +28,18 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
   Legend,
-  Line,
-  LineChart,
-  ComposedChart,
   ResponsiveContainer,
   PieChart,
   Pie
 } from 'recharts';
+import Icon from '@/components/icon';
 
 // --- Data ---
 
@@ -175,7 +168,7 @@ const ProfitReportsTab = () => (
                             <CardDescription>نظرة على الأرباح المحققة خلال الأسبوع الماضي.</CardDescription>
                         </div>
                         <Button variant="outline" size="sm" className="gap-1">
-                            <Download className="h-4 w-4" />
+                            <Icon name="Download" className="h-4 w-4" />
                             تصدير
                         </Button>
                     </div>
@@ -203,7 +196,7 @@ const ProfitReportsTab = () => (
                 </CardHeader>
                 <CardContent className="space-y-4">
                      <div className="flex items-center">
-                        <DollarSign className="h-6 w-6 text-muted-foreground mr-4" />
+                        <Icon name="DollarSign" className="h-6 w-6 text-muted-foreground mr-4" />
                         <div>
                             <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
                             <p className="text-2xl font-bold">4,523 د.أ</p>
@@ -257,9 +250,9 @@ export default function FinancialsPage() {
             <p className="text-muted-foreground">تتبع الإيرادات والمصروفات والأرباح بدقة.</p>
         </div>
         <TabsList className="grid grid-cols-3 w-auto">
-            <TabsTrigger value="reports"><TrendingUp className="h-4 w-4 mr-1"/> تقارير الأرباح</TabsTrigger>
-            <TabsTrigger value="drivers"><Users className="h-4 w-4 mr-1"/> محاسبة السائقين</TabsTrigger>
-            <TabsTrigger value="merchants"><Store className="h-4 w-4 mr-1"/> محاسبة التجار</TabsTrigger>
+            <TabsTrigger value="reports"><Icon name="TrendingUp" className="h-4 w-4 mr-1"/> تقارير الأرباح</TabsTrigger>
+            <TabsTrigger value="drivers"><Icon name="Users" className="h-4 w-4 mr-1"/> محاسبة السائقين</TabsTrigger>
+            <TabsTrigger value="merchants"><Icon name="Store" className="h-4 w-4 mr-1"/> محاسبة التجار</TabsTrigger>
         </TabsList>
       </div>
 

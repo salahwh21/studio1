@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Palette, XCircle, Loader2, Save, ArrowLeft, Type, Droplets, CreditCard, AlertCircle, BorderSplit, Columns2, Brush, BarChart, Text, Component, Link as LinkIcon, Eye, Sun, Moon } from 'lucide-react';
+import { XCircle, Loader2, Save, Type, Droplets, CreditCard, AlertCircle, BorderSplit, Columns2, Brush, BarChart, Text, Component, Link as LinkIcon, Eye, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { updateThemeAction } from '@/app/actions/update-theme';
 import Link from 'next/link';
+import Icon from '@/components/icon';
 
 
 const fonts = [
@@ -203,12 +204,12 @@ export default function FontsColorsPage() {
       <Card className="shadow-sm">
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2"><Brush /> تخصيص المظهر</CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2"><Icon name="Brush" /> تخصيص المظهر</CardTitle>
             <CardDescription className="mt-1">تحكم في كل تفاصيل ألوان وخطوط النظام لتناسب هويتك بشكل كامل.</CardDescription>
           </div>
           <Button variant="outline" size="icon" asChild>
             <Link href="/dashboard/settings/general">
-              <ArrowLeft className="h-4 w-4" />
+              <Icon name="ArrowLeft" />
             </Link>
           </Button>
         </CardHeader>
@@ -218,7 +219,7 @@ export default function FontsColorsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
           <div className="lg:col-span-3 space-y-6">
               <Card>
-                  <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Droplets /> الهوية الرئيسية</CardTitle></CardHeader>
+                  <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Icon name="Palette" /> الهوية الرئيسية</CardTitle></CardHeader>
                   <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <ColorInput id="primary" label="الأساسي" value={primary} onChange={(e) => setPrimary(e.target.value)} />
                     <ColorInput id="primaryForeground" label="نص الأساسي" value={primaryForeground} onChange={(e) => setPrimaryForeground(e.target.value)} />
@@ -228,7 +229,7 @@ export default function FontsColorsPage() {
               </Card>
 
               <Card>
-                  <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Text /> ألوان النصوص</CardTitle></CardHeader>
+                  <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Icon name="Text" /> ألوان النصوص</CardTitle></CardHeader>
                   <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <ColorInput id="foreground" label="النص الأساسي" value={foreground} onChange={(e) => setForeground(e.target.value)} />
                     <ColorInput id="mutedForeground" label="النص الخافت" value={mutedForeground} onChange={(e) => setMutedForeground(e.target.value)} />
@@ -236,7 +237,7 @@ export default function FontsColorsPage() {
               </Card>
 
               <Card>
-                  <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Component/> ألوان المكونات</CardTitle></CardHeader>
+                  <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Icon name="Component"/> ألوان المكونات</CardTitle></CardHeader>
                   <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <ColorInput id="card" label="خلفية البطاقة" value={card} onChange={(e) => setCard(e.target.value)} />
                     <ColorInput id="cardForeground" label="نص البطاقة" value={cardForeground} onChange={(e) => setCardForeground(e.target.value)} />
@@ -252,7 +253,7 @@ export default function FontsColorsPage() {
               </Card>
               
               <Card>
-                  <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Columns2 /> الشريط الجانبي</CardTitle></CardHeader>
+                  <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Icon name="Columns2" /> الشريط الجانبي</CardTitle></CardHeader>
                   <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <ColorInput id="sidebarBackground" label="خلفية الشريط" value={sidebarBackground} onChange={(e) => setSidebarBackground(e.target.value)} />
                     <ColorInput id="sidebarForeground" label="نص الشريط" value={sidebarForeground} onChange={(e) => setSidebarForeground(e.target.value)} />
@@ -263,7 +264,7 @@ export default function FontsColorsPage() {
               </Card>
 
               <Card>
-                  <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><BarChart/> ألوان المخططات</CardTitle></CardHeader>
+                  <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Icon name="BarChart"/> ألوان المخططات</CardTitle></CardHeader>
                   <CardContent className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                     <ColorInput id="chart1" label="لون 1" value={chart1} onChange={(e) => setChart1(e.target.value)} />
                     <ColorInput id="chart2" label="لون 2" value={chart2} onChange={(e) => setChart2(e.target.value)} />
@@ -303,7 +304,7 @@ export default function FontsColorsPage() {
           <div className="lg:col-span-2 lg:sticky lg:top-24">
             <Card>
               <CardHeader>
-                <CardTitle className='flex items-center gap-2'><Eye/> معاينة حية</CardTitle>
+                <CardTitle className='flex items-center gap-2'><Icon name="Eye"/> معاينة حية</CardTitle>
                 <CardDescription>شاهد كيف ستبدو تغييراتك قبل الحفظ.</CardDescription>
               </CardHeader>
               <CardContent 

@@ -21,15 +21,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  TrendingUp,
-  Phone,
-  PackageCheck,
-  RefreshCw,
-  XCircle,
-  Star,
-  ShoppingCart,
-} from 'lucide-react';
-import {
     Bar,
     BarChart,
     CartesianGrid,
@@ -39,6 +30,7 @@ import {
     YAxis,
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import Icon from '@/components/icon';
 
 const topDrivers = [
     { id: 1, name: "علي الأحمد", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d", phone: '07912345678', status: 'نشط', completed: 125, postponed: 5, returned: 2, total: 132 },
@@ -70,19 +62,10 @@ const chartData = topDrivers.map(d => ({
 }));
 
 
-const StatCard = ({ title, value, icon: Icon, color = 'text-primary' }: { title: string, value: string | number, icon?: React.ElementType, color?: string }) => (
-    <Card>
-        <CardContent className="p-4 flex flex-col items-center justify-center text-center h-full">
-            <p className="text-3xl font-bold">{value}</p>
-            <p className="text-sm text-muted-foreground mt-1">{title}</p>
-        </CardContent>
-    </Card>
-);
-
-const RevenueCard = ({ title, value, icon: Icon, color = 'text-green-500' }: { title: string, value: string | number, icon: React.ElementType, color?: string }) => (
+const RevenueCard = ({ title, value, iconName, color = 'text-green-500' }: { title: string, value: string | number, iconName: any, color?: string }) => (
     <Card>
         <CardContent className="p-4 flex items-center justify-center text-center h-full">
-             <Icon className={`w-8 h-8 ml-4 ${color}`} />
+             <Icon name={iconName} className={`w-8 h-8 ml-4 ${color}`} />
             <div>
                 <p className="text-sm text-muted-foreground">{title}</p>
                 <p className="text-2xl font-bold">{value}</p>
@@ -109,8 +92,8 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        <RevenueCard title="إجمالي الإيرادات" value={`4,523 د.أ`} icon={TrendingUp} />
-                         <RevenueCard title="إجمالي الطلبات" value="2,350" icon={ShoppingCart} color="text-blue-500" />
+                        <RevenueCard title="إجمالي الإيرادات" value={`4,523 د.أ`} iconName="TrendingUp" />
+                         <RevenueCard title="إجمالي الطلبات" value="2,350" iconName="ShoppingCart" color="text-blue-500" />
                         {orderStatusData.map((stat) => (
                              <Button
                                 key={stat.name}
@@ -153,9 +136,9 @@ export default function DashboardPage() {
                             const progressValue = total > 0 ? (completed / total) * 100 : 0;
 
                             const statsList = [
-                                { label: 'تم التوصيل', value: completed, color: 'text-green-500', filter: 'delivered', icon: PackageCheck },
-                                { label: 'مؤجلة', value: postponed, color: 'text-orange-500', filter: 'postponed', icon: RefreshCw },
-                                { label: 'ملغية/مرتجعة', value: returned, color: 'text-red-500', filter: 'returned', icon: XCircle },
+                                { label: 'تم التوصيل', value: completed, color: 'text-green-500', filter: 'delivered', iconName: 'PackageCheck' as const },
+                                { label: 'مؤجلة', value: postponed, color: 'text-orange-500', filter: 'postponed', iconName: 'RefreshCw' as const },
+                                { label: 'ملغية/مرتجعة', value: returned, color: 'text-red-500', filter: 'returned', iconName: 'XCircle' as const },
                             ];
 
                             return (
@@ -169,10 +152,10 @@ export default function DashboardPage() {
                                             <div>
                                                 <Link href={`/dashboard/driver-app`} className="font-bold text-lg hover:text-primary flex items-center gap-1">
                                                     {name}
-                                                    {index === 0 && selectedDriver === 'all' && <Star className="inline h-4 w-4 text-yellow-500 fill-yellow-500"/>}
+                                                    {index === 0 && selectedDriver === 'all' && <Icon name="Star" className="inline h-4 w-4 text-yellow-500 fill-yellow-500"/>}
                                                 </Link>
                                                 <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                                    <Phone className="w-3 h-3" />
+                                                    <Icon name="Phone" className="w-3 h-3" />
                                                     {phone}
                                                 </p>
                                             </div>
@@ -196,7 +179,7 @@ export default function DashboardPage() {
                                       <div className="grid grid-cols-3 gap-2 text-center">
                                           {statsList.map(s => (
                                               <Link key={s.label} href={`/dashboard/orders?driver=${encodeURIComponent(name)}&status=${s.filter}`} className="hover:bg-accent/50 rounded-md p-2 transition-colors flex flex-col items-center justify-center">
-                                                  <s.icon className={`w-5 h-5 mb-1 ${s.color}`} />
+                                                  <Icon name={s.iconName} className={`w-5 h-5 mb-1 ${s.color}`} />
                                                   <p className="font-semibold text-base">{s.value}</p>
                                                   <p className="text-xs text-muted-foreground">{s.label}</p>
                                               </Link>

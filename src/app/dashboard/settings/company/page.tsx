@@ -3,7 +3,7 @@
 
 import { useState, useContext } from 'react';
 import {
-  Upload, X, Building, Smartphone, FileText, Barcode, Image as ImageIcon, Save, LayoutDashboard, ArrowLeft
+  Upload, X, Building, Smartphone, FileText, Barcode, Image as ImageIcon, Save, LayoutDashboard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,33 +13,35 @@ import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { LoginExperienceContext } from '@/context/LoginExperienceContext';
 import Link from 'next/link';
+import Icon from '@/components/icon';
 
 const logoSections = [
-  { id: 'admin', label: 'شعار لوحة التحكم', icon: <Building className="h-6 w-6 text-blue-500"/> },
-  { id: 'header', label: 'شعار الهيدر', icon: <LayoutDashboard className="h-6 w-6 text-indigo-500"/> },
-  { id: 'merchant', label: 'شعار لوحة التاجر', icon: <Smartphone className="h-6 w-6 text-green-500"/> },
-  { id: 'driver', label: 'شعار تطبيق السائق', icon: <Smartphone className="h-6 w-6 text-purple-500"/> },
-  { id: 'invoice', label: 'شعار الفاتورة', icon: <FileText className="h-6 w-6 text-yellow-500"/> },
-  { id: 'barcode', label: 'شعار الباركود', icon: <Barcode className="h-6 w-6 text-orange-500"/> },
-  { id: 'multi', label: 'شعار متعدد الاستخدامات', icon: <ImageIcon className="h-6 w-6 text-red-500"/> },
-  { id: 'favicon', label: 'أيقونة الموقع (Favicon)', icon: <ImageIcon className="h-6 w-6 text-gray-500"/> },
+  { id: 'admin', label: 'شعار لوحة التحكم', iconName: 'Building' as const, iconColor: 'text-blue-500' },
+  { id: 'header', label: 'شعار الهيدر', iconName: 'LayoutDashboard' as const, iconColor: 'text-indigo-500' },
+  { id: 'merchant', label: 'شعار لوحة التاجر', iconName: 'Smartphone' as const, iconColor: 'text-green-500' },
+  { id: 'driver', label: 'شعار تطبيق السائق', iconName: 'Smartphone' as const, iconColor: 'text-purple-500' },
+  { id: 'invoice', label: 'شعار الفاتورة', iconName: 'FileText' as const, iconColor: 'text-yellow-500' },
+  { id: 'barcode', label: 'شعار الباركود', iconName: 'Barcode' as const, iconColor: 'text-orange-500' },
+  { id: 'multi', label: 'شعار متعدد الاستخدامات', iconName: 'Image' as const, iconColor: 'text-red-500' },
+  { id: 'favicon', label: 'أيقونة الموقع (Favicon)', iconName: 'Image' as const, iconColor: 'text-gray-500' },
 ];
 
 type LocalLogosState = {
   [key: string]: { src: string | null; };
 };
 
-const LogoUploader = ({ id, label, icon, logoData, onFileChange, onRemove }: {
+const LogoUploader = ({ id, label, iconName, iconColor, logoData, onFileChange, onRemove }: {
   id: string;
   label: string;
-  icon: React.ReactNode;
+  iconName: any;
+  iconColor: string;
   logoData: { src: string | null; };
   onFileChange: (id: string, file: File) => void;
   onRemove: (id: string) => void;
 }) => (
   <Card className="hover:shadow-lg transition-shadow duration-300">
     <CardHeader className="flex flex-row items-center gap-4">
-      {icon}
+      <Icon name={iconName} className={`h-6 w-6 ${iconColor}`}/>
       <CardTitle className="text-base">{label}</CardTitle>
     </CardHeader>
     <CardContent className="flex flex-col items-center gap-4 text-center">
@@ -135,7 +137,7 @@ export default function CompanyIdentityPage() {
             </div>
             <Button variant="outline" size="icon" asChild>
                 <Link href="/dashboard/settings/general">
-                <ArrowLeft className="h-4 w-4" />
+                <Icon name="ArrowLeft" className="h-4 w-4" />
                 </Link>
             </Button>
             </CardHeader>
@@ -168,7 +170,8 @@ export default function CompanyIdentityPage() {
                     key={section.id}
                     id={section.id}
                     label={section.label}
-                    icon={section.icon}
+                    iconName={section.iconName}
+                    iconColor={section.iconColor}
                     logoData={logos[section.id]}
                     onFileChange={handleFileChange}
                     onRemove={handleRemoveLogo}

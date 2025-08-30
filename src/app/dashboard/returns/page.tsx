@@ -3,15 +3,7 @@
 
 import { useState } from 'react';
 import {
-  File,
-  ListFilter,
   MoreHorizontal,
-  Search,
-  ChevronDown,
-  Undo2,
-  Printer,
-  RefreshCw,
-  Truck
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,6 +34,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import Icon from '@/components/icon';
 
 const returnsData = [
   { id: '#R3213', orderId: '#3213', customer: 'فاطمة علي', merchant: 'تاجر ج', driver: 'يوسف إبراهيم', status: 'at_warehouse', date: '2023-08-14', reason: 'العميل رفض الاستلام' },
@@ -92,9 +85,9 @@ export default function ReturnsManagementPage() {
             <>
               <span className="text-sm text-muted-foreground">{selectedRows.length} محدد</span>
               <Separator orientation="vertical" className="h-6 mx-2" />
-              <Button variant="outline" size="sm" className="gap-1"><RefreshCw className="h-4 w-4" /> تغيير الحالة</Button>
-              <Button variant="outline" size="sm" className="gap-1"><Truck className="h-4 w-4" /> تسليم للتاجر</Button>
-              <Button variant="outline" size="sm" className="gap-1"><Printer className="h-4 w-4" /> طباعة كشف</Button>
+              <Button variant="outline" size="sm" className="gap-1"><Icon name="RefreshCw" className="h-4 w-4" /> تغيير الحالة</Button>
+              <Button variant="outline" size="sm" className="gap-1"><Icon name="Truck" className="h-4 w-4" /> تسليم للتاجر</Button>
+              <Button variant="outline" size="sm" className="gap-1"><Icon name="Printer" className="h-4 w-4" /> طباعة كشف</Button>
             </>
           ) : (
              <div>
@@ -106,13 +99,13 @@ export default function ReturnsManagementPage() {
 
         <div className="flex items-center gap-2 ml-auto">
           <div className="relative w-full max-w-xs hidden md:block">
-            <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Icon name="Search" className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input placeholder="بحث برقم الطلب، العميل..." className="pr-8" />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-1">
-                <ListFilter className="h-4 w-4" />
+                <Icon name="ListFilter" className="h-4 w-4" />
                 <span className="hidden sm:inline">تصفية</span>
               </Button>
             </DropdownMenuTrigger>
@@ -127,7 +120,7 @@ export default function ReturnsManagementPage() {
             </DropdownMenuContent>
           </DropdownMenu>
            <Button variant="outline" size="sm" className="gap-1">
-                <File className="h-4 w-4" />
+                <Icon name="FileText" className="h-4 w-4" />
                 <span className="hidden sm:inline">تصدير</span>
             </Button>
         </div>

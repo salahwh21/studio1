@@ -5,8 +5,6 @@ import { useState, useTransition } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Wand2, Loader2, MapPin, ListPlus, PlusCircle, Trash2, Bot } from 'lucide-react';
-
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -29,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { optimizeRouteAction } from '@/app/actions/optimize-route';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
+import Icon from '@/components/icon';
 
 const routeOptimizationSchema = z.object({
   driverId: z.string().min(1, 'الرجاء اختيار سائق.'),
@@ -88,7 +87,7 @@ export default function OptimizeRoutePage() {
             <Card className="lg:col-span-1">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Wand2 /> تحسين مسار التوصيل
+                        <Icon name="Wand2" /> تحسين مسار التوصيل
                     </CardTitle>
                     <CardDescription>
                         استخدم الذكاء الاصطناعي لإيجاد أسرع مسار لسائقيك.
@@ -121,7 +120,7 @@ export default function OptimizeRoutePage() {
                             />
                             
                             <Button type="button" variant="outline" className="w-full">
-                                <ListPlus className="mr-2 h-4 w-4" />
+                                <Icon name="ListPlus" className="mr-2 h-4 w-4" />
                                 جلب الطلبات وتحسينها تلقائيًا (قريبًا)
                             </Button>
 
@@ -154,7 +153,7 @@ export default function OptimizeRoutePage() {
                                                     </FormControl>
                                                     {fields.length > 2 && (
                                                         <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
-                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                            <Icon name="Trash2" className="h-4 w-4 text-destructive" />
                                                         </Button>
                                                     )}
                                                 </div>
@@ -164,7 +163,7 @@ export default function OptimizeRoutePage() {
                                     />
                                 ))}
                                  <Button type="button" variant="outline" size="sm" onClick={() => append({ value: '' })} className="gap-1">
-                                    <PlusCircle className="h-4 w-4" />
+                                    <Icon name="PlusCircle" className="h-4 w-4" />
                                     إضافة عنوان
                                 </Button>
                             </div>
@@ -173,9 +172,9 @@ export default function OptimizeRoutePage() {
                         <CardFooter>
                             <Button type="submit" disabled={isPending} className="w-full">
                                 {isPending ? (
-                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                     <Icon name="Loader2" className="mr-2 h-4 w-4 animate-spin" />
                                 ) : (
-                                    <Wand2 className="mr-2 h-4 w-4" />
+                                    <Icon name="Wand2" className="mr-2 h-4 w-4" />
                                 )}
                                 تحسين المسار الآن
                             </Button>
@@ -194,7 +193,7 @@ export default function OptimizeRoutePage() {
                 <CardContent className="min-h-[300px]">
                     {isPending ? (
                         <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <Icon name="Loader2" className="h-8 w-8 animate-spin text-primary" />
                             <p>جاري تحليل أفضل مسار...</p>
                         </div>
                     ) : optimizationResult.length > 0 ? (
@@ -213,7 +212,7 @@ export default function OptimizeRoutePage() {
                         </ol>
                     ) : (
                          <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground text-center">
-                            <Bot className="h-10 w-10" />
+                            <Icon name="Bot" className="h-10 w-10" />
                             <p className="font-medium">نتائج التحسين ستظهر هنا</p>
                             <p className="text-sm">أدخل تفاصيل التوصيل في النموذج لبدء عملية التحسين.</p>
                          </div>

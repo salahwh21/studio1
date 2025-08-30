@@ -20,37 +20,38 @@ import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from './ui/button';
 import { useEffect, useState } from 'react';
+import Icon from '@/components/icon';
 
 
 type NavItem = {
   href: string;
   label: string;
-  icon: LucideIcon;
+  iconName: keyof typeof import('lucide-react');
 };
 
 const navItems: NavItem[] = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'لوحة التحكم' },
-  { href: '/dashboard/orders', icon: ShoppingCart, label: 'عرض الطلبات' },
-  { href: '/dashboard/parse-order', icon: PackagePlus, label: 'إضافة طلبات' },
-  { href: '/dashboard/optimize', icon: Wand2, label: 'تحسين المسار' },
-  { href: '/dashboard/drivers-map', icon: Map, label: 'خريطة السائقين' },
-  { href: '/dashboard/returns', icon: Undo2, label: 'إدارة المرتجعات' },
-  { href: '/dashboard/financials', icon: Calculator, label: 'المحاسبة' },
-  { href: '/dashboard/settings', icon: Settings, label: 'الإعدادات' },
+  { href: '/dashboard', iconName: 'LayoutDashboard', label: 'لوحة التحكم' },
+  { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'عرض الطلبات' },
+  { href: '/dashboard/parse-order', iconName: 'PackagePlus', label: 'إضافة طلبات' },
+  { href: '/dashboard/optimize', iconName: 'Wand2', label: 'تحسين المسار' },
+  { href: '/dashboard/drivers-map', iconName: 'Map', label: 'خريطة السائقين' },
+  { href: '/dashboard/returns', iconName: 'Undo2', label: 'إدارة المرتجعات' },
+  { href: '/dashboard/financials', iconName: 'Calculator', label: 'المحاسبة' },
+  { href: '/dashboard/settings', iconName: 'Settings', label: 'الإعدادات' },
 ];
 
 const mobileMainItems: NavItem[] = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'الرئيسية' },
-  { href: '/dashboard/parse-order', icon: PackagePlus, label: 'إضافة' },
-  { href: '/dashboard/orders', icon: ShoppingCart, label: 'الطلبات' },
-  { href: '/dashboard/drivers-map', icon: Map, label: 'الخريطة' },
+  { href: '/dashboard', iconName: 'LayoutDashboard', label: 'الرئيسية' },
+  { href: '/dashboard/parse-order', iconName: 'PackagePlus', label: 'إضافة' },
+  { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'الطلبات' },
+  { href: '/dashboard/drivers-map', iconName: 'Map', label: 'الخريطة' },
 ];
 
 const mobileMoreItems: NavItem[] = [
-    { href: '/dashboard/optimize', icon: Wand2, label: 'تحسين المسار' },
-    { href: '/dashboard/returns', icon: Undo2, label: 'إدارة المرتجعات' },
-    { href: '/dashboard/financials', icon: Calculator, label: 'المحاسبة' },
-    { href: '/dashboard/settings', icon: Settings, label: 'الإعدادات' },
+    { href: '/dashboard/optimize', iconName: 'Wand2', label: 'تحسين المسار' },
+    { href: '/dashboard/returns', iconName: 'Undo2', label: 'إدارة المرتجعات' },
+    { href: '/dashboard/financials', iconName: 'Calculator', label: 'المحاسبة' },
+    { href: '/dashboard/settings', iconName: 'Settings', label: 'الإعدادات' },
 ];
 
 
@@ -61,16 +62,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         setIsMounted(true);
         
-        // Apply saved UI settings from localStorage
-        const density = localStorage.getItem('ui-density') || 'comfortable';
-        const radius = localStorage.getItem('ui-border-radius') || '0.5';
-        const stroke = localStorage.getItem('ui-icon-stroke') || '2';
-        const library = localStorage.getItem('ui-icon-library') || 'lucide';
+        const applySettings = () => {
+            const density = localStorage.getItem('ui-density') || 'comfortable';
+            const radius = localStorage.getItem('ui-border-radius') || '0.5';
+            const stroke = localStorage.getItem('ui-icon-stroke') || '2';
+            const library = localStorage.getItem('ui-icon-library') || 'lucide';
+            
+            document.body.dataset.density = density;
+            document.documentElement.style.setProperty('--radius', `${radius}rem`);
+            document.body.dataset.iconStroke = stroke;
+            document.body.dataset.iconLibrary = library;
+        }
+        applySettings();
+        
+        window.addEventListener('storage', applySettings);
 
-        document.body.dataset.density = density;
-        document.documentElement.style.setProperty('--radius', `${radius}rem`);
-        document.body.dataset.iconStroke = stroke;
-        document.body.dataset.iconLibrary = library;
+        return () => {
+            window.removeEventListener('storage', applySettings);
+        }
 
     }, []);
 
@@ -80,14 +89,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     };
 
     if (!isMounted) {
-        return null; // Or a loading spinner
+        return (
+            <div className="flex min-h-screen w-full flex-col bg-muted/40">
+                {/* Basic skeleton or loader */}
+            </div>
+        );
     }
 
 
   return (
     <>
       <div className="flex min-h-screen w-full flex-col bg-muted/40">
-        <AppHeader navItems={navItems} bottomNavItems={[]} />
+        <AppHeader />
         <main className="flex flex-1 flex-col gap-4 bg-background p-4 sm:p-6 md:p-8 pb-20 md:pb-8">
             {children}
         </main>
@@ -105,14 +118,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                           isActive(item.href) ? 'text-primary' : 'text-muted-foreground hover:bg-muted/50'
                       )}
                     >
-                      <item.icon className="h-5 w-5" />
+                      <Icon name={item.iconName} className="h-5 w-5" />
                       <span>{item.label}</span>
                   </Link>
               ))}
                <Sheet>
                     <SheetTrigger asChild>
                          <button className="flex flex-col items-center justify-center gap-1 text-xs font-medium w-full h-full text-muted-foreground hover:bg-muted/50">
-                            <MoreHorizontal className="h-5 w-5" />
+                            <Icon name="MoreHorizontal" className="h-5 w-5" />
                             <span>المزيد</span>
                         </button>
                     </SheetTrigger>
@@ -127,7 +140,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                         isActive(item.href) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                                     )}
                                     >
-                                    <item.icon className="h-5 w-5" />
+                                    <Icon name={item.iconName} className="h-5 w-5" />
                                     <span className="font-medium">{item.label}</span>
                                 </Link>
                             ))}

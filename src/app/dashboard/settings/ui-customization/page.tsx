@@ -10,6 +10,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { HomeIcon as HeroHomeIcon } from '@heroicons/react/24/outline';
+
 
 // A placeholder for FontAwesome icon if it were to be used
 const FontAwesomeIcon = ({className}: {className?: string}) => <Star className={className} />;
@@ -62,6 +64,7 @@ export default function InterfaceCustomizationPage() {
     const props = { style: { strokeWidth: iconStrokeWidth }, className: 'h-6 w-6' };
     switch(library) {
       case 'feather': return <Feather {...props}/>;
+      case 'heroicons': return <HeroHomeIcon {...props}/>;
       case 'fontawesome': return <FontAwesomeIcon {...props}/>;
       case 'lucide':
       default:
@@ -137,10 +140,10 @@ export default function InterfaceCustomizationPage() {
                             <Feather className="h-8 w-8 mb-2"/>
                             <span className="font-medium text-sm">Feather</span>
                         </Label>
-                        <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary disabled:opacity-50 disabled:cursor-not-allowed">
-                            <RadioGroupItem value="fontawesome" id="il3" className="sr-only" disabled/>
-                            <FontAwesomeIcon className="h-8 w-8 mb-2"/>
-                            <span className="font-medium text-sm">Font Awesome</span>
+                         <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
+                            <RadioGroupItem value="heroicons" id="il3" className="sr-only" />
+                            <HeroHomeIcon className="h-8 w-8 mb-2"/>
+                            <span className="font-medium text-sm">Heroicons</span>
                         </Label>
                     </RadioGroup>
                 </div>
@@ -228,5 +231,3 @@ export default function InterfaceCustomizationPage() {
     </div>
   );
 }
-
-    

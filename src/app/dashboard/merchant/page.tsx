@@ -2,29 +2,14 @@
 'use client';
 
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
+  PieChart,
+  Pie,
   Tooltip,
-  XAxis,
-  YAxis,
+  Legend,
 } from 'recharts';
 import {
     MoreHorizontal,
-    PlusCircle,
-    Search,
-    Users,
-    Wallet,
-    Package,
-    ArrowUpRight,
-    ListFilter,
-    Edit
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -61,7 +46,7 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import Link from 'next/link';
+import Icon from '@/components/icon';
 
 
 const summaryData = {
@@ -103,7 +88,7 @@ const SummaryDashboard = () => (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">إجمالي الطرود</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <Icon name="Package" className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summaryData.totalParcels}</div>
@@ -113,7 +98,7 @@ const SummaryDashboard = () => (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">المبالغ الجاهزة للتحصيل</CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
+            <Icon name="Wallet" className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summaryData.amountReadyForCollection.toLocaleString('ar-JO')} د.أ</div>
@@ -163,11 +148,11 @@ const OrdersManagement = () => (
                 </div>
                 <div className="flex items-center gap-2">
                      <div className="relative w-full max-w-sm">
-                        <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Icon name="Search" className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="بحث بالرقم، اسم العميل..." className="pr-8" />
                     </div>
                      <Button size="sm" className="h-9 gap-1">
-                        <PlusCircle className="h-4 w-4" />
+                        <Icon name="PlusCircle" className="h-4 w-4" />
                         <span className="hidden sm:inline">إضافة طلب</span>
                     </Button>
                 </div>

@@ -3,24 +3,24 @@
 
 import Link from 'next/link';
 import type { LucideIcon } from "lucide-react";
-import { Palette, Building, LogIn, LayoutGrid, Languages, List, ReceiptText, Package, ArrowLeft, Brush } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
+import Icon from '@/components/icon';
 
 const generalSettingsItems: {
   href: string;
-  icon: LucideIcon;
+  iconName: any;
   title: string;
   description: string;
 }[] = [
-  { href: '/dashboard/settings/company', icon: Building, title: 'هوية الشركة والشعارات', description: 'إدارة اسم الشركة والشعارات المستخدمة في النظام.' },
-  { href: '/dashboard/settings/login-experience', icon: LogIn, title: 'تجربة تسجيل الدخول', description: 'تخصيص صفحة تسجيل الدخول للمستخدمين.' },
-  { href: '/dashboard/settings/fonts-colors', icon: Palette, title: 'الألوان والخطوط', description: 'تغيير الألوان والخطوط لتناسب هويتك.' },
-  { href: '/dashboard/settings/ui-customization', icon: Brush, title: 'تخصيص الواجهة', description: 'تعديل شكل الواجهة، كثافة العرض، ونمط الأيقونات.' },
-  { href: '#', icon: Languages, title: 'الإعدادات الإقليمية', description: 'إدارة اللغة، العملة، والمنطقة الزمنية للنظام.' },
-  { href: '#', icon: List, title: 'إدارة القوائم', description: 'التحكم في القوائم المتاحة لكل دور وظيفي.' },
-  { href: '#', icon: ReceiptText, title: 'إعدادات البوليصة', description: 'تخصيص محتوى وتصميم بوليصة الشحن.' },
-  { href: '#', icon: Package, title: 'إعدادات الطلبات', description: 'التحكم في دورة حياة الطلبات والأرشفة.' },
+  { href: '/dashboard/settings/company', iconName: 'Building', title: 'هوية الشركة والشعارات', description: 'إدارة اسم الشركة والشعارات المستخدمة في النظام.' },
+  { href: '/dashboard/settings/login-experience', iconName: 'LogIn', title: 'تجربة تسجيل الدخول', description: 'تخصيص صفحة تسجيل الدخول للمستخدمين.' },
+  { href: '/dashboard/settings/fonts-colors', iconName: 'Palette', title: 'الألوان والخطوط', description: 'تغيير الألوان والخطوط لتناسب هويتك.' },
+  { href: '/dashboard/settings/ui-customization', iconName: 'Brush', title: 'تخصيص الواجهة', description: 'تعديل شكل الواجهة، كثافة العرض، ونمط الأيقونات.' },
+  { href: '#', iconName: 'Languages', title: 'الإعدادات الإقليمية', description: 'إدارة اللغة، العملة، والمنطقة الزمنية للنظام.' },
+  { href: '#', iconName: 'List', title: 'إدارة القوائم', description: 'التحكم في القوائم المتاحة لكل دور وظيفي.' },
+  { href: '#', iconName: 'ReceiptText', title: 'إعدادات البوليصة', description: 'تخصيص محتوى وتصميم بوليصة الشحن.' },
+  { href: '#', iconName: 'Package', title: 'إعدادات الطلبات', description: 'التحكم في دورة حياة الطلبات والأرشفة.' },
 ];
 
 const SettingsItemCard = ({ item }: { item: (typeof generalSettingsItems)[0] }) => (
@@ -28,7 +28,7 @@ const SettingsItemCard = ({ item }: { item: (typeof generalSettingsItems)[0] }) 
         <Card className="h-full hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out bg-card">
             <CardHeader className="flex flex-row items-center gap-5 p-5">
                 <div className="bg-primary/10 text-primary p-3 rounded-lg">
-                    <item.icon className="h-6 w-6" />
+                    <Icon name={item.iconName} className="h-6 w-6" />
                 </div>
                 <div>
                     <CardTitle className="text-base mb-1">{item.title}</CardTitle>
@@ -51,7 +51,7 @@ export default function GeneralSettingsPage() {
           </div>
           <Button variant="outline" size="icon" asChild>
             <Link href="/dashboard/settings">
-              <ArrowLeft className="h-4 w-4" />
+              <Icon name="ArrowLeft" className="h-4 w-4" />
             </Link>
           </Button>
         </CardHeader>

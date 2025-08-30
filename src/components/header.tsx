@@ -3,7 +3,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, LogOut, Moon, Settings, Sun, User, type LucideIcon, Menu } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useContext } from 'react';
 import Image from 'next/image';
@@ -20,45 +19,39 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Logo } from './logo';
-import { Separator } from './ui/separator';
 import { LoginExperienceContext } from '@/context/LoginExperienceContext';
+import Icon from '@/components/icon';
 
 type NavItem = {
   href: string;
   label: string;
-  icon: LucideIcon;
+  iconName: keyof typeof import('lucide-react');
 };
 
-interface AppHeaderProps {
-    navItems: NavItem[];
-    bottomNavItems: NavItem[];
-}
+const navItems: NavItem[] = [
+  { href: '/dashboard', iconName: 'LayoutDashboard', label: 'لوحة التحكم' },
+  { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'عرض الطلبات' },
+  { href: '/dashboard/parse-order', iconName: 'PackagePlus', label: 'إضافة طلبات' },
+  { href: '/dashboard/optimize', iconName: 'Wand2', label: 'تحسين المسار' },
+  { href: '/dashboard/drivers-map', iconName: 'Map', label: 'خريطة السائقين' },
+  { href: '/dashboard/returns', iconName: 'Undo2', label: 'إدارة المرتجعات' },
+  { href: '/dashboard/financials', iconName: 'Calculator', label: 'المحاسبة' },
+  { href: '/dashboard/settings', iconName: 'Settings', label: 'الإعدادات' },
+];
 
-export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
+
+export function AppHeader() {
   const { setTheme, theme } = useTheme();
   const pathname = usePathname();
   const context = useContext(LoginExperienceContext);
   const headerLogo = context?.settings.headerLogo;
 
   const isActive = (href: string) => {
-    // Exact match for the main dashboard page
-    if (href === '/dashboard') {
-      return pathname === href;
-    }
-    // Match for parent routes like /settings or /orders
-     if (href.startsWith('/dashboard/settings') && pathname.startsWith('/dashboard/settings')) {
-        return true;
-    }
-    if (href.startsWith('/dashboard/orders') && pathname.startsWith('/dashboard/orders')) {
-        return true;
-    }
-    return pathname.startsWith(href) && href !== '/dashboard';
+    if (href === '/dashboard') return pathname === href;
+    return pathname.startsWith(href);
   };
   
-  const allNavItems = [...navItems, ...bottomNavItems];
-
   const HeaderLogo = () => {
     if (headerLogo) {
       return <Image src={headerLogo} alt="Company Logo" width={120} height={32} style={{objectFit: 'contain'}} />
@@ -86,7 +79,7 @@ export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
                     className="rounded-full"
                   >
                     <Link href={item.href}>
-                      <item.icon className="h-5 w-5" />
+                      <Icon name={item.iconName} className="h-5 w-5" />
                       <span className="sr-only">{item.label}</span>
                     </Link>
                   </Button>
@@ -103,7 +96,7 @@ export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="rounded-full">
-                        <Bell className="h-5 w-5" />
+                        <Icon name="Bell" className="h-5 w-5" />
                         <span className="sr-only">فتح الإشعارات</span>
                     </Button>
                 </DropdownMenuTrigger>
@@ -119,8 +112,8 @@ export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
             </DropdownMenu>
 
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-              <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <Icon name="Sun" className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Icon name="Moon" className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               <span className="sr-only">تبديل المظهر</span>
             </Button>
             
@@ -139,13 +132,13 @@ export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
                 <DropdownMenuGroup>
                     <DropdownMenuItem asChild>
                         <Link href="/dashboard/settings/general">
-                            <User className="mr-2 h-4 w-4"/>
+                            <Icon name="User" className="mr-2 h-4 w-4"/>
                             <span>الملف الشخصي</span>
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                         <Link href="/dashboard/settings">
-                           <Settings className="mr-2 h-4 w-4" />
+                           <Icon name="Settings" className="mr-2 h-4 w-4" />
                            <span>الإعدادات</span>
                         </Link>
                     </DropdownMenuItem>
@@ -153,7 +146,7 @@ export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                     <Link href="/">
-                        <LogOut className="mr-2 h-4 w-4" />
+                        <Icon name="LogOut" className="mr-2 h-4 w-4" />
                         <span>تسجيل الخروج</span>
                     </Link>
                 </DropdownMenuItem>

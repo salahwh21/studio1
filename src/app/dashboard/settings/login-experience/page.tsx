@@ -2,7 +2,7 @@
 'use client';
 
 import { useContext } from 'react';
-import { Upload, Facebook, Instagram, MessageSquare, X, LogIn, Save, ArrowLeft } from 'lucide-react';
+import { Upload, Facebook, Instagram, MessageSquare, X, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,11 +11,12 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { LoginExperienceContext } from '@/context/LoginExperienceContext';
 import Link from 'next/link';
+import Icon from '@/components/icon';
 
-const SocialInput = ({ id, label, icon: Icon, placeholder, value, onChange }: { id: string; label: string; icon: React.ElementType; placeholder: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
+const SocialInput = ({ id, label, icon: IconComponent, placeholder, value, onChange }: { id: string; label: string; icon: React.ElementType; placeholder: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
   <div className="space-y-2">
     <Label htmlFor={id} className="flex items-center gap-2 text-sm">
-      <Icon className="h-4 w-4 text-muted-foreground" />
+      <IconComponent className="h-4 w-4 text-muted-foreground" />
       {label}
     </Label>
     <Input id={id} name={id} placeholder={placeholder} value={value} onChange={onChange} />
@@ -66,7 +67,7 @@ export default function LoginExperiencePage() {
   const handleFileChange = (id: string, file: File) => {
     const reader = new FileReader();
     reader.onloadend = () => {
-      setSetting(id, reader.result as string);
+      setSetting(id as keyof typeof settings, reader.result as string);
        toast({
         title: 'تم رفع الملف!',
         description: `تم تحديث ${id === 'loginLogo' ? 'الشعار' : 'صورة الخلفية'}.`,
@@ -76,7 +77,7 @@ export default function LoginExperiencePage() {
   };
   
   const handleRemoveFile = (id: string) => {
-      setSetting(id, null);
+      setSetting(id as keyof typeof settings, null);
   }
 
   const handleSaveChanges = () => {
@@ -96,7 +97,7 @@ export default function LoginExperiencePage() {
           </div>
           <Button variant="outline" size="icon" asChild>
             <Link href="/dashboard/settings/general">
-              <ArrowLeft className="h-4 w-4" />
+              <Icon name="ArrowLeft" className="h-4 w-4" />
             </Link>
           </Button>
         </CardHeader>

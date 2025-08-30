@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, MapPin, Truck, Wallet, PackageCheck, Clock, Undo2, MoreVertical } from "lucide-react";
+import Icon from '@/components/icon';
 
 const driver = {
   name: "علي الأحمد",
@@ -74,7 +74,7 @@ export default function DriverWebAppPage() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">إجمالي الشحنات اليوم</CardTitle>
-                        <Truck className="h-4 w-4 text-muted-foreground" />
+                        <Icon name="Truck" className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{driver.orders.length}</div>
@@ -84,7 +84,7 @@ export default function DriverWebAppPage() {
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">المبلغ المطلوب تحصيله</CardTitle>
-                        <Wallet className="h-4 w-4 text-muted-foreground" />
+                        <Icon name="Wallet" className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{outForDeliveryAmount.toLocaleString('ar-JO')} د.أ</div>
@@ -94,7 +94,7 @@ export default function DriverWebAppPage() {
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">شحنات مكتملة</CardTitle>
-                        <PackageCheck className="h-4 w-4 text-muted-foreground text-green-500" />
+                        <Icon name="PackageCheck" className="h-4 w-4 text-muted-foreground text-green-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{statusCounts.delivered || 0}</div>
@@ -104,7 +104,7 @@ export default function DriverWebAppPage() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">شحنات مرتجعة</CardTitle>
-                        <Undo2 className="h-4 w-4 text-muted-foreground text-red-500" />
+                        <Icon name="Undo2" className="h-4 w-4 text-muted-foreground text-red-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{statusCounts.returned || 0}</div>
@@ -118,22 +118,22 @@ export default function DriverWebAppPage() {
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                     <div className="rounded-lg border p-4">
-                        <PackageCheck className="mx-auto h-8 w-8 text-green-500 mb-2"/>
+                        <Icon name="PackageCheck" className="mx-auto h-8 w-8 text-green-500 mb-2"/>
                         <p className="text-2xl font-bold">{statusCounts.delivered || 0}</p>
                         <p className="text-sm text-muted-foreground">مكتمل</p>
                     </div>
                      <div className="rounded-lg border p-4">
-                        <Clock className="mx-auto h-8 w-8 text-yellow-500 mb-2"/>
+                        <Icon name="Clock" className="mx-auto h-8 w-8 text-yellow-500 mb-2"/>
                         <p className="text-2xl font-bold">{statusCounts.postponed || 0}</p>
                         <p className="text-sm text-muted-foreground">مؤجل</p>
                     </div>
                      <div className="rounded-lg border p-4">
-                        <Undo2 className="mx-auto h-8 w-8 text-red-500 mb-2"/>
+                        <Icon name="Undo2" className="mx-auto h-8 w-8 text-red-500 mb-2"/>
                         <p className="text-2xl font-bold">{statusCounts.returned || 0}</p>
                         <p className="text-sm text-muted-foreground">مرتجع</p>
                     </div>
                      <div className="rounded-lg border p-4">
-                        <Truck className="mx-auto h-8 w-8 text-blue-500 mb-2"/>
+                        <Icon name="Truck" className="mx-auto h-8 w-8 text-blue-500 mb-2"/>
                         <p className="text-2xl font-bold">{statusCounts.out_for_delivery || 0}</p>
                         <p className="text-sm text-muted-foreground">قيد التوصيل</p>
                     </div>
@@ -150,10 +150,10 @@ export default function DriverWebAppPage() {
                         <div className="flex-1 space-y-1">
                             <CardTitle className="text-base">{order.customer}</CardTitle>
                             <CardDescription className="flex items-center gap-2">
-                                <Phone className="h-3 w-3" /> {order.phone}
+                                <Icon name="Phone" className="h-3 w-3" /> {order.phone}
                             </CardDescription>
                             <CardDescription className="flex items-center gap-2">
-                               <MapPin className="h-3 w-3" /> {order.address}
+                               <Icon name="MapPin" className="h-3 w-3" /> {order.address}
                             </CardDescription>
                         </div>
                         <div className="flex flex-col items-end gap-2">
@@ -200,13 +200,13 @@ export default function DriverWebAppPage() {
                        <TableCell className="text-center whitespace-nowrap">{order.notes || '-'}</TableCell>
                       <TableCell className="flex items-center justify-center gap-2 text-center whitespace-nowrap">
                         <Button variant="outline" size="icon" title="اتصال بالعميل">
-                            <Phone className="h-4 w-4" />
+                            <Icon name="Phone" className="h-4 w-4" />
                         </Button>
                         <Button variant="outline" size="icon" title="عرض على الخريطة">
-                            <MapPin className="h-4 w-4" />
+                            <Icon name="MapPin" className="h-4 w-4" />
                         </Button>
                          <Button variant="outline" size="icon" title="تحديث الحالة">
-                            <MoreVertical className="h-4 w-4" />
+                            <Icon name="MoreVertical" className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
