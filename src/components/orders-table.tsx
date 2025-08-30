@@ -696,26 +696,24 @@ export function OrdersTable() {
                                                     onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
                                                     className="font-bold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border"
                                                 >
-                                                    <TableCell colSpan={visibleColumns.length + 2} className="p-0">
-                                                        <div className="flex items-center w-full px-4 py-3 gap-4">
+                                                    <TableCell className="p-4 text-right" colSpan={2}>
+                                                        <div className="flex items-center gap-4">
                                                             <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
                                                             <span>{groupKey} ({groupOrders.length})</span>
-                                                            <div className="flex items-center gap-4 text-xs font-medium mr-auto">
-                                                                {visibleColumns.map(col => {
-                                                                    if (col.type === 'financial') {
-                                                                        const totalValue = currentGroupTotals[col.key as string] || 0;
-                                                                        return (
-                                                                            <div key={col.key} className="flex items-center gap-1">
-                                                                                <span className="text-muted-foreground">{col.label}:</span>
-                                                                                <span className="font-bold text-primary">{totalValue.toFixed(2)}</span>
-                                                                            </div>
-                                                                        );
-                                                                    }
-                                                                    return null;
-                                                                })}
-                                                            </div>
                                                         </div>
                                                     </TableCell>
+                                                    {visibleColumns.slice(1).map(col => {
+                                                        const totalValue = currentGroupTotals[col.key as string];
+                                                        if (col.type === 'financial' && totalValue !== undefined) {
+                                                            return (
+                                                                <TableCell key={col.key} className="p-5 text-center whitespace-nowrap border-l text-primary font-semibold">
+                                                                    {totalValue.toFixed(2)}
+                                                                </TableCell>
+                                                            );
+                                                        }
+                                                        // Render empty cells to maintain alignment
+                                                        return <TableCell key={col.key} className="p-5 border-l" />;
+                                                    })}
                                                 </TableRow>
                                                 {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
                                             </React.Fragment>
@@ -788,3 +786,4 @@ export function OrdersTable() {
         </>
     );
 }
+
