@@ -3,10 +3,9 @@
 
 import Link from 'next/link';
 import type { LucideIcon } from "lucide-react";
-import { Settings, User, Users, MapPin, ListChecks, Bell, ArrowLeft, Store, DollarSign, Share2, MessageSquareQuote, LayoutGrid } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { User, Users, MapPin, ListChecks, Bell, Store, DollarSign, Share2, MessageSquareQuote, LayoutGrid } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { motion } from 'framer-motion';
+import { SettingsLayout } from '@/components/settings-layout';
 
 const settingsItems: {
   href: string;
@@ -26,29 +25,9 @@ const settingsItems: {
   { href: '#', icon: MessageSquareQuote, title: 'الدعم الفني', description: 'الحصول على مساعدة أو طلب ميزات جديدة.' },
 ];
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: {
-      delay: i * 0.05,
-      duration: 0.3,
-      ease: "easeOut"
-    }
-  })
-};
-
-const SettingsItemCard = ({ item, index }: { item: (typeof settingsItems)[0], index: number }) => (
-  <motion.div
-    variants={cardVariants}
-    initial="hidden"
-    animate="visible"
-    custom={index}
-    whileHover={{ y: -5, transition: { duration: 0.2 } }}
-  >
+const SettingsItemCard = ({ item }: { item: (typeof settingsItems)[0]}) => (
     <Link href={item.href} className="block h-full">
-        <Card className="h-full border-l-4 border-transparent hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out">
+        <Card className="h-full hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out bg-card">
             <CardHeader className="flex flex-col items-center justify-center text-center gap-4 p-6">
                 <div className="bg-primary/10 text-primary p-4 rounded-full">
                     <item.icon className="h-8 w-8" />
@@ -60,39 +39,21 @@ const SettingsItemCard = ({ item, index }: { item: (typeof settingsItems)[0], in
             </CardHeader>
         </Card>
     </Link>
-  </motion.div>
 );
 
 export default function SettingsPage() {
   return (
-    <motion.div 
-      className="space-y-8"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+    <SettingsLayout
+      title="مركز الإعدادات"
+      description="نقطة التحكم المركزية لجميع جوانب النظام."
+      backHref="/dashboard"
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-            <Settings className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">مركز الإعدادات</h1>
-              <p className="text-muted-foreground">
-                  نقطة التحكم المركزية لجميع جوانب النظام.
-              </p>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {settingsItems.map((item) => (
+                <SettingsItemCard key={item.title} item={item} />
+            ))}
         </div>
-        <Button variant="outline" size="icon" asChild>
-            <Link href="/dashboard">
-                <ArrowLeft className="h-4 w-4"/>
-            </Link>
-        </Button>
-      </div>
-      
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {settingsItems.map((item, index) => (
-              <SettingsItemCard key={item.title} item={item} index={index} />
-          ))}
-      </div>
-    </motion.div>
+    </SettingsLayout>
   );
 }
+

@@ -2,8 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, CheckCircle, Info, Palette, XCircle, AlertTriangle, Loader2, Save } from 'lucide-react';
+import { CheckCircle, Info, Palette, XCircle, AlertTriangle, Loader2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -18,20 +17,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { updateThemeAction } from '@/app/actions/update-theme';
-import { motion } from 'framer-motion';
+import { SettingsLayout } from '@/components/settings-layout';
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (i: number = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: {
-      delay: i * 0.1,
-      duration: 0.4,
-      ease: "easeOut"
-    }
-  })
-};
 
 const fonts = [
     { name: 'Tajawal', variable: 'var(--font-tajawal)'},
@@ -93,33 +80,14 @@ export default function FontsColorsPage() {
   };
 
   return (
-    <motion.div 
-      className="space-y-8"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+    <SettingsLayout
+        title="الألوان والخطوط"
+        description="اختر اللون الأساسي والخط لتخصيص شكل النظام."
+        backHref="/dashboard/settings/general"
     >
-       <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Palette className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">الألوان والخطوط</h1>
-              <p className="text-muted-foreground">
-                  اختر اللون الأساسي والخط لتخصيص شكل النظام.
-              </p>
-            </div>
-          </div>
-          <Button variant="outline" size="icon" asChild>
-              <Link href="/dashboard/settings/general">
-                  <ArrowLeft className="h-4 w-4" />
-              </Link>
-          </Button>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
         <div className="lg:col-span-2 space-y-8">
-           <motion.div variants={cardVariants} initial="hidden" animate="visible" custom={0}>
-              <Card>
+            <Card>
                 <CardHeader>
                   <CardTitle>الألوان الرئيسية</CardTitle>
                 </CardHeader>
@@ -137,11 +105,9 @@ export default function FontsColorsPage() {
                     <Input id="accentColor" type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="w-full h-12 p-1 cursor-pointer"/>
                   </div>
                 </CardContent>
-              </Card>
-          </motion.div>
+            </Card>
 
-          <motion.div variants={cardVariants} initial="hidden" animate="visible" custom={1}>
-              <Card>
+            <Card>
                 <CardHeader>
                   <CardTitle>الخطوط والأحجام</CardTitle>
                 </CardHeader>
@@ -165,17 +131,10 @@ export default function FontsColorsPage() {
                     <p className="text-xs text-muted-foreground">سيتم حساب باقي الأحجام تلقائيا.</p>
                   </div>
                 </CardContent>
-              </Card>
-          </motion.div>
+            </Card>
         </div>
 
-        <motion.div 
-            className="lg:col-span-3 lg:sticky lg:top-24"
-            variants={cardVariants} 
-            initial="hidden" 
-            animate="visible"
-            custom={2}
-        >
+        <div className="lg:col-span-3 lg:sticky lg:top-24">
           <Card>
             <CardHeader>
               <CardTitle>معاينة حية</CardTitle>
@@ -224,15 +183,15 @@ export default function FontsColorsPage() {
 
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
       </div>
-
-      <div className="flex justify-start pt-4 border-t">
+      <div className="flex justify-start pt-6 mt-6 border-t">
         <Button size="lg" onClick={handleSaveChanges} disabled={isSaving}>
            {isSaving ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
           {isSaving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
         </Button>
       </div>
-    </motion.div>
+    </SettingsLayout>
   );
 }
+

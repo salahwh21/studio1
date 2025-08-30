@@ -2,8 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Upload, X, Building, Save, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Building, Save, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -16,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { SettingsLayout } from '@/components/settings-layout';
 
 const logoSections = [
   { id: 'admin', label: 'شعار لوحة التحكم' },
@@ -31,18 +30,6 @@ type LogosState = {
   [key: string]: string | null;
 };
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (i: number = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: {
-      delay: i * 0.1,
-      duration: 0.4,
-      ease: "easeOut"
-    }
-  })
-};
 
 const LogoUploader = ({ 
   id, 
@@ -129,77 +116,56 @@ export default function CompanyIdentityPage() {
   };
 
   return (
-    <motion.div 
-      className="space-y-8 max-w-4xl mx-auto"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+    <SettingsLayout
+        title="هوية الشركة"
+        description="إدارة اسم الشركة والشعارات المستخدمة في النظام."
+        backHref="/dashboard/settings/general"
     >
-      <div className="flex items-center justify-between">
-          <div className='flex items-center gap-4'>
-            <Building className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">هوية الشركة</h1>
-              <p className="text-muted-foreground">
-                  إدارة اسم الشركة والشعارات المستخدمة في النظام.
-              </p>
-            </div>
-          </div>
-          <Button variant="outline" size="icon" asChild>
-            <Link href="/dashboard/settings/general">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-      </div>
-
-      <motion.div variants={cardVariants} initial="hidden" animate="visible" custom={0}>
-        <Card>
-          <CardHeader>
-              <CardTitle>اسم الشركة</CardTitle>
-              <CardDescription>الاسم الذي سيظهر في جميع أنحاء النظام.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Input
-                id="companyName"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="أدخل اسم شركتك"
-            />
-          </CardContent>
-        </Card>
-      </motion.div>
-      
-      <motion.div variants={cardVariants} initial="hidden" animate="visible" custom={1}>
-          <Card>
-            <CardHeader>
-                <CardTitle>الشعارات</CardTitle>
-                <CardDescription>
-                  ارفع الشعارات المختلفة التي ستظهر في أنحاء النظام.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y">
-                {logoSections.map((section) => (
-                  <LogoUploader 
-                    key={section.id} 
-                    id={section.id}
-                    label={section.label}
-                    logoSrc={logos[section.id] || null}
-                    onFileChange={handleFileChange}
-                    onRemove={handleRemoveLogo}
-                  />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-      </motion.div>
-      
-      <div className="flex justify-start pt-4 border-t">
-         <Button size="lg" onClick={handleSaveChanges}>
-            <Save className="ml-2 h-4 w-4" />
-            حفظ كل التغييرات
-         </Button>
-      </div>
-    </motion.div>
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>اسم الشركة</CardTitle>
+                    <CardDescription>الاسم الذي سيظهر في جميع أنحاء النظام.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Input
+                        id="companyName"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        placeholder="أدخل اسم شركتك"
+                    />
+                </CardContent>
+            </Card>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>الشعارات</CardTitle>
+                    <CardDescription>
+                    ارفع الشعارات المختلفة التي ستظهر في أنحاء النظام.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <div className="divide-y">
+                        {logoSections.map((section) => (
+                        <LogoUploader 
+                            key={section.id} 
+                            id={section.id}
+                            label={section.label}
+                            logoSrc={logos[section.id] || null}
+                            onFileChange={handleFileChange}
+                            onRemove={handleRemoveLogo}
+                        />
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+         <div className="flex justify-start pt-6 mt-6 border-t">
+            <Button size="lg" onClick={handleSaveChanges}>
+                <Save className="ml-2 h-4 w-4" />
+                حفظ كل التغييرات
+            </Button>
+        </div>
+    </SettingsLayout>
   );
 }
