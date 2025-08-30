@@ -35,27 +35,27 @@ const LogoUploader = ({ id, label, icon, logoData, onFileChange, onRemove }: {
   onRemove: (id: string) => void;
 }) => (
   <Card className="hover:shadow-lg transition-shadow duration-300">
-    <CardHeader className="flex items-center gap-3">
+    <CardHeader className="flex flex-row items-center gap-4">
       {icon}
-      <CardTitle>{label}</CardTitle>
+      <CardTitle className="text-base">{label}</CardTitle>
     </CardHeader>
-    <CardContent className="flex flex-col sm:flex-row items-center gap-4">
-      <div className="relative h-24 w-24 rounded-md border p-1 flex items-center justify-center" style={{ backgroundColor: logoData.bgColor || '#fff' }}>
+    <CardContent className="flex flex-col items-center gap-4 text-center">
+      <div className="relative h-28 w-full rounded-md border p-2 flex items-center justify-center bg-slate-50 dark:bg-slate-800/50" style={{ backgroundColor: logoData.bgColor }}>
         {logoData.src ? (
-          <Image src={logoData.src} alt={label} fill style={{ objectFit: 'contain' }} className="rounded-md"/>
+          <Image src={logoData.src} alt={label} fill style={{ objectFit: 'contain' }} className="rounded-md p-1"/>
         ) : (
           <ImageIcon className="h-8 w-8 text-muted-foreground"/>
         )}
       </div>
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex w-full gap-2">
         {logoData.src && (
-          <Button variant="destructive" size="sm" onClick={() => onRemove(id)}>
-            <X className="h-4 w-4 mr-1"/> حذف
+          <Button variant="destructive" size="sm" onClick={() => onRemove(id)} className="w-full">
+            <X className="h-4 w-4"/>
           </Button>
         )}
-        <Button variant="outline" size="sm" asChild>
+        <Button variant="outline" size="sm" asChild className="w-full">
           <Label htmlFor={id} className="cursor-pointer flex items-center gap-1">
-            <Upload className="h-4 w-4"/> رفع
+            <Upload className="h-4 w-4"/> {logoData.src ? 'تغيير' : 'رفع'}
             <Input
               id={id}
               type="file"
@@ -109,11 +109,10 @@ export default function CompanyIdentityPage() {
       description="إدارة اسم الشركة والشعارات المختلفة المستخدمة في النظام."
       backHref="/dashboard/settings/general"
     >
-      <div className="space-y-6">
+      <div className="space-y-8">
         <Card>
           <CardHeader>
             <CardTitle>اسم الشركة</CardTitle>
-            <CardDescription>الاسم الذي سيظهر في جميع أنحاء النظام.</CardDescription>
           </CardHeader>
           <CardContent>
             <Input
@@ -125,19 +124,28 @@ export default function CompanyIdentityPage() {
           </CardContent>
         </Card>
 
-        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {logoSections.map((section) => (
-            <LogoUploader
-              key={section.id}
-              id={section.id}
-              label={section.label}
-              icon={section.icon}
-              logoData={logos[section.id]}
-              onFileChange={handleFileChange}
-              onRemove={handleRemoveLogo}
-            />
-          ))}
-        </div>
+        <Card>
+            <CardHeader>
+                <CardTitle>شعارات النظام</CardTitle>
+                <CardDescription>
+                    قم برفع الشعارات لكل قسم من أقسام النظام. سيتم استخدام الشعار الافتراضي في حال لم يتم رفع شعار مخصص.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {logoSections.map((section) => (
+                    <LogoUploader
+                    key={section.id}
+                    id={section.id}
+                    label={section.label}
+                    icon={section.icon}
+                    logoData={logos[section.id]}
+                    onFileChange={handleFileChange}
+                    onRemove={handleRemoveLogo}
+                    />
+                ))}
+            </CardContent>
+        </Card>
+        
 
         <div className="flex justify-start pt-6 mt-6 border-t">
           <Button size="lg" onClick={handleSaveChanges}>
