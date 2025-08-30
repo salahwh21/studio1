@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Palette, XCircle, Loader2, Save, ArrowLeft, Type, Droplets, CreditCard, AlertCircle, BorderSplit, Columns2, Brush, BarChart, Text, Component, Link as LinkIcon, Eye, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,42 +27,117 @@ const fonts = [
     { name: 'IBM Plex Sans Arabic', variable: 'var(--font-ibm-plex-sans-arabic)'},
 ];
 
+const ColorInput = ({ id, label, value, onChange }: { id: string, label: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
+    <div className="space-y-2">
+      <Label htmlFor={id} className='text-xs'>{label}</Label>
+      <div className="flex items-center gap-2">
+         <Input 
+            id={id} 
+            type="color" 
+            value={value} 
+            onChange={onChange} 
+            className="w-12 h-10 p-1 cursor-pointer"
+            aria-label={`منتقي ألوان لـ ${label}`}
+        />
+        <Input
+            type="text"
+            value={value.toUpperCase()}
+            onChange={onChange}
+            className="flex-1 h-10 font-mono text-sm"
+            aria-label={`قيمة لون سداسية لـ ${label}`}
+        />
+      </div>
+    </div>
+);
+
 export default function FontsColorsPage() {
   const { toast } = useToast();
   
-  // States
-  const [primary, setPrimary] = useState('#FF8C42');
+  // States with new defaults
+  const [primary, setPrimary] = useState('#F96941');
   const [primaryForeground, setPrimaryForeground] = useState('#FFFFFF');
   const [background, setBackground] = useState('#FFFFFF');
-  const [foreground, setForeground] = useState('#020817');
-  const [mutedForeground, setMutedForeground] = useState('#5B7C99');
-  const [accent, setAccent] = useState('#5B7C99');
-  const [card, setCard] = useState('#CFE8EF');
-  const [cardForeground, setCardForeground] = useState('#020817');
+  const [foreground, setForeground] = useState('#0a0a0a');
+  const [mutedForeground, setMutedForeground] = useState('#525252');
+  const [accent, setAccent] = useState('#F1F5F9');
+  const [card, setCard] = useState('#FFFFFF');
+  const [cardForeground, setCardForeground] = useState('#0a0a0a');
   const [popover, setPopover] = useState('#FFFFFF');
-  const [popoverForeground, setPopoverForeground] = useState('#020817');
+  const [popoverForeground, setPopoverForeground] = useState('#0a0a0a');
   const [secondary, setSecondary] = useState('#F1F5F9');
   const [secondaryForeground, setSecondaryForeground] = useState('#0F172A');
   const [destructive, setDestructive] = useState('#EF4444');
-  const [border, setBorder] = useState('#E2E8F0');
-  const [input, setInput] = useState('#E2E8F0');
-  const [ring, setRing] = useState('#FF8C42');
-  const [chart1, setChart1] = useState('#FF8C42');
-  const [chart2, setChart2] = useState('#5B7C99');
-  const [chart3, setChart3] = useState('#10B981');
-  const [chart4, setChart4] = useState('#8B5CF6');
-  const [chart5, setChart5] = useState('#EC4899');
+  const [border, setBorder] = useState('#E5E7EB');
+  const [input, setInput] = useState('#E5E7EB');
+  const [ring, setRing] = useState('#F96941');
+  const [chart1, setChart1] = useState('#F96941');
+  const [chart2, setChart2] = useState('#60A5FA');
+  const [chart3, setChart3] = useState('#34D399');
+  const [chart4, setChart4] = useState('#A78BFA');
+  const [chart5, setChart5] = useState('#F472B6');
   
   // Sidebar states
   const [sidebarBackground, setSidebarBackground] = useState('#0F172A');
   const [sidebarForeground, setSidebarForeground] = useState('#E2E8F0');
-  const [sidebarAccent, setSidebarAccent] = useState('#FF8C42');
+  const [sidebarAccent, setSidebarAccent] = useState('#F96941');
   const [sidebarAccentForeground, setSidebarAccentForeground] = useState('#FFFFFF');
   const [sidebarBorder, setSidebarBorder] = useState('#1E293B');
 
   const [fontFamily, setFontFamily] = useState('Tajawal');
   const [baseFontSize, setBaseFontSize] = useState(14);
   const [isSaving, setIsSaving] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('customThemeSettings');
+    if (savedTheme) {
+      const settings = JSON.parse(savedTheme);
+      setPrimary(settings.primary || '#F96941');
+      setPrimaryForeground(settings.primaryForeground || '#FFFFFF');
+      setBackground(settings.background || '#FFFFFF');
+      setForeground(settings.foreground || '#0a0a0a');
+      setMutedForeground(settings.mutedForeground || '#525252');
+      setAccent(settings.accent || '#F1F5F9');
+      setCard(settings.card || '#FFFFFF');
+      setCardForeground(settings.cardForeground || '#0a0a0a');
+      setPopover(settings.popover || '#FFFFFF');
+      setPopoverForeground(settings.popoverForeground || '#0a0a0a');
+      setSecondary(settings.secondary || '#F1F5F9');
+      setSecondaryForeground(settings.secondaryForeground || '#0F172A');
+      setDestructive(settings.destructive || '#EF4444');
+      setBorder(settings.border || '#E5E7EB');
+      setInput(settings.input || '#E5E7EB');
+      setRing(settings.ring || '#F96941');
+      setChart1(settings.chart1 || '#F96941');
+      setChart2(settings.chart2 || '#60A5FA');
+      setChart3(settings.chart3 || '#34D399');
+      setChart4(settings.chart4 || '#A78BFA');
+      setChart5(settings.chart5 || '#F472B6');
+      setSidebarBackground(settings.sidebarBackground || '#0F172A');
+      setSidebarForeground(settings.sidebarForeground || '#E2E8F0');
+      setSidebarAccent(settings.sidebarAccent || '#F96941');
+      setSidebarAccentForeground(settings.sidebarAccentForeground || '#FFFFFF');
+      setSidebarBorder(settings.sidebarBorder || '#1E293B');
+      setFontFamily(settings.fontFamily || 'Tajawal');
+      setBaseFontSize(settings.baseFontSize || 14);
+    }
+    setIsMounted(true);
+  }, []);
+
+  const themeSettings = useMemo(() => ({
+    primary, primaryForeground, background, foreground, mutedForeground, accent, card, cardForeground,
+    popover, popoverForeground, secondary, secondaryForeground, destructive, border, input, ring,
+    chart1, chart2, chart3, chart4, chart5,
+    sidebarBackground, sidebarForeground, sidebarAccent, sidebarAccentForeground, sidebarBorder,
+    fontFamily, baseFontSize
+  }), [
+      primary, primaryForeground, background, foreground, mutedForeground, accent, card, cardForeground,
+      popover, popoverForeground, secondary, secondaryForeground, destructive, border, input, ring,
+      chart1, chart2, chart3, chart4, chart5,
+      sidebarBackground, sidebarForeground, sidebarAccent, sidebarAccentForeground, sidebarBorder,
+      fontFamily, baseFontSize
+  ]);
 
   const previewStyle = useMemo(() => ({
     '--preview-primary': primary,
@@ -87,42 +162,15 @@ export default function FontsColorsPage() {
     setIsSaving(true);
     const formData = new FormData();
     
-    // Append all colors
-    formData.append('primary', primary);
-    formData.append('primaryForeground', primaryForeground);
-    formData.append('background', background);
-    formData.append('foreground', foreground);
-    formData.append('mutedForeground', mutedForeground);
-    formData.append('accent', accent);
-    formData.append('card', card);
-    formData.append('cardForeground', cardForeground);
-    formData.append('popover', popover);
-    formData.append('popoverForeground', popoverForeground);
-    formData.append('secondary', secondary);
-    formData.append('secondaryForeground', secondaryForeground);
-    formData.append('destructive', destructive);
-    formData.append('border', border);
-    formData.append('input', input);
-    formData.append('ring', ring);
-    formData.append('chart1', chart1);
-    formData.append('chart2', chart2);
-    formData.append('chart3', chart3);
-    formData.append('chart4', chart4);
-    formData.append('chart5', chart5);
-    formData.append('sidebarBackground', sidebarBackground);
-    formData.append('sidebarForeground', sidebarForeground);
-    formData.append('sidebarAccent', sidebarAccent);
-    formData.append('sidebarAccentForeground', sidebarAccentForeground);
-    formData.append('sidebarBorder', sidebarBorder);
-    
-    // Append font settings
-    formData.append('fontFamily', fontFamily);
-    formData.append('fontSize', baseFontSize.toString());
+    Object.entries(themeSettings).forEach(([key, value]) => {
+        formData.append(key, value.toString());
+    });
 
     try {
       const result = await updateThemeAction(formData);
 
       if (result.success) {
+        localStorage.setItem('customThemeSettings', JSON.stringify(themeSettings));
         toast({
           title: 'تم الحفظ بنجاح!',
           description: 'تم تحديث الألوان والخطوط. قد تحتاج لإعادة تحميل الصفحة لرؤية التغييرات.',
@@ -141,15 +189,13 @@ export default function FontsColorsPage() {
     }
   };
   
-  const ColorInput = ({ id, label, value, onChange }: { id: string, label: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
-    <div className="space-y-2">
-      <Label htmlFor={id} className='text-xs'>{label}</Label>
-      <div className='relative'>
-        <Input id={id} type="color" value={value} onChange={onChange} className="w-full h-10 p-1 cursor-pointer"/>
-        <span className='absolute left-12 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono select-all'>{value}</span>
-      </div>
-    </div>
-  );
+  if (!isMounted) {
+    return (
+        <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
 
 
   return (
