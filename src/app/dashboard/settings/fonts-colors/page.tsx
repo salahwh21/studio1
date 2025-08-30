@@ -30,9 +30,9 @@ const fonts = [
 export default function FontsColorsPage() {
   const { toast } = useToast();
   
-  const [primaryColor, setPrimaryColor] = useState('#29ABE2');
-  const [backgroundColor, setBackgroundColor] = useState('#F0F9FF'); // Lighter blue
-  const [accentColor, setAccentColor] = useState('#F2994A'); 
+  const [primaryColor, setPrimaryColor] = useState('#3B82F6'); // Blue from status
+  const [backgroundColor, setBackgroundColor] = useState('#EFF6FF'); // Lighter blue from status
+  const [accentColor, setAccentColor] = useState('#F97316'); // Orange from status
 
   const [fontFamily, setFontFamily] = useState('Tajawal');
   const [baseFontSize, setBaseFontSize] = useState(14);
