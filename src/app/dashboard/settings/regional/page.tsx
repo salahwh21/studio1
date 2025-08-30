@@ -47,6 +47,12 @@ const weekStartDays = [
     { value: 'monday', label: 'الإثنين' },
 ];
 
+const numberSeparators = [
+    { value: ',', label: 'فاصلة (,)' },
+    { value: '.', label: 'نقطة (.)' },
+    { value: ' ', label: 'فراغ ( )' },
+];
+
 
 export default function RegionalSettingsPage() {
     const { toast } = useToast();
@@ -86,9 +92,9 @@ export default function RegionalSettingsPage() {
             <div className="space-y-6">
                  <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-lg"><Icon name="DollarSign" /> إعدادات العملة</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-lg"><Icon name="DollarSign" /> إعدادات العملة والأرقام</CardTitle>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="currency">العملة الافتراضية</Label>
                             <Select value={settings.currency} onValueChange={(value) => setSetting('currency', value)}>
@@ -101,6 +107,37 @@ export default function RegionalSettingsPage() {
                         <div className="space-y-2">
                             <Label htmlFor="currencySymbol">رمز العملة</Label>
                             <Input id="currencySymbol" value={settings.currencySymbol} onChange={(e) => setSetting('currencySymbol', e.target.value)} placeholder="مثال: د.أ"/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>موضع رمز العملة</Label>
+                            <RadioGroup value={settings.currencySymbolPosition} onValueChange={(value) => setSetting('currencySymbolPosition', value as 'before' | 'after')} className="flex gap-4 pt-2">
+                                <div className="flex items-center space-x-2 space-x-reverse">
+                                    <RadioGroupItem value="after" id="pos-after" />
+                                    <Label htmlFor="pos-after" className="font-normal">بعد الرقم (1.00 د.أ)</Label>
+                                </div>
+                                <div className="flex items-center space-x-2 space-x-reverse">
+                                    <RadioGroupItem value="before" id="pos-before" />
+                                    <Label htmlFor="pos-before" className="font-normal">قبل الرقم (د.أ 1.00)</Label>
+                                </div>
+                            </RadioGroup>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="thousandsSeparator">فاصل الآلاف</Label>
+                             <Select value={settings.thousandsSeparator} onValueChange={(value) => setSetting('thousandsSeparator', value)}>
+                                <SelectTrigger id="thousandsSeparator"><SelectValue/></SelectTrigger>
+                                <SelectContent>
+                                    {numberSeparators.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="decimalSeparator">الفاصل العشري</Label>
+                            <Select value={settings.decimalSeparator} onValueChange={(value) => setSetting('decimalSeparator', value)}>
+                                <SelectTrigger id="decimalSeparator"><SelectValue/></SelectTrigger>
+                                <SelectContent>
+                                    {numberSeparators.filter(s => s.value !== ' ').map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </CardContent>
                 </Card>
@@ -119,6 +156,24 @@ export default function RegionalSettingsPage() {
                                 </SelectContent>
                             </Select>
                         </div>
+                    </CardContent>
+                </Card>
+                
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg"><Icon name="Package" /> نظام الوحدات</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                         <RadioGroup value={settings.unitsSystem} onValueChange={(value) => setSetting('unitsSystem', value as 'metric' | 'imperial')} className="flex gap-6 pt-2">
+                                <div className="flex items-center space-x-2 space-x-reverse">
+                                    <RadioGroupItem value="metric" id="unit-metric" />
+                                    <Label htmlFor="unit-metric" className="font-normal">النظام المتري (كيلوجرام، سنتيمتر)</Label>
+                                </div>
+                                <div className="flex items-center space-x-2 space-x-reverse">
+                                    <RadioGroupItem value="imperial" id="unit-imperial" />
+                                    <Label htmlFor="unit-imperial" className="font-normal">النظام الإمبراطوري (رطل، بوصة)</Label>
+                                </div>
+                            </RadioGroup>
                     </CardContent>
                 </Card>
 
@@ -168,4 +223,3 @@ export default function RegionalSettingsPage() {
         </div>
     );
 }
-

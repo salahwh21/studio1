@@ -7,10 +7,14 @@ import React, { createContext, useState, useEffect, ReactNode } from 'react';
 interface RegionalSettings {
     currency: string;
     currencySymbol: string;
+    currencySymbolPosition: 'before' | 'after';
+    thousandsSeparator: string;
+    decimalSeparator: string;
     language: string;
     timezone: string;
     dateFormat: string;
     firstDayOfWeek: string;
+    unitsSystem: 'metric' | 'imperial';
 }
 
 // Define the context shape
@@ -27,10 +31,14 @@ export const RegionalSettingsContext = createContext<RegionalSettingsContextType
 const defaultSettings: RegionalSettings = {
     currency: 'JOD',
     currencySymbol: 'د.أ',
+    currencySymbolPosition: 'after',
+    thousandsSeparator: ',',
+    decimalSeparator: '.',
     language: 'ar',
     timezone: 'Asia/Amman',
     dateFormat: 'DD/MM/YYYY',
     firstDayOfWeek: 'saturday',
+    unitsSystem: 'metric',
 };
 
 // Create the provider component
