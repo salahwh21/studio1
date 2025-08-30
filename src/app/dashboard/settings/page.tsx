@@ -3,9 +3,9 @@
 
 import Link from 'next/link';
 import type { LucideIcon } from "lucide-react";
-import { Settings, User, Users, MapPin, ListChecks, Bell, ArrowLeft, Store, DollarSign, Share2, MessageSquareQuote } from "lucide-react";
+import { Settings, User, Users, MapPin, ListChecks, Bell, ArrowLeft, Store, DollarSign, Share2, MessageSquareQuote, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from 'framer-motion';
 
 const settingsItems: {
@@ -14,7 +14,7 @@ const settingsItems: {
   title: string;
   description: string;
 }[] = [
-  { href: '/dashboard/settings/general', icon: Settings, title: 'الإعدادات العامة', description: 'التحكم في هوية الشركة، الألوان، والميزات الرئيسية.' },
+  { href: '/dashboard/settings/general', icon: LayoutGrid, title: 'الإعدادات العامة', description: 'التحكم في هوية الشركة، الألوان، والميزات الرئيسية.' },
   { href: '#', icon: User, title: 'إعدادات الحساب', description: 'إدارة ملفك الشخصي وتغيير كلمة المرور.' },
   { href: '#', icon: Users, title: 'المستخدمين', description: 'إدارة صلاحيات وأدوار السائقين والمدراء.' },
   { href: '#', icon: Store, title: 'التجار', description: 'إدارة حسابات التجار وتسعير التوصيل الخاص بهم.' },
@@ -55,6 +55,7 @@ const SettingsItemCard = ({ item, index }: { item: (typeof settingsItems)[0], in
                 </div>
                 <div className="space-y-1">
                   <CardTitle className="text-lg">{item.title}</CardTitle>
+                  <CardDescription className="text-xs leading-relaxed">{item.description}</CardDescription>
                 </div>
             </CardHeader>
         </Card>
@@ -65,17 +66,12 @@ const SettingsItemCard = ({ item, index }: { item: (typeof settingsItems)[0], in
 export default function SettingsPage() {
   return (
     <motion.div 
-      className="mx-auto max-w-5xl space-y-8 p-4 sm:p-6"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      className="space-y-8"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <motion.div 
-        className="flex items-center justify-between"
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.4 }}
-      >
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
             <Settings className="h-8 w-8 text-primary" />
             <div>
@@ -90,7 +86,7 @@ export default function SettingsPage() {
                 <ArrowLeft className="h-5 w-5"/>
             </Link>
         </Button>
-      </motion.div>
+      </div>
       
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {settingsItems.map((item, index) => (
@@ -100,3 +96,5 @@ export default function SettingsPage() {
     </motion.div>
   );
 }
+
+    
