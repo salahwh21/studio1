@@ -80,7 +80,7 @@ const iconMapping: { [key in keyof typeof LucideIcons]?: { feather?: keyof typeo
   BarChart: { feather: 'BarChart2', hero: 'ChartBarIcon' },
   RefreshCw: { feather: 'RefreshCw', hero: 'ArrowPathIcon'},
   Download: { feather: 'Download', hero: 'ArrowDownTrayIcon'},
-  // HomeIcon is not a Lucide icon, special handling
+  HomeIcon: { feather: 'Home', hero: 'HomeIcon'},
 };
 
 
@@ -97,7 +97,7 @@ const Icon = ({ name, ...props }: IconProps) => {
         setStrokeWidth(parseFloat(savedStroke));
       };
 
-      updateSettings(); // Initial load
+      updateSettings();
       setIsMounted(true);
 
       const handleStorageChange = (event: StorageEvent) => {
@@ -115,41 +115,31 @@ const Icon = ({ name, ...props }: IconProps) => {
 
   if (!isMounted) {
       const LucideIcon = LucideIcons[name as keyof typeof LucideIcons] as React.ElementType;
-      if (!LucideIcon) return null;
+      if (!LucideIcon) return <LucideIcons.HelpCircle {...props} />;
       return <LucideIcon strokeWidth={strokeWidth} {...props} />;
   }
 
   let IconComponent: React.ElementType | null = null;
   const lucideName = name as keyof typeof LucideIcons;
 
-  if (name === 'HomeIcon') { // Special case for HeroHomeIcon
-      if (library === 'heroicons') {
-          IconComponent = HeroIcons.HomeIcon;
-      } else if (library === 'feather') {
-          IconComponent = FeatherIcons.Home;
-      } else {
-          IconComponent = LucideIcons.Home;
-      }
-  } else {
-    const featherName = iconMapping[lucideName]?.feather;
-    const heroName = iconMapping[lucideName]?.hero;
+  const featherName = iconMapping[lucideName]?.feather;
+  const heroName = iconMapping[lucideName]?.hero;
 
-    switch (library) {
-      case 'feather':
-        IconComponent = featherName ? FeatherIcons[featherName] : LucideIcons[lucideName];
-        break;
-      case 'heroicons':
-        IconComponent = heroName ? HeroIcons[heroName] : LucideIcons[lucideName];
-        break;
-      case 'lucide':
-      default:
-        IconComponent = LucideIcons[lucideName];
-        break;
-    }
+  switch (library) {
+    case 'feather':
+      IconComponent = featherName ? FeatherIcons[featherName] : LucideIcons[lucideName];
+      break;
+    case 'heroicons':
+      IconComponent = heroName ? HeroIcons[heroName] : LucideIcons[lucideName];
+      break;
+    case 'lucide':
+    default:
+      IconComponent = LucideIcons[lucideName];
+      break;
   }
   
   if (!IconComponent) {
-    const FallbackIcon = LucideIcons[name as keyof typeof LucideIcons] || LucideIcons.HelpCircle;
+    const FallbackIcon = LucideIcons.HelpCircle;
     return <FallbackIcon strokeWidth={strokeWidth} {...props} />;
   }
 

@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import Icon from '@/components/icon';
 import { HomeIcon as HeroHomeIcon } from '@heroicons/react/24/outline';
 
 
@@ -45,6 +46,10 @@ export default function InterfaceCustomizationPage() {
       document.documentElement.style.setProperty('--radius', `${borderRadius}rem`);
       document.body.dataset.iconStroke = iconStrokeWidth.toString();
       document.body.dataset.iconLibrary = iconLibrary;
+      // Trigger a storage event to notify other components (like Icon)
+      window.dispatchEvent(new StorageEvent('storage', { key: 'ui-icon-library', newValue: iconLibrary }));
+      window.dispatchEvent(new StorageEvent('storage', { key: 'ui-icon-stroke', newValue: iconStrokeWidth.toString() }));
+
     }
   }, [isMounted, density, borderRadius, iconStrokeWidth, iconLibrary]);
 
@@ -63,12 +68,12 @@ export default function InterfaceCustomizationPage() {
   const getIconExample = (library: string) => {
     const props = { style: { strokeWidth: iconStrokeWidth }, className: 'h-6 w-6' };
     switch(library) {
-      case 'feather': return <Feather {...props}/>;
-      case 'heroicons': return <HeroHomeIcon {...props}/>;
+      case 'feather': return <Icon name="Feather" {...props}/>;
+      case 'heroicons': return <Icon name="HomeIcon" {...props}/>;
       case 'fontawesome': return <FontAwesomeIcon {...props}/>;
       case 'lucide':
       default:
-        return <Brush {...props}/>;
+        return <Icon name="Brush" {...props}/>;
     }
   }
 
@@ -82,7 +87,7 @@ export default function InterfaceCustomizationPage() {
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Brush /> تخصيص الواجهة
+              <Icon name="Brush" /> تخصيص الواجهة
             </CardTitle>
             <CardDescription className="mt-1">
               تحكم في مظهر وشكل الواجهة لتناسب تفضيلاتك.
@@ -90,7 +95,7 @@ export default function InterfaceCustomizationPage() {
           </div>
           <Button variant="outline" size="icon" asChild>
             <Link href="/dashboard/settings/general">
-              <ArrowLeft className="h-4 w-4" />
+              <Icon name="ArrowLeft" />
             </Link>
           </Button>
         </CardHeader>
@@ -100,7 +105,7 @@ export default function InterfaceCustomizationPage() {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg"><SlidersHorizontal /> كثافة العرض</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-lg"><Icon name="SlidersHorizontal" /> كثافة العرض</CardTitle>
               <CardDescription>اختر بين عرض مريح أو مضغوط لعرض المزيد من البيانات.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -123,7 +128,7 @@ export default function InterfaceCustomizationPage() {
           
            <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg"><Paintbrush /> نمط الأيقونات</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-lg"><Icon name="Paintbrush" /> نمط الأيقونات</CardTitle>
               <CardDescription>تحكم في مظهر الأيقونات في جميع أنحاء النظام.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -132,17 +137,17 @@ export default function InterfaceCustomizationPage() {
                     <RadioGroup value={iconLibrary} onValueChange={setIconLibrary} className="grid grid-cols-3 gap-4 mt-2">
                         <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
                             <RadioGroupItem value="lucide" id="il1" className="sr-only" />
-                            <Brush className="h-8 w-8 mb-2"/>
+                            <Icon name="Brush" className="h-8 w-8 mb-2"/>
                             <span className="font-medium text-sm">Lucide</span>
                         </Label>
                         <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
                             <RadioGroupItem value="feather" id="il2" className="sr-only" />
-                            <Feather className="h-8 w-8 mb-2"/>
+                            <Icon name="Feather" className="h-8 w-8 mb-2"/>
                             <span className="font-medium text-sm">Feather</span>
                         </Label>
                          <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
                             <RadioGroupItem value="heroicons" id="il3" className="sr-only" />
-                            <HeroHomeIcon className="h-8 w-8 mb-2"/>
+                            <Icon name="HomeIcon" className="h-8 w-8 mb-2"/>
                             <span className="font-medium text-sm">Heroicons</span>
                         </Label>
                     </RadioGroup>
@@ -150,7 +155,7 @@ export default function InterfaceCustomizationPage() {
                 <div>
                     <Label htmlFor="icon-stroke">سماكة خط الأيقونة: {iconStrokeWidth.toFixed(1)}px</Label>
                     <div className="flex items-center gap-4 pt-2">
-                        <TextSelect className="h-6 w-6 text-muted-foreground" style={{strokeWidth: 1}}/>
+                        <Icon name="TextSelect" className="h-6 w-6 text-muted-foreground" style={{strokeWidth: 1}}/>
                         <Slider
                           id="icon-stroke"
                           min={1}
@@ -159,7 +164,7 @@ export default function InterfaceCustomizationPage() {
                           value={[iconStrokeWidth]}
                           onValueChange={(value) => setIconStrokeWidth(value[0])}
                         />
-                        <TextSelect className="h-6 w-6 text-muted-foreground" style={{strokeWidth: 3}}/>
+                        <Icon name="TextSelect" className="h-6 w-6 text-muted-foreground" style={{strokeWidth: 3}}/>
                     </div>
                 </div>
             </CardContent>
@@ -167,7 +172,7 @@ export default function InterfaceCustomizationPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg"><Component /> شكل المكونات</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-lg"><Icon name="Component" /> شكل المكونات</CardTitle>
                <CardDescription>غير شكل المكونات الرئيسية مثل البطاقات والأزرار.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -176,7 +181,7 @@ export default function InterfaceCustomizationPage() {
                 <RadioGroup value={borderRadius} onValueChange={setBorderRadius} className="grid grid-cols-3 gap-4 mt-2">
                    <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
                       <RadioGroupItem value="0" id="br1" className="sr-only" />
-                      <Square className="h-8 w-8 mb-2"/>
+                      <Icon name="Square" className="h-8 w-8 mb-2"/>
                       <span className="font-medium text-sm">حاد</span>
                   </Label>
                    <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
@@ -186,7 +191,7 @@ export default function InterfaceCustomizationPage() {
                   </Label>
                   <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
                       <RadioGroupItem value="1" id="br3" className="sr-only" />
-                      <Circle className="h-8 w-8 mb-2"/>
+                      <Icon name="Circle" className="h-8 w-8 mb-2"/>
                       <span className="font-medium text-sm">مستدير</span>
                   </Label>
                 </RadioGroup>
@@ -225,7 +230,7 @@ export default function InterfaceCustomizationPage() {
       </div>
        <div className="flex justify-start pt-6 mt-6 border-t">
           <Button size="lg" onClick={handleSaveChanges}>
-            <Save className="ml-2 h-4 w-4" /> حفظ التغييرات
+            <Icon name="Save" className="ml-2 h-4 w-4" /> حفظ التغييرات
           </Button>
         </div>
     </div>
