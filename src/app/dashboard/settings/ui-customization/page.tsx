@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { ArrowLeft, Brush, Component, Droplets, SlidersHorizontal, Square, Circle, Paintbrush, TextSelect, Save, Feather, Star } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Brush, Component, SlidersHorizontal, Square, Circle, Paintbrush, TextSelect, Save, Feather, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -21,9 +21,37 @@ export default function InterfaceCustomizationPage() {
   const [borderRadius, setBorderRadius] = useState('0.5');
   const [iconStrokeWidth, setIconStrokeWidth] = useState(2);
   const [iconLibrary, setIconLibrary] = useState('lucide');
+  const [isMounted, setIsMounted] = useState(false);
 
+  useEffect(() => {
+    const savedDensity = localStorage.getItem('ui-density') || 'comfortable';
+    const savedRadius = localStorage.getItem('ui-border-radius') || '0.5';
+    const savedStrokeWidth = localStorage.getItem('ui-icon-stroke') || '2';
+    const savedIconLibrary = localStorage.getItem('ui-icon-library') || 'lucide';
+    
+    setDensity(savedDensity);
+    setBorderRadius(savedRadius);
+    setIconStrokeWidth(parseFloat(savedStrokeWidth));
+    setIconLibrary(savedIconLibrary);
+    
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      document.body.dataset.density = density;
+      document.documentElement.style.setProperty('--radius', `${borderRadius}rem`);
+      document.body.dataset.iconStroke = iconStrokeWidth.toString();
+      document.body.dataset.iconLibrary = iconLibrary;
+    }
+  }, [isMounted, density, borderRadius, iconStrokeWidth, iconLibrary]);
 
   const handleSaveChanges = () => {
+    localStorage.setItem('ui-density', density);
+    localStorage.setItem('ui-border-radius', borderRadius);
+    localStorage.setItem('ui-icon-stroke', iconStrokeWidth.toString());
+    localStorage.setItem('ui-icon-library', iconLibrary);
+    
     toast({
       title: 'تم حفظ الإعدادات!',
       description: 'تم حفظ تفضيلات الواجهة بنجاح.',
@@ -31,13 +59,18 @@ export default function InterfaceCustomizationPage() {
   };
 
   const getIconExample = (library: string) => {
+    const props = { style: { strokeWidth: iconStrokeWidth }, className: 'h-6 w-6' };
     switch(library) {
-      case 'feather': return <Feather style={{strokeWidth: iconStrokeWidth}}/>;
-      case 'fontawesome': return <FontAwesomeIcon style={{strokeWidth: iconStrokeWidth}}/>;
+      case 'feather': return <Feather {...props}/>;
+      case 'fontawesome': return <FontAwesomeIcon {...props}/>;
       case 'lucide':
       default:
-        return <Brush style={{strokeWidth: iconStrokeWidth}}/>;
+        return <Brush {...props}/>;
     }
+  }
+
+  if (!isMounted) {
+    return null; // Or a loading skeleton
   }
 
   return (
@@ -69,13 +102,13 @@ export default function InterfaceCustomizationPage() {
             </CardHeader>
             <CardContent>
               <RadioGroup value={density} onValueChange={setDensity} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Label className="flex-1 cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[&_div[data-state=checked]]:border-primary">
+                <Label className="flex-1 cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
                   <RadioGroupItem value="comfortable" id="r1" className="sr-only" />
                   <span className="text-2xl mb-2 block">📄</span>
                   <span className="font-medium">مريح (Comfortable)</span>
                   <p className="text-xs text-muted-foreground mt-1">مساحات واسعة لقراءة أسهل.</p>
                 </Label>
-                <Label className="flex-1 cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[&_div[data-state=checked]]:border-primary">
+                <Label className="flex-1 cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
                   <RadioGroupItem value="compact" id="r2" className="sr-only" />
                    <span className="text-2xl mb-2 block">🗂️</span>
                   <span className="font-medium">مضغوط (Compact)</span>
@@ -94,17 +127,17 @@ export default function InterfaceCustomizationPage() {
                 <div>
                     <Label>مكتبة الأيقونات</Label>
                     <RadioGroup value={iconLibrary} onValueChange={setIconLibrary} className="grid grid-cols-3 gap-4 mt-2">
-                        <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[&_div[data-state=checked]]:border-primary">
+                        <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
                             <RadioGroupItem value="lucide" id="il1" className="sr-only" />
                             <Brush className="h-8 w-8 mb-2"/>
                             <span className="font-medium text-sm">Lucide</span>
                         </Label>
-                        <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[&_div[data-state=checked]]:border-primary">
+                        <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
                             <RadioGroupItem value="feather" id="il2" className="sr-only" />
                             <Feather className="h-8 w-8 mb-2"/>
                             <span className="font-medium text-sm">Feather</span>
                         </Label>
-                        <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[&_div[data-state=checked]]:border-primary disabled:opacity-50 disabled:cursor-not-allowed">
+                        <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary disabled:opacity-50 disabled:cursor-not-allowed">
                             <RadioGroupItem value="fontawesome" id="il3" className="sr-only" disabled/>
                             <FontAwesomeIcon className="h-8 w-8 mb-2"/>
                             <span className="font-medium text-sm">Font Awesome</span>
@@ -138,17 +171,17 @@ export default function InterfaceCustomizationPage() {
                <div>
                 <Label>استدارة الحواف (Border Radius)</Label>
                 <RadioGroup value={borderRadius} onValueChange={setBorderRadius} className="grid grid-cols-3 gap-4 mt-2">
-                   <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[&_div[data-state=checked]]:border-primary">
+                   <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
                       <RadioGroupItem value="0" id="br1" className="sr-only" />
                       <Square className="h-8 w-8 mb-2"/>
                       <span className="font-medium text-sm">حاد</span>
                   </Label>
-                   <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[&_div[data-state=checked]]:border-primary">
+                   <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
                       <RadioGroupItem value="0.5" id="br2" className="sr-only" />
                       <div className="h-8 w-8 mb-2 rounded-md bg-muted-foreground/20"></div>
                       <span className="font-medium text-sm">عادي</span>
                   </Label>
-                  <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[&_div[data-state=checked]]:border-primary">
+                  <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
                       <RadioGroupItem value="1" id="br3" className="sr-only" />
                       <Circle className="h-8 w-8 mb-2"/>
                       <span className="font-medium text-sm">مستدير</span>
