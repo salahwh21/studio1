@@ -29,10 +29,10 @@ const navItems: NavItem[] = [
   { href: '/dashboard/drivers-map', icon: Map, label: 'خريطة السائقين' },
   { href: '/dashboard/returns', icon: Undo2, label: 'إدارة المرتجعات' },
   { href: '/dashboard/financials', icon: Calculator, label: 'المحاسبة' },
+  { href: '/dashboard/settings', icon: Settings, label: 'الإعدادات' },
 ];
 
 const bottomNavItems: NavItem[] = [
-    { href: '/dashboard/settings', icon: Settings, label: 'الإعدادات' },
 ]
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
