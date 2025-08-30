@@ -31,13 +31,13 @@ export default function FontsColorsPage() {
   const { toast } = useToast();
   
   // States
-  const [primary, setPrimary] = useState('#F2994A');
+  const [primary, setPrimary] = useState('#FF8C42');
   const [primaryForeground, setPrimaryForeground] = useState('#FFFFFF');
-  const [background, setBackground] = useState('#F8FAFC');
+  const [background, setBackground] = useState('#FFFFFF');
   const [foreground, setForeground] = useState('#020817');
-  const [mutedForeground, setMutedForeground] = useState('#64748B');
-  const [accent, setAccent] = useState('#29ABE2');
-  const [card, setCard] = useState('#FFFFFF');
+  const [mutedForeground, setMutedForeground] = useState('#5B7C99');
+  const [accent, setAccent] = useState('#5B7C99');
+  const [card, setCard] = useState('#CFE8EF');
   const [cardForeground, setCardForeground] = useState('#020817');
   const [popover, setPopover] = useState('#FFFFFF');
   const [popoverForeground, setPopoverForeground] = useState('#020817');
@@ -46,9 +46,9 @@ export default function FontsColorsPage() {
   const [destructive, setDestructive] = useState('#EF4444');
   const [border, setBorder] = useState('#E2E8F0');
   const [input, setInput] = useState('#E2E8F0');
-  const [ring, setRing] = useState('#F2994A');
-  const [chart1, setChart1] = useState('#F2994A');
-  const [chart2, setChart2] = useState('#29ABE2');
+  const [ring, setRing] = useState('#FF8C42');
+  const [chart1, setChart1] = useState('#FF8C42');
+  const [chart2, setChart2] = useState('#5B7C99');
   const [chart3, setChart3] = useState('#10B981');
   const [chart4, setChart4] = useState('#8B5CF6');
   const [chart5, setChart5] = useState('#EC4899');
@@ -56,7 +56,7 @@ export default function FontsColorsPage() {
   // Sidebar states
   const [sidebarBackground, setSidebarBackground] = useState('#0F172A');
   const [sidebarForeground, setSidebarForeground] = useState('#E2E8F0');
-  const [sidebarAccent, setSidebarAccent] = useState('#F2994A');
+  const [sidebarAccent, setSidebarAccent] = useState('#FF8C42');
   const [sidebarAccentForeground, setSidebarAccentForeground] = useState('#FFFFFF');
   const [sidebarBorder, setSidebarBorder] = useState('#1E293B');
 
@@ -304,4 +304,3 @@ export default function FontsColorsPage() {
     </div>
   );
 }
-
