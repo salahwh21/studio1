@@ -66,7 +66,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <>
       <div className="flex min-h-screen w-full flex-col bg-muted/40">
         <AppHeader navItems={navItems} bottomNavItems={[]} />
-        <main className="flex flex-1 flex-col gap-4 bg-background sm:gap-8 p-4 sm:p-6 md:p-8 mb-16 md:mb-0">
+        <main className="flex flex-1 flex-col gap-4 bg-background p-4 sm:p-6 md:p-8 mb-16 md:mb-0">
             {children}
         </main>
       </div>
