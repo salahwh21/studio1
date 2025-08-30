@@ -207,9 +207,7 @@ export function OrdersTable() {
 
     // Reset open groups when groupBy changes
     useEffect(() => {
-        if (groupBy) {
-            setOpenGroups({});
-        }
+        setOpenGroups({});
     }, [groupBy]);
     
     const visibleColumns = useMemo(() => columns.filter(c => visibleColumnKeys.includes(c.key)), [columns, visibleColumnKeys]);
@@ -282,7 +280,7 @@ export function OrdersTable() {
         if (!groupBy || Array.isArray(groupedAndSortedOrders)) {
             return {};
         }
-
+    
         const result: { [key: string]: Record<string, number> } = {};
         for (const groupKey in groupedAndSortedOrders) {
             const groupOrders = groupedAndSortedOrders[groupKey];
@@ -296,7 +294,6 @@ export function OrdersTable() {
         }
         return result;
     }, [groupedAndSortedOrders, groupBy, selectedRows, calculateGroupTotals]);
-
     
     const totalPages = groupBy ? 1 : Math.ceil(sortedOrders.length / rowsPerPage);
 
@@ -323,7 +320,7 @@ export function OrdersTable() {
         }, []);
     }, [groupedAndSortedOrders, groupBy, openGroups]);
     
-    const currentOrderList = groupBy ? visibleOrdersInOpenGroups : (Array.isArray(paginatedOrders) ? paginatedOrders : Object.values(paginatedOrders).flat());
+    const currentOrderList = groupBy ? visibleOrdersInOpenGroups : (Array.isArray(paginatedOrders) ? paginatedOrders : []);
 
     const isAllSelected = currentOrderList.length > 0 && selectedRows.length > 0 && currentOrderList.every(o => selectedRows.includes(o.id));
     const isIndeterminate = selectedRows.length > 0 && !isAllSelected;
@@ -386,7 +383,7 @@ export function OrdersTable() {
             return totalsResult;
         };
         const selectedOrdersList = orders.filter(o => selectedRows.includes(o.id));
-        const listForCalculation = groupBy ? sortedOrders : (Array.isArray(paginatedOrders) ? paginatedOrders : Object.values(paginatedOrders).flat());
+        const listForCalculation = groupBy ? sortedOrders : (Array.isArray(paginatedOrders) ? paginatedOrders : []);
 
         return {
             main: calculateTotals(listForCalculation),
