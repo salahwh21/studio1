@@ -44,7 +44,9 @@ const LogoUploader = ({ id, label, icon, logoData, onFileChange, onRemove }: {
     <CardContent className="flex flex-col items-center gap-4 text-center">
       <div className="relative h-28 w-full rounded-md border p-2 flex items-center justify-center bg-slate-50 dark:bg-slate-800/50">
         {logoData.src ? (
-          <Image src={logoData.src} alt={label} width={120} height={40} style={{ objectFit: 'contain' }} className="rounded-md p-1"/>
+          <div className="relative h-full w-full flex items-center justify-center">
+              <Image src={logoData.src} alt={label} layout="intrinsic" width={120} height={40} style={{ objectFit: 'contain' }} className="rounded-md p-1"/>
+          </div>
         ) : (
           <ImageIcon className="h-8 w-8 text-muted-foreground"/>
         )}
@@ -82,9 +84,9 @@ export default function CompanyIdentityPage() {
   
   const { settings, setSetting, setLoginLogo } = context;
 
-  const [companyName, setCompanyName] = useState('الوميض');
+  const [companyName, setCompanyName] = useState(settings.companyName);
   const [logos, setLogos] = useState<LocalLogosState>({
-    admin: { src: settings.loginLogo }, // Only manage the main logo for now
+    admin: { src: settings.loginLogo },
     merchant: { src: null },
     driver: { src: null },
     invoice: { src: null },
@@ -106,9 +108,14 @@ export default function CompanyIdentityPage() {
   };
 
   const handleSaveChanges = () => {
-    // In a real app, you'd also save the company name to your backend/context
-    // For now, we only update the logo in the context.
+    const finalCompanyName = companyName.trim() === '' ? 'الوميض' : companyName;
+    if (companyName.trim() === '') {
+        setCompanyName('الوميض');
+    }
+
+    setSetting('companyName', finalCompanyName);
     setLoginLogo(logos.admin.src);
+    
     toast({
       title: 'تم الحفظ بنجاح!',
       description: 'تم تحديث هوية الشركة والشعارات.',
