@@ -141,8 +141,6 @@ export default function FontsColorsPage() {
                     <SelectItem value="Vazirmatn">Vazirmatn</SelectItem>
                     {/* Non-arabic */}
                     <SelectItem value="Inter">Inter</SelectItem>
-                    <SelectItem value="Roboto">Roboto</SelectItem>
-                    <SelectItem value="PT_Sans">PT Sans</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

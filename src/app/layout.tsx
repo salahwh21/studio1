@@ -27,9 +27,7 @@ import {
   Harmattan, 
   Aref_Ruqaa, 
   Vazirmatn,
-  Inter,
-  Roboto,
-  PT_Sans
+  Inter
 } from 'next/font/google';
 
 const tajawal = Tajawal({ subsets: ['latin', 'arabic'], weight: ['400', '700'], variable: '--font-tajawal' });
@@ -53,8 +51,6 @@ const harmattan = Harmattan({ subsets: ['latin', 'arabic'], weight: ['400', '700
 const aref_ruqaa = Aref_Ruqaa({ subsets: ['latin', 'arabic'], weight: ['400', '700'], variable: '--font-aref-ruqaa' });
 const vazirmatn = Vazirmatn({ subsets: ['latin', 'arabic'], weight: ['400', '700'], variable: '--font-vazirmatn' });
 const inter = Inter({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-inter' });
-const roboto = Roboto({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-roboto' });
-const pt_sans = PT_Sans({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-pt-sans' });
 
 
 export const metadata: Metadata = {
@@ -91,8 +87,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ${aref_ruqaa.variable}
         ${vazirmatn.variable}
         ${inter.variable}
-        ${roboto.variable}
-        ${pt_sans.variable}
       `}
     >
       <body className={`font-sans antialiased`}>
