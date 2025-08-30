@@ -3,7 +3,7 @@
 
 import { useState, useContext } from 'react';
 import {
-  Upload, X, Building, Smartphone, FileText, Barcode, Image as ImageIcon, Save
+  Upload, X, Building, Smartphone, FileText, Barcode, Image as ImageIcon, Save, LayoutHeader
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import { LoginExperienceContext } from '@/context/LoginExperienceContext';
 
 const logoSections = [
   { id: 'admin', label: 'شعار لوحة التحكم', icon: <Building className="h-6 w-6 text-blue-500"/> },
+  { id: 'header', label: 'شعار الهيدر', icon: <LayoutHeader className="h-6 w-6 text-indigo-500"/> },
   { id: 'merchant', label: 'شعار لوحة التاجر', icon: <Smartphone className="h-6 w-6 text-green-500"/> },
   { id: 'driver', label: 'شعار تطبيق السائق', icon: <Smartphone className="h-6 w-6 text-purple-500"/> },
   { id: 'invoice', label: 'شعار الفاتورة', icon: <FileText className="h-6 w-6 text-yellow-500"/> },
@@ -82,11 +83,12 @@ export default function CompanyIdentityPage() {
     return <div>جاري تحميل الإعدادات...</div>;
   }
   
-  const { settings, setSetting, setLoginLogo } = context;
+  const { settings, setSetting } = context;
 
   const [companyName, setCompanyName] = useState(settings.companyName);
   const [logos, setLogos] = useState<LocalLogosState>({
     admin: { src: settings.loginLogo },
+    header: { src: settings.headerLogo },
     merchant: { src: null },
     driver: { src: null },
     invoice: { src: null },
@@ -108,13 +110,14 @@ export default function CompanyIdentityPage() {
   };
 
   const handleSaveChanges = () => {
-    const finalCompanyName = typeof companyName === 'string' && companyName.trim() === '' ? 'الوميض' : companyName;
+    const finalCompanyName = (typeof companyName === 'string' && companyName.trim() === '') ? 'الوميض' : companyName;
     if (typeof companyName === 'string' && companyName.trim() === '') {
         setCompanyName('الوميض');
     }
 
     setSetting('companyName', finalCompanyName);
-    setLoginLogo(logos.admin.src);
+    setSetting('loginLogo', logos.admin.src);
+    setSetting('headerLogo', logos.header.src);
     
     toast({
       title: 'تم الحفظ بنجاح!',

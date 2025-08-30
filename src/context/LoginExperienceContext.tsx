@@ -15,6 +15,7 @@ interface LoginSettings {
   welcomeMessage: string;
   cardColor: string;
   loginLogo: string | null;
+  headerLogo: string | null;
   loginBg: string | null;
   showForgotPassword: boolean;
   socialLinks: SocialLinks;
@@ -25,7 +26,6 @@ interface LoginExperienceContextType {
   settings: LoginSettings;
   setSetting: <K extends keyof LoginSettings>(key: K, value: LoginSettings[K]) => void;
   setSocialLink: <K extends keyof SocialLinks>(key: K, value: SocialLinks[K]) => void;
-  setLoginLogo: (logo: string | null) => void;
   isHydrated: boolean;
 }
 
@@ -38,6 +38,7 @@ const defaultSettings: LoginSettings = {
   welcomeMessage: 'مرحباً',
   cardColor: '#ffffff',
   loginLogo: null,
+  headerLogo: null,
   loginBg: null,
   showForgotPassword: true,
   socialLinks: {
@@ -57,7 +58,9 @@ export const LoginExperienceProvider = ({ children }: { children: ReactNode }) =
     try {
       const item = window.localStorage.getItem('loginExperienceSettings');
       if (item) {
-        setSettings(JSON.parse(item));
+        // Merge saved settings with defaults to avoid errors if new settings are added
+        const savedSettings = JSON.parse(item);
+        setSettings(prev => ({...prev, ...savedSettings}));
       }
     } catch (error) {
       console.error("Failed to load settings from localStorage", error);
@@ -96,11 +99,7 @@ export const LoginExperienceProvider = ({ children }: { children: ReactNode }) =
       }))
   }
 
-  const setLoginLogo = (logo: string | null) => {
-    setSetting('loginLogo', logo);
-  };
-
-  const value = { settings, setSetting, setSocialLink, setLoginLogo, isHydrated };
+  const value = { settings, setSetting, setSocialLink, isHydrated };
 
   return (
     <LoginExperienceContext.Provider value={value}>

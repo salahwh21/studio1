@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, LogOut, Moon, Settings, Sun, User, type LucideIcon, Menu } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useContext } from 'react';
+import Image from 'next/image';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -21,6 +23,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Logo } from './logo';
 import { Separator } from './ui/separator';
+import { LoginExperienceContext } from '@/context/LoginExperienceContext';
 
 type NavItem = {
   href: string;
@@ -36,6 +39,8 @@ interface AppHeaderProps {
 export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
   const { setTheme, theme } = useTheme();
   const pathname = usePathname();
+  const context = useContext(LoginExperienceContext);
+  const headerLogo = context?.settings.headerLogo;
 
   const isActive = (href: string) => {
     // Exact match for the main dashboard page
@@ -54,12 +59,19 @@ export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
   
   const allNavItems = [...navItems, ...bottomNavItems];
 
+  const HeaderLogo = () => {
+    if (headerLogo) {
+      return <Image src={headerLogo} alt="Company Logo" width={120} height={32} style={{objectFit: 'contain'}} />
+    }
+    return <Logo />;
+  }
+
   return (
     <TooltipProvider delayDuration={0}>
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 sm:px-6">
         
         <div className="flex items-center gap-4">
-          <Logo />
+          <HeaderLogo />
         </div>
 
         <nav className="hidden flex-1 items-center justify-center md:flex">
@@ -100,7 +112,7 @@ export function AppHeader({ navItems, bottomNavItems }: AppHeaderProps) {
                     <SheetContent side="right" className="flex flex-col p-2 w-72">
                          <SheetHeader className='p-4'>
                             <SheetTitle className='sr-only'>Main Menu</SheetTitle>
-                            <Logo />
+                            <HeaderLogo />
                         </SheetHeader>
                         <Separator />
                         <nav className="flex-1 flex flex-col gap-2 p-2 overflow-y-auto">
