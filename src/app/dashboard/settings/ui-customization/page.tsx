@@ -11,11 +11,11 @@ import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import Icon from '@/components/icon';
-import { HomeIcon as HeroHomeIcon } from '@heroicons/react/24/outline';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 
 // A placeholder for FontAwesome icon if it were to be used
-const FontAwesomeIcon = ({className}: {className?: string}) => <Icon name="Star" className={className} />;
+const FaIcon = ({className}: {className?: string}) => <FontAwesomeIcon icon="star" className={className} />;
 
 
 export default function InterfaceCustomizationPage() {
@@ -69,7 +69,7 @@ export default function InterfaceCustomizationPage() {
     const props = { style: { strokeWidth: iconStrokeWidth }, className: 'h-6 w-6' };
     switch(library) {
       case 'feather': return <Icon name="Feather" {...props}/>;
-      case 'fontawesome': return <FontAwesomeIcon {...props}/>;
+      case 'fontawesome': return <FaIcon {...props}/>;
       case 'lucide':
       default:
         return <Icon name="Brush" {...props}/>;
@@ -146,7 +146,7 @@ export default function InterfaceCustomizationPage() {
                         </Label>
                          <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
                             <RadioGroupItem value="fontawesome" id="il3" className="sr-only" />
-                            <FontAwesomeIcon className="h-8 w-8 mb-2"/>
+                            <FaIcon className="h-8 w-8 mb-2"/>
                             <span className="font-medium text-sm">Font Awesome</span>
                         </Label>
                     </RadioGroup>

@@ -8,9 +8,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { fas } from '@fortawesome/free-solid-svg-icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
 
+// Add all solid icons to the library, so we can use them by name
 library.add(fas);
 
-type IconName = keyof typeof LucideIcons | keyof typeof FeatherIcons;
+type IconName = keyof typeof LucideIcons;
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
   name: IconName;
@@ -204,8 +205,10 @@ const Icon = ({ name, ...props }: IconProps) => {
       break;
     case 'fontawesome':
       if (faName) {
+        // FontAwesomeIcon is a component, not an SVG element directly
         return <FontAwesomeIcon icon={faName} className={props.className} />;
       }
+      // Fallback to Lucide if no FontAwesome mapping exists
       IconComponent = LucideIcons[lucideName];
       break;
     case 'lucide':
