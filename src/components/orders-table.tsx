@@ -69,7 +69,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -267,12 +267,12 @@ export function OrdersTable() {
         if (!groupBy || Array.isArray(groupedAndSortedOrders)) {
             return {};
         }
-    
+
         const financialKeys = visibleColumns
             .filter(c => c.type === 'financial')
             .map(c => c.key as keyof Order);
-    
-        const calculateGroupTotals = (orderList: Order[]) => {
+
+        const calculateTotalsForList = (orderList: Order[]) => {
             return orderList.reduce((acc, order) => {
                 financialKeys.forEach(key => {
                     acc[key as string] = (acc[key as string] || 0) + (order[key] as number);
@@ -286,13 +286,12 @@ export function OrdersTable() {
             const groupOrders = groupedAndSortedOrders[groupKey];
             const selectedInGroup = groupOrders.filter(o => selectedRows.includes(o.id));
             
-            // If any rows in the group are selected, calculate totals for the selected rows.
-            // Otherwise, calculate totals for all rows in the group.
             const listForCalculation = selectedInGroup.length > 0 ? selectedInGroup : groupOrders;
-            result[groupKey] = calculateGroupTotals(listForCalculation);
+            result[groupKey] = calculateTotalsForList(listForCalculation);
         }
         return result;
     }, [groupedAndSortedOrders, groupBy, selectedRows, visibleColumns]);
+
 
     const totalPages = groupBy ? 1 : Math.ceil(sortedOrders.length / rowsPerPage);
 
@@ -423,7 +422,7 @@ export function OrdersTable() {
     const renderOrderRow = (order: Order, index: number) => {
         return (
             <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50">
-                <TableCell className="sticky right-0 z-10 p-2 text-center border-l bg-slate-100 dark:bg-slate-800 data-[state=selected]:bg-primary/20">
+                <TableCell className="sticky right-0 z-10 p-4 text-center border-l bg-card dark:bg-card data-[state=selected]:bg-primary/20">
                     <div className="flex items-center justify-center gap-2">
                         <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
                         <Checkbox
@@ -455,7 +454,7 @@ export function OrdersTable() {
                         default:
                             content = value as React.ReactNode;
                     }
-                    return <TableCell key={col.key} className="p-2 text-center whitespace-nowrap border-l">{content}</TableCell>
+                    return <TableCell key={col.key} className="p-4 text-center whitespace-nowrap border-l text-base">{content}</TableCell>
                 })}
             </TableRow>
         )
@@ -659,9 +658,9 @@ export function OrdersTable() {
                     {/* Table Container */}
                      <div className="flex-1 border rounded-lg overflow-auto flex flex-col">
                         <Table>
-                            <TableHeader className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800">
+                            <TableHeader className="sticky top-0 z-20 bg-slate-200 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800">
                                 <TableRow>
-                                    <TableHead className="sticky right-0 z-30 p-2 text-center border-b border-l w-24 bg-slate-100 dark:bg-slate-800">
+                                    <TableHead className="sticky right-0 z-30 p-4 text-center border-b border-l w-24 bg-slate-200 dark:bg-slate-800">
                                       <div className="flex items-center justify-center gap-2">
                                         <span className="text-sm font-bold">#</span>
                                         <Checkbox
@@ -673,7 +672,7 @@ export function OrdersTable() {
                                       </div>
                                     </TableHead>
                                     {visibleColumns.map((col) => (
-                                    <TableHead key={col.key} className="p-2 text-center whitespace-nowrap border-b border-l bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 transition-colors duration-200">
+                                    <TableHead key={col.key} className="p-4 text-center whitespace-nowrap border-b border-l bg-slate-200 dark:bg-slate-800 hover:bg-primary/10 transition-colors duration-200">
                                         {col.sortable ? (
                                             <Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-foreground hover:bg-transparent hover:text-foreground w-full p-0 h-auto">
                                                 {col.label}
@@ -789,4 +788,3 @@ export function OrdersTable() {
         </>
     );
 }
-
