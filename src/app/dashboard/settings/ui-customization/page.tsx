@@ -15,7 +15,7 @@ import { HomeIcon as HeroHomeIcon } from '@heroicons/react/24/outline';
 
 
 // A placeholder for FontAwesome icon if it were to be used
-const FontAwesomeIcon = ({className}: {className?: string}) => <Star className={className} />;
+const FontAwesomeIcon = ({className}: {className?: string}) => <Icon name="Star" className={className} />;
 
 
 export default function InterfaceCustomizationPage() {
@@ -69,7 +69,6 @@ export default function InterfaceCustomizationPage() {
     const props = { style: { strokeWidth: iconStrokeWidth }, className: 'h-6 w-6' };
     switch(library) {
       case 'feather': return <Icon name="Feather" {...props}/>;
-      case 'heroicons': return <Icon name="HomeIcon" {...props}/>;
       case 'fontawesome': return <FontAwesomeIcon {...props}/>;
       case 'lucide':
       default:
@@ -146,9 +145,9 @@ export default function InterfaceCustomizationPage() {
                             <span className="font-medium text-sm">Feather</span>
                         </Label>
                          <Label className="flex flex-col items-center justify-center cursor-pointer rounded-lg border p-4 text-center hover:bg-accent has-[div[data-state=checked]]:border-primary">
-                            <RadioGroupItem value="heroicons" id="il3" className="sr-only" />
-                            <Icon name="HomeIcon" className="h-8 w-8 mb-2"/>
-                            <span className="font-medium text-sm">Heroicons</span>
+                            <RadioGroupItem value="fontawesome" id="il3" className="sr-only" />
+                            <FontAwesomeIcon className="h-8 w-8 mb-2"/>
+                            <span className="font-medium text-sm">Font Awesome</span>
                         </Label>
                     </RadioGroup>
                 </div>
