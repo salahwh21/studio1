@@ -3,7 +3,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   ListFilter,
@@ -262,6 +262,38 @@ export function OrdersTable() {
         const startIndex = page * rowsPerPage;
         return sortedOrders.slice(startIndex, startIndex + rowsPerPage);
     }, [sortedOrders, page, rowsPerPage, groupBy, groupedAndSortedOrders]);
+
+    const groupedTotals = useMemo(() => {
+        if (!groupBy || Array.isArray(groupedAndSortedOrders)) {
+            return {};
+        }
+
+        const financialKeys = visibleColumns
+            .filter(c => c.type === 'financial')
+            .map(c => c.key as keyof Order);
+            
+        const calculateTotalsForList = (orderList: Order[]) => {
+            return orderList.reduce((acc, order) => {
+                financialKeys.forEach(key => {
+                    acc[key as string] = (acc[key as string] || 0) + (order[key] as number);
+                });
+                return acc;
+            }, {} as Record<string, number>);
+        };
+    
+        const result: { [key: string]: Record<string, number> } = {};
+        for (const groupKey in groupedAndSortedOrders) {
+            const groupOrders = groupedAndSortedOrders[groupKey];
+            const selectedInGroup = groupOrders.filter(o => selectedRows.includes(o.id));
+            
+            if (selectedInGroup.length > 0) {
+                result[groupKey] = calculateTotalsForList(selectedInGroup);
+            } else {
+                result[groupKey] = calculateTotalsForList(groupOrders);
+            }
+        }
+        return result;
+    }, [groupedAndSortedOrders, selectedRows, visibleColumns, groupBy]);
     
     const totalPages = groupBy ? 1 : Math.ceil(sortedOrders.length / rowsPerPage);
 
@@ -277,14 +309,30 @@ export function OrdersTable() {
         }
     };
     
-    const currentOrderList = Array.isArray(paginatedOrders) ? paginatedOrders : Object.values(paginatedOrders).flat();
-    const isAllSelected = currentOrderList.length > 0 && selectedRows.length === currentOrderList.length;
-    const isIndeterminate = selectedRows.length > 0 && selectedRows.length < currentOrderList.length;
+    const visibleOrdersInOpenGroups = useMemo(() => {
+        if (!groupBy || Array.isArray(groupedAndSortedOrders)) return [];
+        return Object.entries(groupedAndSortedOrders).reduce((acc: Order[], [groupKey, groupOrders]) => {
+            const isGroupOpen = openGroups[groupKey] ?? true;
+            if (isGroupOpen) {
+                return [...acc, ...groupOrders];
+            }
+            return acc;
+        }, []);
+    }, [groupedAndSortedOrders, groupBy, openGroups]);
+    
+    const currentOrderList = groupBy ? visibleOrdersInOpenGroups : (Array.isArray(paginatedOrders) ? paginatedOrders : Object.values(paginatedOrders).flat());
+
+    const isAllSelected = currentOrderList.length > 0 && selectedRows.length > 0 && currentOrderList.every(o => selectedRows.includes(o.id));
+    const isIndeterminate = selectedRows.length > 0 && !isAllSelected;
 
 
     const handleSelectAll = (checked: boolean | 'indeterminate') => {
-        const orderList = groupBy ? sortedOrders : (Array.isArray(paginatedOrders) ? paginatedOrders : Object.values(paginatedOrders).flat());
-        setSelectedRows(checked === true ? orderList.map(o => o.id) : []);
+        const orderIdsToSelect = currentOrderList.map(o => o.id);
+        if (checked) {
+            setSelectedRows(prev => [...new Set([...prev, ...orderIdsToSelect])]);
+        } else {
+            setSelectedRows(prev => prev.filter(id => !orderIdsToSelect.includes(id)));
+        }
     };
     
     const handleSelectRow = (id: string, checked: boolean) => {
@@ -375,8 +423,8 @@ export function OrdersTable() {
 
     const renderOrderRow = (order: Order, index: number) => {
         return (
-            <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50 bg-card">
-                <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-inherit">
+            <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50">
+                <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-card">
                     <div className="flex items-center justify-center gap-2">
                         <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
                         <Checkbox
@@ -614,7 +662,7 @@ export function OrdersTable() {
                         <Table>
                             <TableHeader className="sticky top-0 z-20 bg-[#4A5568] hover:bg-[#4A5568]">
                                 <TableRow>
-                                    <TableHead className="sticky right-0 z-30 bg-inherit text-white p-1 text-center border-b border-l w-24">
+                                    <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l w-24">
                                       <div className="flex items-center justify-center gap-2">
                                         <span className="text-sm font-bold">#</span>
                                         <Checkbox
@@ -642,7 +690,8 @@ export function OrdersTable() {
                             <TableBody>
                                 {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
                                     Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
-                                        const isGroupOpen = openGroups[groupKey] ?? true;
+                                        const isGroupOpen = openGroups[groupKey] ?? false;
+                                        const currentGroupTotals = groupedTotals[groupKey] || {};
                                         return (
                                             <React.Fragment key={groupKey}>
                                                 <TableRow
@@ -653,6 +702,20 @@ export function OrdersTable() {
                                                         <div className="flex items-center w-full px-4 py-3 gap-4">
                                                             <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
                                                             <span>{groupKey} ({groupOrders.length})</span>
+                                                            <div className="flex items-center gap-4 text-xs font-medium mr-auto">
+                                                                {visibleColumns.map(col => {
+                                                                    if (col.type === 'financial') {
+                                                                        const totalValue = currentGroupTotals[col.key as string] || 0;
+                                                                        return (
+                                                                            <div key={col.key} className="flex items-center gap-1">
+                                                                                <span className="text-muted-foreground">{col.label}:</span>
+                                                                                <span className="font-bold text-primary">{totalValue.toFixed(2)}</span>
+                                                                            </div>
+                                                                        );
+                                                                    }
+                                                                    return null;
+                                                                })}
+                                                            </div>
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
