@@ -31,9 +31,9 @@ export default function FontsColorsPage() {
   const { toast } = useToast();
   
   // Main Colors
-  const [primaryColor, setPrimaryColor] = useState('#2563EB');
-  const [backgroundColor, setBackgroundColor] = useState('#F0F9FF');
-  const [accentColor, setAccentColor] = useState('#F97316'); 
+  const [primaryColor, setPrimaryColor] = useState('#29ABE2');
+  const [backgroundColor, setBackgroundColor] = useState('#E5F5FB');
+  const [accentColor, setAccentColor] = useState('#F2994A'); 
 
   // Text Colors
   const [foregroundColor, setForegroundColor] = useState('#020817');
@@ -249,3 +249,5 @@ export default function FontsColorsPage() {
     </div>
   );
 }
+
+    
