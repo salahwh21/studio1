@@ -263,23 +263,23 @@ export function OrdersTable() {
         return sortedOrders.slice(startIndex, startIndex + rowsPerPage);
     }, [sortedOrders, page, rowsPerPage, groupBy, groupedAndSortedOrders]);
 
-    const calculateGroupTotals = useCallback((orderList: Order[]) => {
-        const financialKeys = visibleColumns
-            .filter(c => c.type === 'financial')
-            .map(c => c.key as keyof Order);
-            
-        return orderList.reduce((acc, order) => {
-            financialKeys.forEach(key => {
-                acc[key as string] = (acc[key as string] || 0) + (order[key] as number);
-            });
-            return acc;
-        }, {} as Record<string, number>);
-    }, [visibleColumns]);
-
     const groupedTotals = useMemo(() => {
         if (!groupBy || Array.isArray(groupedAndSortedOrders)) {
             return {};
         }
+
+        const calculateTotals = (orderList: Order[]) => {
+            const financialKeys = visibleColumns
+                .filter(c => c.type === 'financial')
+                .map(c => c.key as keyof Order);
+                
+            return orderList.reduce((acc, order) => {
+                financialKeys.forEach(key => {
+                    acc[key as string] = (acc[key as string] || 0) + (order[key] as number);
+                });
+                return acc;
+            }, {} as Record<string, number>);
+        };
     
         const result: { [key: string]: Record<string, number> } = {};
         for (const groupKey in groupedAndSortedOrders) {
@@ -287,13 +287,13 @@ export function OrdersTable() {
             const selectedInGroup = groupOrders.filter(o => selectedRows.includes(o.id));
             
             if (selectedInGroup.length > 0) {
-                result[groupKey] = calculateGroupTotals(selectedInGroup);
+                result[groupKey] = calculateTotals(selectedInGroup);
             } else {
-                result[groupKey] = calculateGroupTotals(groupOrders);
+                result[groupKey] = calculateTotals(groupOrders);
             }
         }
         return result;
-    }, [groupedAndSortedOrders, groupBy, selectedRows, calculateGroupTotals]);
+    }, [groupedAndSortedOrders, groupBy, selectedRows, visibleColumns]);
     
     const totalPages = groupBy ? 1 : Math.ceil(sortedOrders.length / rowsPerPage);
 
@@ -660,9 +660,9 @@ export function OrdersTable() {
                     {/* Table Container */}
                      <div className="flex-1 border rounded-lg overflow-auto flex flex-col">
                         <Table>
-                            <TableHeader className="sticky top-0 z-20 bg-[#4A5568] hover:bg-[#4A5568]">
+                            <TableHeader className="sticky top-0 z-20 bg-card hover:bg-card">
                                 <TableRow>
-                                    <TableHead className="sticky right-0 z-30 bg-[#4A5568] text-white p-1 text-center border-b border-l w-24">
+                                    <TableHead className="sticky right-0 z-30 bg-card p-1 text-center border-b border-l w-24">
                                       <div className="flex items-center justify-center gap-2">
                                         <span className="text-sm font-bold">#</span>
                                         <Checkbox
@@ -674,9 +674,9 @@ export function OrdersTable() {
                                       </div>
                                     </TableHead>
                                     {visibleColumns.map((col) => (
-                                    <TableHead key={col.key} className="text-white p-1 text-center whitespace-nowrap border-b border-l bg-inherit">
+                                    <TableHead key={col.key} className="p-1 text-center whitespace-nowrap border-b border-l bg-inherit hover:bg-muted">
                                         {col.sortable ? (
-                                            <Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-white/20 hover:text-white w-full p-0 h-auto">
+                                            <Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-foreground hover:bg-transparent hover:text-foreground w-full p-0 h-auto">
                                                 {col.label}
                                                 <ArrowUpDown className="mr-2 h-3 w-3" />
                                             </Button>
