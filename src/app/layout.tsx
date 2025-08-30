@@ -6,17 +6,12 @@ import { ThemeProvider } from 'next-themes';
 
 import { LoginExperienceProvider } from '@/context/LoginExperienceContext';
 
-import { Mada } from 'next/font/google';
-const mada = Mada({ 
+import { Tajawal } from 'next/font/google';
+const tajawal = Tajawal({ 
   subsets: ['latin', 'arabic'], 
   weight: ['400', '700'],
-  variable: '--font-mada' 
+  variable: '--font-tajawal' 
 });
-
-
-
-// تهيئة خط Tajawal
-
 
 export const metadata: Metadata = {
   title: 'إدارة تسجيل الطلبات - الوميض',
@@ -27,7 +22,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
-      <body className={`${mada.variable} font-sans antialiased`>
+      <body className={`${tajawal.variable} font-sans antialiased`}>
         <LoginExperienceProvider>
             <ThemeProvider
             attribute="class"

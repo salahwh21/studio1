@@ -109,41 +109,40 @@ export async function updateThemeAction(formData: FormData) {
         const layoutFilePath = path.join(process.cwd(), 'src', 'app', 'layout.tsx');
         let layoutContent = await fs.readFile(layoutFilePath, 'utf-8');
 
-        // Remove existing Google Font imports and const declarations
-        layoutContent = layoutContent.replace(/import\s*{[^}]+}\s*from 'next\/font\/google';/gs, '');
-        layoutContent = layoutContent.replace(/const\s+\w+\s*=\s*\w+\({[^}]*}\);/gs, '');
-        
-        // Prepare new font details
         const fontImportName = fontFamily.replace(/ /g, '_');
         const fontConstName = `${fontFamily.toLowerCase().replace(/ /g, '_')}`;
 
-        const newImport = `import { ${fontImportName} } from 'next/font/google';`;
-        const newConst = `const ${fontConstName} = ${fontImportName}({ 
+        // Replace the existing font import
+        layoutContent = layoutContent.replace(
+            /import\s*{[^}]+}\s*from 'next\/font\/google';/,
+            `import { ${fontImportName} } from 'next/font/google';`
+        );
+        
+        // Replace the existing font const declaration
+        layoutContent = layoutContent.replace(
+            /const\s+\w+\s*=\s*\w+\({[^)]+\({[^)]+\)}\);/gs,
+            `const ${fontConstName} = ${fontImportName}({ 
   subsets: ['latin', 'arabic'], 
   weight: ['400', '700'],
   variable: '${fontVarName}' 
-});`;
-        
-        // Add new import and const after other imports
-        const lastImportMatch = Array.from(layoutContent.matchAll(/import.*from\s*['"].*['"];/g)).pop();
-        if (lastImportMatch) {
-            const endOfLastImport = lastImportMatch.index! + lastImportMatch[0].length;
-            layoutContent = 
-                layoutContent.slice(0, endOfLastImport) +
-                `\n\n${newImport}\n${newConst}` +
-                layoutContent.slice(endOfLastImport);
-        } else {
-             // Fallback if no imports found (unlikely)
-             const headIndex = layoutContent.indexOf('<head>');
-             layoutContent = layoutContent.slice(0, headIndex) + `${newImport}\n${newConst}\n` + layoutContent.slice(headIndex);
-        }
-
-        // Update className in body tag to use the new font variable
-        layoutContent = layoutContent.replace(
-            /className={`[^`]+`}/, 
-            `className={\`\${${fontConstName}.variable} font-sans antialiased\``
+});`
         );
-        
+         layoutContent = layoutContent.replace(
+            /const\s+\w+\s*=\s*\w+\({[^}]+}\);/gs, // Fallback for old structure
+            `const ${fontConstName} = ${fontImportName}({ 
+  subsets: ['latin', 'arabic'], 
+  weight: ['400', '700'],
+  variable: '${fontVarName}' 
+});`
+        );
+
+
+        // Replace the font variable in the body/html className
+        layoutContent = layoutContent.replace(
+            /\${[^}]+.variable}/,
+            `\${${fontConstName}.variable}`
+        );
+
         await fs.writeFile(layoutFilePath, layoutContent, 'utf-8');
     }
     
