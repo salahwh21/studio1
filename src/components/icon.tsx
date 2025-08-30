@@ -63,11 +63,23 @@ const iconMapping: { [key in keyof typeof LucideIcons]?: { feather?: keyof typeo
   MessageSquareQuote: { feather: 'MessageSquare', hero: 'ChatBubbleLeftRightIcon' },
   SlidersHorizontal: { feather: 'Sliders', hero: 'AdjustmentsHorizontalIcon' },
   Square: { feather: 'Square', hero: 'StopIcon' },
-  Circle: { feather: 'Circle', hero: 'CheckCircleIcon' }, // Not a direct match
+  Circle: { feather: 'Circle', hero: 'CheckCircleIcon' },
   Paintbrush: { feather: 'PenTool', hero: 'PaintBrushIcon' },
-  TextSelect: { feather: 'Type', hero: 'BarsArrowUpIcon' }, // Not a direct match
+  TextSelect: { feather: 'Type', hero: 'BarsArrowUpIcon' },
   Feather: { feather: 'Feather', hero: 'PencilIcon' },
   Star: { feather: 'Star', hero: 'StarIcon' },
+  Eye: { feather: 'Eye', hero: 'EyeIcon'},
+  Save: { feather: 'Save', hero: 'ArrowDownTrayIcon' },
+  XCircle: { feather: 'XCircle', hero: 'XCircleIcon' },
+  DollarSign: { feather: 'DollarSign', hero: 'CurrencyDollarIcon' },
+  TrendingUp: { feather: 'TrendingUp', hero: 'ArrowTrendingUpIcon' },
+  Users: { feather: 'Users', hero: 'UsersIcon' },
+  Store: { feather: 'ShoppingBag', hero: 'BuildingStorefrontIcon' },
+  Component: { feather: 'Box', hero: 'CubeTransparentIcon' },
+  Columns2: { feather: 'Columns', hero: 'RectangleGroupIcon' },
+  BarChart: { feather: 'BarChart2', hero: 'ChartBarIcon' },
+  RefreshCw: { feather: 'RefreshCw', hero: 'ArrowPathIcon'},
+  Download: { feather: 'Download', hero: 'ArrowDownTrayIcon'},
   // HomeIcon is not a Lucide icon, special handling
 };
 
@@ -78,17 +90,20 @@ const Icon = ({ name, ...props }: IconProps) => {
   const [isMounted, setIsMounted] = useState(false);
   
   useEffect(() => {
-      const savedLibrary = localStorage.getItem('ui-icon-library') || 'lucide';
-      const savedStroke = localStorage.getItem('ui-icon-stroke') || '2';
-      setLibrary(savedLibrary);
-      setStrokeWidth(parseFloat(savedStroke));
+      const updateSettings = () => {
+        const savedLibrary = localStorage.getItem('ui-icon-library') || 'lucide';
+        const savedStroke = localStorage.getItem('ui-icon-stroke') || '2';
+        setLibrary(savedLibrary);
+        setStrokeWidth(parseFloat(savedStroke));
+      };
+
+      updateSettings(); // Initial load
       setIsMounted(true);
 
-      const handleStorageChange = () => {
-          const updatedLibrary = localStorage.getItem('ui-icon-library') || 'lucide';
-          const updatedStroke = localStorage.getItem('ui-icon-stroke') || '2';
-          setLibrary(updatedLibrary);
-          setStrokeWidth(parseFloat(updatedStroke));
+      const handleStorageChange = (event: StorageEvent) => {
+          if (event.key === 'ui-icon-library' || event.key === 'ui-icon-stroke') {
+              updateSettings();
+          }
       };
       
       window.addEventListener('storage', handleStorageChange);
@@ -142,4 +157,3 @@ const Icon = ({ name, ...props }: IconProps) => {
 };
 
 export default Icon;
-
