@@ -83,6 +83,7 @@
     @apply bg-background text-foreground;
     font-family: var(--font-tajawal), sans-serif;
     font-size: 14px;
+    overflow-x: hidden;
   }
   .custom-table-container {
     display: flex;
@@ -105,5 +106,3 @@
   }
 
 }
-
-    
