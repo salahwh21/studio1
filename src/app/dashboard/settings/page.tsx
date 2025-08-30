@@ -15,7 +15,7 @@ const settingsItems: {
 }[] = [
   { href: '/dashboard/settings/general', iconName: 'LayoutGrid', title: 'الإعدادات العامة', description: 'التحكم في هوية الشركة، الألوان، والميزات الرئيسية.' },
   { href: '#', iconName: 'User', title: 'إعدادات الحساب', description: 'إدارة ملفك الشخصي وتغيير كلمة المرور.' },
-  { href: '#', iconName: 'Users', title: 'المستخدمين', description: 'إدارة صلاحيات وأدوار السائقين والمدراء.' },
+  { href: '/dashboard/settings/roles', iconName: 'Users', title: 'الأدوار والصلاحيات', description: 'إدارة صلاحيات وأدوار المستخدمين والمدراء.' },
   { href: '#', iconName: 'Store', title: 'التجار', description: 'إدارة حسابات التجار وتسعير التوصيل الخاص بهم.' },
   { href: '/dashboard/settings/areas', iconName: 'MapPin', title: 'المناطق', description: 'تحديد المدن والمناطق لعمليات التوصيل.' },
   { href: '#', iconName: 'DollarSign', title: 'قوائم الأسعار', description: 'إنشاء وتعديل قوائم أسعار التوصيل المختلفة.' },
