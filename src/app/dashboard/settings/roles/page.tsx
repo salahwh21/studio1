@@ -48,11 +48,6 @@ const roles = [
     description: 'يستخدم تطبيق السائق فقط لتحديث حالات الطلبات.',
     userCount: 15,
   },
-  {
-    name: 'تاجر',
-    description: 'يستخدم لوحة التحكم الخاصة بالتاجر لإدارة طلباته.',
-    userCount: 25,
-  },
 ];
 
 export default function RolesPermissionsPage() {
