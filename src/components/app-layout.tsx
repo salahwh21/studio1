@@ -56,12 +56,6 @@ const mobileMoreItems: NavItem[] = [
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const [isClient, setIsClient] = useState(false);
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-
 
     const isActive = (href: string) => {
         if (href === '/dashboard') return pathname === href;
@@ -73,12 +67,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <>
       <div className="flex min-h-screen w-full flex-col bg-muted/40">
         <AppHeader navItems={navItems} bottomNavItems={[]} />
-        <main 
-            className={cn(
-                "flex flex-1 flex-col gap-4 bg-background p-4 mb-16",
-                isClient && "sm:p-6 md:p-8 md:mb-0"
-            )}
-        >
+        <main className="flex flex-1 flex-col gap-4 bg-background p-4 sm:p-6 md:p-8 pb-20 md:pb-8">
             {children}
         </main>
       </div>
