@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -263,9 +264,8 @@ export function OrdersTable() {
     }, [sortedOrders, page, rowsPerPage, groupBy, groupedAndSortedOrders]);
     
     const footerTotals = useMemo(() => {
-        const selectedOrdersList = orders.filter(o => selectedRows.includes(o.id));
         const listForCalculation = selectedRows.length > 0 
-            ? selectedOrdersList
+            ? orders.filter(o => selectedRows.includes(o.id))
             : (Array.isArray(paginatedOrders) ? paginatedOrders : []);
         
         return listForCalculation.reduce((acc, order) => {
@@ -658,7 +658,10 @@ export function OrdersTable() {
                                                         const isFinancial = col.type === 'financial';
                                                         let totalValue: number | undefined;
                                                         if (isFinancial) {
-                                                            totalValue = groupOrders.reduce((sum, order) => sum + (order[col.key as keyof Order] as number), 0);
+                                                            const ordersToSum = selectedRows.length > 0 
+                                                                ? groupOrders.filter(order => selectedRows.includes(order.id))
+                                                                : groupOrders;
+                                                            totalValue = ordersToSum.reduce((sum, order) => sum + (order[col.key as keyof Order] as number), 0);
                                                         }
                                                         return (
                                                           <TableCell key={col.key} className="p-5 text-center whitespace-nowrap border-l text-primary font-mono text-base">
