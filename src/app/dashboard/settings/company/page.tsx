@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import {
   Upload, X, Building, Smartphone, FileText, Barcode, Image as ImageIcon, Save
 } from 'lucide-react';
@@ -11,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { SettingsLayout } from '@/components/settings-layout';
+import { LoginExperienceContext } from '@/context/LoginExperienceContext';
 
 const logoSections = [
   { id: 'admin', label: 'شعار لوحة التحكم', icon: <Building className="h-6 w-6 text-blue-500"/> },
@@ -22,15 +24,15 @@ const logoSections = [
   { id: 'favicon', label: 'أيقونة الموقع (Favicon)', icon: <ImageIcon className="h-6 w-6 text-gray-500"/> },
 ];
 
-type LogosState = {
-  [key: string]: { src: string | null; bgColor?: string };
+type LocalLogosState = {
+  [key: string]: { src: string | null; };
 };
 
 const LogoUploader = ({ id, label, icon, logoData, onFileChange, onRemove }: {
   id: string;
   label: string;
   icon: React.ReactNode;
-  logoData: { src: string | null; bgColor?: string };
+  logoData: { src: string | null; };
   onFileChange: (id: string, file: File) => void;
   onRemove: (id: string) => void;
 }) => (
@@ -40,9 +42,9 @@ const LogoUploader = ({ id, label, icon, logoData, onFileChange, onRemove }: {
       <CardTitle className="text-base">{label}</CardTitle>
     </CardHeader>
     <CardContent className="flex flex-col items-center gap-4 text-center">
-      <div className="relative h-28 w-full rounded-md border p-2 flex items-center justify-center bg-slate-50 dark:bg-slate-800/50" style={{ backgroundColor: logoData.bgColor }}>
+      <div className="relative h-28 w-full rounded-md border p-2 flex items-center justify-center bg-slate-50 dark:bg-slate-800/50">
         {logoData.src ? (
-          <Image src={logoData.src} alt={label} fill style={{ objectFit: 'contain' }} className="rounded-md p-1"/>
+          <Image src={logoData.src} alt={label} width={120} height={40} style={{ objectFit: 'contain' }} className="rounded-md p-1"/>
         ) : (
           <ImageIcon className="h-8 w-8 text-muted-foreground"/>
         )}
@@ -72,35 +74,45 @@ const LogoUploader = ({ id, label, icon, logoData, onFileChange, onRemove }: {
 
 export default function CompanyIdentityPage() {
   const { toast } = useToast();
+  const context = useContext(LoginExperienceContext);
+
+  if (!context) {
+    return <div>جاري تحميل الإعدادات...</div>;
+  }
+  
+  const { settings, setSetting, setLoginLogo } = context;
+
   const [companyName, setCompanyName] = useState('الوميض');
-  const [logos, setLogos] = useState<LogosState>({
-    admin: { src: '/placeholder.svg' },
+  const [logos, setLogos] = useState<LocalLogosState>({
+    admin: { src: settings.loginLogo }, // Only manage the main logo for now
     merchant: { src: null },
     driver: { src: null },
     invoice: { src: null },
     barcode: { src: null },
-    multi: { src: null, bgColor: '#ffffff' },
+    multi: { src: null },
     favicon: { src: null },
   });
 
   const handleFileChange = (id: string, file: File) => {
     const reader = new FileReader();
     reader.onloadend = () => {
-      setLogos(prev => ({ ...prev, [id]: { ...prev[id], src: reader.result as string } }));
+      setLogos(prev => ({ ...prev, [id]: { src: reader.result as string } }));
     };
     reader.readAsDataURL(file);
   };
 
   const handleRemoveLogo = (id: string) => {
-    setLogos(prev => ({ ...prev, [id]: { ...prev[id], src: null } }));
+    setLogos(prev => ({ ...prev, [id]: { src: null } }));
   };
 
   const handleSaveChanges = () => {
+    // In a real app, you'd also save the company name to your backend/context
+    // For now, we only update the logo in the context.
+    setLoginLogo(logos.admin.src);
     toast({
       title: 'تم الحفظ بنجاح!',
       description: 'تم تحديث هوية الشركة والشعارات.',
     });
-    // إضافة أي مناداة API لحفظ البيانات على السيرفر
   };
 
   return (
@@ -146,7 +158,6 @@ export default function CompanyIdentityPage() {
             </CardContent>
         </Card>
         
-
         <div className="flex justify-start pt-6 mt-6 border-t">
           <Button size="lg" onClick={handleSaveChanges}>
             <Save className="ml-2 h-4 w-4" /> حفظ كل التغييرات

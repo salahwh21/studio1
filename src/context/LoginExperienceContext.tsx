@@ -24,6 +24,7 @@ interface LoginExperienceContextType {
   settings: LoginSettings;
   setSetting: <K extends keyof LoginSettings>(key: K, value: LoginSettings[K]) => void;
   setSocialLink: <K extends keyof SocialLinks>(key: K, value: SocialLinks[K]) => void;
+  setLoginLogo: (logo: string | null) => void;
   isHydrated: boolean;
 }
 
@@ -93,7 +94,11 @@ export const LoginExperienceProvider = ({ children }: { children: ReactNode }) =
       }))
   }
 
-  const value = { settings, setSetting, setSocialLink, isHydrated };
+  const setLoginLogo = (logo: string | null) => {
+    setSetting('loginLogo', logo);
+  };
+
+  const value = { settings, setSetting, setSocialLink, setLoginLogo, isHydrated };
 
   return (
     <LoginExperienceContext.Provider value={value}>
