@@ -2,7 +2,7 @@
 'use client';
 
 import { useContext } from 'react';
-import { Upload, Facebook, Instagram, MessageSquare, X, LogIn, Save } from 'lucide-react';
+import { Upload, Facebook, Instagram, MessageSquare, X, LogIn, Save, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { LoginExperienceContext } from '@/context/LoginExperienceContext';
-import { SettingsLayout } from '@/components/settings-layout';
+import Link from 'next/link';
 
 const SocialInput = ({ id, label, icon: Icon, placeholder, value, onChange }: { id: string; label: string; icon: React.ElementType; placeholder: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
   <div className="space-y-2">
@@ -87,11 +87,22 @@ export default function LoginExperiencePage() {
   };
 
   return (
-    <SettingsLayout
-      title="تجربة تسجيل الدخول"
-      description="تخصيص مظهر ووظائف صفحة تسجيل الدخول."
-      backHref="/dashboard/settings/general"
-    >
+    <div className="space-y-6">
+      <Card className="shadow-sm">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="text-2xl font-bold tracking-tight">تجربة تسجيل الدخول</CardTitle>
+            <CardDescription className="mt-1">تخصيص مظهر ووظائف صفحة تسجيل الدخول.</CardDescription>
+          </div>
+          <Button variant="outline" size="icon" asChild>
+            <Link href="/dashboard/settings/general">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+        </CardHeader>
+      </Card>
+
+      <main>
         <div className="space-y-6">
             <Card>
                 <CardHeader><CardTitle>الإعدادات الأساسية</CardTitle></CardHeader>
@@ -153,7 +164,7 @@ export default function LoginExperiencePage() {
             حفظ التغييرات
             </Button>
       </div>
-    </SettingsLayout>
+      </main>
+    </div>
   );
 }
-

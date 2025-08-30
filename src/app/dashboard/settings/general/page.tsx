@@ -3,9 +3,9 @@
 
 import Link from 'next/link';
 import type { LucideIcon } from "lucide-react";
-import { Palette, Building, LogIn, LayoutGrid, Languages, List, ReceiptText, Package } from "lucide-react";
+import { Palette, Building, LogIn, LayoutGrid, Languages, List, ReceiptText, Package, ArrowLeft } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SettingsLayout } from '@/components/settings-layout';
+import { Button } from '@/components/ui/button';
 
 const generalSettingsItems: {
   href: string;
@@ -41,17 +41,30 @@ const SettingsItemCard = ({ item }: { item: (typeof generalSettingsItems)[0] }) 
 
 export default function GeneralSettingsPage() {
   return (
-    <SettingsLayout
-      title="الإعدادات العامة"
-      description="تحكم في الجوانب الأساسية والمظهر العام للنظام."
-      backHref="/dashboard/settings"
-    >
+    <div className="space-y-6">
+      {/* Header Card */}
+      <Card className="shadow-sm">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="text-2xl font-bold tracking-tight">الإعدادات العامة</CardTitle>
+            <CardDescription className="mt-1">تحكم في الجوانب الأساسية والمظهر العام للنظام.</CardDescription>
+          </div>
+          <Button variant="outline" size="icon" asChild>
+            <Link href="/dashboard/settings">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+        </CardHeader>
+      </Card>
+      
+      {/* Content */}
+      <main>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {generalSettingsItems.map((item) => (
                 <SettingsItemCard key={item.title} item={item} />
             ))}
         </div>
-    </SettingsLayout>
+      </main>
+    </div>
   );
 }
-
