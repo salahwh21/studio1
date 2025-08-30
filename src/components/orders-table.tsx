@@ -207,7 +207,9 @@ export function OrdersTable() {
 
     // Reset open groups when groupBy changes
     useEffect(() => {
-        setOpenGroups({});
+        if (groupBy) {
+            setOpenGroups({});
+        }
     }, [groupBy]);
     
     const visibleColumns = useMemo(() => columns.filter(c => visibleColumnKeys.includes(c.key)), [columns, visibleColumnKeys]);
@@ -263,37 +265,38 @@ export function OrdersTable() {
         return sortedOrders.slice(startIndex, startIndex + rowsPerPage);
     }, [sortedOrders, page, rowsPerPage, groupBy, groupedAndSortedOrders]);
 
+    const calculateGroupTotals = useCallback((orderList: Order[]) => {
+        const financialKeys = visibleColumns
+            .filter(c => c.type === 'financial')
+            .map(c => c.key as keyof Order);
+            
+        return orderList.reduce((acc, order) => {
+            financialKeys.forEach(key => {
+                acc[key as string] = (acc[key as string] || 0) + (order[key] as number);
+            });
+            return acc;
+        }, {} as Record<string, number>);
+    }, [visibleColumns]);
+
     const groupedTotals = useMemo(() => {
         if (!groupBy || Array.isArray(groupedAndSortedOrders)) {
             return {};
         }
 
-        const financialKeys = visibleColumns
-            .filter(c => c.type === 'financial')
-            .map(c => c.key as keyof Order);
-            
-        const calculateTotalsForList = (orderList: Order[]) => {
-            return orderList.reduce((acc, order) => {
-                financialKeys.forEach(key => {
-                    acc[key as string] = (acc[key as string] || 0) + (order[key] as number);
-                });
-                return acc;
-            }, {} as Record<string, number>);
-        };
-    
         const result: { [key: string]: Record<string, number> } = {};
         for (const groupKey in groupedAndSortedOrders) {
             const groupOrders = groupedAndSortedOrders[groupKey];
             const selectedInGroup = groupOrders.filter(o => selectedRows.includes(o.id));
             
             if (selectedInGroup.length > 0) {
-                result[groupKey] = calculateTotalsForList(selectedInGroup);
+                result[groupKey] = calculateGroupTotals(selectedInGroup);
             } else {
-                result[groupKey] = calculateTotalsForList(groupOrders);
+                result[groupKey] = calculateGroupTotals(groupOrders);
             }
         }
         return result;
-    }, [groupedAndSortedOrders, selectedRows, visibleColumns, groupBy]);
+    }, [groupedAndSortedOrders, groupBy, selectedRows, calculateGroupTotals]);
+
     
     const totalPages = groupBy ? 1 : Math.ceil(sortedOrders.length / rowsPerPage);
 
@@ -312,7 +315,7 @@ export function OrdersTable() {
     const visibleOrdersInOpenGroups = useMemo(() => {
         if (!groupBy || Array.isArray(groupedAndSortedOrders)) return [];
         return Object.entries(groupedAndSortedOrders).reduce((acc: Order[], [groupKey, groupOrders]) => {
-            const isGroupOpen = openGroups[groupKey] ?? true;
+            const isGroupOpen = openGroups[groupKey] ?? false; // Default to closed
             if (isGroupOpen) {
                 return [...acc, ...groupOrders];
             }
@@ -392,7 +395,7 @@ export function OrdersTable() {
     }, [orders, selectedRows, paginatedOrders, visibleColumns, sortedOrders, groupBy]);
 
     const displayTotals = selectedRows.length > 0 ? totals.selected : totals.main;
-    const displayCount = selectedRows.length > 0 ? selectedRows.length : (groupBy ? sortedOrders.length : paginatedOrders.length);
+    const displayCount = selectedRows.length > 0 ? selectedRows.length : (groupBy ? sortedOrders.length : (Array.isArray(paginatedOrders) ? paginatedOrders.length : 0));
     const displayLabel = selectedRows.length > 0 ? 'المحدد' : (groupBy ? 'الإجمالي الكلي' : 'إجمالي الصفحة');
 
 
@@ -424,7 +427,7 @@ export function OrdersTable() {
     const renderOrderRow = (order: Order, index: number) => {
         return (
             <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50">
-                <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-card">
+                <TableCell className="sticky right-0 z-10 p-1 text-center border-l bg-card data-[state=selected]:bg-muted">
                     <div className="flex items-center justify-center gap-2">
                         <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
                         <Checkbox
