@@ -3,7 +3,7 @@
 
 import { useContext } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Upload, Facebook, Instagram, MessageSquare, X } from 'lucide-react';
+import { ArrowLeft, Upload, Facebook, Instagram, MessageSquare, X, LogIn, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,16 +12,28 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { LoginExperienceContext } from '@/context/LoginExperienceContext';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.1,
+      duration: 0.4,
+      ease: "easeOut"
+    }
+  })
+};
 
 const SocialInput = ({ id, label, icon: Icon, placeholder, value, onChange }: { id: string; label: string; icon: React.ElementType; placeholder: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
   <div className="space-y-2">
-    <Label htmlFor={id}>{label}</Label>
-    <div className="relative">
-      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-        <Icon className="h-5 w-5 text-muted-foreground" />
-      </div>
-      <Input id={id} name={id} placeholder={placeholder} className="pl-10" value={value} onChange={onChange} />
-    </div>
+    <Label htmlFor={id} className="flex items-center gap-2">
+      <Icon className="h-4 w-4 text-muted-foreground" />
+      {label}
+    </Label>
+    <Input id={id} name={id} placeholder={placeholder} value={value} onChange={onChange} />
   </div>
 );
 
@@ -93,13 +105,21 @@ export default function LoginExperiencePage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <motion.div 
+      className="mx-auto max-w-3xl space-y-8 p-4 sm:p-6"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold">تجربة تسجيل الدخول</h1>
-          <p className="text-muted-foreground">
-            تخصيص مظهر ووظائف صفحة تسجيل الدخول.
-          </p>
+        <div className="flex items-center gap-4">
+          <LogIn className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold">تجربة تسجيل الدخول</h1>
+            <p className="text-muted-foreground">
+              تخصيص مظهر ووظائف صفحة تسجيل الدخول.
+            </p>
+          </div>
         </div>
         <Button variant="outline" size="icon" asChild>
           <Link href="/dashboard/settings/general">
@@ -108,71 +128,81 @@ export default function LoginExperiencePage() {
         </Button>
       </div>
 
-      <Card>
-        <CardContent className="space-y-6 pt-6">
-          <div className="space-y-2">
-            <Label htmlFor="welcomeMessage">رسالة الترحيب</Label>
-            <Input 
-              id="welcomeMessage" 
-              value={settings.welcomeMessage}
-              onChange={(e) => setSetting('welcomeMessage', e.target.value)}
-            />
-          </div>
+      <motion.div variants={cardVariants} initial="hidden" animate="visible" custom={0}>
+        <Card>
+            <CardHeader><CardTitle>الإعدادات الأساسية</CardTitle></CardHeader>
+            <CardContent className="space-y-6">
+                <div className="space-y-2">
+                    <Label htmlFor="welcomeMessage">رسالة الترحيب</Label>
+                    <Input 
+                        id="welcomeMessage" 
+                        value={settings.welcomeMessage}
+                        onChange={(e) => setSetting('welcomeMessage', e.target.value)}
+                    />
+                </div>
+                <div className="flex items-center justify-between rounded-lg border p-4">
+                    <Label htmlFor="showForgotPassword" className="font-medium">
+                    إظهار رابط "نسيت كلمة المرور"
+                    </Label>
+                    <Switch
+                    id="showForgotPassword"
+                    checked={settings.showForgotPassword}
+                    onCheckedChange={(checked) => setSetting('showForgotPassword', checked)}
+                    />
+                </div>
+            </CardContent>
+        </Card>
+      </motion.div>
+      
+       <motion.div variants={cardVariants} initial="hidden" animate="visible" custom={1}>
+        <Card>
+            <CardHeader><CardTitle>التصميم المرئي</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="cardColor">لون خلفية البطاقة</Label>
+                    <Input 
+                    id="cardColor" 
+                    type="color" 
+                    value={settings.cardColor} 
+                    onChange={(e) => setSetting('cardColor', e.target.value)}
+                    className="h-12 p-1" 
+                    />
+                </div>
+                 <FileUploadButton 
+                    id="loginLogo" 
+                    label="شعار مخصص لصفحة الدخول" 
+                    fileSrc={settings.loginLogo}
+                    onFileChange={handleFileChange}
+                    onRemove={handleRemoveFile}
+                />
+                <FileUploadButton 
+                    id="loginBg" 
+                    label="صورة خلفية لصفحة الدخول"
+                    fileSrc={settings.loginBg}
+                    onFileChange={handleFileChange}
+                    onRemove={handleRemoveFile}
+                />
+            </CardContent>
+        </Card>
+      </motion.div>
 
-          <div className="space-y-2">
-            <Label htmlFor="cardColor">لون خلفية البطاقة</Label>
-            <Input 
-              id="cardColor" 
-              type="color" 
-              value={settings.cardColor} 
-              onChange={(e) => setSetting('cardColor', e.target.value)}
-              className="h-12 p-1" 
-             />
-          </div>
-
-          <div className="space-y-4 rounded-lg border p-4">
-            <FileUploadButton 
-                id="loginLogo" 
-                label="شعار مخصص لصفحة الدخول" 
-                fileSrc={settings.loginLogo}
-                onFileChange={handleFileChange}
-                onRemove={handleRemoveFile}
-            />
-            <FileUploadButton 
-                id="loginBg" 
-                label="صورة خلفية لصفحة الدخول"
-                fileSrc={settings.loginBg}
-                onFileChange={handleFileChange}
-                onRemove={handleRemoveFile}
-            />
-          </div>
-
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <Label htmlFor="showForgotPassword" className="font-medium">
-              إظهار رابط "نسيت كلمة المرور"
-            </Label>
-            <Switch
-              id="showForgotPassword"
-              checked={settings.showForgotPassword}
-              onCheckedChange={(checked) => setSetting('showForgotPassword', checked)}
-            />
-          </div>
-
-          <div>
-             <h3 className="mb-4 text-lg font-medium">روابط التواصل الاجتماعي</h3>
-             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+       <motion.div variants={cardVariants} initial="hidden" animate="visible" custom={2}>
+        <Card>
+            <CardHeader><CardTitle>روابط التواصل الاجتماعي</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <SocialInput id="whatsapp" label="رقم واتساب" icon={MessageSquare} placeholder="9647..." value={settings.socialLinks.whatsapp} onChange={(e) => setSocialLink('whatsapp', e.target.value)} />
                 <SocialInput id="instagram" label="رابط انستغرام" icon={Instagram} placeholder="https://instagram.com/..." value={settings.socialLinks.instagram} onChange={(e) => setSocialLink('instagram', e.target.value)} />
                 <SocialInput id="facebook" label="رابط فيسبوك" icon={Facebook} placeholder="https://facebook.com/..." value={settings.socialLinks.facebook} onChange={(e) => setSocialLink('facebook', e.target.value)} />
-             </div>
-          </div>
-        </CardContent>
-      </Card>
-      
+            </CardContent>
+        </Card>
+      </motion.div>
+
       <div className="flex justify-start">
-        <Button size="lg" onClick={handleSaveChanges}>حفظ التغييرات</Button>
+        <Button size="lg" onClick={handleSaveChanges}>
+          <Save className="ml-2 h-4 w-4" />
+          حفظ التغييرات
+        </Button>
       </div>
-    </div>
+    </motion.div>
   );
 }
-
