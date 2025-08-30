@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import type { LucideIcon } from "lucide-react";
-import { Palette, Building, LogIn, LayoutGrid, Languages, List, ReceiptText, Package, ArrowLeft } from "lucide-react";
+import { Palette, Building, LogIn, LayoutGrid, Languages, List, ReceiptText, Package, ArrowLeft, Brush } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 
@@ -16,7 +16,7 @@ const generalSettingsItems: {
   { href: '/dashboard/settings/company', icon: Building, title: 'هوية الشركة والشعارات', description: 'إدارة اسم الشركة والشعارات المستخدمة في النظام.' },
   { href: '/dashboard/settings/login-experience', icon: LogIn, title: 'تجربة تسجيل الدخول', description: 'تخصيص صفحة تسجيل الدخول للمستخدمين.' },
   { href: '/dashboard/settings/fonts-colors', icon: Palette, title: 'الألوان والخطوط', description: 'تغيير الألوان والخطوط لتناسب هويتك.' },
-  { href: '#', icon: LayoutGrid, title: 'تخصيص الواجهة', description: 'تعديل شكل الواجهة والميزات المتاحة.' },
+  { href: '/dashboard/settings/ui-customization', icon: Brush, title: 'تخصيص الواجهة', description: 'تعديل شكل الواجهة، كثافة العرض، ونمط الأيقونات.' },
   { href: '#', icon: Languages, title: 'الإعدادات الإقليمية', description: 'إدارة اللغة، العملة، والمنطقة الزمنية للنظام.' },
   { href: '#', icon: List, title: 'إدارة القوائم', description: 'التحكم في القوائم المتاحة لكل دور وظيفي.' },
   { href: '#', icon: ReceiptText, title: 'إعدادات البوليصة', description: 'تخصيص محتوى وتصميم بوليصة الشحن.' },
