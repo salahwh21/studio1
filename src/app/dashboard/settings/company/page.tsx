@@ -3,7 +3,7 @@
 
 import { useState, useContext } from 'react';
 import {
-  Upload, X, Building, Smartphone, FileText, Barcode, Image as ImageIcon, Save, LayoutHeader
+  Upload, X, Building, Smartphone, FileText, Barcode, Image as ImageIcon, Save, LayoutDashboard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,7 @@ import { LoginExperienceContext } from '@/context/LoginExperienceContext';
 
 const logoSections = [
   { id: 'admin', label: 'شعار لوحة التحكم', icon: <Building className="h-6 w-6 text-blue-500"/> },
-  { id: 'header', label: 'شعار الهيدر', icon: <LayoutHeader className="h-6 w-6 text-indigo-500"/> },
+  { id: 'header', label: 'شعار الهيدر', icon: <LayoutDashboard className="h-6 w-6 text-indigo-500"/> },
   { id: 'merchant', label: 'شعار لوحة التاجر', icon: <Smartphone className="h-6 w-6 text-green-500"/> },
   { id: 'driver', label: 'شعار تطبيق السائق', icon: <Smartphone className="h-6 w-6 text-purple-500"/> },
   { id: 'invoice', label: 'شعار الفاتورة', icon: <FileText className="h-6 w-6 text-yellow-500"/> },
@@ -46,7 +46,7 @@ const LogoUploader = ({ id, label, icon, logoData, onFileChange, onRemove }: {
       <div className="relative h-28 w-full rounded-md border p-2 flex items-center justify-center bg-slate-50 dark:bg-slate-800/50">
         {logoData.src ? (
           <div className="relative h-full w-full flex items-center justify-center">
-              <Image src={logoData.src} alt={label} layout="intrinsic" width={120} height={40} style={{ objectFit: 'contain' }} className="rounded-md p-1"/>
+              <Image src={logoData.src} alt={label} width={120} height={40} style={{ objectFit: 'contain' }} className="rounded-md p-1"/>
           </div>
         ) : (
           <ImageIcon className="h-8 w-8 text-muted-foreground"/>
@@ -139,7 +139,7 @@ export default function CompanyIdentityPage() {
           <CardContent>
             <Input
               id="companyName"
-              value={companyName}
+              value={companyName || ''}
               onChange={(e) => setCompanyName(e.target.value)}
               placeholder="أدخل اسم شركتك"
             />
