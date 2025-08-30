@@ -108,8 +108,8 @@ export default function CompanyIdentityPage() {
   };
 
   const handleSaveChanges = () => {
-    const finalCompanyName = companyName.trim() === '' ? 'الوميض' : companyName;
-    if (companyName.trim() === '') {
+    const finalCompanyName = typeof companyName === 'string' && companyName.trim() === '' ? 'الوميض' : companyName;
+    if (typeof companyName === 'string' && companyName.trim() === '') {
         setCompanyName('الوميض');
     }
 

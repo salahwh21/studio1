@@ -11,6 +11,7 @@ interface SocialLinks {
 }
 
 interface LoginSettings {
+  companyName: string;
   welcomeMessage: string;
   cardColor: string;
   loginLogo: string | null;
@@ -33,6 +34,7 @@ export const LoginExperienceContext = createContext<LoginExperienceContextType |
 
 // Default settings
 const defaultSettings: LoginSettings = {
+  companyName: 'الوميض',
   welcomeMessage: 'مرحباً',
   cardColor: '#ffffff',
   loginLogo: null,
