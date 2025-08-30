@@ -22,22 +22,24 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Logo } from './logo';
 import { LoginExperienceContext } from '@/context/LoginExperienceContext';
 import Icon from '@/components/icon';
+import { useRolesStore } from '@/store/roles-store';
 
 type NavItem = {
   href: string;
   label: string;
   iconName: keyof typeof import('lucide-react');
+  permissionId: string;
 };
 
-const navItems: NavItem[] = [
-  { href: '/dashboard', iconName: 'LayoutDashboard', label: 'لوحة التحكم' },
-  { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'عرض الطلبات' },
-  { href: '/dashboard/parse-order', iconName: 'PackagePlus', label: 'إضافة طلبات' },
-  { href: '/dashboard/optimize', iconName: 'Wand2', label: 'تحسين المسار' },
-  { href: '/dashboard/drivers-map', iconName: 'Map', label: 'خريطة السائقين' },
-  { href: '/dashboard/returns', iconName: 'Undo2', label: 'إدارة المرتجعات' },
-  { href: '/dashboard/financials', iconName: 'Calculator', label: 'المحاسبة' },
-  { href: '/dashboard/settings', iconName: 'Settings', label: 'الإعدادات' },
+const allNavItems: NavItem[] = [
+  { href: '/dashboard', iconName: 'LayoutDashboard', label: 'لوحة التحكم', permissionId: 'dashboard' },
+  { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'عرض الطلبات', permissionId: 'orders' },
+  { href: '/dashboard/parse-order', iconName: 'PackagePlus', label: 'إضافة طلبات', permissionId: 'parse-order' },
+  { href: '/dashboard/optimize', iconName: 'Wand2', label: 'تحسين المسار', permissionId: 'optimize' },
+  { href: '/dashboard/drivers-map', iconName: 'Map', label: 'خريطة السائقين', permissionId: 'drivers-map' },
+  { href: '/dashboard/returns', iconName: 'Undo2', label: 'إدارة المرتجعات', permissionId: 'returns' },
+  { href: '/dashboard/financials', iconName: 'Calculator', label: 'المحاسبة', permissionId: 'financials' },
+  { href: '/dashboard/settings', iconName: 'Settings', label: 'الإعدادات', permissionId: 'settings' },
 ];
 
 
@@ -46,6 +48,21 @@ export function AppHeader() {
   const pathname = usePathname();
   const context = useContext(LoginExperienceContext);
   const headerLogo = context?.settings.headerLogo;
+
+  // --- RBAC Logic ---
+  const { roles } = useRolesStore();
+  // Simulate a logged-in user. In a real app, this would come from an auth context.
+  const currentUserRole = 'supervisor'; 
+  const userRole = roles.find(r => r.id === currentUserRole);
+  const userPermissions = userRole?.permissions || [];
+
+  const hasPermission = (permissionId: string) => {
+      if (userPermissions.includes('all')) return true;
+      return userPermissions.includes(permissionId);
+  };
+
+  const navItems = allNavItems.filter(item => hasPermission(item.permissionId));
+  // --- End RBAC Logic ---
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === href;

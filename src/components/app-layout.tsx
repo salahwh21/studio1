@@ -21,43 +21,57 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from './ui/button';
 import { useEffect, useState } from 'react';
 import Icon from '@/components/icon';
+import { useRolesStore } from '@/store/roles-store';
 
 
 type NavItem = {
   href: string;
   label: string;
   iconName: keyof typeof import('lucide-react');
+  permissionId: string;
 };
 
-const navItems: NavItem[] = [
-  { href: '/dashboard', iconName: 'LayoutDashboard', label: 'لوحة التحكم' },
-  { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'عرض الطلبات' },
-  { href: '/dashboard/parse-order', iconName: 'PackagePlus', label: 'إضافة طلبات' },
-  { href: '/dashboard/optimize', iconName: 'Wand2', label: 'تحسين المسار' },
-  { href: '/dashboard/drivers-map', iconName: 'Map', label: 'خريطة السائقين' },
-  { href: '/dashboard/returns', iconName: 'Undo2', label: 'إدارة المرتجعات' },
-  { href: '/dashboard/financials', iconName: 'Calculator', label: 'المحاسبة' },
-  { href: '/dashboard/settings', iconName: 'Settings', label: 'الإعدادات' },
+const allNavItems: NavItem[] = [
+  { href: '/dashboard', iconName: 'LayoutDashboard', label: 'لوحة التحكم', permissionId: 'dashboard' },
+  { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'عرض الطلبات', permissionId: 'orders' },
+  { href: '/dashboard/parse-order', iconName: 'PackagePlus', label: 'إضافة طلبات', permissionId: 'parse-order' },
+  { href: '/dashboard/optimize', iconName: 'Wand2', label: 'تحسين المسار', permissionId: 'optimize' },
+  { href: '/dashboard/drivers-map', iconName: 'Map', label: 'خريطة السائقين', permissionId: 'drivers-map' },
+  { href: '/dashboard/returns', iconName: 'Undo2', label: 'إدارة المرتجعات', permissionId: 'returns' },
+  { href: '/dashboard/financials', iconName: 'Calculator', label: 'المحاسبة', permissionId: 'financials' },
+  { href: '/dashboard/settings', iconName: 'Settings', label: 'الإعدادات', permissionId: 'settings' },
 ];
 
 const mobileMainItems: NavItem[] = [
-  { href: '/dashboard', iconName: 'LayoutDashboard', label: 'الرئيسية' },
-  { href: '/dashboard/parse-order', iconName: 'PackagePlus', label: 'إضافة' },
-  { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'الطلبات' },
-  { href: '/dashboard/drivers-map', iconName: 'Map', label: 'الخريطة' },
-];
-
-const mobileMoreItems: NavItem[] = [
-    { href: '/dashboard/optimize', iconName: 'Wand2', label: 'تحسين المسار' },
-    { href: '/dashboard/returns', iconName: 'Undo2', label: 'إدارة المرتجعات' },
-    { href: '/dashboard/financials', iconName: 'Calculator', label: 'المحاسبة' },
-    { href: '/dashboard/settings', iconName: 'Settings', label: 'الإعدادات' },
+  { href: '/dashboard', iconName: 'LayoutDashboard', label: 'الرئيسية', permissionId: 'dashboard' },
+  { href: '/dashboard/parse-order', iconName: 'PackagePlus', label: 'إضافة', permissionId: 'parse-order' },
+  { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'الطلبات', permissionId: 'orders' },
+  { href: '/dashboard/drivers-map', iconName: 'Map', label: 'الخريطة', permissionId: 'drivers-map' },
 ];
 
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const [isMounted, setIsMounted] = useState(false);
+    
+    // --- RBAC Logic ---
+    const { roles } = useRolesStore();
+    // Simulate a logged-in user. In a real app, this would come from an auth context.
+    const currentUserRole = 'supervisor'; 
+    const userRole = roles.find(r => r.id === currentUserRole);
+    const userPermissions = userRole?.permissions || [];
+
+    const hasPermission = (permissionId: string) => {
+        if (userPermissions.includes('all')) return true;
+        return userPermissions.includes(permissionId);
+    };
+
+    const navItems = allNavItems.filter(item => hasPermission(item.permissionId));
+    const mobileMoreItems = allNavItems.filter(
+        item => !mobileMainItems.some(main => main.permissionId === item.permissionId) && hasPermission(item.permissionId)
+    );
+    // --- End RBAC Logic ---
+
 
     useEffect(() => {
         setIsMounted(true);
@@ -109,7 +123,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Bottom Navigation for Mobile */}
       <footer className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-card">
           <div className="grid h-16 grid-cols-5 items-center justify-items-center gap-1">
-              {mobileMainItems.map((item) => (
+              {mobileMainItems.filter(item => hasPermission(item.permissionId)).map((item) => (
                   <Link 
                       key={item.href} 
                       href={item.href} 

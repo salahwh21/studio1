@@ -38,57 +38,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { MoreHorizontal } from 'lucide-react';
 import Icon from '@/components/icon';
+import { useRolesStore, allPermissions } from '@/store/roles-store';
+import type { Role } from '@/store/roles-store';
 
-const initialRoles = [
-  {
-    id: 'admin',
-    name: 'المدير العام',
-    description: 'وصول كامل لجميع أجزاء النظام والإعدادات.',
-    userCount: 1,
-    permissions: ['all'],
-  },
-  {
-    id: 'supervisor',
-    name: 'مشرف',
-    description: 'يمكنه إدارة الطلبات والسائقين والتقارير.',
-    userCount: 3,
-    permissions: ['dashboard', 'orders', 'parse-order', 'optimize', 'drivers-map', 'returns', 'financials'],
-  },
-  {
-    id: 'customer_service',
-    name: 'خدمة العملاء',
-    description: 'يمكنه إضافة الطلبات ومتابعتها والتواصل مع العملاء.',
-    userCount: 5,
-    permissions: ['orders', 'parse-order'],
-  },
-  {
-    id: 'driver',
-    name: 'سائق',
-    description: 'يستخدم تطبيق السائق فقط لتحديث حالات الطلبات.',
-    userCount: 15,
-    permissions: ['driver-app'],
-  },
-];
-
-const allPermissions = [
-  { id: 'dashboard', label: 'لوحة التحكم' },
-  { id: 'orders', label: 'عرض الطلبات' },
-  { id: 'parse-order', label: 'إضافة طلبات' },
-  { id: 'optimize', label: 'تحسين المسار' },
-  { id: 'drivers-map', label: 'خريطة السائقين' },
-  { id: 'returns', label: 'إدارة المرتجعات' },
-  { id: 'financials', label: 'المحاسبة' },
-  { id: 'settings', label: 'الإعدادات' },
-  { id: 'driver-app', label: 'تطبيق السائق' },
-];
 
 export default function RolesPermissionsPage() {
-  const [roles, setRoles] = useState(initialRoles);
+  const { roles, updateRolePermissions } = useRolesStore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<(typeof initialRoles)[0] | null>(null);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [tempPermissions, setTempPermissions] = useState<string[]>([]);
 
-  const handleManagePermissions = (role: (typeof initialRoles)[0]) => {
+  const handleManagePermissions = (role: Role) => {
     setSelectedRole(role);
     setTempPermissions(role.permissions);
     setIsDialogOpen(true);
@@ -96,33 +56,44 @@ export default function RolesPermissionsPage() {
 
   const handlePermissionChange = (permissionId: string, checked: boolean) => {
     setTempPermissions(prev => {
-      if (checked) {
-        return [...prev, permissionId];
-      } else {
-        return prev.filter(p => p !== permissionId);
+      if (permissionId === 'all') {
+        return checked ? allPermissions.map(p => p.id) : [];
       }
+      
+      const newPermissions = checked
+        ? [...prev, permissionId]
+        : prev.filter(p => p !== permissionId);
+
+      if (newPermissions.length === allPermissions.length) {
+        return ['all'];
+      }
+      if (prev.includes('all') && !checked) {
+        return allPermissions.filter(p => p.id !== permissionId).map(p => p.id);
+      }
+      
+      return newPermissions.filter(p => p !== 'all');
     });
   };
   
   const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-        setTempPermissions(allPermissions.map(p => p.id));
-    } else {
-        setTempPermissions([]);
-    }
+    setTempPermissions(checked ? ['all'] : []);
   }
 
   const handleSavePermissions = () => {
     if (selectedRole) {
-      setRoles(roles.map(r => 
-        r.id === selectedRole.id ? { ...r, permissions: tempPermissions } : r
-      ));
+      updateRolePermissions(selectedRole.id, tempPermissions);
     }
     setIsDialogOpen(false);
     setSelectedRole(null);
   };
+  
+  const isAllSelectedForRole = (role: Role | null) => {
+    if (!role) return false;
+    return role.permissions.includes('all') || role.permissions.length === allPermissions.length;
+  }
+  
+  const isAllTempSelected = tempPermissions.includes('all') || tempPermissions.length === allPermissions.length;
 
-  const isAllSelected = tempPermissions.length === allPermissions.length;
 
   return (
     <>
@@ -180,7 +151,7 @@ export default function RolesPermissionsPage() {
                     <TableCell className="text-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" disabled={role.id === 'admin'}>
                             <MoreHorizontal className="h-4 w-4" />
                             <span className="sr-only">فتح القائمة</span>
                           </Button>
@@ -221,9 +192,8 @@ export default function RolesPermissionsPage() {
               <div className="flex items-center space-x-2 space-x-reverse border-b pb-4">
                 <Checkbox
                   id="select-all"
-                  checked={selectedRole?.permissions.includes('all') || isAllSelected}
-                  onCheckedChange={(checked) => handleSelectAll(!!checked)}
-                  disabled={selectedRole?.permissions.includes('all')}
+                  checked={isAllTempSelected}
+                  onCheckedChange={handleSelectAll}
                 />
                 <Label htmlFor="select-all" className="font-bold">
                   تحديد الكل
@@ -234,9 +204,8 @@ export default function RolesPermissionsPage() {
                 <div key={permission.id} className="flex items-center space-x-2 space-x-reverse">
                   <Checkbox
                     id={permission.id}
-                    checked={selectedRole?.permissions.includes('all') || tempPermissions.includes(permission.id)}
+                    checked={isAllTempSelected || tempPermissions.includes(permission.id)}
                     onCheckedChange={(checked) => handlePermissionChange(permission.id, !!checked)}
-                    disabled={selectedRole?.permissions.includes('all')}
                   />
                   <Label htmlFor={permission.id} className="font-normal">
                     {permission.label}
