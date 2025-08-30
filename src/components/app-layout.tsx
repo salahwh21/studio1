@@ -60,6 +60,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         setIsMounted(true);
+        
+        // Apply saved UI settings from localStorage
+        const density = localStorage.getItem('ui-density') || 'comfortable';
+        const radius = localStorage.getItem('ui-border-radius') || '0.5';
+        const stroke = localStorage.getItem('ui-icon-stroke') || '2';
+        const library = localStorage.getItem('ui-icon-library') || 'lucide';
+
+        document.body.dataset.density = density;
+        document.documentElement.style.setProperty('--radius', `${radius}rem`);
+        document.body.dataset.iconStroke = stroke;
+        document.body.dataset.iconLibrary = library;
+
     }, []);
 
     const isActive = (href: string) => {
