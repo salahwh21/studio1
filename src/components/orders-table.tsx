@@ -671,6 +671,13 @@ export function OrdersTable() {
                                 {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
                                     Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
                                         const isGroupOpen = openGroups[groupKey] ?? false;
+                                        const groupTotals = groupOrders.reduce((acc, order) => {
+                                            acc.itemPrice += order.itemPrice;
+                                            acc.deliveryFee += order.deliveryFee;
+                                            acc.cod += order.cod;
+                                            return acc;
+                                        }, { itemPrice: 0, deliveryFee: 0, cod: 0 });
+
                                         return (
                                             <React.Fragment key={groupKey}>
                                                 <TableRow
@@ -678,9 +685,16 @@ export function OrdersTable() {
                                                     className="font-bold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border"
                                                 >
                                                     <TableCell className="p-4 text-right" colSpan={visibleColumns.length + 1}>
-                                                        <div className="flex items-center gap-4">
-                                                            <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
-                                                            <span>{groupKey} ({groupOrders.length})</span>
+                                                        <div className="flex items-center justify-between gap-4">
+                                                          <div className="flex items-center gap-4">
+                                                              <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
+                                                              <span>{groupKey} ({groupOrders.length})</span>
+                                                          </div>
+                                                          <div className='flex items-center gap-x-6 text-sm font-mono'>
+                                                              <span>المستحق للتاجر: <span className='text-primary'>{groupTotals.itemPrice.toFixed(2)}</span></span>
+                                                              <span>أجور التوصيل: <span className='text-primary'>{groupTotals.deliveryFee.toFixed(2)}</span></span>
+                                                              <span>قيمة التحصيل: <span className='text-primary'>{groupTotals.cod.toFixed(2)}</span></span>
+                                                          </div>
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
@@ -696,7 +710,7 @@ export function OrdersTable() {
                     </div>
 
                     {/* Pagination and Totals Footer */}
-                    <div className="flex-none flex items-center justify-between p-2 border-t">
+                    <CardFooter className="flex-none flex items-center justify-between p-2 border-t">
                         <div className="flex items-center gap-4 text-xs font-medium">
                             <div className='p-2 rounded text-xs bg-slate-800 text-white font-bold'>
                                 إجمالي الصفحة ({Array.isArray(paginatedOrders) ? paginatedOrders.length : 0})
@@ -721,7 +735,7 @@ export function OrdersTable() {
                                 <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>التالي</Button>
                             </div>
                         )}
-                    </div>
+                    </CardFooter>
                 </Card>
             </TooltipProvider>
 
@@ -755,4 +769,3 @@ export function OrdersTable() {
         </>
     );
 }
-
