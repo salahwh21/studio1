@@ -7,8 +7,14 @@ import path from 'path';
 
 const themeSchema = z.object({
   primary: z.string().optional().nullable(),
+  primaryForeground: z.string().optional().nullable(),
   background: z.string().optional().nullable(),
+  foreground: z.string().optional().nullable(),
   accent: z.string().optional().nullable(),
+  card: z.string().optional().nullable(),
+  cardForeground: z.string().optional().nullable(),
+  destructive: z.string().optional().nullable(),
+  border: z.string().optional().nullable(),
   fontFamily: z.string().optional().nullable(),
   fontSize: z.string().optional().nullable(),
 });
@@ -22,9 +28,9 @@ const hexToHslString = (hex: string): string | null => {
         g = parseInt(hex[2] + hex[2], 16);
         b = parseInt(hex[3] + hex[3], 16);
     } else if (hex.length === 7) {
-        r = parseInt(hex[1] + hex[2], 16);
-        g = parseInt(hex[3] + hex[4], 16);
-        b = parseInt(hex[5] + hex[6], 16);
+        r = parseInt(hex.substring(1, 3), 16);
+        g = parseInt(hex.substring(3, 5), 16);
+        b = parseInt(hex.substring(5, 7), 16);
     } else {
         return null; // Invalid hex format
     }
@@ -48,8 +54,14 @@ const hexToHslString = (hex: string): string | null => {
 export async function updateThemeAction(formData: FormData) {
   const validatedFields = themeSchema.safeParse({
     primary: formData.get('primary'),
+    primaryForeground: formData.get('primaryForeground'),
     background: formData.get('background'),
+    foreground: formData.get('foreground'),
     accent: formData.get('accent'),
+    card: formData.get('card'),
+    cardForeground: formData.get('cardForeground'),
+    destructive: formData.get('destructive'),
+    border: formData.get('border'),
     fontFamily: formData.get('fontFamily'),
     fontSize: formData.get('fontSize'),
   });
@@ -61,37 +73,40 @@ export async function updateThemeAction(formData: FormData) {
     };
   }
 
-  const { primary, background, accent, fontFamily, fontSize } = validatedFields.data;
+  const data = validatedFields.data;
 
   try {
-    // Update globals.css
     const cssFilePath = path.join(process.cwd(), 'src', 'app', 'globals.css');
     let cssContent = await fs.readFile(cssFilePath, 'utf-8');
 
-    const primaryHsl = hexToHslString(primary || '');
-    const backgroundHsl = hexToHslString(background || '');
-    const accentHsl = hexToHslString(accent || '');
+    const colorMappings = {
+        primary: { hsl: hexToHslString(data.primary || ''), vars: ['--primary', '--ring', '--chart-1'] },
+        primaryForeground: { hsl: hexToHslString(data.primaryForeground || ''), vars: ['--primary-foreground'] },
+        background: { hsl: hexToHslString(data.background || ''), vars: ['--background'] },
+        foreground: { hsl: hexToHslString(data.foreground || ''), vars: ['--foreground'] },
+        accent: { hsl: hexToHslString(data.accent || ''), vars: ['--accent'] },
+        card: { hsl: hexToHslString(data.card || ''), vars: ['--card'] },
+        cardForeground: { hsl: hexToHslString(data.cardForeground || ''), vars: ['--card-foreground'] },
+        destructive: { hsl: hexToHslString(data.destructive || ''), vars: ['--destructive'] },
+        border: { hsl: hexToHslString(data.border || ''), vars: ['--border', '--input'] },
+    };
 
-    if (primaryHsl) {
-      cssContent = cssContent.replace(/--primary:\s*[\d\s%]+;/g, `--primary: ${primaryHsl};`);
-      cssContent = cssContent.replace(/--ring:\s*[\d\s%]+;/g, `--ring: ${primaryHsl};`);
-      cssContent = cssContent.replace(/--chart-1:\s*[\d\s%]+;/g, `--chart-1: ${primaryHsl};`);
-    }
-    if (backgroundHsl) {
-      cssContent = cssContent.replace(/--background:\s*[\d\s%]+;/g, `--background: ${backgroundHsl};`);
-    }
-    if (accentHsl) {
-      cssContent = cssContent.replace(/--accent:\s*[\d\s%]+;/g, `--accent: ${accentHsl};`);
-    }
-     if (fontSize) {
-      // Use a more robust regex to find the font-size in the body
-      cssContent = cssContent.replace(/(body\s*{[^}]*font-size:\s*)[^;]+(;[^}]*})/s, `$1${fontSize}px$2`);
+    for (const key in colorMappings) {
+        const item = colorMappings[key as keyof typeof colorMappings];
+        if (item.hsl) {
+            item.vars.forEach(cssVar => {
+                const regex = new RegExp(`(${cssVar}:\\s*)[\\d\\s%]+;`, 'g');
+                cssContent = cssContent.replace(regex, `$1${item.hsl};`);
+            });
+        }
     }
 
-    if (fontFamily) {
-        const fontVarName = `--font-${fontFamily.toLowerCase().replace(/ /g, '-')}`;
-        // This regex will replace the font-family in the body tag.
-        // It's designed to be robust against different formatting.
+     if (data.fontSize) {
+      cssContent = cssContent.replace(/(body\s*{[^}]*font-size:\s*)[^;]+(;[^}]*})/s, `$1${data.fontSize}px$2`);
+    }
+
+    if (data.fontFamily) {
+        const fontVarName = `--font-${data.fontFamily.toLowerCase().replace(/ /g, '-')}`;
         cssContent = cssContent.replace(
             /(body\s*{[^}]*font-family:\s*)[^;]+(;[^}]*})/s,
             `$1var(${fontVarName}), sans-serif$2`
