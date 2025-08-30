@@ -263,36 +263,18 @@ export function OrdersTable() {
         return sortedOrders.slice(startIndex, startIndex + rowsPerPage);
     }, [sortedOrders, page, rowsPerPage, groupBy, groupedAndSortedOrders]);
     
-    const groupedTotals = useMemo(() => {
-        if (!groupBy || Array.isArray(groupedAndSortedOrders)) {
-            return {};
-        }
-
-        const result: { [key: string]: Record<string, number> } = {};
-        const selectedIdsSet = new Set(selectedRows);
-        const financialKeys = visibleColumns
-            .filter(c => c.type === 'financial')
-            .map(c => c.key as keyof Order);
-        
-        for (const groupKey in groupedAndSortedOrders) {
-            const groupOrders = groupedAndSortedOrders[groupKey];
-            const selectedInGroup = groupOrders.filter(o => selectedIdsSet.has(o.id));
-            
-            const listForCalculation = selectedInGroup.length > 0 ? selectedInGroup : groupOrders;
-            
-            result[groupKey] = listForCalculation.reduce((acc, order) => {
-                financialKeys.forEach(key => {
-                    acc[key as string] = (acc[key as string] || 0) + (order[key] as number);
-                });
-                return acc;
-            }, {} as Record<string, number>);
-        }
-        return result;
-
-    }, [groupedAndSortedOrders, groupBy, selectedRows, visibleColumns]);
+    const pageTotals = useMemo(() => {
+        const listForCalculation = Array.isArray(paginatedOrders) ? paginatedOrders : [];
+        return listForCalculation.reduce((acc, order) => {
+            acc.itemPrice += order.itemPrice;
+            acc.deliveryFee += order.deliveryFee;
+            acc.cod += order.cod;
+            return acc;
+        }, { itemPrice: 0, deliveryFee: 0, cod: 0 });
+    }, [paginatedOrders]);
 
 
-    const totalPages = groupBy ? 1 : Math.ceil(sortedOrders.length / rowsPerPage);
+    const totalPages = groupBy ? Object.keys(groupedAndSortedOrders).length : Math.ceil(sortedOrders.length / rowsPerPage);
 
     const handleSort = (key: keyof Order) => {
         if (sortConfig && sortConfig.key === key) {
@@ -689,31 +671,18 @@ export function OrdersTable() {
                                 {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
                                     Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
                                         const isGroupOpen = openGroups[groupKey] ?? false;
-                                        const currentGroupTotals = groupedTotals[groupKey] || {};
                                         return (
                                             <React.Fragment key={groupKey}>
                                                 <TableRow
                                                     onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
                                                     className="font-bold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border"
                                                 >
-                                                    <TableCell className="p-4 text-right" colSpan={2}>
+                                                    <TableCell className="p-4 text-right" colSpan={visibleColumns.length + 1}>
                                                         <div className="flex items-center gap-4">
                                                             <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
                                                             <span>{groupKey} ({groupOrders.length})</span>
                                                         </div>
                                                     </TableCell>
-                                                    {visibleColumns.slice(1).map(col => {
-                                                        const totalValue = currentGroupTotals[col.key as string];
-                                                        if (col.type === 'financial' && totalValue !== undefined) {
-                                                            return (
-                                                                <TableCell key={col.key} className="p-5 text-center whitespace-nowrap border-l text-primary font-semibold">
-                                                                    {totalValue.toFixed(2)}
-                                                                </TableCell>
-                                                            );
-                                                        }
-                                                        // Render empty cells to maintain alignment
-                                                        return <TableCell key={col.key} className="p-5 border-l" />;
-                                                    })}
                                                 </TableRow>
                                                 {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
                                             </React.Fragment>
@@ -727,32 +696,32 @@ export function OrdersTable() {
                     </div>
 
                     {/* Pagination and Totals Footer */}
-                    {!groupBy && (
-                        <div className="flex-none flex items-center justify-between p-2 border-t">
-                            <div className="flex items-center gap-4 text-xs font-medium">
-                                <div className='p-2 rounded text-xs bg-slate-600 text-white'>
-                                    {displayLabel} ({displayCount})
-                                </div>
-                                {visibleColumns.map(col => {
-                                    if (col.type === 'financial') {
-                                        const totalValue = displayTotals[col.key as string] || 0;
-                                        return (
-                                            <div key={col.key} className="flex items-center gap-1">
-                                                <span className="text-muted-foreground">{col.label}:</span>
-                                                <span className="font-bold text-primary">{totalValue.toFixed(2)}</span>
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })}
+                    <div className="flex-none flex items-center justify-between p-2 border-t">
+                        <div className="flex items-center gap-4 text-xs font-medium">
+                            <div className='p-2 rounded text-xs bg-slate-800 text-white font-bold'>
+                                إجمالي الصفحة ({Array.isArray(paginatedOrders) ? paginatedOrders.length : 0})
                             </div>
+                            <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">المستحق للتاجر:</span>
+                                <span className="font-bold text-primary">{pageTotals.itemPrice.toFixed(2)}</span>
+                            </div>
+                             <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">أجور التوصيل:</span>
+                                <span className="font-bold text-primary">{pageTotals.deliveryFee.toFixed(2)}</span>
+                            </div>
+                             <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">قيمة التحصيل:</span>
+                                <span className="font-bold text-primary">{pageTotals.cod.toFixed(2)}</span>
+                            </div>
+                        </div>
+                        {!groupBy && (
                             <div className="flex items-center gap-1">
                                 <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
                                 <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
                                 <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>التالي</Button>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </Card>
             </TooltipProvider>
 
