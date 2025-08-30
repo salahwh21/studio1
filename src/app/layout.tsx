@@ -3,15 +3,24 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from 'next-themes';
-import { Tajawal } from 'next/font/google';
+
 import { LoginExperienceProvider } from '@/context/LoginExperienceContext';
 
-// تهيئة خط Tajawal
-const tajawal = Tajawal({
-  subsets: ['latin', 'arabic'],
+import { Tajawal } from 'next/font/google';
+const tajawal = Tajawal({ 
+  subsets: ['latin', 'arabic'], 
   weight: ['400', '700'],
-  variable: '--font-tajawal',
+  variable: '--font-tajawal' 
 });
+
+
+
+
+
+
+
+// تهيئة خط Tajawal
+
 
 export const metadata: Metadata = {
   title: 'إدارة تسجيل الطلبات - الوميض',
@@ -21,7 +30,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning className={tajawal.variable}>
+    <html lang="ar" dir="rtl" suppressHydrationWarning className={`${tajawal.variable} font-sans`}>
       <head>
         {/* Leaflet CSS */}
         <link
