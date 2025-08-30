@@ -56,11 +56,20 @@ const mobileMoreItems: NavItem[] = [
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const isActive = (href: string) => {
         if (href === '/dashboard') return pathname === href;
         return pathname.startsWith(href);
     };
+
+    if (!isMounted) {
+        return null; // Or a loading spinner
+    }
 
 
   return (
