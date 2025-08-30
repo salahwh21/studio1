@@ -674,7 +674,7 @@ export function OrdersTable() {
                                       </div>
                                     </TableHead>
                                     {visibleColumns.map((col) => (
-                                    <TableHead key={col.key} className="p-1 text-center whitespace-nowrap border-b border-l bg-inherit hover:bg-muted">
+                                    <TableHead key={col.key} className="p-1 text-center whitespace-nowrap border-b border-l bg-inherit hover:bg-primary/10 transition-colors duration-200">
                                         {col.sortable ? (
                                             <Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-foreground hover:bg-transparent hover:text-foreground w-full p-0 h-auto">
                                                 {col.label}
