@@ -262,16 +262,19 @@ export function OrdersTable() {
         return sortedOrders.slice(startIndex, startIndex + rowsPerPage);
     }, [sortedOrders, page, rowsPerPage, groupBy, groupedAndSortedOrders]);
     
-    const pageTotals = useMemo(() => {
-        const listForCalculation = Array.isArray(paginatedOrders) ? paginatedOrders : [];
+    const footerTotals = useMemo(() => {
+        const selectedOrdersList = orders.filter(o => selectedRows.includes(o.id));
+        const listForCalculation = selectedRows.length > 0 
+            ? selectedOrdersList
+            : (Array.isArray(paginatedOrders) ? paginatedOrders : []);
+        
         return listForCalculation.reduce((acc, order) => {
             acc.itemPrice += order.itemPrice;
             acc.deliveryFee += order.deliveryFee;
             acc.cod += order.cod;
             return acc;
         }, { itemPrice: 0, deliveryFee: 0, cod: 0 });
-    }, [paginatedOrders]);
-
+    }, [orders, selectedRows, paginatedOrders]);
 
     const totalPages = groupBy ? Object.keys(groupedAndSortedOrders).length : Math.ceil(sortedOrders.length / rowsPerPage);
 
@@ -341,38 +344,6 @@ export function OrdersTable() {
         setSelectedRows([]);
         setModalState({type: 'none'});
     }
-    
-    const totals = useMemo(() => {
-        const calculateTotals = (orderList: Order[]) => {
-            const totalsResult = visibleColumns.reduce((acc, col) => {
-                if (col.type === 'financial') {
-                    acc[col.key as string] = 0;
-                }
-                return acc;
-            }, {} as Record<string, number>);
-
-            for (const order of orderList) {
-                for (const col of visibleColumns) {
-                    if (col.type === 'financial') {
-                        totalsResult[col.key as string] += order[col.key as keyof Order] as number;
-                    }
-                }
-            }
-            return totalsResult;
-        };
-        const selectedOrdersList = orders.filter(o => selectedRows.includes(o.id));
-        const listForCalculation = groupBy ? sortedOrders : (Array.isArray(paginatedOrders) ? paginatedOrders : []);
-
-        return {
-            main: calculateTotals(listForCalculation),
-            selected: calculateTotals(selectedOrdersList),
-        };
-    }, [orders, selectedRows, paginatedOrders, visibleColumns, sortedOrders, groupBy]);
-
-    const displayTotals = selectedRows.length > 0 ? totals.selected : totals.main;
-    const displayCount = selectedRows.length > 0 ? selectedRows.length : (groupBy ? sortedOrders.length : (Array.isArray(paginatedOrders) ? paginatedOrders.length : 0));
-    const displayLabel = selectedRows.length > 0 ? 'المحدد' : (groupBy ? 'الإجمالي الكلي' : 'إجمالي الصفحة');
-
 
     const handleColumnVisibilityChange = (key: string, checked: boolean) => {
         setVisibleColumnKeys(prev => 
@@ -670,20 +641,14 @@ export function OrdersTable() {
                                 {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
                                     Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
                                         const isGroupOpen = openGroups[groupKey] ?? false;
-                                        const groupTotals = groupOrders.reduce((acc, order) => {
-                                            acc.itemPrice += order.itemPrice;
-                                            acc.deliveryFee += order.deliveryFee;
-                                            acc.cod += order.cod;
-                                            return acc;
-                                        }, { itemPrice: 0, deliveryFee: 0, cod: 0 });
-
+                                        
                                         return (
                                             <React.Fragment key={groupKey}>
                                                 <TableRow
                                                     onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
                                                     className="font-bold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border"
                                                 >
-                                                    <TableCell className="sticky right-0 p-4 border-l bg-muted/50">
+                                                    <TableCell className="sticky right-0 p-4 border-l bg-muted/50 data-[state=selected]:bg-primary/20">
                                                       <div className="flex items-center gap-2">
                                                         <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
                                                         <span>{groupKey} ({groupOrders.length})</span>
@@ -717,19 +682,22 @@ export function OrdersTable() {
                     <CardFooter className="flex-none flex items-center justify-between p-2 border-t">
                         <div className="flex items-center gap-4 text-xs font-medium">
                             <div className='p-2 rounded text-xs bg-slate-800 text-white font-bold'>
-                                إجمالي الصفحة ({Array.isArray(paginatedOrders) ? paginatedOrders.length : 0})
+                                {selectedRows.length > 0
+                                ? `إجمالي المحدد (${selectedRows.length})`
+                                : `إجمالي الصفحة (${Array.isArray(paginatedOrders) ? paginatedOrders.length : 0})`
+                                }
                             </div>
                             <div className="flex items-center gap-1">
                                 <span className="text-muted-foreground">المستحق للتاجر:</span>
-                                <span className="font-bold text-primary">{pageTotals.itemPrice.toFixed(2)}</span>
+                                <span className="font-bold text-primary">{footerTotals.itemPrice.toFixed(2)}</span>
                             </div>
                              <div className="flex items-center gap-1">
                                 <span className="text-muted-foreground">أجور التوصيل:</span>
-                                <span className="font-bold text-primary">{pageTotals.deliveryFee.toFixed(2)}</span>
+                                <span className="font-bold text-primary">{footerTotals.deliveryFee.toFixed(2)}</span>
                             </div>
                              <div className="flex items-center gap-1">
                                 <span className="text-muted-foreground">قيمة التحصيل:</span>
-                                <span className="font-bold text-primary">{pageTotals.cod.toFixed(2)}</span>
+                                <span className="font-bold text-primary">{footerTotals.cod.toFixed(2)}</span>
                             </div>
                         </div>
                         {!groupBy && (
