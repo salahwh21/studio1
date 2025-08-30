@@ -45,16 +45,16 @@ const SettingsItemCard = ({ item, index }: { item: (typeof settingsItems)[0], in
     initial="hidden"
     animate="visible"
     custom={index}
-    whileHover={{ scale: 1.03, y: -5, transition: { duration: 0.2 } }}
+    whileHover={{ y: -5, transition: { duration: 0.2 } }}
   >
     <Link href={item.href} className="block h-full">
-        <Card className="h-full border-2 border-transparent hover:border-primary hover:shadow-lg transition-all duration-300">
+        <Card className="h-full border-l-4 border-transparent hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out">
             <CardHeader className="flex flex-col items-center justify-center text-center gap-4 p-6">
                 <div className="bg-primary/10 text-primary p-4 rounded-full">
                     <item.icon className="h-8 w-8" />
                 </div>
                 <div className="space-y-1">
-                  <CardTitle className="text-lg">{item.title}</CardTitle>
+                  <CardTitle className="text-base">{item.title}</CardTitle>
                   <CardDescription className="text-xs leading-relaxed">{item.description}</CardDescription>
                 </div>
             </CardHeader>
@@ -75,7 +75,7 @@ export default function SettingsPage() {
         <div className="flex items-center gap-4">
             <Settings className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-3xl font-bold">مركز الإعدادات</h1>
+              <h1 className="text-2xl font-bold tracking-tight">مركز الإعدادات</h1>
               <p className="text-muted-foreground">
                   نقطة التحكم المركزية لجميع جوانب النظام.
               </p>
@@ -83,12 +83,12 @@ export default function SettingsPage() {
         </div>
         <Button variant="outline" size="icon" asChild>
             <Link href="/dashboard">
-                <ArrowLeft className="h-5 w-5"/>
+                <ArrowLeft className="h-4 w-4"/>
             </Link>
         </Button>
       </div>
       
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {settingsItems.map((item, index) => (
               <SettingsItemCard key={item.title} item={item} index={index} />
           ))}
@@ -96,5 +96,3 @@ export default function SettingsPage() {
     </motion.div>
   );
 }
-
-    

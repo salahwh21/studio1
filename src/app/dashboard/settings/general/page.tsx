@@ -25,12 +25,12 @@ const generalSettingsItems: {
 ];
 
 const cardVariants = {
-  hidden: { opacity: 0, x: -20 },
+  hidden: { opacity: 0, y: 20 },
   visible: (i: number) => ({
     opacity: 1,
-    x: 0,
+    y: 0,
     transition: {
-      delay: i * 0.1,
+      delay: i * 0.05,
       duration: 0.4,
       ease: "easeOut"
     }
@@ -43,17 +43,17 @@ const SettingsItemCard = ({ item, index }: { item: (typeof generalSettingsItems)
       initial="hidden"
       animate="visible"
       custom={index}
-      whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
     >
-      <Link href={item.href} className="block hover:bg-muted/50 rounded-lg transition-colors">
-          <Card className="h-full border-l-4 border-primary/20 hover:border-primary transition-colors duration-300">
-              <CardHeader className="flex flex-row items-start gap-5">
-                  <div className="text-primary pt-1">
-                      <item.icon className="h-7 w-7" />
+      <Link href={item.href} className="block h-full">
+          <Card className="h-full border-l-4 border-transparent hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center gap-5 p-5">
+                  <div className="bg-primary/10 text-primary p-3 rounded-lg">
+                      <item.icon className="h-6 w-6" />
                   </div>
                   <div>
-                      <CardTitle className="text-lg mb-1">{item.title}</CardTitle>
-                      <CardDescription>{item.description}</CardDescription>
+                      <CardTitle className="text-base mb-1">{item.title}</CardTitle>
+                      <CardDescription className="text-xs leading-relaxed">{item.description}</CardDescription>
                   </div>
               </CardHeader>
           </Card>
@@ -64,7 +64,7 @@ const SettingsItemCard = ({ item, index }: { item: (typeof generalSettingsItems)
 export default function GeneralSettingsPage() {
   return (
     <motion.div 
-      className="mx-auto max-w-4xl space-y-8 p-4 sm:p-6"
+      className="space-y-8"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
@@ -73,7 +73,7 @@ export default function GeneralSettingsPage() {
             <div className="flex items-center gap-4">
               <Settings className="h-8 w-8 text-primary" />
               <div>
-                <h1 className="text-3xl font-bold">الإعدادات العامة</h1>
+                <h1 className="text-2xl font-bold tracking-tight">الإعدادات العامة</h1>
                 <p className="text-muted-foreground">
                     تحكم في الجوانب الأساسية والمظهر العام للنظام.
                 </p>
@@ -81,12 +81,12 @@ export default function GeneralSettingsPage() {
             </div>
             <Button variant="outline" size="icon" asChild>
                 <Link href="/dashboard/settings">
-                    <ArrowLeft className="h-5 w-5"/>
+                    <ArrowLeft className="h-4 w-4"/>
                 </Link>
             </Button>
         </div>
       
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {generalSettingsItems.map((item, index) => (
                 <SettingsItemCard key={item.title} item={item} index={index} />
             ))}

@@ -33,6 +33,13 @@ const cardVariants = {
   })
 };
 
+const fonts = [
+    { name: 'Tajawal', variable: 'var(--font-tajawal)'},
+    { name: 'Inter', variable: 'var(--font-inter)'},
+    { name: 'Cairo', variable: 'var(--font-cairo)'},
+    { name: 'IBM Plex Sans Arabic', variable: 'var(--font-ibm-plex-sans-arabic)'},
+];
+
 export default function FontsColorsPage() {
   const { toast } = useToast();
   
@@ -49,10 +56,9 @@ export default function FontsColorsPage() {
     '--preview-background': backgroundColor,
     '--preview-accent': accentColor,
     '--preview-font-size': `${baseFontSize}px`,
-  } as React.CSSProperties), [primaryColor, backgroundColor, accentColor, baseFontSize]);
+    fontFamily: fonts.find(f => f.name === fontFamily)?.variable || 'sans-serif',
+  } as React.CSSProperties), [primaryColor, backgroundColor, accentColor, baseFontSize, fontFamily]);
   
-  const fontVarName = `var(--font-${fontFamily.toLowerCase().replace(/ /g, '-')})`;
-
 
   const handleSaveChanges = async () => {
     setIsSaving(true);
@@ -88,7 +94,7 @@ export default function FontsColorsPage() {
 
   return (
     <motion.div 
-      className="mx-auto max-w-6xl space-y-8 p-4 sm:p-6"
+      className="space-y-8"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
@@ -97,7 +103,7 @@ export default function FontsColorsPage() {
           <div className="flex items-center gap-4">
             <Palette className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-3xl font-bold">الألوان والخطوط</h1>
+              <h1 className="text-2xl font-bold tracking-tight">الألوان والخطوط</h1>
               <p className="text-muted-foreground">
                   اختر اللون الأساسي والخط لتخصيص شكل النظام.
               </p>
@@ -105,14 +111,13 @@ export default function FontsColorsPage() {
           </div>
           <Button variant="outline" size="icon" asChild>
               <Link href="/dashboard/settings/general">
-                  <ArrowLeft className="h-5 w-5" />
+                  <ArrowLeft className="h-4 w-4" />
               </Link>
           </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left Column for settings */}
-        <div className="lg:col-span-1 space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+        <div className="lg:col-span-2 space-y-8">
            <motion.div variants={cardVariants} initial="hidden" animate="visible" custom={0}>
               <Card>
                 <CardHeader>
@@ -148,8 +153,9 @@ export default function FontsColorsPage() {
                         <SelectValue placeholder="اختر خطًا" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Tajawal">Tajawal (العربية)</SelectItem>
-                        <SelectItem value="Inter">Inter (English)</SelectItem>
+                        {fonts.map(font => (
+                           <SelectItem key={font.name} value={font.name} style={{fontFamily: font.variable}}>{font.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -163,9 +169,8 @@ export default function FontsColorsPage() {
           </motion.div>
         </div>
 
-        {/* Right Column for preview */}
         <motion.div 
-            className="lg:col-span-2"
+            className="lg:col-span-3 lg:sticky lg:top-24"
             variants={cardVariants} 
             initial="hidden" 
             animate="visible"
@@ -176,29 +181,29 @@ export default function FontsColorsPage() {
               <CardTitle>معاينة حية</CardTitle>
             </CardHeader>
             <CardContent 
-              style={{ ...previewStyle, fontFamily: fontVarName }} 
+              style={previewStyle} 
               className="space-y-6 rounded-lg bg-[var(--preview-background)] text-[var(--preview-font-size)] text-gray-800 transition-all duration-300 p-6"
             >
-              <h4 className="text-xl font-bold" style={{ color: 'var(--preview-primary)', fontSize: `${baseFontSize * 1.5}px` }}>هذا عنوان رئيسي H4</h4>
+              <h4 className="font-bold" style={{ color: 'var(--preview-primary)', fontSize: `${baseFontSize * 1.5}px` }}>هذا عنوان رئيسي H4</h4>
               <h6 className="text-lg" style={{ fontSize: `${baseFontSize * 1.1}px` }}>وهذا عنوان فرعي H6</h6>
               <p className="leading-relaxed">
                 هذا مثال للنص الأساسي. يمكنك <a href="#" style={{ color: 'var(--preview-primary)' }} className="underline">النقر على هذا الرابط</a> لتجربة الروابط. يتم توليد جميع الألوان، بما في ذلك ألوان الحالات، تلقائيًا من اللون الأساسي الذي تختاره.
               </p>
               
-               <Card className="shadow-lg bg-white">
+               <Card className="shadow-lg bg-white/80 backdrop-blur-sm">
                   <CardHeader>
-                      <CardTitle>مثال لبطاقة</CardTitle>
+                      <CardTitle style={{fontSize: `${baseFontSize * 1.25}px`}}>مثال لبطاقة</CardTitle>
                   </CardHeader>
                   <CardContent>
                       <p>هذا محتوى البطاقة.</p>
                       <div className="flex gap-2 mt-4">
-                          <Button style={{ backgroundColor: 'var(--preview-primary)', color: '#fff' }}>زر أساسي</Button>
-                          <Button variant="outline" style={{ borderColor: 'var(--preview-primary)', color: 'var(--preview-primary)' }}>زر ثانوي</Button>
+                          <Button style={{ backgroundColor: 'var(--preview-primary)', color: '#fff', fontSize: `${baseFontSize}px` }}>زر أساسي</Button>
+                          <Button variant="outline" style={{ borderColor: 'var(--preview-primary)', color: 'var(--preview-primary)', fontSize: `${baseFontSize}px` }}>زر ثانوي</Button>
                       </div>
                   </CardContent>
               </Card>
               
-              <div className="space-y-3">
+              <div className="space-y-3 text-sm">
                   <Alert variant="default" className="bg-green-100 border-l-4 border-green-500 text-green-800">
                       <CheckCircle className="h-5 w-5 text-green-500" />
                       <AlertTitle>هذه رسالة نجاح.</AlertTitle>
@@ -222,7 +227,7 @@ export default function FontsColorsPage() {
         </motion.div>
       </div>
 
-      <div className="flex justify-start mt-6">
+      <div className="flex justify-start pt-4 border-t">
         <Button size="lg" onClick={handleSaveChanges} disabled={isSaving}>
            {isSaving ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
           {isSaving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}

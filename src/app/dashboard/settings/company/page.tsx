@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -69,7 +68,7 @@ const LogoUploader = ({
           <ImageIcon className="h-6 w-6 text-muted-foreground" />
         </div>
       )}
-      <Label htmlFor={id} className="text-base font-medium">
+      <Label htmlFor={id} className="font-medium">
         {label}
       </Label>
     </div>
@@ -131,7 +130,7 @@ export default function CompanyIdentityPage() {
 
   return (
     <motion.div 
-      className="space-y-8"
+      className="space-y-8 max-w-4xl mx-auto"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
@@ -140,7 +139,7 @@ export default function CompanyIdentityPage() {
           <div className='flex items-center gap-4'>
             <Building className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-3xl font-bold">هوية الشركة</h1>
+              <h1 className="text-2xl font-bold tracking-tight">هوية الشركة</h1>
               <p className="text-muted-foreground">
                   إدارة اسم الشركة والشعارات المستخدمة في النظام.
               </p>
@@ -148,78 +147,52 @@ export default function CompanyIdentityPage() {
           </div>
           <Button variant="outline" size="icon" asChild>
             <Link href="/dashboard/settings/general">
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-2 space-y-8">
-             <motion.div variants={cardVariants} initial="hidden" animate="visible" custom={0}>
-                <Card>
-                  <CardHeader>
-                      <CardTitle>اسم الشركة</CardTitle>
-                      <CardDescription>الاسم الذي سيظهر في جميع أنحاء النظام.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Input
-                        id="companyName"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        placeholder="أدخل اسم شركتك"
-                        className="text-lg"
-                    />
-                  </CardContent>
-                </Card>
-              </motion.div>
-             <motion.div variants={cardVariants} initial="hidden" animate="visible" custom={1}>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>الشعارات</CardTitle>
-                        <CardDescription>
-                          ارفع الشعارات المختلفة التي ستظهر في أنحاء النظام.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <div className="divide-y">
-                        {logoSections.map((section) => (
-                          <LogoUploader 
-                            key={section.id} 
-                            id={section.id}
-                            label={section.label}
-                            logoSrc={logos[section.id] || null}
-                            onFileChange={handleFileChange}
-                            onRemove={handleRemoveLogo}
-                          />
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-              </motion.div>
-        </div>
-
-        <div className="lg:col-span-1 lg:sticky lg:top-24">
-             <motion.div variants={cardVariants} initial="hidden" animate="visible" custom={2}>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>معاينة الشعار</CardTitle>
-                        <CardDescription>
-                            هكذا سيظهر شعار لوحة التحكم الرئيسي.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="rounded-lg border bg-muted p-8 flex items-center justify-center">
-                            {logos['admin'] ? (
-                                <Image src={logos['admin']} alt="Admin Logo Preview" width={200} height={80} style={{objectFit: 'contain'}} />
-                            ) : (
-                                <div className="text-muted-foreground text-sm">لا يوجد شعار</div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            </motion.div>
-        </div>
-      </div>
+      <motion.div variants={cardVariants} initial="hidden" animate="visible" custom={0}>
+        <Card>
+          <CardHeader>
+              <CardTitle>اسم الشركة</CardTitle>
+              <CardDescription>الاسم الذي سيظهر في جميع أنحاء النظام.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Input
+                id="companyName"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="أدخل اسم شركتك"
+            />
+          </CardContent>
+        </Card>
+      </motion.div>
+      
+      <motion.div variants={cardVariants} initial="hidden" animate="visible" custom={1}>
+          <Card>
+            <CardHeader>
+                <CardTitle>الشعارات</CardTitle>
+                <CardDescription>
+                  ارفع الشعارات المختلفة التي ستظهر في أنحاء النظام.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y">
+                {logoSections.map((section) => (
+                  <LogoUploader 
+                    key={section.id} 
+                    id={section.id}
+                    label={section.label}
+                    logoSrc={logos[section.id] || null}
+                    onFileChange={handleFileChange}
+                    onRemove={handleRemoveLogo}
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+      </motion.div>
       
       <div className="flex justify-start pt-4 border-t">
          <Button size="lg" onClick={handleSaveChanges}>
@@ -230,5 +203,3 @@ export default function CompanyIdentityPage() {
     </motion.div>
   );
 }
-
-    
