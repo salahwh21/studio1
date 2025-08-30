@@ -3,7 +3,7 @@
 
 import { useState, useContext } from 'react';
 import {
-  Upload, X, Building, Smartphone, FileText, Barcode, Image as ImageIcon, Save, LayoutDashboard
+  Upload, X, Building, Smartphone, FileText, Barcode, Image as ImageIcon, Save, LayoutDashboard, ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,8 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
-import { SettingsLayout } from '@/components/settings-layout';
 import { LoginExperienceContext } from '@/context/LoginExperienceContext';
+import Link from 'next/link';
 
 const logoSections = [
   { id: 'admin', label: 'شعار لوحة التحكم', icon: <Building className="h-6 w-6 text-blue-500"/> },
@@ -126,12 +126,21 @@ export default function CompanyIdentityPage() {
   };
 
   return (
-    <SettingsLayout
-      title="هوية الشركة"
-      description="إدارة اسم الشركة والشعارات المختلفة المستخدمة في النظام."
-      backHref="/dashboard/settings/general"
-    >
-      <div className="space-y-8">
+     <div className="space-y-6">
+        <Card className="shadow-sm">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <CardTitle className="text-2xl font-bold tracking-tight">هوية الشركة</CardTitle>
+                <CardDescription className="mt-1">إدارة اسم الشركة والشعارات المختلفة المستخدمة في النظام.</CardDescription>
+            </div>
+            <Button variant="outline" size="icon" asChild>
+                <Link href="/dashboard/settings/general">
+                <ArrowLeft className="h-4 w-4" />
+                </Link>
+            </Button>
+            </CardHeader>
+        </Card>
+      
         <Card>
           <CardHeader>
             <CardTitle>اسم الشركة</CardTitle>
@@ -173,7 +182,6 @@ export default function CompanyIdentityPage() {
             <Save className="ml-2 h-4 w-4" /> حفظ كل التغييرات
           </Button>
         </div>
-      </div>
-    </SettingsLayout>
+    </div>
   );
 }
