@@ -15,7 +15,7 @@
     --primary-foreground: 0 0% 100%;
     --secondary: 210 20% 94%;
     --secondary-foreground: 210 25% 25%;
-    --muted: 210 20% 94%;
+    --muted: 210 20% 96%;
     --muted-foreground: 210 15% 45%;
     --accent: 45 90% 55%;
     --accent-foreground: 45 90% 15%;
@@ -50,7 +50,7 @@
     --primary-foreground: 0 0% 100%;
     --secondary: 210 25% 20%;
     --secondary-foreground: 210 20% 90%;
-    --muted: 210 25% 20%;
+    --muted: 210 25% 17%;
     --muted-foreground: 210 15% 65%;
     --accent: 45 90% 60%;
     --accent-foreground: 45 90% 15%;
@@ -82,7 +82,7 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
-    font-size: 14px;
+    font-size: 15px;
   }
   .custom-table-container {
     display: flex;
