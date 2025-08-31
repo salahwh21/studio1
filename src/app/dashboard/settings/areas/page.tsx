@@ -323,7 +323,7 @@ const AreaDialog = ({
 
 
   const handleSave = () => {
-    onSave(name, selectedEntity ? undefined : (id || undefined));
+    onSave(name, entity ? undefined : (id || undefined));
   };
   
   const title = entity ? `تعديل ${type === 'city' ? 'مدينة' : 'منطقة'}` : `إضافة ${type === 'city' ? 'مدينة' : 'منطقة'} جديدة`;
@@ -487,10 +487,18 @@ export default function AreasPage() {
                     throw new Error("File is not readable");
                 }
                 const importedCities: City[] = JSON.parse(text);
-                // Basic validation
-                if (!Array.isArray(importedCities) || !importedCities.every(c => c.id && c.name && Array.isArray(c.areas))) {
+                
+                const isValid = Array.isArray(importedCities) && importedCities.every(c => 
+                    c.id && 
+                    c.name && 
+                    Array.isArray(c.areas) &&
+                    (c.areas.length === 0 || c.areas.every(a => a.id && a.name))
+                );
+
+                if (!isValid) {
                     throw new Error("Invalid file format");
                 }
+                
                 setCities(importedCities);
                 toast({ title: 'تم الاستيراد بنجاح', description: `تم استيراد ${importedCities.length} مدينة.` });
             } catch (error) {
@@ -601,3 +609,5 @@ export default function AreasPage() {
     </>
   );
 }
+
+    
