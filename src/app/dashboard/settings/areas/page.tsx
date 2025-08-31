@@ -164,7 +164,11 @@ const AreasView = ({
   onAddArea: () => void;
   onEditArea: (area: Area) => void;
   onDeleteArea: (area: Area) => void;
-}) => (
+}) => {
+    const [searchQuery, setSearchQuery] = useState('');
+    const filteredAreas = city.areas.filter(area => area.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    return (
     <div className="space-y-6">
       <Card className="shadow-sm">
         <CardHeader>
@@ -177,16 +181,29 @@ const AreasView = ({
                         إدارة المناطق التابعة لهذه المدينة.
                     </CardDescription>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" size="icon" onClick={onBack}>
+                <Button variant="outline" size="icon" onClick={onBack}>
                     <Icon name="ArrowLeft" className="h-4 w-4" />
-                    </Button>
+                </Button>
+            </div>
+        </CardHeader>
+        <CardContent>
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+                 <div className="relative w-full sm:max-w-xs">
+                    <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input 
+                        placeholder="بحث عن منطقة..." 
+                        className="pr-10"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+                <div className="flex gap-2 sm:mr-auto">
                     <Button onClick={onAddArea}>
                         <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة منطقة جديدة
                     </Button>
                 </div>
             </div>
-        </CardHeader>
+        </CardContent>
       </Card>
       <Card>
         <CardContent className="p-0">
@@ -199,7 +216,7 @@ const AreasView = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {city.areas.map((area) => (
+              {filteredAreas.length > 0 ? filteredAreas.map((area) => (
                 <TableRow key={area.id}>
                   <TableCell className="font-medium">{area.name}</TableCell>
                   <TableCell>{area.id}</TableCell>
@@ -215,13 +232,20 @@ const AreasView = ({
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center">
+                       لا توجد نتائج للبحث أو لم تتم إضافة مناطق بعد.
+                    </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
     </div>
-);
+    )
+};
 
 
 // Dialog for Adding/Editing Cities and Areas
