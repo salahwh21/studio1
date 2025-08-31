@@ -25,6 +25,7 @@ const integrationsList = [
     { id: 'aramex', name: 'Aramex', iconName: 'Truck' as const, description: 'ربط حسابك مع شركة أرامكس لتتبع الشحنات وإنشاء البوالص.', category: 'shipping', requiresApiKey: true, requiresWebhook: false },
     { id: 'dhl', name: 'DHL', iconName: 'Globe' as const, description: 'إدارة شحناتك الدولية والمحلية عبر DHL.', category: 'shipping', requiresApiKey: true, requiresWebhook: false },
     { id: 'smsa-express', name: 'SMSA Express', iconName: 'Truck' as const, description: 'مزامنة الشحنات مباشرة مع نظام شركة سمسا للشحن.', category: 'shipping', requiresApiKey: true, requiresWebhook: false },
+    { id: 'fedex', name: 'FedEx', iconName: 'Globe' as const, description: 'ربط وتتبع الشحنات مع شركة فيديكس.', category: 'shipping', requiresApiKey: true, requiresWebhook: false },
     { id: 'twilio', name: 'Twilio', iconName: 'MessageSquare' as const, description: 'إرسال رسائل SMS للعملاء بحالة الطلب.', category: 'communication', requiresApiKey: true, requiresWebhook: false },
     { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const, description: 'ربط النظام بآلاف التطبيقات الأخرى لأتمتة المهام.', category: 'automation', requiresApiKey: false, requiresWebhook: true },
     { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const, description: 'ربط أي منصة تدعم الويب هوك لاستقبال الطلبات.', category: 'custom', requiresApiKey: false, requiresWebhook: true },
