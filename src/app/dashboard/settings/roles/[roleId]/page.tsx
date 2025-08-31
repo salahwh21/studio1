@@ -1,8 +1,6 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   Card,
@@ -10,6 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -18,31 +17,14 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import Icon from '@/components/icon';
 import { useRolesStore, allPermissionGroups, type Role } from '@/store/roles-store';
 import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
 
-
-export default function EditRolePage() {
-  const router = useRouter();
-  const params = useParams();
+function RoleCard({ role, onSave, onDelete }: { role: Role; onSave: (permissions: string[]) => void; onDelete: () => void; }) {
+  const [permissions, setPermissions] = useState(role.permissions);
   const { toast } = useToast();
-  const { roles, updateRolePermissions } = useRolesStore();
-  
-  const roleId = params.roleId as string;
-
-  const [role, setRole] = useState<Role | null | undefined>(undefined);
-  const [tempPermissions, setTempPermissions] = useState<string[]>([]);
-
-  useEffect(() => {
-    const foundRole = roles.find(r => r.id === roleId);
-    setRole(foundRole);
-    if (foundRole) {
-      setTempPermissions(foundRole.permissions);
-    }
-  }, [roleId, roles]);
 
   const handleGroupPermissionChange = (groupPermissions: {id: string, label: string}[], checked: boolean) => {
     const groupPermissionIds = groupPermissions.map(p => p.id);
-    setTempPermissions(prev => {
+    setPermissions(prev => {
         const otherPermissions = prev.filter(p => !groupPermissionIds.includes(p) && p !== 'all');
         if(checked) {
             return [...otherPermissions, ...groupPermissionIds];
@@ -53,17 +35,11 @@ export default function EditRolePage() {
   }
 
   const handlePermissionChange = (permissionId: string, checked: boolean) => {
-    setTempPermissions(prev => {
+    setPermissions(prev => {
       let newPermissions: string[];
-
-      if (permissionId === 'all') {
-        return checked ? ['all'] : [];
-      }
-
+      if (permissionId === 'all') return checked ? ['all'] : [];
       const isCurrentlyAll = prev.includes('all');
-      
       const allPermissionIds = allPermissionGroups.flatMap(g => g.permissions).map(p => p.id);
-      
       const currentPermissions = isCurrentlyAll ? allPermissionIds : prev;
 
       if (checked) {
@@ -72,129 +48,127 @@ export default function EditRolePage() {
         newPermissions = currentPermissions.filter(p => p !== permissionId);
       }
       
-      if (newPermissions.length === allPermissionIds.length) {
-        return ['all'];
-      }
+      if (newPermissions.length === allPermissionIds.length) return ['all'];
       
       return newPermissions;
     });
   };
-  
-  const handleSelectAll = (checked: boolean) => {
-    setTempPermissions(checked ? ['all'] : []);
-  }
 
-  const handleSavePermissions = () => {
-    if (role) {
-      updateRolePermissions(role.id, tempPermissions);
-      toast({
-        title: 'تم الحفظ بنجاح!',
+  const handleSave = () => {
+    onSave(permissions);
+    toast({
+        title: 'تم الحفظ!',
         description: `تم تحديث صلاحيات دور "${role.name}".`,
-      })
-      router.push('/dashboard/settings/roles');
-    }
-  };
+    })
+  }
   
-  const isAllTempSelected = tempPermissions.includes('all');
-
-  if (role === undefined) {
-    return (
-        <div className="space-y-6">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-96 w-full" />
-        </div>
-    );
-  }
-
-  if (role === null) {
-    return (
-        <div className="text-center py-10">
-            <p className="text-lg text-destructive">لم يتم العثور على الدور المطلوب.</p>
-            <Button asChild variant="link"><Link href="/dashboard/settings/roles">العودة إلى قائمة الأدوار</Link></Button>
-        </div>
-    )
-  }
-
-
+  const isAllSelected = permissions.includes('all');
+  
   return (
-    <div className="space-y-6">
-      <Card className="shadow-sm">
-        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Icon name="Edit" /> تعديل صلاحيات: {role.name}
-            </CardTitle>
-            <CardDescription className="mt-1">
-              اختر الصلاحيات والصفحات التي يمكن لهذا الدور الوصول إليها.
-            </CardDescription>
-          </div>
-          <Button variant="outline" size="icon" asChild>
-            <Link href="/dashboard/settings/roles">
-              <Icon name="ArrowLeft" className="h-4 w-4" />
-            </Link>
-          </Button>
-        </CardHeader>
-      </Card>
-    
-      <Card>
-        <CardHeader>
-            <div className="flex items-center space-x-2 space-x-reverse border-b pb-4">
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-start">
+            <div>
+                 <CardTitle>{role.name}</CardTitle>
+                <CardDescription>{role.description}</CardDescription>
+            </div>
+             <div className="flex items-center space-x-2 space-x-reverse">
                 <Checkbox
-                  id="select-all"
-                  checked={isAllTempSelected}
-                  onCheckedChange={handleSelectAll}
+                  id={`select-all-${role.id}`}
+                  checked={isAllSelected}
+                  onCheckedChange={(checked) => setPermissions(checked ? ['all'] : [])}
                 />
-                <Label htmlFor="select-all" className="font-bold text-lg">
-                  تحديد كل الصلاحيات
+                <Label htmlFor={`select-all-${role.id}`} className="font-semibold">
+                  صلاحيات كاملة
                 </Label>
               </div>
-        </CardHeader>
-        <CardContent>
-            <Accordion type="multiple" defaultValue={allPermissionGroups.map(g => g.id)} className="w-full">
+        </div>
+      </CardHeader>
+      <CardContent>
+         <Accordion type="multiple" defaultValue={allPermissionGroups.map(g => g.id)} className="w-full">
             {allPermissionGroups.map(group => {
                 const groupPermissionIds = group.permissions.map(p => p.id);
-                const isAllGroupSelected = groupPermissionIds.every(id => tempPermissions.includes(id)) || isAllTempSelected;
-                const isIndeterminate = groupPermissionIds.some(id => tempPermissions.includes(id)) && !isAllGroupSelected;
+                const isAllGroupSelected = groupPermissionIds.every(id => permissions.includes(id)) || isAllSelected;
 
                 return (
                     <AccordionItem value={group.id} key={group.id}>
                         <div className="flex items-center gap-2">
-                            <Checkbox 
-                                id={`group-${group.id}`} 
+                           <Checkbox 
+                                id={`group-${group.id}-${role.id}`} 
                                 checked={isAllGroupSelected}
                                 onCheckedChange={(checked) => handleGroupPermissionChange(group.permissions, !!checked)}
                                 onClick={(e) => e.stopPropagation()}
                             />
-                            <AccordionTrigger className="flex-1 hover:no-underline py-3">
-                                <Label htmlFor={`group-${group.id}`} className="font-semibold text-base cursor-pointer">{group.label}</Label>
+                             <AccordionTrigger className="flex-1 hover:no-underline py-3">
+                                <Label htmlFor={`group-${group.id}-${role.id}`} className="font-semibold text-base cursor-pointer">{group.label}</Label>
                             </AccordionTrigger>
                         </div>
                         <AccordionContent className="pr-8 space-y-3 pt-2">
-                                {group.permissions.map(permission => (
-                                <div key={permission.id} className="flex items-center space-x-2 space-x-reverse">
-                                    <Checkbox
-                                    id={permission.id}
-                                    checked={isAllTempSelected || tempPermissions.includes(permission.id)}
+                            {group.permissions.map(permission => (
+                            <div key={permission.id} className="flex items-center space-x-2 space-x-reverse">
+                                <Checkbox
+                                    id={`${permission.id}-${role.id}`}
+                                    checked={isAllSelected || permissions.includes(permission.id)}
                                     onCheckedChange={(checked) => handlePermissionChange(permission.id, !!checked)}
-                                    />
-                                    <Label htmlFor={permission.id} className="font-normal text-muted-foreground">
-                                    {permission.label}
-                                    </Label>
-                                </div>
-                                ))}
+                                />
+                                <Label htmlFor={`${permission.id}-${role.id}`} className="font-normal text-muted-foreground">
+                                {permission.label}
+                                </Label>
+                            </div>
+                            ))}
                         </AccordionContent>
                     </AccordionItem>
                 )
             })}
             </Accordion>
-        </CardContent>
-      </Card>
+      </CardContent>
+      <CardFooter className="flex justify-end gap-2">
+          {role.id !== 'admin' && <Button variant="destructive" onClick={onDelete}>حذف الدور</Button>}
+          <Button onClick={handleSave}>حفظ التغييرات</Button>
+      </CardFooter>
+    </Card>
+  )
+}
 
-      <div className="flex justify-start pt-6 mt-6 border-t">
-          <Button size="lg" onClick={handleSavePermissions}>
-            <Icon name="Save" className="ml-2 h-4 w-4" /> حفظ التغييرات
-          </Button>
+
+export default function RolesPermissionsPage() {
+  const { roles, updateRolePermissions } = useRolesStore();
+ 
+  return (
+      <div className="space-y-6">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                <Icon name="Users" /> الأدوار والصلاحيات
+              </CardTitle>
+              <CardDescription className="mt-1">
+                إدارة الأدوار الوظيفية وتحكم في صلاحيات الوصول لكل دور في النظام.
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="icon" asChild>
+                  <Link href="/dashboard/settings">
+                      <Icon name="ArrowLeft" className="h-4 w-4" />
+                  </Link>
+              </Button>
+              <Button>
+                <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة دور جديد
+              </Button>
+            </div>
+          </CardHeader>
+        </Card>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {roles.map(role => (
+                <RoleCard 
+                    key={role.id} 
+                    role={role}
+                    onSave={(permissions) => updateRolePermissions(role.id, permissions)}
+                    onDelete={() => console.log('Delete role', role.id)}
+                />
+            ))}
+        </div>
       </div>
-    </div>
   );
 }
