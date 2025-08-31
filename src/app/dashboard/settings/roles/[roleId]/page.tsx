@@ -9,7 +9,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -35,7 +34,6 @@ function PermissionGroupCard({
 
     const handleGroupPermissionChange = (checked: boolean) => {
         group.permissions.forEach(p => {
-            // We need to handle the case where the permission is already set correctly
             const isCurrentlyChecked = currentPermissions.includes(p.id) || isAllSelected;
             if (isCurrentlyChecked !== checked) {
                  onPermissionChange(p.id, checked);
@@ -45,9 +43,9 @@ function PermissionGroupCard({
 
     return (
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg">{group.label}</CardTitle>
-                <div className="flex items-center space-x-2 space-x-reverse">
+            <CardHeader className="flex flex-row items-center justify-between p-4 bg-muted/50">
+                <CardTitle className="text-base">{group.label}</CardTitle>
+                 <div className="flex items-center space-x-2 space-x-reverse">
                     <Checkbox
                         id={`group-${group.id}`}
                         checked={isAllGroupSelected}
@@ -56,13 +54,14 @@ function PermissionGroupCard({
                     <Label htmlFor={`group-${group.id}`}>تحديد الكل</Label>
                 </div>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {group.permissions.map(permission => (
                     <div key={permission.id} className="flex items-center space-x-2 space-x-reverse p-3 rounded-md bg-muted/50">
                         <Checkbox
                             id={permission.id}
                             checked={isAllSelected || currentPermissions.includes(permission.id)}
                             onCheckedChange={(checked) => onPermissionChange(permission.id, !!checked)}
+                            disabled={isAllSelected}
                         />
                         <Label htmlFor={permission.id} className="font-normal text-muted-foreground">
                             {permission.label}
@@ -155,11 +154,13 @@ export default function RoleEditPage() {
     };
     
     const handleSave = () => {
-        updateRolePermissions(roleId, permissions);
+        if (!role) return;
+        updateRolePermissions(role.id, permissions);
         toast({
             title: 'تم الحفظ بنجاح!',
-            description: `تم تحديث صلاحيات دور "${role?.name}".`,
+            description: `تم تحديث صلاحيات دور "${role.name}".`,
         });
+        router.push('/dashboard/settings/roles');
     };
 
     if (isLoading) {

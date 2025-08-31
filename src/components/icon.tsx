@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -11,13 +10,13 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 // Add all solid icons to the library, so we can use them by name
 library.add(fas);
 
-type IconName = keyof typeof LucideIcons;
+type IconName = keyof typeof LucideIcons | 'UserCog';
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
   name: IconName;
 }
 
-const faMapping: { [key in keyof typeof LucideIcons]?: import('@fortawesome/fontawesome-svg-core').IconName } = {
+const faMapping: { [key in IconName]?: import('@fortawesome/fontawesome-svg-core').IconName } = {
   LayoutDashboard: 'grip',
   ShoppingCart: 'shopping-cart',
   PackagePlus: 'box-open',
@@ -85,9 +84,10 @@ const faMapping: { [key in keyof typeof LucideIcons]?: import('@fortawesome/font
   BarChart: 'chart-bar',
   RefreshCw: 'sync',
   Download: 'download',
+  UserCog: 'user-cog',
 };
 
-const iconMapping: { [key in keyof typeof LucideIcons]?: { feather?: keyof typeof FeatherIcons } } = {
+const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons } } = {
   LayoutDashboard: { feather: 'Grid' },
   ShoppingCart: { feather: 'ShoppingCart' },
   PackagePlus: { feather: 'Package' },
@@ -155,6 +155,7 @@ const iconMapping: { [key in keyof typeof LucideIcons]?: { feather?: keyof typeo
   BarChart: { feather: 'BarChart2' },
   RefreshCw: { feather: 'RefreshCw'},
   Download: { feather: 'Download'},
+  UserCog: { feather: 'User' },
 };
 
 
@@ -226,4 +227,3 @@ const Icon = ({ name, ...props }: IconProps) => {
 };
 
 export default Icon;
-
