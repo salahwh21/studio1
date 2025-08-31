@@ -163,7 +163,7 @@ const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons }
   BarChart: { feather: 'BarChart2' },
   RefreshCw: { feather: 'RefreshCw'},
   Download: { feather: 'Download'},
-  UserCog: { feather: 'User' },
+  UserCog: { feather: 'UserCog' },
   ListChecks: { feather: 'CheckSquare' },
   Upload: { feather: 'Upload' },
   UserPlus: { feather: 'UserPlus' },

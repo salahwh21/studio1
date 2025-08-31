@@ -139,9 +139,9 @@ const UserCard = ({ user, role, onEdit, onDelete }: { user: User; role?: Role; o
                     <Button variant="ghost" size="icon"><Icon name="MoreVertical" className="h-4 w-4" /></Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => onEdit(user)}><Icon name="Edit" className="mr-2"/>تعديل</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => onEdit(user)}><Icon name="Edit" className="ml-2"/>تعديل</DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={() => onDelete(user)} className="text-destructive"><Icon name="Trash2" className="mr-2"/>حذف</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => onDelete(user)} className="text-destructive"><Icon name="Trash2" className="ml-2"/>حذف</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
         </CardContent>
@@ -160,15 +160,15 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd }: { user
 
     return (
         <div className="space-y-4">
-             <div className="flex flex-col sm:flex-row gap-2">
-                <div className="relative flex-1">
-                    <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pl-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                </div>
+             <div className="flex flex-col sm:flex-row gap-2 justify-between">
                 <div className="flex gap-2">
-                     <Button onClick={onAdd}><Icon name="UserPlus" className="mr-2" /> إضافة جديد</Button>
-                     <Button variant="outline"><Icon name="FileUp" className="mr-2" /> استيراد</Button>
-                     <Button variant="outline"><Icon name="FileDown" className="mr-2" /> تصدير</Button>
+                     <Button onClick={onAdd}><Icon name="UserPlus" className="ml-2" /> إضافة جديد</Button>
+                     <Button variant="outline"><Icon name="FileUp" className="ml-2" /> استيراد</Button>
+                     <Button variant="outline"><Icon name="FileDown" className="ml-2" /> تصدير</Button>
+                </div>
+                 <div className="relative flex-1 sm:max-w-xs">
+                    <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pr-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
