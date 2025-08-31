@@ -321,6 +321,7 @@ const initialStatuses: Status[] = [
 
 type StatusesState = {
   statuses: Status[];
+  setStatuses: (statuses: Status[]) => void;
   addStatus: (newStatus: Omit<Status, 'id'>) => void;
   updateStatus: (statusId: string, updatedStatus: Partial<Status>) => void;
   deleteStatus: (statusId: string) => void;
@@ -331,6 +332,10 @@ const generateId = () => `STS_${Date.now()}`;
 export const useStatusesStore = create<StatusesState>()(immer((set) => ({
   statuses: initialStatuses,
   
+  setStatuses: (newStatuses) => {
+    set({ statuses: newStatuses });
+  },
+
   addStatus: (newStatus) => {
     set(state => {
       state.statuses.push({

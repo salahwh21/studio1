@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Card,
@@ -62,9 +62,10 @@ const StatusCard = ({ status }: { status: Status; onDelete: (id: string) => void
 
 export default function StatusesPage() {
   const { toast } = useToast();
-  const { statuses, deleteStatus } = useStatusesStore();
+  const { statuses, setStatuses, deleteStatus } = useStatusesStore();
   const [statusToDelete, setStatusToDelete] = useState<Status | null>(null);
-  
+  const importInputRef = useRef<HTMLInputElement>(null);
+
   const handleDeleteRequest = (id: string) => {
       const status = statuses.find(s => s.id === id);
       if (status) {
@@ -80,6 +81,47 @@ export default function StatusesPage() {
       }
   }
   
+  const handleExport = useCallback(() => {
+    const dataStr = JSON.stringify(statuses, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = 'statuses_export.json';
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    toast({ title: 'تم التصدير بنجاح' });
+  }, [statuses, toast]);
+
+  const handleImport = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const text = e.target?.result;
+            if (typeof text !== 'string') throw new Error("لا يمكن قراءة الملف");
+            
+            const importedStatuses = JSON.parse(text);
+            
+            // Add basic validation here if needed
+            if (Array.isArray(importedStatuses)) {
+                setStatuses(importedStatuses);
+                toast({ title: 'تم الاستيراد بنجاح', description: `تم استيراد ${importedStatuses.length} حالات.` });
+            } else {
+                 throw new Error("تنسيق الملف غير صالح.");
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'فشل الاستيراد', description: error.message || 'ملف JSON غير صالح.' });
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = ''; // Reset file input
+  }, [setStatuses, toast]);
+
+
   const handleSaveChanges = () => {
     // Logic to persist all changes, e.g., to a backend
     toast({ title: 'تم الحفظ', description: 'تم حفظ جميع التغييرات بنجاح.' });
@@ -99,8 +141,9 @@ export default function StatusesPage() {
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline"><Icon name="Upload" className="mr-2 h-4 w-4" /> استيراد</Button>
-            <Button variant="outline"><Icon name="Download" className="mr-2 h-4 w-4" /> تصدير</Button>
+            <Button variant="outline" onClick={() => importInputRef.current?.click()}><Icon name="Upload" className="mr-2 h-4 w-4" /> استيراد</Button>
+            <input type="file" ref={importInputRef} className="hidden" accept=".json" onChange={handleImport} />
+            <Button variant="outline" onClick={handleExport}><Icon name="Download" className="mr-2 h-4 w-4" /> تصدير</Button>
             <Button><Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة حالة جديدة</Button>
             <Button variant="outline" size="icon" asChild>
                 <Link href="/dashboard/settings"><Icon name="ArrowLeft" className="h-4 w-4" /></Link>
