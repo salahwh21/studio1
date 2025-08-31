@@ -42,12 +42,14 @@ const statusColorMap: { [key: string]: { color: string; bgColor: string } } = {
 
 
 const StatusCard = ({ status }: { status: Status; onDelete: (id: string) => void; }) => {
-  const { color, bgColor } = statusColorMap[status.color] || statusColorMap.default;
   return (
     <Card className="hover:border-primary hover:shadow-lg transition-all duration-200 flex flex-col">
         <CardHeader className="flex-grow flex items-center justify-center">
             <Link href={`/dashboard/settings/statuses/${status.id}`} className="space-y-2 flex-1 cursor-pointer w-full text-center">
-                <Badge className={cn("text-sm inline-flex items-center gap-2 rounded-md border-transparent", bgColor, color)}>
+                <Badge 
+                    className="text-sm inline-flex items-center gap-2 rounded-md border-transparent text-white"
+                    style={{ backgroundColor: status.color }}
+                >
                     <Icon name={status.icon as any} className="h-4 w-4" />
                     <span>{status.name}</span>
                 </Badge>
