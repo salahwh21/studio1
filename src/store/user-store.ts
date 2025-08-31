@@ -20,6 +20,8 @@ const initialUsers: User[] = [
     { id: 'driver-1', name: 'علي الأحمد', email: '0791111111', roleId: 'driver', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d', password: '123456789' },
     { id: 'driver-2', name: 'محمد الخالد', email: '0782222222', roleId: 'driver', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026705d', password: '123456789' },
     { id: 'driver-3', name: 'يوسف إبراهيم', email: '0773333333', roleId: 'driver', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026707d', password: '123456789' },
+    { id: 'merchant-1', name: 'تاجر أ', email: 'merchant-a@example.com', roleId: 'merchant', avatar: '', password: '123456789' },
+    { id: 'merchant-2', name: 'متجر العامري', email: 'amiri-store@example.com', roleId: 'merchant', avatar: '', password: '123456789' },
 ];
 
 type UsersState = {

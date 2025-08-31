@@ -245,8 +245,8 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
                             </Button>
                         </div>
                          <div className="relative flex-1 w-full sm:max-w-xs">
-                            <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pl-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                            <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pr-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                         </div>
                     </div>
                 )}
@@ -291,8 +291,10 @@ export default function UsersPage() {
   const [userToDelete, setUserToDelete] = useState<User[] | null>(null);
   const [activeTab, setActiveTab] = useState('employees');
 
-  const employees = useMemo(() => users.filter(u => u.roleId !== 'driver'), [users]);
+  const employees = useMemo(() => users.filter(u => u.roleId !== 'driver' && u.roleId !== 'merchant'), [users]);
   const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
+  const merchants = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
+
 
   const handleAddNew = () => {
       setSelectedUser(null);
@@ -360,9 +362,10 @@ export default function UsersPage() {
         </Card>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="employees">الموظفين ({employees.length})</TabsTrigger>
                 <TabsTrigger value="drivers">السائقين ({drivers.length})</TabsTrigger>
+                <TabsTrigger value="merchants">التجار ({merchants.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="employees" className="mt-4">
                  <UserList
@@ -380,6 +383,17 @@ export default function UsersPage() {
                     users={drivers}
                     roles={roles}
                     isDriverTab={true}
+                    onAdd={handleAddNew}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onBulkUpdateRole={handleBulkUpdateRole}
+                />
+            </TabsContent>
+             <TabsContent value="merchants" className="mt-4">
+                <UserList
+                    users={merchants}
+                    roles={roles}
+                    isDriverTab={false} // Merchants aren't drivers
                     onAdd={handleAddNew}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
