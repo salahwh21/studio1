@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -171,7 +172,8 @@ export default function IntegrationsPage() {
         const [logoError, setLogoError] = useState(false);
         
         const isCustomIntegration = integration.category === 'custom';
-        const logoUrl = `https://logo.clearbit.com/${integration.id.split('-')[0]}.com`;
+        const logoUrl = !isCustomIntegration ? `https://logo.clearbit.com/${integration.id.split('-')[0]}.com` : '';
+
 
         return (
             <Card className="hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out flex flex-col">
