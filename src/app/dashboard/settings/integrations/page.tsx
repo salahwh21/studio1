@@ -39,7 +39,7 @@ const integrationsList = [
     { id: 'stripe', name: 'Stripe', iconName: 'CreditCard' as const, description: 'تفعيل الدفع الإلكتروني عبر بطاقات الائتمان.', category: 'payment', type: 'standard' },
     { id: 'paypal', name: 'PayPal', iconName: 'CreditCard' as const, description: 'قبول المدفوعات العالمية عبر PayPal.', category: 'payment', type: 'standard' },
     { id: 'paytabs', name: 'PayTabs', iconName: 'CreditCard' as const, description: 'ربط بوابة الدفع PayTabs لمنطقة الشرق الأوسط.', category: 'payment', type: 'standard' },
-    { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const, description: 'ربط النظام بآلاف التطبيقات الأخرى لأتمتة المهام.', category: 'automation', type: 'factory' },
+    { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const, description: 'ربط النظام بآلاف التطبيقات الأخرى لأتمتة المهام.', category: 'factory', type: 'factory' },
     { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const, description: 'ربط أي منصة تدعم الويب هوك لاستقبال الطلبات.', category: 'factory', type: 'factory' },
     { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const, description: 'للمطورين: ربط النظام مع أي واجهة برمجية مخصصة.', category: 'factory', type: 'factory' }
 ];
@@ -63,63 +63,10 @@ type Connection = {
     enabled: boolean;
 };
 
-const ConnectionDialog = ({ open, onOpenChange, integration, onSave }: { open: boolean, onOpenChange: (open: boolean) => void, integration: any | null, onSave: (name: string, apiKey: string) => void }) => {
-    const [name, setName] = useState('');
-    const [apiKey, setApiKey] = useState('');
-    const { toast } = useToast();
-
-    useEffect(() => {
-        if (open && integration) {
-            setName(integration.name);
-            setApiKey('');
-        }
-    }, [open, integration]);
-
-    if (!integration) return null;
-
-    const handleSave = () => {
-        if (!name) {
-            toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء إدخال اسم لهذا التكامل.' });
-            return;
-        }
-        onSave(name, apiKey);
-        setName('');
-        setApiKey('');
-    }
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>إضافة تكامل: {integration.name}</DialogTitle>
-                    <DialogDescription>
-                       الرجاء إدخال تفاصيل هذا التكامل الجديد.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="integration-name">الاسم المعروض</Label>
-                        <Input id="integration-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: ويب هوك متجر الأطفال"/>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="api-key">مفتاح الربط (API Key) أو الرابط</Label>
-                        <Input id="api-key" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="أدخل المفتاح أو الرابط هنا"/>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>إلغاء</Button>
-                    <Button onClick={handleSave}>حفظ واتصال</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
 export default function IntegrationsPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [connections, setConnections] = useState<Connection[]>([]);
-    const [dialogState, setDialogState] = useState<{ open: boolean, integration: any | null }>({ open: false, integration: null });
     const [integrationToDelete, setIntegrationToDelete] = useState<Connection | null>(null);
 
     useEffect(() => {
@@ -152,7 +99,7 @@ export default function IntegrationsPage() {
     };
 
     const handleActionClick = (integration: any) => {
-        setDialogState({ open: true, integration });
+        router.push(`/dashboard/settings/integrations/connect/${integration.id}`);
     };
     
      const handleToggleConnection = (connectionId: string, enabled: boolean) => {
@@ -163,22 +110,6 @@ export default function IntegrationsPage() {
         toast({
             title: enabled ? 'تم تفعيل التكامل' : 'تم إلغاء تفعيل التكامل',
         });
-    };
-
-    const handleSaveIntegration = (name: string, apiKey: string) => {
-        if (dialogState.integration) {
-            const newConnection: Connection = {
-                id: nanoid(),
-                integrationId: dialogState.integration.id,
-                name: name,
-                apiKey: apiKey,
-                enabled: true,
-            };
-            const newConnections = [...connections, newConnection];
-            saveConnections(newConnections);
-            toast({ title: 'تم الربط بنجاح', description: `تم تفعيل التكامل ${name}.` });
-        }
-        setDialogState({ open: false, integration: null });
     };
 
     const handleDisconnect = (connectionId: string) => {
@@ -327,13 +258,6 @@ export default function IntegrationsPage() {
                 ))}
             </Tabs>
             
-            <ConnectionDialog 
-                open={dialogState.open}
-                onOpenChange={(open) => setDialogState({open, integration: open ? dialogState.integration : null})}
-                integration={dialogState.integration}
-                onSave={handleSaveIntegration}
-            />
-            
             <AlertDialog open={!!integrationToDelete} onOpenChange={() => setIntegrationToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -351,5 +275,3 @@ export default function IntegrationsPage() {
         </div>
     );
 }
-
-    
