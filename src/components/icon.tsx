@@ -11,7 +11,7 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 // Add all solid icons to the library, so we can use them by name
 library.add(fas);
 
-type IconName = keyof typeof LucideIcons | 'UserCog' | 'UsersCog' | 'ShieldCheck' | 'KeyRound' | 'HandCoins' | 'CalendarClock' | 'CheckCheck' | 'Repeat' | 'ThumbsDown' | 'Ban' | 'PhoneOff' | 'Archive' | 'Webhook';
+type IconName = keyof typeof LucideIcons | 'UserCog' | 'UsersCog' | 'ShieldCheck' | 'KeyRound' | 'HandCoins' | 'CalendarClock' | 'CheckCheck' | 'Repeat' | 'ThumbsDown' | 'Ban' | 'PhoneOff' | 'Archive' | 'Webhook' | 'Briefcase' | 'Code';
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
   name: IconName;
@@ -106,6 +106,8 @@ const faMapping: { [key in IconName]?: import('@fortawesome/fontawesome-svg-core
   PhoneOff: 'phone-slash',
   Archive: 'box-archive',
   Webhook: 'globe',
+  Briefcase: 'briefcase',
+  Code: 'code',
 };
 
 const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons } } = {
@@ -197,6 +199,8 @@ const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons }
   PhoneOff: { feather: 'PhoneOff' },
   Archive: { feather: 'Archive' },
   Webhook: { feather: 'GitMerge' },
+  Briefcase: { feather: 'Briefcase' },
+  Code: { feather: 'Code' },
 };
 
 

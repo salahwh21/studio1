@@ -22,6 +22,7 @@ const integrationsList = [
     { id: 'zid', name: 'Zid (زد)', iconName: 'ShoppingCart' as const },
     { id: 'aramex', name: 'Aramex', iconName: 'Truck' as const },
     { id: 'dhl', name: 'DHL', iconName: 'Globe' as const },
+    { id: 'odoo', name: 'Odoo', iconName: 'Briefcase' as const },
     { id: 'twilio', name: 'Twilio', iconName: 'MessageSquare' as const },
     { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const },
     { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const },
@@ -162,4 +163,3 @@ export default function IntegrationDetailPage() {
         </div>
     );
 }
-

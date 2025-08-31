@@ -26,6 +26,7 @@ const integrationsList = [
     { id: 'dhl', name: 'DHL', iconName: 'Globe' as const, description: 'إدارة شحناتك الدولية والمحلية عبر DHL.', category: 'shipping', requiresApiKey: true, requiresWebhook: false },
     { id: 'smsa-express', name: 'SMSA Express', iconName: 'Truck' as const, description: 'مزامنة الشحنات مباشرة مع نظام شركة سمسا للشحن.', category: 'shipping', requiresApiKey: true, requiresWebhook: false },
     { id: 'fedex', name: 'FedEx', iconName: 'Globe' as const, description: 'ربط وتتبع الشحنات مع شركة فيديكس.', category: 'shipping', requiresApiKey: true, requiresWebhook: false },
+    { id: 'odoo', name: 'Odoo', iconName: 'Briefcase' as const, description: 'مزامنة الطلبات والفواتير مع نظام Odoo ERP الخاص بك.', category: 'erp' },
     { id: 'twilio', name: 'Twilio', iconName: 'MessageSquare' as const, description: 'إرسال رسائل SMS للعملاء بحالة الطلب.', category: 'communication', requiresApiKey: true, requiresWebhook: false },
     { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const, description: 'ربط النظام بآلاف التطبيقات الأخرى لأتمتة المهام.', category: 'automation', requiresApiKey: false, requiresWebhook: true },
     { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const, description: 'ربط أي منصة تدعم الويب هوك لاستقبال الطلبات.', category: 'custom', requiresApiKey: false, requiresWebhook: true },
@@ -36,6 +37,7 @@ const categories = [
     { id: 'all', name: 'الكل' },
     { id: 'e-commerce', name: 'تجارة إلكترونية' },
     { id: 'shipping', name: 'شركات شحن' },
+    { id: 'erp', name: 'أنظمة ERP' },
     { id: 'communication', name: 'تواصل' },
     { id: 'automation', name: 'أتمتة' },
     { id: 'custom', name: 'مخصص' },
@@ -188,7 +190,7 @@ export default function IntegrationsPage() {
             </Card>
 
             <Tabs defaultValue="all" className="w-full">
-                <TabsList className="grid w-full grid-cols-6">
+                <TabsList className="grid w-full grid-cols-7">
                     {categories.map(cat => <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>)}
                 </TabsList>
                 
