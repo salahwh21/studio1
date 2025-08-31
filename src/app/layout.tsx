@@ -6,6 +6,7 @@ import { ThemeProvider } from 'next-themes';
 
 import { LoginExperienceProvider } from '@/context/LoginExperienceContext';
 import { RegionalSettingsProvider } from '@/context/RegionalSettingsContext';
+import { SettingsProvider } from '@/contexts/SettingsContext'; // Import the new provider
 
 import { 
   Tajawal,
@@ -34,19 +35,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       `}
     >
       <body>
-        <LoginExperienceProvider>
-          <RegionalSettingsProvider>
-            <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-            >
-            {children}
-            <Toaster />
-            </ThemeProvider>
-          </RegionalSettingsProvider>
-        </LoginExperienceProvider>
+        <SettingsProvider>
+          <LoginExperienceProvider>
+            <RegionalSettingsProvider>
+              <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+              >
+              {children}
+              <Toaster />
+              </ThemeProvider>
+            </RegionalSettingsProvider>
+          </LoginExperienceProvider>
+        </SettingsProvider>
       </body>
     </html>
   );
