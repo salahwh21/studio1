@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -242,13 +243,13 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
                         </div>
                          <div className="flex gap-2">
                              <Button variant="outline">
-                                <Icon name="FileDown" className="ml-2" /> تصدير
+                                <Icon name="FileDown" className="mr-2" /> تصدير
                             </Button>
                              <Button variant="outline">
-                                <Icon name="FileUp" className="ml-2" /> استيراد 
+                                <Icon name="FileUp" className="mr-2" /> استيراد 
                             </Button>
                              <Button onClick={onAdd}>
-                                <Icon name="UserPlus" className="ml-2" /> إضافة جديد
+                                <Icon name="UserPlus" className="mr-2" /> إضافة جديد
                              </Button>
                         </div>
                     </div>
@@ -366,9 +367,9 @@ export default function UsersPage() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="employees">الموظفون ({employees.length})</TabsTrigger>
-                <TabsTrigger value="drivers">السائقون ({drivers.length})</TabsTrigger>
                 <TabsTrigger value="merchants">التجار ({merchants.length})</TabsTrigger>
+                <TabsTrigger value="drivers">السائقون ({drivers.length})</TabsTrigger>
+                <TabsTrigger value="employees">الموظفون ({employees.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="employees" className="mt-4">
                  <UserList
