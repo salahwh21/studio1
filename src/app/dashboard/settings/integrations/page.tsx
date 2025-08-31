@@ -40,8 +40,8 @@ const integrationsList = [
     { id: 'paypal', name: 'PayPal', iconName: 'CreditCard' as const, description: 'قبول المدفوعات العالمية عبر PayPal.', category: 'payment', type: 'standard' },
     { id: 'paytabs', name: 'PayTabs', iconName: 'CreditCard' as const, description: 'ربط بوابة الدفع PayTabs لمنطقة الشرق الأوسط.', category: 'payment', type: 'standard' },
     { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const, description: 'ربط النظام بآلاف التطبيقات الأخرى لأتمتة المهام.', category: 'automation', type: 'factory' },
-    { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const, description: 'ربط أي منصة تدعم الويب هوك لاستقبال الطلبات.', category: 'custom', type: 'factory' },
-    { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const, description: 'للمطورين: ربط النظام مع أي واجهة برمجية مخصصة.', category: 'custom', type: 'factory' }
+    { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const, description: 'ربط أي منصة تدعم الويب هوك لاستقبال الطلبات.', category: 'factory', type: 'factory' },
+    { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const, description: 'للمطورين: ربط النظام مع أي واجهة برمجية مخصصة.', category: 'factory', type: 'factory' }
 ];
 
 const categories = [
@@ -52,7 +52,7 @@ const categories = [
     { id: 'erp', name: 'أنظمة ERP' },
     { id: 'communication', name: 'تواصل' },
     { id: 'automation', name: 'أتمتة' },
-    { id: 'custom', name: 'مخصص' },
+    { id: 'factory', name: 'مصنع التكاملات' },
 ];
 
 type Connection = {
@@ -201,7 +201,7 @@ export default function IntegrationsPage() {
         const isFactory = integration.type === 'factory';
         const [logoError, setLogoError] = useState(false);
         
-        const isCustomIntegration = integration.category === 'custom';
+        const isCustomIntegration = integration.category === 'factory';
         const logoUrl = !isCustomIntegration ? `https://logo.clearbit.com/${integration.id.split('-')[0]}.com` : '';
 
 
