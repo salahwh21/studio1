@@ -81,8 +81,8 @@ export default function LoginPageClient() {
         <CardContent>
           <div className="flex flex-col gap-4">
             <div className="space-y-2">
-              <Label htmlFor="username">اسم المستخدم أو البريد الإلكتروني</Label>
-              <Input id="username" type="text" placeholder="اسم المستخدم أو البريد" defaultValue="admin" />
+              <Label htmlFor="username">رقم الهاتف</Label>
+              <Input id="username" type="tel" placeholder="مثال: 079xxxxxxx" defaultValue="0790267503" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">كلمة المرور</Label>

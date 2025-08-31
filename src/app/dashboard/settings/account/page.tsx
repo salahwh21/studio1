@@ -20,7 +20,7 @@ export default function AccountSettingsPage() {
 
   // Mock user data
   const [name, setName] = useState('المدير المسؤول');
-  const [email, setEmail] = useState('admin@alwameed.com');
+  const [phone, setPhone] = useState('0790267503');
   const [avatar, setAvatar] = useState<string | null>('https://i.pravatar.cc/150?u=admin');
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,8 +89,8 @@ export default function AccountSettingsPage() {
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">البريد الإلكتروني</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Label htmlFor="phone">رقم الهاتف (للدخول)</Label>
+              <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             <Button onClick={handleProfileSave} className="w-full">
                 <Icon name="Save" className="mr-2 h-4 w-4" />
