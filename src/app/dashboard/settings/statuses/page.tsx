@@ -20,12 +20,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from '@/components/ui/checkbox';
 
 
-const StatusCard = ({ status, onUpdate, onDelete }: { status: Status; onUpdate: (id: string, newStatus: Partial<Status>) => void; onDelete: (id: string) => void; }) => {
+const StatusCard = ({ status, onDelete }: { status: Status; onDelete: (id: string) => void; }) => {
   return (
     <Card className="hover:border-primary hover:shadow-lg transition-all duration-200 flex flex-col">
         <CardHeader>
              <div className="flex items-start justify-between">
-                <Link href={`/dashboard/settings/statuses/${status.id}`} className="space-y-2 flex-1">
+                <Link href={`/dashboard/settings/statuses/${status.id}`} className="space-y-2 flex-1 cursor-pointer">
                     <Badge style={{ backgroundColor: status.color, color: '#fff' }} className="border-none text-xs">
                         {status.name}
                     </Badge>
@@ -40,12 +40,12 @@ const StatusCard = ({ status, onUpdate, onDelete }: { status: Status; onUpdate: 
             </div>
         </CardHeader>
         <CardContent className="mt-auto">
-            <div className="flex items-center justify-between rounded-md border p-2">
-                 <Label htmlFor={`status-active-${status.id}`} className="text-sm flex items-center gap-2 cursor-pointer">
+             <div className="flex items-center justify-between rounded-md border p-2">
+                <Label htmlFor={`status-active-${status.id}`} className="text-sm flex items-center gap-2 cursor-default">
                     <Checkbox 
                         id={`status-active-${status.id}`}
-                        checked={status.isActive} 
-                        onCheckedChange={(checked) => onUpdate(status.id, { isActive: !!checked })}
+                        checked={status.isActive}
+                        disabled={true}
                     />
                     الحالة
                 </Label>
@@ -60,13 +60,8 @@ const StatusCard = ({ status, onUpdate, onDelete }: { status: Status; onUpdate: 
 
 export default function StatusesPage() {
   const { toast } = useToast();
-  const { statuses, updateStatus, deleteStatus } = useStatusesStore();
+  const { statuses, deleteStatus } = useStatusesStore();
   const [statusToDelete, setStatusToDelete] = useState<Status | null>(null);
-  
-  const handleUpdate = (id: string, newStatus: Partial<Status>) => {
-      updateStatus(id, newStatus);
-      toast({ title: 'تم التحديث', description: 'تم تحديث حالة الطلب.' });
-  }
   
   const handleDeleteRequest = (id: string) => {
       const status = statuses.find(s => s.id === id);
@@ -113,7 +108,7 @@ export default function StatusesPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {statuses.map(status => (
-          <StatusCard key={status.id} status={status} onUpdate={handleUpdate} onDelete={handleDeleteRequest} />
+          <StatusCard key={status.id} status={status} onDelete={handleDeleteRequest} />
         ))}
       </div>
 
