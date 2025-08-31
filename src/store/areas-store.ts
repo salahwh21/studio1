@@ -13,37 +13,48 @@ export type City = {
   areas: Area[];
 };
 
-const initialCities: City[] = [
-  {
-    id: 'amman',
-    name: 'عمان',
-    areas: [
-      { id: 'amman-1', name: 'الصويفية' },
-      { id: 'amman-2', name: 'تلاع العلي' },
-      { id: 'amman-3', name: 'الجبيهة' },
-    ],
-  },
-  {
-    id: 'zarqa',
-    name: 'الزرقاء',
-    areas: [
-        { id: 'zarqa-1', name: 'حي معصوم' },
-        { id: 'zarqa-2', name: 'الزرقاء الجديدة' },
-    ],
-  },
-  {
-    id: 'irbid',
-    name: 'إربد',
-    areas: [
-        { id: 'irbid-1', name: 'الحي الشرقي' },
-        { id: 'irbid-2', name: 'شارع الجامعة' },
-    ],
-  },
+const defaultCities: City[] = [
+    {
+        "id": "CITY_AMM", "name": "عمان", "areas": [
+            { "id": "REG_AMM_001", "name": "تلاع العلي" }, { "id": "REG_AMM_002", "name": "الصويفية" },
+            { "id": "REG_AMM_003", "name": "الجبيهة" }, { "id": "REG_AMM_004", "name": "خلدا" },
+            { "id": "REG_AMM_005", "name": "أم السماق" }, { "id": "REG_AMM_006", "name": "الدوار السابع" },
+            { "id": "REG_AMM_007", "name": "العبدلي" }, { "id": "REG_AMM_008", "name": "جبل عمان" },
+            { "id": "REG_AMM_009", "name": "المدينة الرياضية" }, { "id": "REG_AMM_010", "name": "ضاحية الرشيد" }
+        ]
+    },
+    {
+        "id": "CITY_ZAR", "name": "الزرقاء", "areas": [
+            { "id": "REG_ZAR_001", "name": "الزرقاء الجديدة" }, { "id": "REG_ZAR_002", "name": "حي معصوم" },
+            { "id": "REG_ZAR_003", "name": "عوجان" }, { "id": "REG_ZAR_004", "name": "الجبل الأبيض" }
+        ]
+    },
+    {
+        "id": "CITY_IRB", "name": "إربد", "areas": [
+            { "id": "REG_IRB_001", "name": "الحي الشرقي" }, { "id": "REG_IRB_002", "name": "شارع الجامعة" },
+            { "id": "REG_IRB_003", "name": "الحصن" }, { "id": "REG_IRB_004", "name": "البارحة" }
+        ]
+    },
+    {
+        "id": "CITY_AQA", "name": "العقبة", "areas": [
+            { "id": "REG_AQA_001", "name": "المنطقة التجارية" }, { "id": "REG_AQA_002", "name": "الشاطئ الجنوبي" }
+        ]
+    },
+    {
+        "id": "CITY_SLT", "name": "السلط", "areas": [
+            { "id": "REG_SLT_001", "name": "وسط البلد" }, { "id": "REG_SLT_002", "name": "زي" }
+        ]
+    }
 ];
+
+
+// Use a deep copy for the initial state to prevent mutation issues
+const getInitialCities = () => JSON.parse(JSON.stringify(defaultCities));
 
 type AreasState = {
   cities: City[];
   setCities: (cities: City[]) => void;
+  restoreDefaults: () => void;
   addCity: (name: string, id?: string) => void;
   updateCity: (cityId: string, updates: Partial<Omit<City, 'id' | 'areas'>>) => void;
   deleteCity: (cityId: string) => void;
@@ -55,10 +66,14 @@ type AreasState = {
 const generateId = (prefix: string) => `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
 export const useAreasStore = create<AreasState>()(immer((set) => ({
-  cities: initialCities,
+  cities: getInitialCities(),
 
   setCities: (cities) => {
     set({ cities });
+  },
+
+  restoreDefaults: () => {
+    set({ cities: getInitialCities() });
   },
 
   addCity: (name, id) => {

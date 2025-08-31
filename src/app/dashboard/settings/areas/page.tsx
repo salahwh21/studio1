@@ -38,6 +38,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -54,6 +55,7 @@ const CitiesView = ({
   onSelectionChange,
   onImport,
   onExport,
+  onRestoreDefaults,
 }: {
   cities: City[];
   selectedCities: string[];
@@ -64,6 +66,7 @@ const CitiesView = ({
   onSelectionChange: (id: string, checked: boolean) => void;
   onImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onExport: () => void;
+  onRestoreDefaults: () => void;
 }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const filteredCities = cities.filter(city => city.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -129,6 +132,24 @@ const CitiesView = ({
                                     </Button>
                                     <input type="file" ref={importInputRef} className="hidden" accept=".json" onChange={onImport} />
                                     <Button variant="outline" onClick={onExport}><Icon name="Download" className="mr-2 h-4 w-4" /> تصدير</Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="outline" ><Icon name="RefreshCw" className="mr-2 h-4 w-4" /> استعادة</Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>استعادة الإعدادات الافتراضية</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    هل أنت متأكد؟ سيتم حذف جميع المدن والمناطق الحالية واستبدالها بالقائمة الافتراضية للنظام.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                                <AlertDialogAction onClick={onRestoreDefaults}>تأكيد</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+
                                 </>
                             )}
                         </div>
@@ -363,7 +384,7 @@ const AreaDialog = ({
 
 export default function AreasPage() {
   const { toast } = useToast();
-  const { cities, setCities, addCity, updateCity, deleteCity, addArea, updateArea, deleteArea } = useAreasStore();
+  const { cities, setCities, addCity, updateCity, deleteCity, addArea, updateArea, deleteArea, restoreDefaults } = useAreasStore();
   
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -529,6 +550,11 @@ export default function AreasPage() {
         toast({ title: 'تم التصدير بنجاح' });
     };
 
+    const handleRestoreDefaults = () => {
+        restoreDefaults();
+        toast({ title: 'تمت الاستعادة', description: 'تمت استعادة قائمة المناطق الافتراضية.' });
+    };
+
 
   if (selectedCity) {
     const currentCityData = cities.find(c => c.id === selectedCity.id);
@@ -591,6 +617,7 @@ export default function AreasPage() {
         onSelectionChange={handleCitySelection}
         onImport={handleImport}
         onExport={handleExport}
+        onRestoreDefaults={handleRestoreDefaults}
       />
       <AreaDialog
         open={dialogOpen}
