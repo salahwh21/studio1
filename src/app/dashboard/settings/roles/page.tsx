@@ -222,18 +222,18 @@ export default function RolesPermissionsPage() {
 
                   return (
                      <AccordionItem value={group.id} key={group.id}>
-                        <AccordionTrigger className="hover:no-underline">
-                           <div className="flex items-center gap-2">
-                            <Checkbox 
-                                id={`group-${group.id}`} 
-                                checked={isAllGroupSelected}
-                                indeterminate={isIndeterminate}
-                                onCheckedChange={(checked) => handleGroupPermissionChange(group.permissions, !!checked)}
-                                onClick={(e) => e.stopPropagation()}
-                            />
-                            <Label htmlFor={`group-${group.id}`} className="font-semibold text-base">{group.label}</Label>
-                           </div>
-                        </AccordionTrigger>
+                       <div className="flex items-center gap-2">
+                          <Checkbox 
+                              id={`group-${group.id}`} 
+                              checked={isAllGroupSelected}
+                              // @ts-ignore
+                              indeterminate={isIndeterminate}
+                              onCheckedChange={(checked) => handleGroupPermissionChange(group.permissions, !!checked)}
+                          />
+                          <AccordionTrigger className="flex-1 hover:no-underline py-2">
+                              <Label htmlFor={`group-${group.id}`} className="font-semibold text-base cursor-pointer">{group.label}</Label>
+                          </AccordionTrigger>
+                        </div>
                         <AccordionContent className="pr-8 space-y-3 pt-2">
                              {group.permissions.map(permission => (
                                 <div key={permission.id} className="flex items-center space-x-2 space-x-reverse">
