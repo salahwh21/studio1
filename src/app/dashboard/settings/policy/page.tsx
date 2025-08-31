@@ -59,8 +59,8 @@ const paperSizeClasses = {
   label_4x6: 'w-[101.6mm] h-[152.4mm] p-4 text-sm',
   label_4x4: 'w-[101.6mm] h-[101.6mm] p-3 text-xs',
   label_4x2: 'w-[101.6mm] h-[50.8mm] p-2 text-[10px]',
-  label_3x2: 'w-[76.2mm] h-[50.8mm] p-2 text-[9px]',
-  label_2x3: 'w-[50.8mm] h-[76.2mm] p-2 text-[9px]',
+  label_3x2: 'w-[76.2mm] h-[50.8mm] p-2 text-[9px] leading-tight',
+  label_2x3: 'w-[50.8mm] h-[76.2mm] p-2 text-[9px] leading-tight',
 };
 
 const CustomFieldsSection = ({ fields, onUpdate, onAdd, onRemove }: { fields: {label: string, value: string}[], onUpdate: (index: number, field: 'label'|'value', value: string) => void, onAdd: () => void, onRemove: (index: number) => void }) => (
@@ -353,8 +353,8 @@ export default function PolicySettingsPage() {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader><CardTitle className="text-lg">معاينة حية</CardTitle></CardHeader>
-            <CardContent className="bg-muted p-4 sm:p-8 flex items-center justify-center">
-              <div className={cn("bg-white text-black shadow-lg mx-auto font-sans", paperSizeClasses[settings.paperSize as keyof typeof paperSizeClasses])}>
+            <CardContent className="bg-muted p-4 sm:p-8 flex items-center justify-center overflow-auto">
+              <div className={cn("bg-white text-black shadow-lg mx-auto font-sans flex-shrink-0", paperSizeClasses[settings.paperSize as keyof typeof paperSizeClasses])}>
                 <div className="flex flex-col h-full">{renderLayout()}</div>
               </div>
             </CardContent>
@@ -367,3 +367,4 @@ export default function PolicySettingsPage() {
     </div>
   );
 }
+
