@@ -18,18 +18,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 // This list can be expanded and moved to a shared file later
 const integrationsList = [
-    { id: 'shopify', name: 'Shopify', iconName: 'ShoppingCart' as const },
-    { id: 'woocommerce', name: 'WooCommerce', iconName: 'ShoppingCart' as const },
-    { id: 'salla', name: 'Salla (سلة)', iconName: 'ShoppingCart' as const },
-    { id: 'zid', name: 'Zid (زد)', iconName: 'ShoppingCart' as const },
-    { id: 'aramex', name: 'Aramex', iconName: 'Truck' as const },
-    { id: 'dhl', name: 'DHL', iconName: 'Globe' as const },
-    { id: 'odoo', name: 'Odoo', iconName: 'Briefcase' as const },
-    { id: 'twilio', name: 'Twilio', iconName: 'MessageSquare' as const },
-    { id: 'stripe', name: 'Stripe', iconName: 'CreditCard' as const },
-    { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const },
-    { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const },
-    { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const }
+    { id: 'shopify', name: 'Shopify', iconName: 'ShoppingCart' as const, category: 'e-commerce' },
+    { id: 'woocommerce', name: 'WooCommerce', iconName: 'ShoppingCart' as const, category: 'e-commerce' },
+    { id: 'salla', name: 'Salla (سلة)', iconName: 'ShoppingCart' as const, category: 'e-commerce' },
+    { id: 'zid', name: 'Zid (زد)', iconName: 'ShoppingCart' as const, category: 'e-commerce' },
+    { id: 'aramex', name: 'Aramex', iconName: 'Truck' as const, category: 'shipping' },
+    { id: 'dhl', name: 'DHL', iconName: 'Globe' as const, category: 'shipping' },
+    { id: 'fedex', name: 'FedEx', iconName: 'Globe' as const, category: 'shipping' },
+    { id: 'smsa-express', name: 'SMSA Express', iconName: 'Truck' as const, category: 'shipping' },
+    { id: 'odoo', name: 'Odoo', iconName: 'Briefcase' as const, category: 'erp' },
+    { id: 'quickbooks', name: 'QuickBooks', iconName: 'Briefcase' as const, category: 'erp' },
+    { id: 'zoho-books', name: 'Zoho Books', iconName: 'Briefcase' as const, category: 'erp' },
+    { id: 'twilio', name: 'Twilio', iconName: 'MessageSquare' as const, category: 'communication' },
+    { id: 'ycloud', name: 'YCloud', iconName: 'MessageSquare' as const, category: 'communication' },
+    { id: 'whatsapp', name: 'WhatsApp', iconName: 'MessageSquare' as const, category: 'communication' },
+    { id: 'stripe', name: 'Stripe', iconName: 'CreditCard' as const, category: 'payment' },
+    { id: 'paypal', name: 'PayPal', iconName: 'CreditCard' as const, category: 'payment' },
+    { id: 'paytabs', name: 'PayTabs', iconName: 'CreditCard' as const, category: 'payment' },
+    { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const, category: 'automation' },
+    { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const, category: 'custom' },
+    { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const, category: 'custom' }
 ];
 
 export default function IntegrationDetailPage() {
@@ -51,7 +59,7 @@ export default function IntegrationDetailPage() {
             setConnection(foundConnection);
             setIntegrationInfo(foundIntegrationInfo);
 
-            if (foundConnection.integrationId === 'generic-webhook' || foundConnection.integrationId === 'zapier') {
+            if (foundIntegrationInfo?.category === 'custom' || foundIntegrationInfo?.id === 'zapier') {
                  setWebhookUrl(`${window.location.origin}/api/v1/webhooks/orders/${foundConnection.id}`);
             }
         }
@@ -87,7 +95,9 @@ export default function IntegrationDetailPage() {
         );
     }
     
-    const requiresApiKey = !['generic-webhook', 'zapier'].includes(integrationInfo.id);
+    const requiresApiKey = integrationInfo.category !== 'custom' && integrationInfo.id !== 'zapier';
+    const isWebhookBased = integrationInfo.category === 'custom' || integrationInfo.id === 'zapier';
+
 
     return (
         <div className="space-y-6">
@@ -126,7 +136,7 @@ export default function IntegrationDetailPage() {
                 </Card>
             )}
 
-            {(integrationInfo.id === 'generic-webhook' || integrationInfo.id === 'zapier') && (
+            {isWebhookBased && (
                  <Card>
                     <CardHeader><CardTitle>رابط الويب هوك</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
