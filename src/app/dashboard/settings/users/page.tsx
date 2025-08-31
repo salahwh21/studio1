@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
+  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/icon';
@@ -35,8 +36,43 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const CSVLink = dynamic(() => import('react-csv').then(mod => mod.CSVLink), { ssr: false });
+
+const PricingFields = () => (
+    <div className='space-y-4 pt-4 border-t'>
+         <Label>إعدادات تسعير التوصيل</Label>
+         <RadioGroup defaultValue="price_list" className="space-y-4">
+            <div className="space-y-2">
+                <div className="flex items-center space-x-2 space-x-reverse">
+                    <RadioGroupItem value="fixed" id="fixed-dialog" />
+                    <Label htmlFor="fixed-dialog" className="font-bold">سعر ثابت</Label>
+                </div>
+                <Input type="number" placeholder="أدخل السعر الثابت..." className="mr-6" />
+            </div>
+
+            <div className="space-y-2">
+                <div className="flex items-center space-x-2 space-x-reverse">
+                    <RadioGroupItem value="price_list" id="price_list-dialog" />
+                    <Label htmlFor="price_list-dialog" className="font-bold">قائمة أسعار</Label>
+                </div>
+                <div className="mr-6">
+                    <Select>
+                        <SelectTrigger>
+                            <SelectValue placeholder="اختر قائمة أسعار..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="default">الأسعار الافتراضية</SelectItem>
+                            <SelectItem value="vip">أسعار VIP</SelectItem>
+                            <SelectItem value="provinces">أسعار المحافظات</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+        </RadioGroup>
+    </div>
+)
 
 const UserDialog = ({
   open,
@@ -45,6 +81,7 @@ const UserDialog = ({
   user,
   roles,
   isDriver,
+  isMerchant
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -52,6 +89,7 @@ const UserDialog = ({
   user: User | null;
   roles: Role[];
   isDriver?: boolean;
+  isMerchant?: boolean;
 }) => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -65,9 +103,9 @@ const UserDialog = ({
         } else {
             setName('');
             setEmail('');
-            setRoleId(isDriver ? 'driver' : '');
+            setRoleId(isDriver ? 'driver' : (isMerchant ? 'merchant' : ''));
         }
-    }, [user, open, isDriver]);
+    }, [user, open, isDriver, isMerchant]);
 
     const handleSave = () => {
         if (!name || !email || !roleId) return;
@@ -78,7 +116,7 @@ const UserDialog = ({
          <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{user ? `تعديل ${isDriver ? 'سائق' : 'موظف'}` : `إضافة ${isDriver ? 'سائق' : 'موظف'} جديد`}</DialogTitle>
+                    <DialogTitle>{user ? `تعديل ${isDriver ? 'سائق' : 'موظف'}` : `إضافة ${isDriver ? 'سائق' : (isMerchant ? 'تاجر' : 'موظف')} جديد`}</DialogTitle>
                     <DialogDescription>
                         {user ? 'قم بتعديل بيانات المستخدم.' : 'أدخل بيانات المستخدم الجديد. سيتم تعيين كلمة مرور افتراضية له.'}
                     </DialogDescription>
@@ -92,7 +130,7 @@ const UserDialog = ({
                         <Label htmlFor="email">البريد الإلكتروني / رقم الهاتف</Label>
                         <Input id="email" type="text" placeholder="أدخل البريد الإلكتروني أو رقم الهاتف..." value={email} onChange={(e) => setEmail(e.target.value)} />
                     </div>
-                     {!isDriver && (
+                     {!isDriver && !isMerchant && (
                         <div className="space-y-2">
                             <Label htmlFor="roleId">الدور</Label>
                             <Select value={roleId} onValueChange={(value) => setRoleId(value as Role['id'])}>
@@ -100,13 +138,14 @@ const UserDialog = ({
                                     <SelectValue placeholder="اختر الدور..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {roles.filter(r => r.id !== 'driver').map(role => (
+                                    {roles.filter(r => r.id !== 'driver' && r.id !== 'merchant').map(role => (
                                         <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
                      )}
+                     {isMerchant && <PricingFields />}
                 </div>
                 <DialogFooter>
                     <DialogClose asChild>
@@ -185,7 +224,7 @@ const ChangeRoleDialog = ({ open, onOpenChange, onSave, roles, userCount }: { op
     )
 };
 
-const UserList = ({ users, roles, isDriverTab, onAdd, onEdit, onDelete, onBulkUpdateRole, onImport }: { users: User[]; roles: Role[]; isDriverTab: boolean; onAdd: () => void; onEdit: (user: User) => void; onDelete: (users: User[]) => void; onBulkUpdateRole: (userIds: string[], roleId: string) => void; onImport: (data: any[]) => void; }) => {
+const UserList = ({ users, roles, isDriverTab, isMerchantTab, onAdd, onEdit, onDelete, onBulkUpdateRole, onImport }: { users: User[]; roles: Role[]; isDriverTab: boolean; isMerchantTab: boolean; onAdd: () => void; onEdit: (user: User) => void; onDelete: (users: User[]) => void; onBulkUpdateRole: (userIds: string[], roleId: string) => void; onImport: (data: any[]) => void; }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
     const [changeRoleDialogOpen, setChangeRoleDialogOpen] = useState(false);
@@ -292,7 +331,7 @@ const UserList = ({ users, roles, isDriverTab, onAdd, onEdit, onDelete, onBulkUp
                                 <div className="flex items-center gap-4">
                                      <div className="relative w-full sm:max-w-xs">
                                         <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pr-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                                        <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : (isMerchantTab ? 'تاجر' : 'موظف')}...`} className="pr-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                                     </div>
                                 </div>
                             </div>
@@ -443,6 +482,7 @@ export default function UsersPage() {
                     users={employees}
                     roles={roles}
                     isDriverTab={false}
+                    isMerchantTab={false}
                     onAdd={handleAddNew}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
@@ -455,6 +495,7 @@ export default function UsersPage() {
                     users={drivers}
                     roles={roles}
                     isDriverTab={true}
+                    isMerchantTab={false}
                     onAdd={handleAddNew}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
@@ -467,6 +508,7 @@ export default function UsersPage() {
                     users={merchants}
                     roles={roles}
                     isDriverTab={false}
+                    isMerchantTab={true}
                     onAdd={handleAddNew}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
@@ -483,6 +525,7 @@ export default function UsersPage() {
             user={selectedUser}
             roles={roles}
             isDriver={activeTab === 'drivers'}
+            isMerchant={activeTab === 'merchants'}
         />
         
         <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>

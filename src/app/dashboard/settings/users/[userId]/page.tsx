@@ -12,13 +12,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import Icon from '@/components/icon';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 
 function UserEditPageSkeleton() {
@@ -56,6 +57,48 @@ function UserEditPageSkeleton() {
         </div>
     )
 }
+
+const PricingPanel = () => (
+    <Card>
+        <CardHeader>
+            <CardTitle>تسعير التوصيل</CardTitle>
+            <CardDescription>اختر طريقة حساب سعر التوصيل لطلبات هذا التاجر.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <RadioGroup defaultValue="price_list" className="space-y-4">
+                <div className="space-y-2">
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                        <RadioGroupItem value="fixed" id="fixed" />
+                        <Label htmlFor="fixed" className="font-bold">سعر ثابت</Label>
+                    </div>
+                    <Input type="number" placeholder="أدخل السعر الثابت..." className="mr-6" />
+                </div>
+
+                <div className="space-y-2">
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                        <RadioGroupItem value="price_list" id="price_list" />
+                        <Label htmlFor="price_list" className="font-bold">قائمة أسعار</Label>
+                    </div>
+                    <div className="mr-6">
+                        <Select>
+                            <SelectTrigger>
+                                <SelectValue placeholder="اختر قائمة أسعار..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="default">الأسعار الافتراضية</SelectItem>
+                                <SelectItem value="vip">أسعار VIP</SelectItem>
+                                <SelectItem value="provinces">أسعار المحافظات</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+            </RadioGroup>
+        </CardContent>
+        <CardFooter>
+            <Button>حفظ إعدادات التسعير</Button>
+        </CardFooter>
+    </Card>
+);
 
 export default function UserEditPage() {
     const router = useRouter();
@@ -172,6 +215,8 @@ export default function UserEditPage() {
                         </CardContent>
                     </Card>
                     
+                    {role?.id === 'merchant' && <PricingPanel />}
+
                     <Card>
                         <CardHeader><CardTitle className="flex items-center gap-2"><Icon name="KeyRound" /> تغيير كلمة المرور</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
