@@ -100,7 +100,7 @@ export function AppHeader() {
                     className="rounded-full"
                   >
                     <Link href={item.href}>
-                      <Icon name={item.iconName} className="h-5 w-5" />
+                      <Icon name={item.iconName as any} className="h-5 w-5" />
                       <span className="sr-only">{item.label}</span>
                     </Link>
                   </Button>

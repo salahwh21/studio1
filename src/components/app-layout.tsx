@@ -136,7 +136,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                           isActive(item.href) ? 'text-primary' : 'text-muted-foreground hover:bg-muted/50'
                       )}
                     >
-                      <Icon name={item.iconName} className="h-5 w-5" />
+                      <Icon name={item.iconName as any} className="h-5 w-5" />
                       <span>{item.label}</span>
                   </Link>
               ))}
@@ -161,7 +161,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                                         isActive(item.href) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                                     )}
                                     >
-                                    <Icon name={item.iconName} className="h-5 w-5" />
+                                    <Icon name={item.iconName as any} className="h-5 w-5" />
                                     <span className="font-medium">{item.label}</span>
                                 </Link>
                             ))}
