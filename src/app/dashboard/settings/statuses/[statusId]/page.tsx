@@ -15,7 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import Icon from '@/components/icon';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
 
 
 const SwitchControl = ({ id, label, checked, onCheckedChange }: { id: string, label: string, checked: boolean, onCheckedChange: (checked: boolean) => void }) => (
@@ -86,7 +86,7 @@ export default function StatusEditPage() {
     const handleUpdate = <K extends keyof Status>(key: K, value: Status[K]) => {
         setStatus(prev => prev ? { ...prev, [key]: value } : null);
     };
-
+    
     const handlePermissionUpdate = (
         category: 'visibleTo' | 'permissions', 
         role: keyof Status['visibleTo'] | keyof Status['permissions']['driver'],
@@ -154,7 +154,7 @@ export default function StatusEditPage() {
                         </Button>
                          <Button variant="outline" size="icon" asChild>
                             <Link href="/dashboard/settings/statuses">
-                                <Icon name="ArrowUp" className="h-4 w-4" />
+                                <Icon name="ArrowLeft" className="h-4 w-4" />
                             </Link>
                         </Button>
                     </div>
