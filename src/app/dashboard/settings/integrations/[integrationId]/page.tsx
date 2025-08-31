@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/icon';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 
 // This list can be expanded and moved to a shared file later
@@ -39,6 +40,14 @@ const integrationsList = [
     { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const, category: 'custom' },
     { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const, category: 'custom' }
 ];
+
+const mockSyncHistory = [
+    { id: 1, description: "تم استيراد 15 طلبًا جديدًا بنجاح.", status: 'success', timestamp: "2023-08-31 10:45 ص" },
+    { id: 2, description: "فشل تحديث حالة الطلب #SH-1024.", status: 'failure', timestamp: "2023-08-31 10:30 ص" },
+    { id: 3, description: "تم تحديث حالة 50 طلبًا إلى 'جاري التوصيل'.", status: 'success', timestamp: "2023-08-31 09:00 ص" },
+    { id: 4, description: "تم بدء المزامنة اليدوية.", status: 'success', timestamp: "2023-08-31 08:55 ص" },
+];
+
 
 export default function IntegrationDetailPage() {
     const params = useParams();
@@ -112,9 +121,12 @@ export default function IntegrationDetailPage() {
                             <CardDescription className="mt-1">إدارة وتخصيص إعدادات الربط مع {integrationInfo.name}.</CardDescription>
                         </div>
                     </div>
-                    <Button variant="outline" size="icon" asChild>
-                        <Link href="/dashboard/settings/integrations"><Icon name="ArrowLeft" className="h-4 w-4" /></Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button><Icon name="RefreshCw" className="ml-2" /> مزامنة الآن</Button>
+                        <Button variant="outline" size="icon" asChild>
+                            <Link href="/dashboard/settings/integrations"><Icon name="ArrowLeft" className="h-4 w-4" /></Link>
+                        </Button>
+                    </div>
                 </CardHeader>
             </Card>
             
@@ -177,8 +189,46 @@ export default function IntegrationDetailPage() {
                 </CardContent>
             </Card>
 
+            <Card>
+                <CardHeader className="flex items-center justify-between">
+                    <CardTitle>سجل المزامنة</CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => toast({ title: 'جاري التحديث...', description: 'تم طلب سجلات المزامنة الجديدة.' })}>
+                        <Icon name="RefreshCw" className="ml-2" />
+                        تحديث
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>الحدث</TableHead>
+                                <TableHead>الحالة</TableHead>
+                                <TableHead>التاريخ والوقت</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {mockSyncHistory.map((item) => (
+                                <TableRow key={item.id}>
+                                    <TableCell>{item.description}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={item.status === 'success' ? 'default' : 'destructive'} className={item.status === 'success' ? 'bg-green-100 text-green-800' : ''}>
+                                            {item.status === 'success' ? 
+                                                <Icon name="CheckCircle2" className="ml-1 text-green-600" /> : 
+                                                <Icon name="XCircle" className="ml-1" />
+                                            }
+                                            {item.status === 'success' ? 'نجاح' : 'فشل'}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>{item.timestamp}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
             <div className="flex justify-end">
-                <Button onClick={handleSaveChanges}><Icon name="Save" className="ml-2" /> حفظ التغييرات</Button>
+                <Button onClick={handleSaveChanges}><Icon name="Save" className="ml-2" /> حفظ كل التغييرات</Button>
             </div>
         </div>
     );
