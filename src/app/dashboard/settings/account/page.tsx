@@ -24,6 +24,10 @@ export default function AccountSettingsPage() {
   const [email, setEmail] = useState('admin@example.com');
   const [whatsapp, setWhatsapp] = useState('0790267503');
   const [avatar, setAvatar] = useState<string | null>('https://i.pravatar.cc/150?u=admin');
+  
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -119,15 +123,30 @@ export default function AccountSettingsPage() {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="current-password">كلمة المرور الحالية</Label>
-                        <Input id="current-password" type="password" />
+                        <div className="relative">
+                            <Input id="current-password" type={showCurrentPassword ? 'text' : 'password'} />
+                            <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowCurrentPassword(prev => !prev)}>
+                                <Icon name={showCurrentPassword ? 'EyeOff' : 'Eye'} className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="new-password">كلمة المرور الجديدة</Label>
-                        <Input id="new-password" type="password" />
+                         <div className="relative">
+                            <Input id="new-password" type={showNewPassword ? 'text' : 'password'} />
+                            <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowNewPassword(prev => !prev)}>
+                                <Icon name={showNewPassword ? 'EyeOff' : 'Eye'} className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="confirm-password">تأكيد كلمة المرور الجديدة</Label>
-                        <Input id="confirm-password" type="password" />
+                        <div className="relative">
+                            <Input id="confirm-password" type={showConfirmPassword ? 'text' : 'password'} />
+                            <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowConfirmPassword(prev => !prev)}>
+                                <Icon name={showConfirmPassword ? 'EyeOff' : 'Eye'} className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
                      <Button onClick={handlePasswordSave}>
                         <Icon name="Save" className="mr-2 h-4 w-4" />
