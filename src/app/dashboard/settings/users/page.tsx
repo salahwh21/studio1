@@ -118,23 +118,23 @@ const UserDialog = ({
 
 const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; role?: Role; isSelected: boolean; onSelectionChange: (id: string, checked: boolean) => void; }) => (
     <Card className={`hover:border-primary transition-colors duration-200 data-[state=checked]:border-primary data-[state=checked]:ring-2 data-[state=checked]:ring-primary`} data-state={isSelected ? 'checked' : 'unchecked'}>
-        <CardContent className="p-3 flex items-center gap-3">
-            <Checkbox
-                checked={isSelected}
-                onCheckedChange={(checked) => onSelectionChange(user.id, !!checked)}
-                className="h-5 w-5"
-            />
-            <div className="flex-1 flex items-center gap-3 cursor-pointer" onClick={() => onSelectionChange(user.id, !isSelected)}>
+        <CardContent className="p-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-1 cursor-pointer" onClick={() => onSelectionChange(user.id, !isSelected)}>
                 <Avatar className="h-12 w-12 border">
                     <AvatarImage src={user.avatar} alt={user.name} />
                     <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <div className="space-y-1">
+                <div className="space-y-1 text-right">
                     <h3 className="font-semibold">{user.name}</h3>
                     <p className="text-sm text-muted-foreground">{user.email}</p>
                     {role && <Badge variant="secondary">{role.name}</Badge>}
                 </div>
             </div>
+             <Checkbox
+                checked={isSelected}
+                onCheckedChange={(checked) => onSelectionChange(user.id, !!checked)}
+                className="h-5 w-5"
+            />
         </CardContent>
     </Card>
 );
@@ -205,32 +205,34 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
             <div className="flex flex-col sm:flex-row gap-2 justify-between items-center h-12">
                 {selectedUserIds.length > 0 ? (
                      <div className='flex items-center gap-2 w-full'>
+                        <Button variant="ghost" size="icon" onClick={() => setSelectedUserIds([])}><Icon name="X" /></Button>
+                        <Separator orientation="vertical" className="h-6 mr-1" />
                         <span className='text-sm font-semibold text-muted-foreground'>{selectedUserIds.length} محدد</span>
-                        <Separator orientation="vertical" className="h-6 mx-1" />
-                        <Button variant="outline" size="sm" onClick={() => onEdit(selectedUser!)} disabled={selectedUserIds.length !== 1}><Icon name="Edit" className="ml-2" /> تعديل</Button>
-                        {!isDriverTab && <Button variant="outline" size="sm" onClick={() => setChangeRoleDialogOpen(true)}><Icon name="UsersCog" className="ml-2" /> تغيير الدور</Button>}
-                        <Button variant="destructive" size="sm" onClick={handleConfirmDelete}><Icon name="Trash2" className="ml-2" /> حذف المحدد</Button>
-                        <Button variant="ghost" size="icon" onClick={() => setSelectedUserIds([])} className="mr-auto"><Icon name="X" /></Button>
+                         <div className="flex items-center gap-2 mr-auto">
+                            <Button variant="outline" size="sm" onClick={() => onEdit(selectedUser!)} disabled={selectedUserIds.length !== 1}><span className="hidden sm:inline">تعديل</span><Icon name="Edit" className="sm:mr-2" /></Button>
+                            {!isDriverTab && <Button variant="outline" size="sm" onClick={() => setChangeRoleDialogOpen(true)}><span className="hidden sm:inline">تغيير الدور</span><Icon name="UsersCog" className="sm:mr-2" /></Button>}
+                            <Button variant="destructive" size="sm" onClick={handleConfirmDelete}><span className="hidden sm:inline">حذف المحدد</span><Icon name="Trash2" className="sm:mr-2" /></Button>
+                        </div>
                     </div>
                 ) : (
                     <>
-                        <div className="relative flex-1 w-full sm:max-w-xs">
-                            <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pr-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                        </div>
-                        <div className="flex gap-2">
+                         <div className="flex gap-2">
                              <Button onClick={onAdd}>
-                                <Icon name="UserPlus" className="ml-2" />
                                 <span>إضافة جديد</span>
+                                <Icon name="UserPlus" className="mr-2" />
                              </Button>
                              <Button variant="outline">
-                                <Icon name="FileUp" className="ml-2" />
                                 <span>استيراد</span>
+                                <Icon name="FileUp" className="mr-2" />
                             </Button>
                              <Button variant="outline">
-                                <Icon name="FileDown" className="ml-2" />
                                 <span>تصدير</span>
+                                <Icon name="FileDown" className="mr-2" />
                             </Button>
+                        </div>
+                        <div className="relative flex-1 w-full sm:max-w-xs">
+                            <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pl-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                         </div>
                     </>
                 )}
@@ -377,3 +379,5 @@ export default function UsersPage() {
       </div>
   );
 }
+
+    
