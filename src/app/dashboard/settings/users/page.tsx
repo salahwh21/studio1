@@ -120,29 +120,31 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
         className="hover:border-primary transition-colors duration-200 data-[state=checked]:border-primary data-[state=checked]:ring-2 data-[state=checked]:ring-primary" 
         data-state={isSelected ? 'checked' : 'unchecked'}
     >
-        <CardContent className="p-3 flex items-center justify-between">
-            <Link href={`/dashboard/settings/users/${user.id}`} className="flex items-center gap-3 flex-1 text-right" onClick={(e) => {
-                 if(isSelected) {
-                     e.preventDefault();
-                     onSelectionChange(user.id, false);
-                 }
-             }}>
-                <Avatar className="h-12 w-12 border">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div className="space-y-1 text-right">
-                    <h3 className="font-semibold">{user.name}</h3>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                    {role && <Badge variant="secondary">{role.name}</Badge>}
-                </div>
-            </Link>
-            <Checkbox
-                checked={isSelected}
-                onCheckedChange={(checked) => onSelectionChange(user.id, !!checked)}
-                className="h-5 w-5 ml-3"
-                aria-label={`تحديد المستخدم ${user.name}`}
-            />
+        <CardContent className="p-3 flex justify-between items-center">
+            <div className='flex items-center gap-3'>
+                 <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={(checked) => onSelectionChange(user.id, !!checked)}
+                    className="h-5 w-5"
+                    aria-label={`تحديد المستخدم ${user.name}`}
+                />
+                <Link href={`/dashboard/settings/users/${user.id}`} className="flex items-center gap-3 flex-1 text-right" onClick={(e) => {
+                    if(isSelected) {
+                        e.preventDefault();
+                        onSelectionChange(user.id, false);
+                    }
+                }}>
+                    <Avatar className="h-12 w-12 border">
+                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-1 text-right">
+                        <h3 className="font-semibold">{user.name}</h3>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        {role && <Badge variant="secondary">{role.name}</Badge>}
+                    </div>
+                </Link>
+            </div>
         </CardContent>
     </Card>
 );
@@ -231,23 +233,23 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
                         </div>
                     </div>
                 ) : (
-                    <>
-                        <div className="relative w-full sm:max-w-xs">
-                            <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pr-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                        </div>
+                    <div className="flex justify-between w-full">
                          <div className="flex gap-2">
                              <Button onClick={onAdd}>
-                                <Icon name="UserPlus" className="ml-2" /> إضافة جديد
+                                إضافة جديد <Icon name="UserPlus" className="mr-2" /> 
                              </Button>
                              <Button variant="outline">
-                                <Icon name="FileUp" className="ml-2" /> استيراد
+                                استيراد <Icon name="FileUp" className="mr-2" /> 
                             </Button>
                              <Button variant="outline">
-                                <Icon name="FileDown" className="ml-2" /> تصدير
+                                تصدير <Icon name="FileDown" className="mr-2" /> 
                             </Button>
                         </div>
-                    </>
+                        <div className="relative w-full sm:max-w-xs">
+                            <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pl-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                            <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        </div>
+                    </div>
                 )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -362,9 +364,9 @@ export default function UsersPage() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="employees">الموظفين ({employees.length})</TabsTrigger>
-                <TabsTrigger value="drivers">السائقين ({drivers.length})</TabsTrigger>
                 <TabsTrigger value="merchants">التجار ({merchants.length})</TabsTrigger>
+                <TabsTrigger value="drivers">السائقين ({drivers.length})</TabsTrigger>
+                <TabsTrigger value="employees">الموظفين ({employees.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="employees" className="mt-4">
                  <UserList
