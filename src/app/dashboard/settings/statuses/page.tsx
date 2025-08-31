@@ -16,14 +16,6 @@ import { useStatusesStore, type Status } from '@/store/statuses-store';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MoreVertical } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 
@@ -42,16 +34,9 @@ const StatusCard = ({ status, onUpdate, onDelete }: { status: Status; onUpdate: 
                         <span>{status.name}</span>
                     </CardTitle>
                 </Link>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => { /* Navigate to edit page */ }}>تعديل</DropdownMenuItem>
-                        <DropdownMenuSeparator/>
-                        <DropdownMenuItem onSelect={() => onDelete(status.id)} className="text-destructive">حذف</DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <Button variant="ghost" size="icon" onClick={() => onDelete(status.id)} aria-label={`حذف حالة ${status.name}`}>
+                    <Icon name="Trash2" className="h-4 w-4 text-destructive" />
+                </Button>
             </div>
         </CardHeader>
         <CardContent className="mt-auto">
