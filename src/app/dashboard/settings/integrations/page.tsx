@@ -55,12 +55,16 @@ const categories = [
     { id: 'factory', name: 'مصنع التكاملات' },
 ];
 
+type HealthStatus = 'healthy' | 'warning' | 'error' | 'inactive';
+
 type Connection = {
-    id: string; // Unique instance ID
-    integrationId: string; // ID from the integrationsList
-    name: string; // User-defined name for this instance
+    id: string;
+    integrationId: string;
+    name: string;
     apiKey?: string;
     enabled: boolean;
+    health: HealthStatus;
+    lastSync: string;
 };
 
 export default function IntegrationsPage() {
@@ -74,15 +78,23 @@ export default function IntegrationsPage() {
             const saved = localStorage.getItem('user-integrations');
             let userConnections: Connection[] = saved ? JSON.parse(saved) : [];
 
-            const shopifyExists = userConnections.some(c => c.integrationId === 'shopify');
-
-            if (!shopifyExists) {
-                userConnections.push({
+            if (userConnections.length === 0) {
+                 userConnections.push({
                     id: nanoid(),
                     integrationId: 'shopify',
                     name: 'متجري على شوبيفاي',
                     apiKey: 'shpat_dummy_api_key_for_demo',
                     enabled: true,
+                    health: 'healthy',
+                    lastSync: new Date().toISOString()
+                });
+                userConnections.push({
+                    id: nanoid(),
+                    integrationId: 'generic-webhook',
+                    name: 'ربط مخصص للمطورين',
+                    enabled: true,
+                    health: 'warning',
+                    lastSync: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
                 });
             }
             
@@ -127,38 +139,53 @@ export default function IntegrationsPage() {
             setIntegrationToDelete(null);
         }
     }
+    
+    const healthStats = connections.reduce((acc, conn) => {
+        if(conn.enabled) {
+            acc[conn.health] = (acc[conn.health] || 0) + 1;
+        }
+        return acc;
+    }, {} as Record<HealthStatus, number>);
+
+    const HealthStatusCard = ({ title, count, icon, colorClass, link }: { title: string, count: number, icon: any, colorClass: string, link: string }) => (
+        <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4 flex items-center gap-4">
+                <div className={`p-3 rounded-full ${colorClass.replace('text-', 'bg-')}/10 ${colorClass}`}>
+                    <Icon name={icon} className="h-6 w-6" />
+                </div>
+                <div>
+                    <p className="text-2xl font-bold">{count}</p>
+                    <p className="text-sm text-muted-foreground">{title}</p>
+                </div>
+            </CardContent>
+        </Card>
+    );
 
     const IntegrationCard = ({ integration }: { integration: typeof integrationsList[0] }) => {
-        const isFactory = integration.type === 'factory';
         const [logoError, setLogoError] = useState(false);
-        
         const isCustomIntegration = integration.category === 'factory';
         const logoUrl = !isCustomIntegration ? `https://logo.clearbit.com/${integration.id.split('-')[0]}.com` : '';
-
-
         return (
             <Card className="hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out flex flex-col">
                 <CardHeader>
-                    <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-4">
-                            <div className="bg-primary/10 text-primary p-3 rounded-lg h-12 w-12 flex items-center justify-center">
-                               {logoError || !logoUrl ? (
-                                    <Icon name={integration.iconName} className="h-6 w-6" />
-                               ) : (
-                                    <Image 
-                                        src={logoUrl} 
-                                        alt={`${integration.name} logo`} 
-                                        width={24}
-                                        height={24}
-                                        className="object-contain h-6 w-6"
-                                        onError={() => setLogoError(true)}
-                                    />
-                               )}
-                            </div>
-                            <div>
-                                <CardTitle className="text-base">{integration.name}</CardTitle>
-                                <CardDescription className="text-xs leading-relaxed mt-1">{integration.description}</CardDescription>
-                            </div>
+                    <div className="flex items-center gap-4">
+                        <div className="bg-primary/10 text-primary p-3 rounded-lg h-12 w-12 flex items-center justify-center">
+                           {logoError || !logoUrl ? (
+                                <Icon name={integration.iconName} className="h-6 w-6" />
+                           ) : (
+                                <Image 
+                                    src={logoUrl} 
+                                    alt={`${integration.name} logo`} 
+                                    width={24}
+                                    height={24}
+                                    className="object-contain h-6 w-6"
+                                    onError={() => setLogoError(true)}
+                                />
+                           )}
+                        </div>
+                        <div>
+                            <CardTitle className="text-base">{integration.name}</CardTitle>
+                            <CardDescription className="text-xs leading-relaxed mt-1">{integration.description}</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
@@ -167,7 +194,7 @@ export default function IntegrationsPage() {
                     <div className="flex justify-end gap-2 pt-2">
                          <Button size="sm" onClick={() => handleActionClick(integration)}>
                             <Icon name="PlusCircle" className="ml-2" />
-                            {isFactory ? 'إضافة' : 'اتصال'}
+                            {integration.type === 'factory' ? 'إضافة' : 'اتصال'}
                          </Button>
                     </div>
                 </CardContent>
@@ -177,9 +204,16 @@ export default function IntegrationsPage() {
     
      const ConnectedIntegrationCard = ({ connection }: { connection: Connection }) => {
         const integrationInfo = integrationsList.find(i => i.id === connection.integrationId)!;
+        const healthInfo = {
+            healthy: { text: 'سليم', color: 'text-green-600', icon: 'CheckCircle2' as const },
+            warning: { text: 'تحذير', color: 'text-yellow-600', icon: 'AlertCircle' as const },
+            error: { text: 'خطأ', color: 'text-red-600', icon: 'XCircle' as const },
+            inactive: { text: 'غير نشط', color: 'text-gray-500', icon: 'Clock' as const }
+        }[connection.health];
+        
          return (
-             <Card className="bg-muted/50">
-                 <CardHeader className="p-3">
+             <Card className="bg-card shadow-sm hover:shadow-lg transition-shadow">
+                 <CardHeader className="p-4">
                      <div className="flex justify-between items-start">
                          <div className="flex items-center gap-3">
                             <div className="bg-primary/10 text-primary p-2 rounded-md h-10 w-10 flex items-center justify-center">
@@ -190,23 +224,28 @@ export default function IntegrationsPage() {
                                <CardDescription className="text-xs">{integrationInfo.name}</CardDescription>
                             </div>
                          </div>
-                         <Badge variant={connection.enabled ? 'default' : 'secondary'} className={connection.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}>
+                        <Badge variant={connection.enabled ? 'default' : 'secondary'} className={connection.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}>
                           {connection.enabled ? 'مفعل' : 'معطل'}
                         </Badge>
                      </div>
                  </CardHeader>
-                 <CardContent className="p-3 pt-0">
-                     <Separator className="mb-3" />
-                     <div className="flex items-center justify-between gap-2">
+                 <CardContent className="p-4 pt-0">
+                     <Separator className="mb-4" />
+                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
+                        <div className={`flex items-center gap-1.5 font-medium ${healthInfo.color}`}>
+                            <Icon name={healthInfo.icon} className="h-4 w-4" />
+                            <span>الصحة: {healthInfo.text}</span>
+                        </div>
+                        <span>آخر مزامنة: {new Date(connection.lastSync).toLocaleString('ar-JO')}</span>
+                     </div>
+                     <div className="flex items-center justify-end gap-2">
                          <Switch 
                             checked={connection.enabled}
                             onCheckedChange={(checked) => handleToggleConnection(connection.id, checked)}
                             aria-label={`تفعيل أو تعطيل ${connection.name}`}
                         />
-                        <div className="flex gap-2">
-                            <Button variant="destructive" size="sm" onClick={() => handleDisconnect(connection.id)}>قطع الاتصال</Button>
-                            <Button variant="secondary" size="sm" onClick={() => router.push(`/dashboard/settings/integrations/${connection.id}`)}>إدارة</Button>
-                        </div>
+                        <Button variant="destructive" size="sm" onClick={() => handleDisconnect(connection.id)}>قطع</Button>
+                        <Button variant="secondary" size="sm" onClick={() => router.push(`/dashboard/settings/integrations/${connection.id}`)}>إدارة</Button>
                      </div>
                  </CardContent>
              </Card>
@@ -228,6 +267,13 @@ export default function IntegrationsPage() {
                 </CardHeader>
             </Card>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <HealthStatusCard title="تكاملات سليمة" count={healthStats.healthy || 0} icon="CheckCircle2" colorClass="text-green-600" link="#" />
+                <HealthStatusCard title="تحتاج لانتباه" count={(healthStats.warning || 0) + (healthStats.error || 0)} icon="AlertCircle" colorClass="text-yellow-600" link="#" />
+                <HealthStatusCard title="تكاملات معطلة" count={connections.filter(c => !c.enabled).length} icon="Ban" colorClass="text-gray-500" link="#" />
+                <HealthStatusCard title="إجمالي التكاملات" count={connections.length} icon="Share2" colorClass="text-blue-600" link="#" />
+            </div>
+
             {connections.length > 0 && (
                 <Card>
                     <CardHeader>
@@ -242,7 +288,7 @@ export default function IntegrationsPage() {
             <Tabs defaultValue="all" className="w-full">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold">إضافة تكامل جديد</h3>
-                    <TabsList className="grid" style={{ gridTemplateColumns: `repeat(${categories.length}, minmax(0, 1fr))` }}>
+                    <TabsList className="hidden sm:grid" style={{ gridTemplateColumns: `repeat(${categories.length}, minmax(0, 1fr))` }}>
                         {categories.map(cat => <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>)}
                     </TabsList>
                 </div>
@@ -275,3 +321,5 @@ export default function IntegrationsPage() {
         </div>
     );
 }
+
+    

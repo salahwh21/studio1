@@ -11,7 +11,7 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 // Add all solid icons to the library, so we can use them by name
 library.add(fas);
 
-type IconName = keyof typeof LucideIcons | 'UserCog' | 'UsersCog' | 'ShieldCheck' | 'KeyRound' | 'HandCoins' | 'CalendarClock' | 'CheckCheck' | 'Repeat' | 'ThumbsDown' | 'Ban' | 'PhoneOff' | 'Archive' | 'Webhook' | 'Briefcase' | 'Code' | 'CreditCard' | 'Zap';
+type IconName = keyof typeof LucideIcons | 'UserCog' | 'UsersCog' | 'ShieldCheck' | 'KeyRound' | 'HandCoins' | 'CalendarClock' | 'CheckCheck' | 'Repeat' | 'ThumbsDown' | 'Ban' | 'PhoneOff' | 'Archive' | 'Webhook' | 'Briefcase' | 'Code' | 'CreditCard' | 'Zap' | 'AlertCircle' | 'AlertTriangle';
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
   name: IconName;
@@ -111,6 +111,7 @@ const faMapping: { [key in IconName]?: import('@fortawesome/fontawesome-svg-core
   CreditCard: 'credit-card',
   Zap: 'bolt',
   Globe: 'globe',
+  AlertCircle: 'exclamation-circle',
 };
 
 const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons } } = {
@@ -208,6 +209,7 @@ const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons }
   Zap: { feather: 'Zap' },
   Globe: { feather: 'Globe' },
   Copy: { feather: 'Copy' },
+  AlertCircle: { feather: 'AlertCircle'},
 };
 
 
@@ -279,3 +281,5 @@ const Icon = ({ name, ...props }: IconProps) => {
 };
 
 export default Icon;
+
+    
