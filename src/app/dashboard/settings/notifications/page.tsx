@@ -8,7 +8,7 @@ import { nanoid } from 'nanoid';
 import { Bot, PlusCircle, Trash2, ArrowLeft, MessageSquare, Smartphone, Wand2, Save, GripVertical } from 'lucide-react';
 
 import { useStatusesStore, type Status } from '@/store/statuses-store';
-import { SettingsContext, type NotificationTemplate } from '@/contexts/SettingsContext';
+import { useSettings, type NotificationTemplate, type AiNotificationRule } from '@/contexts/SettingsContext';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 
 type Recipient = 'customer' | 'merchant' | 'driver' | 'admin';
@@ -50,9 +51,12 @@ const recipientOptions: { value: Recipient; label: string }[] = [
 
 
 type FormValues = {
-  useAI: boolean;
-  aiTone: 'friendly' | 'formal' | 'concise';
-  templates: NotificationTemplate[];
+  manualTemplates: NotificationTemplate[];
+  aiSettings: {
+      useAI: boolean;
+      aiTone: 'friendly' | 'formal' | 'concise';
+      rules: AiNotificationRule[];
+  };
 };
 
 const SortableTemplateCard = ({ template, index, control, remove, statuses }: { template: NotificationTemplate, index: number, control: any, remove: (index: number) => void, statuses: Status[] }) => {
@@ -75,7 +79,7 @@ const SortableTemplateCard = ({ template, index, control, remove, statuses }: { 
                             <Icon name="GripVertical" />
                         </div>
                         <Controller
-                            name={`templates.${index}.statusId`}
+                            name={`manualTemplates.${index}.statusId`}
                             control={control}
                             render={({ field }) => (
                                 <Select onValueChange={field.onChange} value={field.value}>
@@ -103,7 +107,7 @@ const SortableTemplateCard = ({ template, index, control, remove, statuses }: { 
                 <CardContent className="px-4 pb-4 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Controller
-                            name={`templates.${index}.whatsApp`}
+                            name={`manualTemplates.${index}.whatsApp`}
                             control={control}
                             render={({ field }) => (
                                 <div className="space-y-2">
@@ -113,7 +117,7 @@ const SortableTemplateCard = ({ template, index, control, remove, statuses }: { 
                             )}
                         />
                         <Controller
-                            name={`templates.${index}.sms`}
+                            name={`manualTemplates.${index}.sms`}
                             control={control}
                             render={({ field }) => (
                                 <div className="space-y-2">
@@ -129,7 +133,7 @@ const SortableTemplateCard = ({ template, index, control, remove, statuses }: { 
                             {recipientOptions.map(option => (
                                  <Controller
                                     key={option.value}
-                                    name={`templates.${index}.recipients`}
+                                    name={`manualTemplates.${index}.recipients`}
                                     control={control}
                                     render={({ field }) => (
                                         <div className="flex items-center space-x-2 space-x-reverse">
@@ -159,14 +163,31 @@ const NotificationsForm = ({ settings, setSetting }: { settings: FormValues, set
     const { toast } = useToast();
     const { statuses } = useStatusesStore();
     
-    const { control, handleSubmit, watch } = useForm<FormValues>({
+    const { control, handleSubmit, watch, reset } = useForm<FormValues>({
         defaultValues: settings
     });
+    
+    useEffect(() => {
+        const initialRules = statuses.map(status => ({
+            statusId: status.code,
+            recipients: []
+        }));
+        
+        const existingRules = new Map(settings.aiSettings.rules.map(rule => [rule.statusId, rule]));
+        
+        const mergedRules = initialRules.map(defaultRule => 
+            existingRules.get(defaultRule.statusId) || defaultRule
+        );
+        
+        reset({ ...settings, aiSettings: { ...settings.aiSettings, rules: mergedRules } });
 
-    const { fields, append, remove, move } = useFieldArray({ control, name: "templates" });
-    const useAI = watch('useAI');
+    }, [settings, statuses, reset]);
+
+
+    const { fields, append, remove, move } = useFieldArray({ control, name: "manualTemplates" });
+    const { fields: aiRules } = useFieldArray({ control, name: "aiSettings.rules" });
+
     const sensors = useSensors(useSensor(PointerSensor));
-
 
     const handleSave = (data: FormValues) => {
         setSetting('notifications', data);
@@ -194,12 +215,15 @@ const NotificationsForm = ({ settings, setSetting }: { settings: FormValues, set
             move(oldIndex, newIndex);
         }
     };
+    
+    const statusMap = new Map(statuses.map(s => [s.code, s]));
+
 
     return (
         <form onSubmit={handleSubmit(handleSave)} className="space-y-6">
             <Card className="bg-gradient-to-br from-primary/10 to-transparent">
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
+                <CardHeader>
+                    <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-primary/20 rounded-full text-primary"><Wand2 className="h-6 w-6" /></div>
                             <div>
@@ -207,33 +231,86 @@ const NotificationsForm = ({ settings, setSetting }: { settings: FormValues, set
                                 <p className="text-xs text-muted-foreground">دع النظام يكتب رسائل احترافية بدلاً من القوالب اليدوية.</p>
                             </div>
                         </div>
-                            <Controller name="useAI" control={control} render={({ field }) => (
+                            <Controller name="aiSettings.useAI" control={control} render={({ field }) => (
                             <Switch id="useAI" checked={field.value} onCheckedChange={field.onChange} />
                             )}/>
                     </div>
-
-                        {useAI && (
-                        <div className="mt-4 pl-14 animate-in fade-in duration-300">
-                            <Separator className="my-4"/>
-                            <div className="max-w-xs space-y-2">
-                                <Label>نبرة الرسالة</Label>
-                                <Controller name="aiTone" control={control} render={({ field }) => (
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="friendly">ودية</SelectItem>
-                                            <SelectItem value="formal">رسمية</SelectItem>
-                                            <SelectItem value="concise">مختصرة</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                )}/>
-                            </div>
-                        </div>
+                </CardHeader>
+                <Controller
+                    name="aiSettings.useAI"
+                    control={control}
+                    render={({ field }) => (
+                         field.value && (
+                            <CardContent className="animate-in fade-in duration-300 space-y-4">
+                                <Separator />
+                                <div className="space-y-2">
+                                    <Label>نبرة الرسالة</Label>
+                                    <Controller name="aiSettings.aiTone" control={control} render={({ field }) => (
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <SelectTrigger className="w-full md:w-1/3"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="friendly">ودية</SelectItem>
+                                                <SelectItem value="formal">رسمية</SelectItem>
+                                                <SelectItem value="concise">مختصرة</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    )}/>
+                                </div>
+                                <div className="space-y-2">
+                                     <Label>قواعد إرسال الرسائل الذكية</Label>
+                                     <Card className="overflow-hidden">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>الحالة</TableHead>
+                                                    {recipientOptions.map(opt => <TableHead key={opt.value} className="text-center">{opt.label}</TableHead>)}
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {aiRules.map((rule, index) => {
+                                                    const statusInfo = statusMap.get(rule.statusId);
+                                                    if (!statusInfo) return null;
+                                                    return (
+                                                        <TableRow key={rule.id}>
+                                                            <TableCell>
+                                                                 <div className="flex items-center gap-2">
+                                                                    <Icon name={statusInfo.icon as any} style={{ color: statusInfo.color }} className="h-4 w-4" />
+                                                                    {statusInfo.name}
+                                                                </div>
+                                                            </TableCell>
+                                                            {recipientOptions.map(opt => (
+                                                                <TableCell key={opt.value} className="text-center">
+                                                                     <Controller
+                                                                        name={`aiSettings.rules.${index}.recipients`}
+                                                                        control={control}
+                                                                        render={({ field }) => (
+                                                                            <Checkbox
+                                                                                checked={field.value?.includes(opt.value)}
+                                                                                onCheckedChange={(checked) => {
+                                                                                     const currentRecipients = field.value || [];
+                                                                                    return checked
+                                                                                        ? field.onChange([...currentRecipients, opt.value])
+                                                                                        : field.onChange(currentRecipients.filter((value: Recipient) => value !== opt.value))
+                                                                                }}
+                                                                            />
+                                                                        )}
+                                                                     />
+                                                                </TableCell>
+                                                            ))}
+                                                        </TableRow>
+                                                    )
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                     </Card>
+                                </div>
+                            </CardContent>
+                        )
                     )}
-                </CardContent>
+                />
             </Card>
 
-            <div className={cn("space-y-4 transition-opacity duration-500", useAI && "opacity-40 pointer-events-none")}>
+            <div className="space-y-4">
                     <h2 className="text-xl font-semibold tracking-tight">إدارة قوالب الرسائل اليدوية</h2>
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
                     <SortableContext items={fields} strategy={verticalListSortingStrategy}>
@@ -266,7 +343,7 @@ const NotificationsForm = ({ settings, setSetting }: { settings: FormValues, set
 
 
 export default function NotificationsSettingsPage() {
-    const context = useContext(SettingsContext);
+    const context = useSettings();
 
     if (!context || !context.isHydrated) {
         return (

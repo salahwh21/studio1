@@ -14,10 +14,20 @@ export type NotificationTemplate = {
   sms: string;
 };
 
+export type AiNotificationRule = {
+    statusId: string;
+    recipients: ('customer' | 'merchant' | 'driver' | 'admin')[];
+};
+
 interface NotificationsSettings {
   useAI: boolean;
   aiTone: 'friendly' | 'formal' | 'concise';
-  templates: NotificationTemplate[];
+  manualTemplates: NotificationTemplate[];
+  aiSettings: {
+      useAI: boolean;
+      aiTone: 'friendly' | 'formal' | 'concise';
+      rules: AiNotificationRule[];
+  };
 }
 
 interface ComprehensiveSettings {
@@ -38,17 +48,20 @@ export const SettingsContext = createContext<SettingsContextType | undefined>(un
 // 4. Define default settings data, including our templates
 const defaultSettingsData: ComprehensiveSettings = {
   notifications: {
-    useAI: false,
-    aiTone: 'friendly',
-    templates: [
+    useAI: false, // Legacy, will be removed
+    aiTone: 'friendly', // Legacy, will be removed
+    manualTemplates: [
       { id: nanoid(), statusId: 'OUT_FOR_DELIVERY', recipients: ['customer'], whatsApp: 'مرحباً {{customerName}}، طلبك رقم *{{orderId}}* في طريقه إليك الآن مع السائق {{driverName}}. نتمنى لك يوماً سعيداً!', sms: 'طلبك {{orderId}} خرج للتوصيل. الوميض.' },
       { id: nanoid(), statusId: 'DELIVERED', recipients: ['customer', 'merchant'], whatsApp: 'مرحباً {{customerName}}، تم توصيل طلبك رقم *{{orderId}}* بنجاح. شكراً لثقتكم بخدماتنا!', sms: 'تم توصيل طلبك {{orderId}}. الوميض.' },
       { id: nanoid(), statusId: 'POSTPONED', recipients: ['customer'], whatsApp: 'مرحباً {{customerName}}، تم تأجيل توصيل طلبك رقم *{{orderId}}* حسب طلبكم. سيتم التواصل معكم قريباً لتحديد موعد جديد.', sms: 'تم تأجيل طلبك {{orderId}} بناء على طلبك.' },
       { id: nanoid(), statusId: 'RETURNED', recipients: ['merchant'], whatsApp: 'تنبيه: تم إنشاء طلب مرتجع للشحنة رقم *{{orderId}}*. سبب الإرجاع: {{reason}}.', sms: 'مرتجع جديد للطلب {{orderId}}.' },
       { id: nanoid(), statusId: 'CANCELLED', recipients: ['merchant'], whatsApp: 'نأسف لإبلاغكم بأنه تم إلغاء الطلب رقم *{{orderId}}* من قبل العميل.', sms: 'تم إلغاء الطلب {{orderId}}.' },
-      { id: nanoid(), statusId: 'MONEY_RECEIVED', recipients: ['admin'], whatsApp: 'تم استلام مبلغ *{{amount}}* من السائق {{driverName}} عن الشحنات التي تم توصيلها.', sms: 'تم استلام مبلغ {{amount}} من {{driverName}}.' },
-      { id: nanoid(), statusId: 'COMPLETED', recipients: ['merchant'], whatsApp: 'مرحباً {{merchantName}}، تم إيداع مبلغ *{{amount}}* في حسابكم. شكراً لتعاملكم معنا.', sms: 'تم إيداع مبلغ {{amount}} في حسابكم.' },
     ],
+    aiSettings: {
+        useAI: false,
+        aiTone: 'friendly',
+        rules: []
+    }
   },
 };
 
@@ -71,6 +84,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           notifications: {
             ...defaultSettingsData.notifications,
             ...(savedSettings.notifications || {}),
+            aiSettings: {
+              ...defaultSettingsData.notifications.aiSettings,
+              ...(savedSettings.notifications?.aiSettings || {}),
+            }
           },
         };
         setSettings(mergedSettings);
