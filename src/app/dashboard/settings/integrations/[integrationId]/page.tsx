@@ -85,6 +85,8 @@ export default function IntegrationDetailPage() {
             </Card>
         );
     }
+    
+    const isWebhookBased = ['generic-webhook', 'zapier'].includes(integrationInfo.id);
 
     return (
         <div className="space-y-6">
@@ -108,10 +110,23 @@ export default function IntegrationDetailPage() {
             <Card>
                 <CardHeader><CardTitle>بيانات الربط</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="api-key">مفتاح الربط (API Key)</Label>
-                        <Input id="api-key" type="password" defaultValue={connection.apiKey || '************'} />
-                    </div>
+                    {isWebhookBased ? (
+                        <div className="space-y-2">
+                             <Label htmlFor="webhook-url">رابط الويب هوك (Webhook URL)</Label>
+                            <div className="flex items-center gap-2">
+                                <Input id="webhook-url" type="text" readOnly defaultValue={`https://api.alwameed.co/webhooks/${connection.id}`} className="font-mono text-sm" />
+                                <Button variant="outline" size="icon" onClick={() => navigator.clipboard.writeText(`https://api.alwameed.co/webhooks/${connection.id}`)}>
+                                    <Icon name="Copy" className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <CardDescription>استخدم هذا الرابط في نظامك الخارجي لإرسال البيانات إلينا.</CardDescription>
+                        </div>
+                    ) : (
+                         <div className="space-y-2">
+                            <Label htmlFor="api-key">مفتاح الربط (API Key)</Label>
+                            <Input id="api-key" type="password" defaultValue={connection.apiKey || '************'} />
+                        </div>
+                    )}
                     {integrationInfo.id === 'shopify' && (
                          <div className="space-y-2">
                             <Label htmlFor="store-url">رابط المتجر</Label>
@@ -121,6 +136,25 @@ export default function IntegrationDetailPage() {
                 </CardContent>
             </Card>
             
+             {isWebhookBased && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>إعدادات متقدمة للويب هوك</CardTitle>
+                        <CardDescription>
+                            قم بإدارة كيفية قراءة البيانات الواردة وتتبع سجل الاستلام.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild>
+                            <Link href={`/dashboard/settings/integrations/${integrationId}/mapping`}>
+                                <Icon name="Settings2" className="ml-2"/>
+                                إدارة ربط الحقول وسجل البيانات
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
+
             <Card>
                 <CardHeader><CardTitle>إعدادات المزامنة</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
