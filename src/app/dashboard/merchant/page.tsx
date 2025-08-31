@@ -47,6 +47,8 @@ import {
 } from '@/components/ui/tabs';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import Icon from '@/components/icon';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 const summaryData = {
@@ -239,7 +241,50 @@ const ProfilePanel = () => (
             <Button>حفظ التغييرات</Button>
         </CardContent>
     </Card>
-)
+);
+
+const PricingPanel = () => (
+    <Card>
+        <CardHeader>
+            <CardTitle>تسعير التوصيل</CardTitle>
+            <CardDescription>اختر طريقة حساب سعر التوصيل لطلبات هذا التاجر.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <RadioGroup defaultValue="price_list" className="space-y-4">
+                <div className="space-y-2">
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                        <RadioGroupItem value="fixed" id="fixed" />
+                        <Label htmlFor="fixed" className="font-bold">سعر ثابت</Label>
+                    </div>
+                    <Input type="number" placeholder="أدخل السعر الثابت..." className="mr-6" />
+                </div>
+
+                <div className="space-y-2">
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                        <RadioGroupItem value="price_list" id="price_list" />
+                        <Label htmlFor="price_list" className="font-bold">قائمة أسعار</Label>
+                    </div>
+                    <div className="mr-6">
+                        <Select>
+                            <SelectTrigger>
+                                <SelectValue placeholder="اختر قائمة أسعار..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="default">الأسعار الافتراضية</SelectItem>
+                                <SelectItem value="vip">أسعار VIP</SelectItem>
+                                <SelectItem value="provinces">أسعار المحافظات</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+            </RadioGroup>
+        </CardContent>
+        <CardFooter>
+            <Button>حفظ إعدادات التسعير</Button>
+        </CardFooter>
+    </Card>
+);
+
 
 export default function MerchantPage() {
     return (
@@ -259,18 +304,20 @@ export default function MerchantPage() {
                  <div className="lg:col-span-2">
                     <OrdersManagement/>
                 </div>
-                 <div className="lg:col-span-1">
+                 <div className="lg:col-span-1 space-y-6">
                     <ProfilePanel/>
+                    <PricingPanel />
                 </div>
             </div>
 
             {/* Mobile View */}
             <div className="md:hidden">
                  <Tabs defaultValue="dashboard" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="dashboard">الملخص</TabsTrigger>
                         <TabsTrigger value="orders">الطلبات</TabsTrigger>
                         <TabsTrigger value="profile">الملف الشخصي</TabsTrigger>
+                        <TabsTrigger value="pricing">التسعير</TabsTrigger>
                     </TabsList>
                     <TabsContent value="dashboard" className="mt-4">
                         <SummaryDashboard/>
@@ -302,8 +349,12 @@ export default function MerchantPage() {
                      <TabsContent value="profile" className="mt-4">
                         <ProfilePanel/>
                     </TabsContent>
+                    <TabsContent value="pricing" className="mt-4">
+                        <PricingPanel/>
+                    </TabsContent>
                 </Tabs>
             </div>
         </div>
     );
 }
+
