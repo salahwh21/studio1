@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { CSVLink } from 'react-csv';
+import dynamic from 'next/dynamic';
 
 import {
   Card,
@@ -35,6 +35,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+
+const CSVLink = dynamic(() => import('react-csv').then(mod => mod.CSVLink), { ssr: false });
 
 const UserDialog = ({
   open,
@@ -123,8 +125,8 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
         data-state={isSelected ? 'checked' : 'unchecked'}
     >
         <CardContent className="p-3 flex justify-between items-center">
-            <div className='flex items-center gap-3'>
-                 <Checkbox
+             <div className='flex items-center gap-3'>
+                <Checkbox
                     checked={isSelected}
                     onCheckedChange={(checked) => onSelectionChange(user.id, !!checked)}
                     className="h-5 w-5"
@@ -147,6 +149,7 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
                     </div>
                 </Link>
             </div>
+             
         </CardContent>
     </Card>
 );
@@ -276,12 +279,13 @@ const UserList = ({ users, roles, isDriverTab, onAdd, onEdit, onDelete, onBulkUp
                                 <Icon name="FileUp" className="ml-2" /> استيراد
                             </Button>
                             <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleFileImport} />
-
-                             <CSVLink data={users} headers={[{label: 'name', key: 'name'}, {label: 'email', key: 'email'}, {label: 'roleId', key: 'roleId'}]} filename={"users.csv"} className="inline-block">
-                                <Button variant="outline">
-                                    <Icon name="FileDown" className="ml-2" /> تصدير
-                                </Button>
-                            </CSVLink>
+                             {CSVLink && (
+                                <CSVLink data={users} headers={[{label: 'name', key: 'name'}, {label: 'email', key: 'email'}, {label: 'roleId', key: 'roleId'}]} filename={"users.csv"} className="inline-block">
+                                    <Button variant="outline">
+                                        <Icon name="FileDown" className="ml-2" /> تصدير
+                                    </Button>
+                                </CSVLink>
+                            )}
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
@@ -424,9 +428,9 @@ export default function UsersPage() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="employees">الموظفين ({employees.length})</TabsTrigger>
-                <TabsTrigger value="drivers">السائقين ({drivers.length})</TabsTrigger>
                 <TabsTrigger value="merchants">التجار ({merchants.length})</TabsTrigger>
+                <TabsTrigger value="drivers">السائقين ({drivers.length})</TabsTrigger>
+                <TabsTrigger value="employees">الموظفين ({employees.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="employees" className="mt-4">
                  <UserList
