@@ -20,7 +20,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogClose,
 } from '@/components/ui/dialog';
 import {
@@ -40,10 +39,10 @@ const RoleCard = ({ role, onEdit, onDelete }: { role: Role; onEdit: (role: Role)
   <Card className="hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out flex flex-col">
     <CardHeader>
       <div className="flex justify-between items-start">
-        <div>
+        <Link href={`/dashboard/settings/roles/${role.id}`} className="space-y-2 flex-1">
           <CardTitle className="text-xl font-bold">{role.name}</CardTitle>
           <CardDescription className="mt-2">{role.description}</CardDescription>
-        </div>
+        </Link>
         <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted px-2 py-1 rounded-md">
                 <Icon name="Users" className="h-4 w-4"/>
@@ -64,10 +63,7 @@ const RoleCard = ({ role, onEdit, onDelete }: { role: Role; onEdit: (role: Role)
         </div>
       </div>
     </CardHeader>
-    <CardContent className="flex-grow">
-      {/* Could add a summary of permissions here in the future */}
-    </CardContent>
-    <CardContent>
+    <CardContent className="flex-grow mt-auto">
        <Button asChild className="w-full">
         <Link href={`/dashboard/settings/roles/${role.id}`}>
           <Icon name="Settings" className="mr-2 h-4 w-4" />
@@ -78,11 +74,13 @@ const RoleCard = ({ role, onEdit, onDelete }: { role: Role; onEdit: (role: Role)
   </Card>
 );
 
-const RoleDialog = ({ open, onOpenChange, onSave, role, users }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (role: Omit<Role, 'id' | 'permissions' | 'userCount'>) => void, role: Omit<Role, 'id' | 'permissions' | 'userCount'> | null, users: number }) => {
+const RoleDialog = ({ open, onOpenChange, onSave, role }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (role: Omit<Role, 'id' | 'permissions' | 'userCount'>) => void, role: Role | null }) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
 
-    useState(() => {
+    // Use an effect to update local state when the dialog opens or the selected role changes.
+    // Using `key` on the Dialog component itself is another way to force re-mount if this becomes complex.
+    React.useEffect(() => {
         if(role) {
             setName(role.name);
             setDescription(role.description);
@@ -207,7 +205,6 @@ export default function RolesListPage() {
             onOpenChange={setDialogOpen}
             onSave={handleSave}
             role={selectedRole}
-            users={selectedRole?.userCount || 0}
         />
         
         <AlertDialog open={!!roleToDelete} onOpenChange={() => setRoleToDelete(null)}>

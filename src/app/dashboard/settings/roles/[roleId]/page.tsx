@@ -51,6 +51,7 @@ function PermissionGroupCard({
                         id={`group-${group.id}`}
                         checked={isAllGroupSelected}
                         onCheckedChange={(checked) => handleGroupPermissionChange(!!checked)}
+                        disabled={isAllSelected}
                     />
                     <Label htmlFor={`group-${group.id}`}>تحديد الكل</Label>
                 </div>
