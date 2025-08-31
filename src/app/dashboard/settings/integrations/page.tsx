@@ -31,10 +31,14 @@ const integrationsList = [
     { id: 'smsa-express', name: 'SMSA Express', iconName: 'Truck' as const, description: 'مزامنة الشحنات مباشرة مع نظام شركة سمسا للشحن.', category: 'shipping', type: 'standard' },
     { id: 'fedex', name: 'FedEx', iconName: 'Globe' as const, description: 'ربط وتتبع الشحنات مع شركة فيديكس.', category: 'shipping', type: 'standard' },
     { id: 'odoo', name: 'Odoo', iconName: 'Briefcase' as const, description: 'مزامنة الطلبات والفواتير مع نظام Odoo ERP الخاص بك.', category: 'erp', type: 'standard' },
+    { id: 'quickbooks', name: 'QuickBooks', iconName: 'Briefcase' as const, description: 'مزامنة الفواتير والمصروفات تلقائيًا مع QuickBooks.', category: 'erp', type: 'standard' },
+    { id: 'zoho-books', name: 'Zoho Books', iconName: 'Briefcase' as const, description: 'ربط النظام مع Zoho Books لإدارة محاسبية متكاملة.', category: 'erp', type: 'standard' },
     { id: 'twilio', name: 'Twilio', iconName: 'MessageSquare' as const, description: 'إرسال رسائل SMS للعملاء بحالة الطلب.', category: 'communication', type: 'standard' },
     { id: 'ycloud', name: 'YCloud', iconName: 'MessageSquare' as const, description: 'إرسال رسائل WhatsApp للعملاء عبر YCloud.', category: 'communication', type: 'standard' },
     { id: 'whatsapp', name: 'WhatsApp', iconName: 'MessageSquare' as const, description: 'ربط النظام لإرسال إشعارات عبر WhatsApp.', category: 'communication', type: 'standard' },
     { id: 'stripe', name: 'Stripe', iconName: 'CreditCard' as const, description: 'تفعيل الدفع الإلكتروني عبر بطاقات الائتمان.', category: 'payment', type: 'standard' },
+    { id: 'paypal', name: 'PayPal', iconName: 'CreditCard' as const, description: 'قبول المدفوعات العالمية عبر PayPal.', category: 'payment', type: 'standard' },
+    { id: 'paytabs', name: 'PayTabs', iconName: 'CreditCard' as const, description: 'ربط بوابة الدفع PayTabs لمنطقة الشرق الأوسط.', category: 'payment', type: 'standard' },
     { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const, description: 'ربط النظام بآلاف التطبيقات الأخرى لأتمتة المهام.', category: 'automation', type: 'factory' },
     { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const, description: 'ربط أي منصة تدعم الويب هوك لاستقبال الطلبات.', category: 'custom', type: 'factory' },
     { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const, description: 'للمطورين: ربط النظام مع أي واجهة برمجية مخصصة.', category: 'custom', type: 'factory' }
@@ -194,7 +198,7 @@ export default function IntegrationsPage() {
                     <div className="flex justify-between items-start">
                         <div className="flex items-center gap-4">
                             <div className="bg-primary/10 text-primary p-3 rounded-lg h-12 w-12 flex items-center justify-center">
-                               {logoError || isCustomIntegration ? (
+                               {logoError || !logoUrl ? (
                                     <Icon name={integration.iconName} className="h-6 w-6" />
                                ) : (
                                     <Image 
