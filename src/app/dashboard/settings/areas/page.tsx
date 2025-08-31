@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Card,
@@ -51,7 +51,9 @@ const CitiesView = ({
   onEditCity,
   onDeleteCities,
   onSelectCity,
-  onSelectionChange
+  onSelectionChange,
+  onImport,
+  onExport,
 }: {
   cities: City[];
   selectedCities: string[];
@@ -60,9 +62,12 @@ const CitiesView = ({
   onDeleteCities: (ids: string[]) => void;
   onSelectCity: (city: City) => void;
   onSelectionChange: (id: string, checked: boolean) => void;
+  onImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onExport: () => void;
 }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const filteredCities = cities.filter(city => city.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const importInputRef = useRef<HTMLInputElement>(null);
 
     const handleSelectAll = (checked: boolean) => {
         const allCityIds = filteredCities.map(c => c.id);
@@ -102,7 +107,7 @@ const CitiesView = ({
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <div className="flex items-center gap-2 sm:mr-auto">
+                        <div className="flex items-center gap-2 sm:ml-auto">
                             {selectedCities.length > 0 ? (
                                 <>
                                     <span className="text-sm text-muted-foreground">{selectedCities.length} محدد</span>
@@ -119,8 +124,11 @@ const CitiesView = ({
                                     <Button onClick={onAddCity}>
                                         <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة مدينة
                                     </Button>
-                                    <Button variant="outline"><Icon name="Upload" className="mr-2 h-4 w-4" /> استيراد</Button>
-                                    <Button variant="outline"><Icon name="Download" className="mr-2 h-4 w-4" /> تصدير</Button>
+                                    <Button variant="outline" onClick={() => importInputRef.current?.click()}>
+                                        <Icon name="Upload" className="mr-2 h-4 w-4" /> استيراد
+                                    </Button>
+                                    <input type="file" ref={importInputRef} className="hidden" accept=".json" onChange={onImport} />
+                                    <Button variant="outline" onClick={onExport}><Icon name="Download" className="mr-2 h-4 w-4" /> تصدير</Button>
                                 </>
                             )}
                         </div>
@@ -295,29 +303,34 @@ const AreaDialog = ({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (name: string) => void;
+  onSave: (name: string, id?: string) => void;
   entity: City | Area | null;
   type: 'city' | 'area';
 }) => {
   const [name, setName] = useState('');
+  const [id, setId] = useState('');
 
   // Use an effect to update the local state when the dialog opens or the selected entity changes.
-  useState(() => {
+  useEffect(() => {
     if (open && entity) {
       setName(entity.name);
+      setId(entity.id)
     } else if (open) {
       setName('');
+      setId('');
     }
   }, [entity, open]);
 
 
   const handleSave = () => {
-    onSave(name);
+    onSave(name, selectedEntity ? undefined : (id || undefined));
   };
   
   const title = entity ? `تعديل ${type === 'city' ? 'مدينة' : 'منطقة'}` : `إضافة ${type === 'city' ? 'مدينة' : 'منطقة'} جديدة`;
   const description = entity ? `قم بتعديل اسم ${type === 'city' ? 'المدينة' : 'المنطقة'}.` : `أدخل اسم ${type === 'city' ? 'المدينة' : 'المنطقة'} الجديدة.`;
   const label = `اسم ${type === 'city' ? 'المدينة' : 'المنطقة'}`;
+  const idLabel = `معرف ${type === 'city' ? 'المدينة' : 'المنطقة'}`;
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -326,9 +339,17 @@ const AreaDialog = ({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <div className="py-4">
-          <Label htmlFor="name">{label}</Label>
-          <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+        <div className="py-4 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">{label}</Label>
+            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          {!entity && (
+             <div className="space-y-2">
+                <Label htmlFor="id">{idLabel} (اختياري)</Label>
+                <Input id="id" value={id} onChange={(e) => setId(e.target.value)} placeholder="مثال: amman_downtown" />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
@@ -342,7 +363,7 @@ const AreaDialog = ({
 
 export default function AreasPage() {
   const { toast } = useToast();
-  const { cities, addCity, updateCity, deleteCity, addArea, updateArea, deleteArea } = useAreasStore();
+  const { cities, setCities, addCity, updateCity, deleteCity, addArea, updateArea, deleteArea } = useAreasStore();
   
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -402,7 +423,7 @@ export default function AreasPage() {
   }
 
   // Generic save handler
-  const handleSave = (name: string) => {
+  const handleSave = (name: string, id?: string) => {
     if (!name) {
         toast({
             variant: 'destructive',
@@ -416,7 +437,7 @@ export default function AreasPage() {
         updateCity(selectedEntity.id, { name });
         toast({ title: 'تم التعديل', description: 'تم تحديث المدينة بنجاح.' });
       } else { // Adding city
-        addCity(name);
+        addCity(name, id);
         toast({ title: 'تمت الإضافة', description: 'تمت إضافة المدينة بنجاح.' });
       }
       setSelectedCityIds([]);
@@ -426,7 +447,7 @@ export default function AreasPage() {
                 updateArea(selectedCity.id, selectedEntity.id, { name });
                 toast({ title: 'تم التعديل', description: 'تم تحديث المنطقة بنجاح.' });
             } else { // Adding area
-                addArea(selectedCity.id, name);
+                addArea(selectedCity.id, name, id);
                 toast({ title: 'تمت الإضافة', description: 'تمت إضافة المنطقة بنجاح.' });
             }
             setSelectedAreaIds([]);
@@ -453,6 +474,46 @@ export default function AreasPage() {
       setEntityToDelete(null);
   };
   
+    // Import/Export Handlers
+    const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const text = e.target?.result;
+                if (typeof text !== 'string') {
+                    throw new Error("File is not readable");
+                }
+                const importedCities: City[] = JSON.parse(text);
+                // Basic validation
+                if (!Array.isArray(importedCities) || !importedCities.every(c => c.id && c.name && Array.isArray(c.areas))) {
+                    throw new Error("Invalid file format");
+                }
+                setCities(importedCities);
+                toast({ title: 'تم الاستيراد بنجاح', description: `تم استيراد ${importedCities.length} مدينة.` });
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'فشل الاستيراد', description: 'الملف غير صالح أو تالف.' });
+            }
+        };
+        reader.readAsText(file);
+        // Reset file input
+        event.target.value = '';
+    };
+
+    const handleExport = () => {
+        const dataStr = JSON.stringify(cities, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', 'cities_and_areas.json');
+        linkElement.click();
+        
+        toast({ title: 'تم التصدير بنجاح' });
+    };
+
 
   if (selectedCity) {
     const currentCityData = cities.find(c => c.id === selectedCity.id);
@@ -513,6 +574,8 @@ export default function AreasPage() {
             setSelectedAreaIds([]);
         }}
         onSelectionChange={handleCitySelection}
+        onImport={handleImport}
+        onExport={handleExport}
       />
       <AreaDialog
         open={dialogOpen}

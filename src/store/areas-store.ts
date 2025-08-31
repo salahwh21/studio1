@@ -43,10 +43,11 @@ const initialCities: City[] = [
 
 type AreasState = {
   cities: City[];
-  addCity: (name: string) => void;
+  setCities: (cities: City[]) => void;
+  addCity: (name: string, id?: string) => void;
   updateCity: (cityId: string, updates: Partial<Omit<City, 'id' | 'areas'>>) => void;
   deleteCity: (cityId: string) => void;
-  addArea: (cityId: string, areaName: string) => void;
+  addArea: (cityId: string, areaName: string, id?: string) => void;
   updateArea: (cityId: string, areaId: string, updates: Partial<Omit<Area, 'id'>>) => void;
   deleteArea: (cityId: string, areaId: string) => void;
 };
@@ -56,10 +57,20 @@ const generateId = (prefix: string) => `${prefix}-${Date.now()}-${Math.floor(Mat
 export const useAreasStore = create<AreasState>()(immer((set) => ({
   cities: initialCities,
 
-  addCity: (name) => {
+  setCities: (cities) => {
+    set({ cities });
+  },
+
+  addCity: (name, id) => {
     set(state => {
+      const cityId = id || generateId(name.toLowerCase());
+      if (state.cities.some(c => c.id === cityId)) {
+        // Handle ID collision if necessary, maybe log a warning.
+        console.warn(`City with id ${cityId} already exists.`);
+        return;
+      }
       state.cities.push({
-        id: generateId(name.toLowerCase()),
+        id: cityId,
         name,
         areas: [],
       });
@@ -81,12 +92,17 @@ export const useAreasStore = create<AreasState>()(immer((set) => ({
     });
   },
 
-  addArea: (cityId, areaName) => {
+  addArea: (cityId, areaName, id) => {
     set(state => {
       const city = state.cities.find(c => c.id === cityId);
       if (city) {
+        const areaId = id || generateId(areaName.toLowerCase());
+        if (city.areas.some(a => a.id === areaId)) {
+             console.warn(`Area with id ${areaId} already exists in city ${cityId}.`);
+             return;
+        }
         city.areas.push({
-          id: generateId(areaName.toLowerCase()),
+          id: areaId,
           name: areaName,
         });
       }
