@@ -80,7 +80,7 @@ export const allPermissionGroups = [
 ];
 
 
-export const allPermissions = allPermissionGroups.flatMap(g => g.permissions);
+export const allPermissions = allPermissionGroups.flatMap(g => g.permissions.map(p => p.id));
 
 
 const initialRoles: Role[] = [
@@ -107,6 +107,8 @@ const initialRoles: Role[] = [
         'returns:view',
         'returns:manage',
         'financials:view',
+        'settings:view',
+        'settings:manage_roles'
     ],
   },
   {
