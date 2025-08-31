@@ -92,8 +92,8 @@ const CustomFieldsSection = ({ fields, onUpdate, onAdd, onRemove }: { fields: {l
     </div>
 );
 
-const renderCustomFields = (customFields: {label: string, value: string}[]) => (
-    <div className="mt-2 space-y-1 text-xs">
+const renderCustomFields = (customFields: {label: string, value: string}[], isSmallLabel: boolean) => (
+    <div className={cn("mt-2 space-y-1", isSmallLabel ? "text-[7px]" : "text-xs")}>
         {customFields.filter(f => f.label).map((field, index) => (
             <div key={index} className="flex justify-between border-t border-dashed pt-1">
                 <span className="font-bold">{field.label}:</span>
@@ -103,7 +103,7 @@ const renderCustomFields = (customFields: {label: string, value: string}[]) => (
     </div>
 );
 
-const DefaultLayout = ({ settings }: { settings: any }) => (
+const DefaultLayout = ({ settings, isSmallLabel }: { settings: any, isSmallLabel: boolean }) => (
     <>
         <header className="flex justify-between items-start border-b-2 border-black pb-2">
         <div className="text-right">
@@ -141,7 +141,7 @@ const DefaultLayout = ({ settings }: { settings: any }) => (
             </table>
         </div>
         )}
-        {renderCustomFields(settings.customFields)}
+        {renderCustomFields(settings.customFields, isSmallLabel)}
 
         <footer className="mt-auto pt-2 space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -156,42 +156,42 @@ const DefaultLayout = ({ settings }: { settings: any }) => (
     </>
 );
 
-const CompactLayout = ({ settings }: { settings: any }) => (
+const CompactLayout = ({ settings, isSmallLabel }: { settings: any, isSmallLabel: boolean }) => (
     <>
-        <div className="grid grid-cols-2 gap-x-4 border-b-2 border-black pb-2">
+        <div className={cn("grid grid-cols-2 gap-x-2 border-b-2 border-black", isSmallLabel ? 'pb-1' : 'pb-2')}>
             <div className="text-right space-y-1">
-                {settings.showCompanyLogo && <div className="h-8"><Logo /></div>}
-                {settings.showCompanyName && <h1 className="font-bold text-base">شركة الوميض للتوصيل</h1>}
+                {settings.showCompanyLogo && <div className={cn(isSmallLabel ? "h-6" : "h-8")}><Logo /></div>}
+                {settings.showCompanyName && <h1 className={cn("font-bold", isSmallLabel ? "text-[8px]" : "text-base")}>شركة الوميض للتوصيل</h1>}
             </div>
             <div className="text-left space-y-1">
                 <div className="flex flex-col items-end">
-                  {settings.showBarcode && <div className="flex flex-col items-center justify-center scale-75 origin-right"><BarcodeIcon /><p className="text-[8px] font-mono tracking-wider mt-1">ORD-1719810001</p></div>}
+                  {settings.showBarcode && <div className={cn("flex flex-col items-center justify-center origin-right", isSmallLabel ? "scale-50 -mr-4" : "scale-75")}><BarcodeIcon /><p className={cn("font-mono tracking-wider mt-1", isSmallLabel ? "text-[6px]" : "text-[8px]")}>ORD-1719810001</p></div>}
                 </div>
             </div>
         </div>
-        <main className="flex-grow my-2 space-y-2">
-            <div className="grid grid-cols-2 gap-2 text-xs"><div className='space-y-0.5'><p className='font-bold'>المرسل:</p><p>تاجر أ (0780123456)</p></div><div className='space-y-0.5'><p className='font-bold'>الرقم المرجعي:</p><p>REF-00101</p></div><div className='space-y-0.5'><p className='font-bold'>تاريخ الطلب:</p><p>{new Date().toLocaleDateString('ar-JO')}</p></div></div>
-            <div className="border border-black rounded p-2 space-y-1 text-xs"><p className="font-bold">المستلم: محمد جاسم</p><p>الهاتف: 07701112233</p><p className="font-bold">العنوان: الصويفية, عمان, شارع الوكالات, بناية 15, الطابق 3</p></div>
+        <main className={cn("flex-grow space-y-1", isSmallLabel ? 'my-1' : 'my-2')}>
+            <div className={cn("grid grid-cols-2 gap-1", isSmallLabel ? 'text-[7px]' : 'text-xs')}><div className='space-y-0.5'><p className='font-bold'>المرسل:</p><p>تاجر أ (0780123456)</p></div><div className='space-y-0.5'><p className='font-bold'>الرقم المرجعي:</p><p>REF-00101</p></div><div className='space-y-0.5'><p className='font-bold'>تاريخ الطلب:</p><p>{new Date().toLocaleDateString('ar-JO')}</p></div></div>
+            <div className={cn("border border-black rounded p-1 space-y-0.5", isSmallLabel ? 'text-[7px]' : 'text-xs')}><p className="font-bold">المستلم: محمد جاسم</p><p>الهاتف: 07701112233</p><p className="font-bold">العنوان: الصويفية, عمان, شارع الوكالات, بناية 15, الطابق 3</p></div>
         </main>
-        {settings.showItems && (<div className="text-[10px] my-2"><p>المحتويات: منتج 1 (x2), منتج 2 (x1)</p></div>)}
-        {renderCustomFields(settings.customFields)}
-        <footer className="mt-auto pt-2 space-y-2 border-t-2 border-black">
-            {settings.showPrice && <div className="text-center"><p className="font-bold text-sm">المبلغ المطلوب</p><p className="font-bold text-xl">35.50 د.أ</p></div>}
-            {settings.footerNotes && <p className="text-[10px] text-center">{settings.footerNotes}</p>}
+        {settings.showItems && (<div className={cn(isSmallLabel ? 'text-[7px] my-1' : 'text-[10px] my-2')}><p>المحتويات: منتج 1 (x2), منتج 2 (x1)</p></div>)}
+        {renderCustomFields(settings.customFields, isSmallLabel)}
+        <footer className="mt-auto pt-1 space-y-1 border-t-2 border-black">
+            {settings.showPrice && <div className="text-center"><p className={cn("font-bold", isSmallLabel ? "text-[9px]" : "text-sm")}>المبلغ المطلوب</p><p className={cn("font-bold", isSmallLabel ? "text-base" : "text-xl")}>35.50 د.أ</p></div>}
+            {settings.footerNotes && <p className={cn("text-center", isSmallLabel ? "text-[6px]" : "text-[10px]")}>{settings.footerNotes}</p>}
         </footer>
     </>
 );
 
-const DetailedLayout = ({ settings }: { settings: any }) => (
+const DetailedLayout = ({ settings, isSmallLabel }: { settings: any, isSmallLabel: boolean }) => (
     <>
-        <header className="grid grid-cols-3 gap-2 border-b-2 border-black pb-2 items-center">
-            <div className="col-span-1">{settings.showCompanyLogo && <div className="h-10"><Logo /></div>}</div>
+        <header className={cn("grid grid-cols-3 gap-2 border-b-2 border-black items-center", isSmallLabel ? 'pb-1' : 'pb-2')}>
+            <div className="col-span-1">{settings.showCompanyLogo && <div className={cn(isSmallLabel ? "h-6" : "h-10")}><Logo /></div>}</div>
             <div className="col-span-2 text-left">
-                <h2 className="font-bold text-lg">بوليصة شحن</h2>
-                {settings.showBarcode && <div className="flex flex-col items-end"><div className="scale-75 origin-right"><BarcodeIcon /></div><p className="text-[9px] font-mono tracking-wider -mt-2">ORD-1719810001</p></div>}
+                <h2 className={cn("font-bold", isSmallLabel ? "text-sm" : "text-lg")}>بوليصة شحن</h2>
+                {settings.showBarcode && <div className="flex flex-col items-end"><div className={cn("origin-right", isSmallLabel ? "scale-50" : "scale-75")}><BarcodeIcon /></div><p className={cn("font-mono tracking-wider -mt-2", isSmallLabel ? "text-[7px]" : "text-[9px]")}>ORD-1719810001</p></div>}
             </div>
         </header>
-        <main className="flex-grow my-2 space-y-2 text-xs">
+        <main className={cn("flex-grow space-y-1", isSmallLabel ? 'my-1' : 'my-2', isSmallLabel ? 'text-[7px]' : 'text-xs')}>
             <div className="grid grid-cols-2 gap-2"><p><span className="font-bold">تاريخ الطلب:</span> {new Date().toLocaleDateString('ar-JO')}</p>{settings.showRefNumber && <p><span className="font-bold">الرقم المرجعي:</span> REF-00101</p>}</div>
             <div className="grid grid-cols-2 gap-2">
                 <div className="border border-black rounded p-1"><h3 className="font-bold border-b border-black mb-1">المرسل</h3><p>تاجر أ</p><p>0780123456</p></div>
@@ -200,10 +200,10 @@ const DetailedLayout = ({ settings }: { settings: any }) => (
             <div className="border border-black rounded p-1"><p><span className="font-bold">العنوان:</span> الصويفية, عمان, شارع الوكالات, بناية 15, الطابق 3</p></div>
             {settings.showItems && <div className="border border-black rounded p-1"><p><span className="font-bold">المحتويات:</span> منتج 1 (x2), منتج 2 (x1)</p></div>}
         </main>
-        {renderCustomFields(settings.customFields)}
-        <footer className="mt-auto pt-2 space-y-2 border-t-2 border-black">
-            {settings.showPrice && <div className="border-2 border-black rounded-lg p-1 text-center"><p className="font-bold">المبلغ المطلوب</p><p className="font-bold text-lg">35.50 د.أ</p></div>}
-            {settings.footerNotes && <p className="text-[9px] text-center pt-1">{settings.footerNotes}</p>}
+        {renderCustomFields(settings.customFields, isSmallLabel)}
+        <footer className={cn("mt-auto space-y-1 border-t-2 border-black", isSmallLabel ? 'pt-1' : 'pt-2')}>
+            {settings.showPrice && <div className="border-2 border-black rounded-lg p-1 text-center"><p className={cn("font-bold", isSmallLabel ? "text-xs" : "text-sm")}>المبلغ المطلوب</p><p className={cn("font-bold", isSmallLabel ? "text-sm" : "text-lg")}>35.50 د.أ</p></div>}
+            {settings.footerNotes && <p className={cn("text-center pt-1", isSmallLabel ? "text-[7px]" : "text-[9px]")}>{settings.footerNotes}</p>}
         </footer>
     </>
 );
@@ -284,10 +284,11 @@ export default function PolicySettingsPage() {
   );
   
   const renderLayout = () => {
+      const isSmallLabel = settings.paperSize.startsWith('label_');
       switch(settings.layout) {
-          case 'compact': return <CompactLayout settings={settings} />;
-          case 'detailed': return <DetailedLayout settings={settings} />;
-          case 'default': default: return <DefaultLayout settings={settings} />;
+          case 'compact': return <CompactLayout settings={settings} isSmallLabel={isSmallLabel}/>;
+          case 'detailed': return <DetailedLayout settings={settings} isSmallLabel={isSmallLabel}/>;
+          case 'default': default: return <DefaultLayout settings={settings} isSmallLabel={isSmallLabel}/>;
       }
   }
 
