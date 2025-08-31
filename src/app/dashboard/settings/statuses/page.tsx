@@ -99,6 +99,7 @@ export default function StatusesPage() {
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline"><Icon name="Upload" className="mr-2 h-4 w-4" /> استيراد</Button>
             <Button variant="outline"><Icon name="Download" className="mr-2 h-4 w-4" /> تصدير</Button>
             <Button><Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة حالة جديدة</Button>
             <Button variant="outline" size="icon" asChild>
