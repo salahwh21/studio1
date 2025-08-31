@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -18,7 +17,7 @@ const generalSettingsItems: {
   { href: '/dashboard/settings/fonts-colors', iconName: 'Palette', title: 'الألوان والخطوط', description: 'تغيير الألوان والخطوط لتناسب هويتك.' },
   { href: '/dashboard/settings/ui-customization', iconName: 'Brush', title: 'تخصيص الواجهة', description: 'تعديل شكل الواجهة، كثافة العرض، ونمط الأيقونات.' },
   { href: '/dashboard/settings/regional', iconName: 'Languages', title: 'الإعدادات الإقليمية', description: 'إدارة اللغة، العملة، والمنطقة الزمنية للنظام.' },
-  { href: '#', iconName: 'ReceiptText', title: 'إعدادات البوليصة', description: 'تخصيص محتوى وتصميم بوليصة الشحن.' },
+  { href: '/dashboard/settings/policy', iconName: 'ReceiptText', title: 'إعدادات البوليصة', description: 'تخصيص محتوى وتصميم بوليصة الشحن.' },
   { href: '#', iconName: 'Package', title: 'إعدادات الطلبات', description: 'التحكم في دورة حياة الطلبات والأرشفة.' },
 ];
 
