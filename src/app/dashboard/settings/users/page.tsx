@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -122,7 +121,7 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
         data-state={isSelected ? 'checked' : 'unchecked'}
     >
         <CardContent 
-            className="p-3 flex flex-row-reverse items-center gap-3"
+            className="p-3 flex items-center gap-3"
         >
             <Checkbox
                 checked={isSelected}
@@ -213,7 +212,7 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row-reverse gap-2 justify-between items-center h-12">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-2 h-12">
                 {selectedUserIds.length > 0 ? (
                      <div className='flex items-center gap-2 w-full'>
                         <span className='text-sm font-semibold text-muted-foreground'>{selectedUserIds.length} محدد</span>
@@ -232,23 +231,23 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
                         </div>
                     </div>
                 ) : (
-                    <div className='flex justify-between w-full flex-row-reverse'>
+                    <>
+                        <div className="relative flex-1 w-full sm:max-w-xs">
+                            <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pl-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                        </div>
                         <div className="flex gap-2">
                              <Button onClick={onAdd}>
-                                <Icon name="UserPlus" className="mr-2" /> إضافة جديد
+                                <Icon name="UserPlus" className="ml-2" /> إضافة جديد
                              </Button>
                              <Button variant="outline">
-                                <Icon name="FileUp" className="mr-2" /> استيراد
+                                <Icon name="FileUp" className="ml-2" /> استيراد
                             </Button>
                              <Button variant="outline">
-                                <Icon name="FileDown" className="mr-2" /> تصدير
+                                <Icon name="FileDown" className="ml-2" /> تصدير
                             </Button>
                         </div>
-                         <div className="relative flex-1 w-full sm:max-w-xs">
-                            <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pr-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                        </div>
-                    </div>
+                    </>
                 )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
