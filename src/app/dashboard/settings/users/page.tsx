@@ -38,7 +38,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const UserDialog = ({ open, onOpenChange, onSave, user, roles }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (user: Omit<User, 'id'>) => void, user: User | null, roles: Role[] }) => {
+const UserDialog = ({ open, onOpenChange, onSave, user, roles }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (user: Omit<User, 'id' | 'password'>) => void, user: User | null, roles: Role[] }) => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [roleId, setRoleId] = useState<Role['id'] | ''>('');
@@ -66,7 +66,7 @@ const UserDialog = ({ open, onOpenChange, onSave, user, roles }: { open: boolean
                 <DialogHeader>
                     <DialogTitle>{user ? 'تعديل مستخدم' : 'إضافة مستخدم جديد'}</DialogTitle>
                     <DialogDescription>
-                        {user ? 'قم بتعديل بيانات المستخدم.' : 'أدخل بيانات المستخدم الجديد.'}
+                        {user ? 'قم بتعديل بيانات المستخدم.' : 'أدخل بيانات المستخدم الجديد. سيتم تعيين كلمة مرور افتراضية له.'}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -134,7 +134,7 @@ export default function UsersPage() {
       }
   }
   
-  const handleSave = (data: Omit<User, 'id'>) => {
+  const handleSave = (data: Omit<User, 'id' | 'password'>) => {
       if (selectedUser) {
           updateUser(selectedUser.id, data);
           toast({ title: "تم التعديل", description: `تم تعديل المستخدم "${data.name}" بنجاح.`});

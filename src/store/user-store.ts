@@ -10,17 +10,18 @@ export type User = {
     email: string;
     roleId: string;
     avatar: string;
+    password?: string;
 };
 
 const initialUsers: User[] = [
-    { id: 'user-1', name: 'المدير المسؤول', email: 'admin@alwameed.com', roleId: 'admin', avatar: ''},
-    { id: 'user-2', name: 'أحمد مشرف', email: 'ahmad@alwameed.com', roleId: 'supervisor', avatar: ''},
-    { id: 'user-3', name: 'فاطمة خدمة عملاء', email: 'fatima@alwameed.com', roleId: 'customer_service', avatar: ''},
+    { id: 'user-1', name: 'المدير المسؤول', email: 'admin@alwameed.com', roleId: 'admin', avatar: '', password: '123456789' },
+    { id: 'user-2', name: 'أحمد مشرف', email: 'ahmad@alwameed.com', roleId: 'supervisor', avatar: '', password: '123456789' },
+    { id: 'user-3', name: 'فاطمة خدمة عملاء', email: 'fatima@alwameed.com', roleId: 'customer_service', avatar: '', password: '123456789' },
 ];
 
 type UsersState = {
     users: User[];
-    addUser: (newUser: Omit<User, 'id'>) => void;
+    addUser: (newUser: Omit<User, 'id' | 'password'>) => void;
     updateUser: (userId: string, updatedUser: Omit<User, 'id'>) => void;
     deleteUser: (userId: string) => void;
 };
@@ -32,7 +33,7 @@ export const useUsersStore = create<UsersState>()(immer((set) => ({
 
     addUser: (newUser) => {
         set(state => {
-            state.users.push({ ...newUser, id: generateId() });
+            state.users.push({ ...newUser, id: generateId(), password: '123456789' });
         });
         useRolesStore.getState().incrementUserCount(newUser.roleId);
     },
@@ -47,7 +48,9 @@ export const useUsersStore = create<UsersState>()(immer((set) => ({
                     useRolesStore.getState().decrementUserCount(oldRole);
                     useRolesStore.getState().incrementUserCount(newRole);
                 }
-                state.users[userIndex] = { ...state.users[userIndex], ...updatedUser };
+                // Preserve existing password if not provided in update
+                const existingPassword = state.users[userIndex].password;
+                state.users[userIndex] = { ...state.users[userIndex], ...updatedUser, password: updatedUser.password || existingPassword };
             }
         });
     },
