@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -123,13 +124,27 @@ export default function IntegrationsPage() {
 
     const IntegrationCard = ({ integration }: { integration: typeof integrationsList[0] }) => {
         const isConnected = !!connected[integration.id];
+        const [logoError, setLogoError] = useState(false);
+        const logoUrl = `https://logo.clearbit.com/${integration.id.split('-')[0]}.com`;
+
         return (
             <Card className="hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out flex flex-col">
                 <CardHeader>
                     <div className="flex justify-between items-start">
                         <div className="flex items-center gap-4">
-                            <div className="bg-primary/10 text-primary p-3 rounded-lg">
-                                <Icon name={integration.iconName} className="h-6 w-6" />
+                            <div className="bg-primary/10 text-primary p-3 rounded-lg h-12 w-12 flex items-center justify-center">
+                               {logoError ? (
+                                    <Icon name={integration.iconName} className="h-6 w-6" />
+                               ) : (
+                                    <Image 
+                                        src={logoUrl} 
+                                        alt={`${integration.name} logo`} 
+                                        width={24}
+                                        height={24}
+                                        className="object-contain h-6 w-6"
+                                        onError={() => setLogoError(true)}
+                                    />
+                               )}
                             </div>
                             <div>
                                 <CardTitle className="text-base">{integration.name}</CardTitle>
