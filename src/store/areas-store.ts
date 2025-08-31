@@ -63,9 +63,8 @@ export const useAreasStore = create<AreasState>()(immer((set) => ({
 
   addCity: (name, id) => {
     set(state => {
-      const cityId = id || generateId(name.toLowerCase());
+      const cityId = id || generateId(name.toLowerCase().replace(/\s+/g, '-'));
       if (state.cities.some(c => c.id === cityId)) {
-        // Handle ID collision if necessary, maybe log a warning.
         console.warn(`City with id ${cityId} already exists.`);
         return;
       }
@@ -96,7 +95,7 @@ export const useAreasStore = create<AreasState>()(immer((set) => ({
     set(state => {
       const city = state.cities.find(c => c.id === cityId);
       if (city) {
-        const areaId = id || generateId(areaName.toLowerCase());
+        const areaId = id || generateId(areaName.toLowerCase().replace(/\s+/g, '-'));
         if (city.areas.some(a => a.id === areaId)) {
              console.warn(`Area with id ${areaId} already exists in city ${cityId}.`);
              return;

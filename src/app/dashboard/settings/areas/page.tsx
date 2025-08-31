@@ -310,20 +310,20 @@ const AreaDialog = ({
   const [name, setName] = useState('');
   const [id, setId] = useState('');
 
-  // Use an effect to update the local state when the dialog opens or the selected entity changes.
   useEffect(() => {
-    if (open && entity) {
-      setName(entity.name);
-      setId(entity.id)
-    } else if (open) {
-      setName('');
-      setId('');
+    if (open) {
+      if (entity) {
+        setName(entity.name);
+        setId(entity.id);
+      } else {
+        setName('');
+        setId('');
+      }
     }
   }, [entity, open]);
 
-
   const handleSave = () => {
-    onSave(name, entity ? undefined : (id || undefined));
+    onSave(name, id || undefined);
   };
   
   const title = entity ? `تعديل ${type === 'city' ? 'مدينة' : 'منطقة'}` : `إضافة ${type === 'city' ? 'مدينة' : 'منطقة'} جديدة`;
@@ -496,7 +496,8 @@ export default function AreasPage() {
                 );
 
                 if (!isValid) {
-                    throw new Error("Invalid file format");
+                    toast({ variant: 'destructive', title: 'فشل الاستيراد', description: 'تنسيق الملف غير صالح.' });
+                    return;
                 }
                 
                 setCities(importedCities);
@@ -609,5 +610,3 @@ export default function AreasPage() {
     </>
   );
 }
-
-    
