@@ -81,6 +81,8 @@ export default function LoginExperiencePage() {
   }
 
   const handleSaveChanges = () => {
+    // The context already saves to localStorage on change,
+    // so this is just for user feedback.
     toast({
       title: 'تم الحفظ بنجاح!',
       description: 'يتم حفظ تغييراتك تلقائيًا عند كل تعديل.',

@@ -22,7 +22,7 @@ export default function AccountSettingsPage() {
   const [name, setName] = useState('المدير المسؤول');
   const [phone, setPhone] = useState('0790267503');
   const [email, setEmail] = useState('admin@example.com');
-  const [whatsapp, setWhatsapp] = useState('0790267503');
+  const [whatsapp, setWhatsapp] = useState('962790267503');
   const [avatar, setAvatar] = useState<string | null>('https://i.pravatar.cc/150?u=admin');
   
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -96,7 +96,7 @@ export default function AccountSettingsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">رقم الهاتف (للدخول)</Label>
-              <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="079xxxxxxx" />
             </div>
              <div className="space-y-2">
               <Label htmlFor="email">البريد الإلكتروني (للتقارير)</Label>
@@ -104,7 +104,7 @@ export default function AccountSettingsPage() {
             </div>
              <div className="space-y-2">
               <Label htmlFor="whatsapp">رقم واتساب (للمراسلات)</Label>
-              <Input id="whatsapp" type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+              <Input id="whatsapp" type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="962..."/>
             </div>
             <Button onClick={handleProfileSave} className="w-full">
                 <Icon name="Save" className="mr-2 h-4 w-4" />

@@ -64,6 +64,15 @@ export default function LoginPageClient() {
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-muted">
+      {settings.loginBg && (
+        <Image
+            src={settings.loginBg}
+            alt="Background"
+            layout="fill"
+            objectFit="cover"
+            className="absolute inset-0 z-0 opacity-20"
+        />
+      )}
       <Card 
         className="z-20 w-full max-w-md rounded-2xl border-0 p-2 shadow-2xl bg-card"
       >
@@ -82,7 +91,7 @@ export default function LoginPageClient() {
           <div className="flex flex-col gap-4">
             <div className="space-y-2">
               <Label htmlFor="username">رقم الهاتف</Label>
-              <Input id="username" type="tel" placeholder="مثال: 079xxxxxxx" defaultValue="0790267503" />
+              <Input id="username" type="tel" placeholder="079xxxxxxx" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">كلمة المرور</Label>
