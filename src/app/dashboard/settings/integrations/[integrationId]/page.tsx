@@ -16,7 +16,7 @@ import { useEffect, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
-// Mock data, in a real app this would come from a store or API
+// This list can be expanded and moved to a shared file later
 const integrationsList = [
     { id: 'shopify', name: 'Shopify', iconName: 'ShoppingCart' as const },
     { id: 'woocommerce', name: 'WooCommerce', iconName: 'ShoppingCart' as const },
@@ -34,37 +34,44 @@ const integrationsList = [
 
 export default function IntegrationDetailPage() {
     const params = useParams();
-    const { integrationId } = params;
+    const { integrationId } = params; // This will be the unique ID of the connection instance
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
+    const [connection, setConnection] = useState<any | null>(null);
+    const [integrationInfo, setIntegrationInfo] = useState<any | null>(null);
     const [webhookUrl, setWebhookUrl] = useState('');
-    
-    const integration = integrationsList.find(i => i.id === integrationId);
 
     useEffect(() => {
-        if (integration) {
-            setIsLoading(false);
-            if(integration.id === 'generic-webhook' || integration.id === 'zapier') {
-                setWebhookUrl(`${window.location.origin}/api/v1/webhooks/orders/W_ACCT_12345_${integration.id.toUpperCase()}`);
+        // In a real app, you'd fetch the connection details from your backend using the integrationId
+        const savedConnections = JSON.parse(localStorage.getItem('user-integrations') || '[]');
+        const foundConnection = savedConnections.find((c: any) => c.id === integrationId);
+        
+        if (foundConnection) {
+            const foundIntegrationInfo = integrationsList.find(i => i.id === foundConnection.integrationId);
+            setConnection(foundConnection);
+            setIntegrationInfo(foundIntegrationInfo);
+
+            if (foundConnection.integrationId === 'generic-webhook' || foundConnection.integrationId === 'zapier') {
+                 setWebhookUrl(`${window.location.origin}/api/v1/webhooks/orders/${foundConnection.id}`);
             }
         }
-    }, [integration]);
+        setIsLoading(false);
+    }, [integrationId]);
 
     const handleSaveChanges = () => {
-        toast({ title: 'تم الحفظ', description: `تم حفظ إعدادات ${integration?.name} بنجاح.` });
+        toast({ title: 'تم الحفظ', description: `تم حفظ إعدادات ${connection?.name} بنجاح.` });
     };
-
+    
     const handleCopyWebhook = () => {
         navigator.clipboard.writeText(webhookUrl);
         toast({ title: 'تم النسخ', description: 'تم نسخ رابط الويب هوك إلى الحافظة.' });
     };
 
-
     if (isLoading) {
         return <Skeleton className="w-full h-96" />;
     }
 
-    if (!integration) {
+    if (!connection || !integrationInfo) {
         return (
             <Card>
                 <CardHeader>
@@ -80,7 +87,7 @@ export default function IntegrationDetailPage() {
         );
     }
     
-    const requiresApiKey = !['generic-webhook', 'zapier'].includes(integration.id);
+    const requiresApiKey = !['generic-webhook', 'zapier'].includes(integrationInfo.id);
 
     return (
         <div className="space-y-6">
@@ -88,11 +95,11 @@ export default function IntegrationDetailPage() {
                 <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                          <div className="bg-primary/10 text-primary p-3 rounded-lg">
-                             <Icon name={integration.iconName} className="h-6 w-6" />
+                             <Icon name={integrationInfo.iconName} className="h-6 w-6" />
                          </div>
                         <div>
-                            <CardTitle className="text-2xl font-bold tracking-tight">إعدادات {integration.name}</CardTitle>
-                            <CardDescription className="mt-1">إدارة وتخصيص إعدادات الربط مع {integration.name}.</CardDescription>
+                            <CardTitle className="text-2xl font-bold tracking-tight">إعدادات: {connection.name}</CardTitle>
+                            <CardDescription className="mt-1">إدارة وتخصيص إعدادات الربط مع {integrationInfo.name}.</CardDescription>
                         </div>
                     </div>
                     <Button variant="outline" size="icon" asChild>
@@ -107,9 +114,9 @@ export default function IntegrationDetailPage() {
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="api-key">مفتاح الربط (API Key)</Label>
-                            <Input id="api-key" type="password" defaultValue="************" />
+                            <Input id="api-key" type="password" defaultValue={connection.apiKey || '************'} />
                         </div>
-                        {integration.id === 'shopify' && (
+                        {integrationInfo.id === 'shopify' && (
                             <div className="space-y-2">
                                 <Label htmlFor="store-url">رابط المتجر</Label>
                                 <Input id="store-url" placeholder="https://your-store.myshopify.com" />
@@ -119,12 +126,12 @@ export default function IntegrationDetailPage() {
                 </Card>
             )}
 
-            {(integration.id === 'generic-webhook' || integration.id === 'zapier') && (
+            {(integrationInfo.id === 'generic-webhook' || integrationInfo.id === 'zapier') && (
                  <Card>
                     <CardHeader><CardTitle>رابط الويب هوك</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">
-                            استخدم هذا الرابط في {integration.name} لإرسال البيانات إلى نظامنا.
+                            استخدم هذا الرابط في {integrationInfo.name} لإرسال البيانات إلى نظامنا. هذا الرابط خاص بهذا التكامل فقط.
                         </p>
                         <div className="flex items-center gap-2">
                             <Input readOnly value={webhookUrl} className="font-mono"/>

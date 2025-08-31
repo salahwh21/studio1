@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { nanoid } from 'nanoid';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,24 +16,26 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/icon';
 import { Separator } from '@/components/ui/separator';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
+
 
 const integrationsList = [
-    { id: 'shopify', name: 'Shopify', iconName: 'ShoppingCart' as const, description: 'استيراد الطلبات تلقائياً من متجرك على منصة Shopify.', category: 'e-commerce', requiresApiKey: true, requiresWebhook: false },
-    { id: 'woocommerce', name: 'WooCommerce', iconName: 'ShoppingCart' as const, description: 'ربط متجرك المبني على WooCommerce.', category: 'e-commerce', requiresApiKey: true, requiresWebhook: false },
-    { id: 'salla', name: 'Salla (سلة)', iconName: 'ShoppingCart' as const, description: 'ربط متجرك على منصة سلة.', category: 'e-commerce', requiresApiKey: true, requiresWebhook: false },
-    { id: 'zid', name: 'Zid (زد)', iconName: 'ShoppingCart' as const, description: 'ربط متجرك على منصة زد.', category: 'e-commerce', requiresApiKey: true, requiresWebhook: false },
-    { id: 'aramex', name: 'Aramex', iconName: 'Truck' as const, description: 'ربط حسابك مع شركة أرامكس لتتبع الشحنات وإنشاء البوالص.', category: 'shipping', requiresApiKey: true, requiresWebhook: false },
-    { id: 'dhl', name: 'DHL', iconName: 'Globe' as const, description: 'إدارة شحناتك الدولية والمحلية عبر DHL.', category: 'shipping', requiresApiKey: true, requiresWebhook: false },
-    { id: 'smsa-express', name: 'SMSA Express', iconName: 'Truck' as const, description: 'مزامنة الشحنات مباشرة مع نظام شركة سمسا للشحن.', category: 'shipping', requiresApiKey: true, requiresWebhook: false },
-    { id: 'fedex', name: 'FedEx', iconName: 'Globe' as const, description: 'ربط وتتبع الشحنات مع شركة فيديكس.', category: 'shipping', requiresApiKey: true, requiresWebhook: false },
-    { id: 'odoo', name: 'Odoo', iconName: 'Briefcase' as const, description: 'مزامنة الطلبات والفواتير مع نظام Odoo ERP الخاص بك.', category: 'erp' },
-    { id: 'twilio', name: 'Twilio', iconName: 'MessageSquare' as const, description: 'إرسال رسائل SMS للعملاء بحالة الطلب.', category: 'communication', requiresApiKey: true, requiresWebhook: false },
-    { id: 'ycloud', name: 'YCloud', iconName: 'MessageSquare' as const, description: 'إرسال رسائل WhatsApp للعملاء عبر YCloud.', category: 'communication', requiresApiKey: true, requiresWebhook: false },
-    { id: 'whatsapp', name: 'WhatsApp', iconName: 'MessageSquare' as const, description: 'ربط النظام لإرسال إشعارات عبر WhatsApp.', category: 'communication', requiresApiKey: true, requiresWebhook: false },
-    { id: 'stripe', name: 'Stripe', iconName: 'CreditCard' as const, description: 'تفعيل الدفع الإلكتروني عبر بطاقات الائتمان.', category: 'payment', requiresApiKey: true, requiresWebhook: false },
-    { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const, description: 'ربط النظام بآلاف التطبيقات الأخرى لأتمتة المهام.', category: 'automation', requiresApiKey: false, requiresWebhook: true },
-    { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const, description: 'ربط أي منصة تدعم الويب هوك لاستقبال الطلبات.', category: 'custom', requiresApiKey: false, requiresWebhook: true },
-    { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const, description: 'للمطورين: ربط النظام مع أي واجهة برمجية مخصصة.', category: 'custom', requiresApiKey: true, requiresWebhook: false }
+    { id: 'shopify', name: 'Shopify', iconName: 'ShoppingCart' as const, description: 'استيراد الطلبات تلقائياً من متجرك على منصة Shopify.', category: 'e-commerce', type: 'standard' },
+    { id: 'woocommerce', name: 'WooCommerce', iconName: 'ShoppingCart' as const, description: 'ربط متجرك المبني على WooCommerce.', category: 'e-commerce', type: 'standard' },
+    { id: 'salla', name: 'Salla (سلة)', iconName: 'ShoppingCart' as const, description: 'ربط متجرك على منصة سلة.', category: 'e-commerce', type: 'standard' },
+    { id: 'zid', name: 'Zid (زد)', iconName: 'ShoppingCart' as const, description: 'ربط متجرك على منصة زد.', category: 'e-commerce', type: 'standard' },
+    { id: 'aramex', name: 'Aramex', iconName: 'Truck' as const, description: 'ربط حسابك مع شركة أرامكس لتتبع الشحنات وإنشاء البوالص.', category: 'shipping', type: 'standard' },
+    { id: 'dhl', name: 'DHL', iconName: 'Globe' as const, description: 'إدارة شحناتك الدولية والمحلية عبر DHL.', category: 'shipping', type: 'standard' },
+    { id: 'smsa-express', name: 'SMSA Express', iconName: 'Truck' as const, description: 'مزامنة الشحنات مباشرة مع نظام شركة سمسا للشحن.', category: 'shipping', type: 'standard' },
+    { id: 'fedex', name: 'FedEx', iconName: 'Globe' as const, description: 'ربط وتتبع الشحنات مع شركة فيديكس.', category: 'shipping', type: 'standard' },
+    { id: 'odoo', name: 'Odoo', iconName: 'Briefcase' as const, description: 'مزامنة الطلبات والفواتير مع نظام Odoo ERP الخاص بك.', category: 'erp', type: 'standard' },
+    { id: 'twilio', name: 'Twilio', iconName: 'MessageSquare' as const, description: 'إرسال رسائل SMS للعملاء بحالة الطلب.', category: 'communication', type: 'standard' },
+    { id: 'ycloud', name: 'YCloud', iconName: 'MessageSquare' as const, description: 'إرسال رسائل WhatsApp للعملاء عبر YCloud.', category: 'communication', type: 'standard' },
+    { id: 'whatsapp', name: 'WhatsApp', iconName: 'MessageSquare' as const, description: 'ربط النظام لإرسال إشعارات عبر WhatsApp.', category: 'communication', type: 'standard' },
+    { id: 'stripe', name: 'Stripe', iconName: 'CreditCard' as const, description: 'تفعيل الدفع الإلكتروني عبر بطاقات الائتمان.', category: 'payment', type: 'standard' },
+    { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const, description: 'ربط النظام بآلاف التطبيقات الأخرى لأتمتة المهام.', category: 'automation', type: 'standard' },
+    { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const, description: 'ربط أي منصة تدعم الويب هوك لاستقبال الطلبات.', category: 'custom', type: 'factory' },
+    { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const, description: 'للمطورين: ربط النظام مع أي واجهة برمجية مخصصة.', category: 'custom', type: 'factory' }
 ];
 
 const categories = [
@@ -46,18 +49,34 @@ const categories = [
     { id: 'custom', name: 'مخصص' },
 ];
 
-const ConnectionDialog = ({ open, onOpenChange, integration, onSave }: { open: boolean, onOpenChange: (open: boolean) => void, integration: any | null, onSave: (apiKey: string) => void }) => {
+type Connection = {
+    id: string; // Unique instance ID
+    integrationId: string; // ID from the integrationsList
+    name: string; // User-defined name for this instance
+    apiKey?: string;
+};
+
+const ConnectionDialog = ({ open, onOpenChange, integration, onSave }: { open: boolean, onOpenChange: (open: boolean) => void, integration: any | null, onSave: (name: string, apiKey: string) => void }) => {
+    const [name, setName] = useState('');
     const [apiKey, setApiKey] = useState('');
     const { toast } = useToast();
+
+    useEffect(() => {
+        if (open && integration) {
+            setName(integration.name);
+            setApiKey('');
+        }
+    }, [open, integration]);
 
     if (!integration) return null;
 
     const handleSave = () => {
-        if (integration.requiresApiKey && !apiKey) {
-            toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء إدخال مفتاح الربط (API Key).' });
+        if (!name) {
+            toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء إدخال اسم لهذا التكامل.' });
             return;
         }
-        onSave(apiKey);
+        onSave(name, apiKey);
+        setName('');
         setApiKey('');
     }
 
@@ -65,19 +84,21 @@ const ConnectionDialog = ({ open, onOpenChange, integration, onSave }: { open: b
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>ربط مع {integration.name}</DialogTitle>
+                    <DialogTitle>إضافة تكامل: {integration.name}</DialogTitle>
                     <DialogDescription>
-                        {integration.requiresApiKey 
-                         ? `الرجاء إدخال مفتاح الربط (API Key) الخاص بـ ${integration.name} لإتمام عملية الربط.`
-                         : `أنت على وشك تفعيل الربط مع ${integration.name}.`}
+                       الرجاء إدخال تفاصيل هذا التكامل الجديد.
                     </DialogDescription>
                 </DialogHeader>
-                {integration.requiresApiKey && (
-                    <div className="py-4">
-                        <Label htmlFor="api-key">مفتاح الربط (API Key)</Label>
-                        <Input id="api-key" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
+                <div className="py-4 space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="integration-name">الاسم المعروض</Label>
+                        <Input id="integration-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: ويب هوك متجر الأطفال"/>
                     </div>
-                )}
+                     <div className="space-y-2">
+                        <Label htmlFor="api-key">مفتاح الربط (API Key) أو الرابط</Label>
+                        <Input id="api-key" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="أدخل المفتاح أو الرابط هنا"/>
+                    </div>
+                </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>إلغاء</Button>
                     <Button onClick={handleSave}>حفظ واتصال</Button>
@@ -90,47 +111,63 @@ const ConnectionDialog = ({ open, onOpenChange, integration, onSave }: { open: b
 export default function IntegrationsPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const [connected, setConnected] = useState<Record<string, { apiKey: string | null }>>({});
+    const [connections, setConnections] = useState<Connection[]>([]);
     const [dialogState, setDialogState] = useState<{ open: boolean, integration: any | null }>({ open: false, integration: null });
+    const [integrationToDelete, setIntegrationToDelete] = useState<Connection | null>(null);
 
     useEffect(() => {
         try {
-            const saved = localStorage.getItem('connected-integrations');
+            const saved = localStorage.getItem('user-integrations');
             if(saved) {
-                setConnected(JSON.parse(saved));
+                setConnections(JSON.parse(saved));
             }
         } catch (e) {
             console.error("Failed to parse integrations from localStorage", e);
         }
     }, []);
 
-    const saveConnections = (newConnections: any) => {
-        setConnected(newConnections);
-        localStorage.setItem('connected-integrations', JSON.stringify(newConnections));
+    const saveConnections = (newConnections: Connection[]) => {
+        setConnections(newConnections);
+        localStorage.setItem('user-integrations', JSON.stringify(newConnections));
     };
 
-    const handleConnectClick = (integration: any) => {
+    const handleActionClick = (integration: any) => {
         setDialogState({ open: true, integration });
     };
 
-    const handleSaveIntegration = (apiKey: string) => {
+    const handleSaveIntegration = (name: string, apiKey: string) => {
         if (dialogState.integration) {
-            const newConnections = { ...connected, [dialogState.integration.id]: { apiKey } };
+            const newConnection: Connection = {
+                id: nanoid(),
+                integrationId: dialogState.integration.id,
+                name: name,
+                apiKey: apiKey,
+            };
+            const newConnections = [...connections, newConnection];
             saveConnections(newConnections);
-            toast({ title: 'تم الربط بنجاح', description: `تم تفعيل التكامل مع ${dialogState.integration.name}.` });
+            toast({ title: 'تم الربط بنجاح', description: `تم تفعيل التكامل ${name}.` });
         }
         setDialogState({ open: false, integration: null });
     };
 
-    const handleDisconnect = (integrationId: string) => {
-        const { [integrationId]: _, ...remaining } = connected;
-        saveConnections(remaining);
-        const integrationName = integrationsList.find(i => i.id === integrationId)?.name;
-        toast({ title: 'تم قطع الاتصال', description: `تم إلغاء التكامل مع ${integrationName}.`, variant: 'destructive' });
+    const handleDisconnect = (connectionId: string) => {
+        const connectionToDisconnect = connections.find(c => c.id === connectionId);
+        if (connectionToDisconnect) {
+            setIntegrationToDelete(connectionToDisconnect);
+        }
     };
+    
+    const confirmDelete = () => {
+        if(integrationToDelete) {
+            const newConnections = connections.filter(c => c.id !== integrationToDelete.id);
+            saveConnections(newConnections);
+            toast({ title: 'تم قطع الاتصال', description: `تم إلغاء التكامل مع ${integrationToDelete.name}.`, variant: 'destructive' });
+            setIntegrationToDelete(null);
+        }
+    }
 
     const IntegrationCard = ({ integration }: { integration: typeof integrationsList[0] }) => {
-        const isConnected = !!connected[integration.id];
+        const isFactory = integration.type === 'factory';
         const [logoError, setLogoError] = useState(false);
         const logoUrl = `https://logo.clearbit.com/${integration.id.split('-')[0]}.com`;
 
@@ -158,25 +195,50 @@ export default function IntegrationsPage() {
                                 <CardDescription className="text-xs leading-relaxed mt-1">{integration.description}</CardDescription>
                             </div>
                         </div>
-                        <Badge variant={isConnected ? 'default' : 'secondary'} className={isConnected ? 'bg-green-100 text-green-700' : ''}>{isConnected ? 'متصل' : 'غير متصل'}</Badge>
                     </div>
                 </CardHeader>
                 <CardContent className="mt-auto">
                     <Separator className="my-2" />
                     <div className="flex justify-end gap-2 pt-2">
-                        {isConnected ? (
-                            <>
-                                <Button variant="destructive" size="sm" onClick={() => handleDisconnect(integration.id)}>قطع الاتصال</Button>
-                                <Button variant="secondary" size="sm" onClick={() => router.push(`/dashboard/settings/integrations/${integration.id}`)}>إدارة</Button>
-                            </>
-                        ) : (
-                            <Button size="sm" onClick={() => handleConnectClick(integration)}>اتصال</Button>
-                        )}
+                         <Button size="sm" onClick={() => handleActionClick(integration)}>
+                            <Icon name="PlusCircle" className="ml-2" />
+                            {isFactory ? 'إضافة' : 'اتصال'}
+                         </Button>
                     </div>
                 </CardContent>
             </Card>
         );
     };
+    
+     const ConnectedIntegrationCard = ({ connection }: { connection: Connection }) => {
+        const integrationInfo = integrationsList.find(i => i.id === connection.integrationId)!;
+         return (
+             <Card className="bg-muted/50">
+                 <CardHeader className="p-3">
+                     <div className="flex justify-between items-start">
+                         <div className="flex items-center gap-3">
+                            <div className="bg-primary/10 text-primary p-2 rounded-md h-10 w-10 flex items-center justify-center">
+                                <Icon name={integrationInfo.iconName} className="h-5 w-5" />
+                            </div>
+                            <div>
+                               <CardTitle className="text-sm font-semibold">{connection.name}</CardTitle>
+                               <CardDescription className="text-xs">{integrationInfo.name}</CardDescription>
+                            </div>
+                         </div>
+                         <Badge variant="default" className="bg-green-100 text-green-700">متصل</Badge>
+                     </div>
+                 </CardHeader>
+                 <CardContent className="p-3 pt-0">
+                     <Separator className="mb-3" />
+                     <div className="flex justify-end gap-2">
+                        <Button variant="destructive" size="sm" onClick={() => handleDisconnect(connection.id)}>قطع الاتصال</Button>
+                        <Button variant="secondary" size="sm" onClick={() => router.push(`/dashboard/settings/integrations/${connection.id}`)}>إدارة</Button>
+                     </div>
+                 </CardContent>
+             </Card>
+         );
+     }
+
 
     return (
         <div className="space-y-6">
@@ -192,10 +254,24 @@ export default function IntegrationsPage() {
                 </CardHeader>
             </Card>
 
+            {connections.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>التكاملات المفعلة</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {connections.map(conn => <ConnectedIntegrationCard key={conn.id} connection={conn} />)}
+                    </CardContent>
+                </Card>
+            )}
+
             <Tabs defaultValue="all" className="w-full">
-                <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${categories.length}, minmax(0, 1fr))` }}>
-                    {categories.map(cat => <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>)}
-                </TabsList>
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold">إضافة تكامل جديد</h3>
+                    <TabsList className="grid" style={{ gridTemplateColumns: `repeat(${categories.length}, minmax(0, 1fr))` }}>
+                        {categories.map(cat => <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>)}
+                    </TabsList>
+                </div>
                 
                 {categories.map(cat => (
                     <TabsContent key={cat.id} value={cat.id}>
@@ -214,6 +290,21 @@ export default function IntegrationsPage() {
                 integration={dialogState.integration}
                 onSave={handleSaveIntegration}
             />
+            
+            <AlertDialog open={!!integrationToDelete} onOpenChange={() => setIntegrationToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>تأكيد قطع الاتصال</AlertDialogTitle>
+                         <AlertDialogDescription>
+                           هل أنت متأكد من إلغاء التكامل مع "{integrationToDelete?.name}"؟
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">تأكيد</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
