@@ -129,7 +129,7 @@ const CitiesView = ({
             </Card>
 
             <div className="flex items-center px-2">
-                <Checkbox id="select-all-cities" onCheckedChange={handleSelectAll} checked={isAllSelected} />
+                <Checkbox id="select-all-cities" onCheckedChange={(checked) => handleSelectAll(!!checked)} checked={isAllSelected} />
                 <Label htmlFor="select-all-cities" className="mr-2">تحديد كل المدن</Label>
             </div>
 
@@ -194,6 +194,7 @@ const AreasView = ({
     }
     
     const isAllSelected = filteredAreas.length > 0 && selectedAreas.length === filteredAreas.length;
+    const isIndeterminate = selectedAreas.length > 0 && selectedAreas.length < filteredAreas.length;
 
     return (
     <div className="space-y-6">
@@ -250,23 +251,23 @@ const AreasView = ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12">
-                   <Checkbox onCheckedChange={handleSelectAll} checked={isAllSelected} aria-label="Select all rows" />
+                <TableHead className="text-right w-[50px]">
+                   <Checkbox onCheckedChange={(checked) => handleSelectAll(!!checked)} checked={isAllSelected} indeterminate={isIndeterminate} aria-label="Select all rows" />
                 </TableHead>
-                 <TableHead className="w-12">#</TableHead>
-                <TableHead>اسم المنطقة</TableHead>
-                <TableHead>معرّف المنطقة</TableHead>
+                 <TableHead className="text-right w-[50px]">#</TableHead>
+                <TableHead className="text-right">اسم المنطقة</TableHead>
+                <TableHead className="text-right">معرّف المنطقة</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredAreas.length > 0 ? filteredAreas.map((area, index) => (
                 <TableRow key={area.id} data-state={selectedAreas.includes(area.id) ? 'checked' : 'unchecked'}>
-                    <TableCell>
+                    <TableCell className="text-right">
                         <Checkbox checked={selectedAreas.includes(area.id)} onCheckedChange={(checked) => onSelectionChange(area.id, !!checked)} />
                     </TableCell>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell className="font-medium">{area.name}</TableCell>
-                    <TableCell className="font-mono text-muted-foreground">{area.id}</TableCell>
+                    <TableCell className="text-right">{index + 1}</TableCell>
+                    <TableCell className="font-medium text-right">{area.name}</TableCell>
+                    <TableCell className="font-mono text-muted-foreground text-right">{area.id}</TableCell>
                 </TableRow>
               )) : (
                 <TableRow>
@@ -463,7 +464,10 @@ export default function AreasPage() {
         <AreasView 
             city={currentCityData}
             selectedAreas={selectedAreaIds}
-            onBack={() => setSelectedCity(null)}
+            onBack={() => {
+                setSelectedCity(null);
+                setSelectedAreaIds([]);
+            }}
             onAddArea={handleAddArea}
             onEditArea={handleEditArea}
             onDeleteAreas={handleDeleteAreas}
@@ -511,3 +515,5 @@ export default function AreasPage() {
     </>
   );
 }
+
+    
