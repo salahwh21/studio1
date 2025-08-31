@@ -26,13 +26,10 @@ const StatusCard = ({ status }: { status: Status; onDelete: (id: string) => void
         <CardHeader>
              <div className="flex items-start justify-between">
                 <Link href={`/dashboard/settings/statuses/${status.id}`} className="space-y-2 flex-1 cursor-pointer">
-                    <Badge style={{ backgroundColor: status.color, color: '#fff' }} className="border-none text-xs">
-                        {status.name}
-                    </Badge>
-                    <CardTitle className="text-lg font-bold flex items-center gap-2 pt-2">
-                        <Icon name={status.icon as any} className="h-5 w-5" />
+                    <Badge style={{ backgroundColor: status.color, color: '#fff' }} className="border-none text-sm inline-flex items-center gap-2">
+                        <Icon name={status.icon as any} className="h-4 w-4" />
                         <span>{status.name}</span>
-                    </CardTitle>
+                    </Badge>
                 </Link>
             </div>
         </CardHeader>
