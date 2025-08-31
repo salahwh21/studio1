@@ -1,25 +1,106 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useAreasStore } from '@/store/areas-store';
+import { useAreasStore, type City } from '@/store/areas-store';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/icon';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { nanoid } from 'nanoid';
 
-// Mock data for price lists and prices - replace with a store later
+// Mock data for price lists - replace with a store later
 const mockPriceLists = [
     { id: 'pl_1', name: 'الأسعار الافتراضية' },
     { id: 'pl_2', name: 'أسعار VIP' },
     { id: 'pl_3', name: 'أسعار المحافظات' },
 ];
+
+type PricingRule = {
+    id: string;
+    name: string;
+    fromCities: string[]; // Array of city IDs
+    toCities: string[]; // Array of city IDs
+    price: string;
+}
+
+const CitySelectionDialog = ({
+    cities,
+    selectedCities,
+    onSelectionChange,
+    trigger
+}: {
+    cities: City[],
+    selectedCities: string[],
+    onSelectionChange: (selected: string[]) => void,
+    trigger: React.ReactNode
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [currentSelection, setCurrentSelection] = useState(selectedCities);
+
+    useEffect(() => {
+        if(isOpen) {
+            setCurrentSelection(selectedCities);
+        }
+    }, [isOpen, selectedCities]);
+    
+    const handleSelectAll = () => {
+        setCurrentSelection(cities.map(c => c.id));
+    }
+
+    const handleSave = () => {
+        onSelectionChange(currentSelection);
+        setIsOpen(false);
+    }
+    
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>{trigger}</DialogTrigger>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle>اختر المدن</DialogTitle>
+                </DialogHeader>
+                 <div className="flex items-center gap-2 my-2">
+                    <Button variant="outline" size="sm" onClick={handleSelectAll}>تحديد الكل</Button>
+                    <Button variant="outline" size="sm" onClick={() => setCurrentSelection([])}>مسح الكل</Button>
+                </div>
+                <ScrollArea className="h-72 border rounded-md p-4">
+                    <div className="space-y-2">
+                    {cities.map(city => (
+                        <div key={city.id} className="flex items-center space-x-2 space-x-reverse">
+                            <Checkbox 
+                                id={`city-${city.id}`}
+                                checked={currentSelection.includes(city.id)}
+                                onCheckedChange={(checked) => {
+                                    setCurrentSelection(prev => 
+                                        checked ? [...prev, city.id] : prev.filter(id => id !== city.id)
+                                    )
+                                }}
+                            />
+                            <label htmlFor={`city-${city.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                {city.name}
+                            </label>
+                        </div>
+                    ))}
+                    </div>
+                </ScrollArea>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => setIsOpen(false)}>إلغاء</Button>
+                    <Button onClick={handleSave}>حفظ الاختيار</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 export default function PriceListDetailPage() {
     const { toast } = useToast();
@@ -27,30 +108,60 @@ export default function PriceListDetailPage() {
     const { priceListId } = params;
     const { cities } = useAreasStore();
     
-    const [searchQuery, setSearchQuery] = useState('');
-    const [prices, setPrices] = useState<Record<string, { delivery: string; return: string }>>({});
-
+    const [rules, setRules] = useState<PricingRule[]>([]);
+    
     const priceList = mockPriceLists.find(p => p.id === priceListId);
-    
-    const filteredCities = cities.filter(city => 
-        city.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
 
-    const handlePriceChange = (areaId: string, type: 'delivery' | 'return', value: string) => {
-        setPrices(prev => ({
-            ...prev,
-            [areaId]: {
-                ...(prev[areaId] || { delivery: '', return: '' }),
-                [type]: value,
-            }
-        }));
+    const handleAddRule = () => {
+        setRules(prev => [...prev, {
+            id: nanoid(),
+            name: '',
+            fromCities: [],
+            toCities: [],
+            price: ''
+        }]);
     };
-    
-    const handleSave = () => {
-        // Here you would save the `prices` state to your backend/store
-        console.log("Saving prices:", prices);
-        toast({ title: "تم الحفظ", description: "تم تحديث الأسعار بنجاح."});
+
+    const handleRuleChange = (ruleId: string, field: keyof PricingRule, value: any) => {
+        setRules(prev => prev.map(rule => rule.id === ruleId ? { ...rule, [field]: value } : rule));
     }
+    
+    const handleDeleteRule = (ruleId: string) => {
+        setRules(prev => prev.filter(rule => rule.id !== ruleId));
+        toast({ title: "تم الحذف", description: "تم حذف بند التسعير." });
+    }
+
+    const handleSaveRule = (ruleId: string) => {
+        const rule = rules.find(r => r.id === ruleId);
+        if (!rule || !rule.name || rule.fromCities.length === 0 || rule.toCities.length === 0 || !rule.price) {
+            toast({ variant: 'destructive', title: "خطأ", description: "الرجاء ملء جميع الحقول قبل الحفظ." });
+            return;
+        }
+        // Here you would save the rule to your backend/store
+        console.log("Saving rule:", rule);
+        toast({ title: "تم الحفظ", description: `تم حفظ بند "${rule.name}" بنجاح.`});
+    }
+
+    const CitySelectionButton = ({ selectedCityIds, onSelectionChange }: { selectedCityIds: string[], onSelectionChange: (ids: string[]) => void }) => {
+        let text = 'اختر المدن';
+        if (selectedCityIds.length === cities.length) {
+            text = 'كل المدن';
+        } else if (selectedCityIds.length > 1) {
+            text = `${selectedCityIds.length} مدن`;
+        } else if (selectedCityIds.length === 1) {
+            text = cities.find(c => c.id === selectedCityIds[0])?.name || 'مدينة واحدة';
+        }
+
+        return (
+            <CitySelectionDialog
+                cities={cities}
+                selectedCities={selectedCityIds}
+                onSelectionChange={onSelectionChange}
+                trigger={<Button variant="outline" className="w-full justify-start text-right">{text}</Button>}
+            />
+        )
+    };
+
 
     if (!priceList) {
         return (
@@ -70,92 +181,84 @@ export default function PriceListDetailPage() {
                            <Icon name="DollarSign" /> إدارة أسعار: {priceList.name}
                         </CardTitle>
                          <CardDescription className="mt-1">
-                            حدد أسعار التوصيل والإرجاع لكل منطقة في قائمة الأسعار هذه.
+                            إضافة وتعديل بنود التسعير لهذه القائمة.
                         </CardDescription>
                     </div>
-                     <Button variant="outline" size="icon" asChild>
-                        <Link href="/dashboard/settings/pricing">
-                            <Icon name="ArrowLeft" className="h-4 w-4" />
-                        </Link>
-                    </Button>
+                     <div className="flex items-center gap-2">
+                        <Button variant="outline" size="icon" asChild>
+                            <Link href="/dashboard/settings/pricing">
+                                <Icon name="ArrowLeft" className="h-4 w-4" />
+                            </Link>
+                        </Button>
+                         <Button onClick={handleAddRule}>
+                            <Icon name="PlusCircle" className="h-4 w-4 ml-2" /> إضافة بند تسعير
+                        </Button>
+                    </div>
                 </CardHeader>
             </Card>
 
             <Card>
-                 <CardHeader>
-                     <div className="flex justify-between items-center">
-                        <CardTitle className="text-lg">أسعار المناطق</CardTitle>
-                         <div className="relative w-full sm:max-w-xs">
-                            <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input 
-                                placeholder="بحث عن مدينة..." 
-                                className="pr-10"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                     </div>
-                </CardHeader>
-                <CardContent>
-                    <Accordion type="multiple" className="w-full">
-                        {filteredCities.map(city => (
-                            <AccordionItem key={city.id} value={city.id}>
-                                <AccordionTrigger className="hover:no-underline bg-muted/50 px-4 rounded-md">
-                                    <div className="flex items-center gap-4">
-                                        <Icon name="Map" className="h-5 w-5 text-primary" />
-                                        <span className="font-semibold text-base">{city.name}</span>
-                                        <span className="text-sm text-muted-foreground">({city.areas.length} منطقة)</span>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="p-0">
-                                    <div className="overflow-x-auto">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead className="text-right">المنطقة</TableHead>
-                                                    <TableHead className="text-center w-[150px]">سعر التوصيل (د.أ)</TableHead>
-                                                    <TableHead className="text-center w-[150px]">سعر الإرجاع (د.أ)</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                            {city.areas.map(area => (
-                                                <TableRow key={area.id}>
-                                                    <TableCell className="font-medium">{area.name}</TableCell>
-                                                    <TableCell>
-                                                        <Input 
-                                                            type="number" 
-                                                            className="text-center" 
-                                                            placeholder="0.00"
-                                                            value={prices[area.id]?.delivery || ''}
-                                                            onChange={(e) => handlePriceChange(area.id, 'delivery', e.target.value)}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                         <Input 
-                                                            type="number" 
-                                                            className="text-center" 
-                                                            placeholder="0.00"
-                                                            value={prices[area.id]?.return || ''}
-                                                            onChange={(e) => handlePriceChange(area.id, 'return', e.target.value)}
-                                                        />
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                </AccordionContent>
-                            </AccordionItem>
-                        ))}
-                    </Accordion>
+                <CardContent className="p-0">
+                     <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[250px] text-right">اسم البند</TableHead>
+                                <TableHead className="w-[200px] text-right">من (المدن المصدر)</TableHead>
+                                <TableHead className="w-[200px] text-right">إلى (المدن الوجهة)</TableHead>
+                                <TableHead className="w-[120px] text-right">السعر (د.أ)</TableHead>
+                                <TableHead className="text-center w-[150px]">إجراءات</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {rules.length === 0 ? (
+                            <TableRow><TableCell colSpan={5} className="h-24 text-center">لم تتم إضافة بنود تسعير بعد.</TableCell></TableRow>
+                        ) : (
+                            rules.map((rule) => (
+                                <TableRow key={rule.id}>
+                                    <TableCell>
+                                        <Input 
+                                            placeholder="مثال: توصيل داخل عمان" 
+                                            value={rule.name}
+                                            onChange={(e) => handleRuleChange(rule.id, 'name', e.target.value)}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                       <CitySelectionButton 
+                                            selectedCityIds={rule.fromCities}
+                                            onSelectionChange={(ids) => handleRuleChange(rule.id, 'fromCities', ids)}
+                                       />
+                                    </TableCell>
+                                    <TableCell>
+                                        <CitySelectionButton 
+                                            selectedCityIds={rule.toCities}
+                                            onSelectionChange={(ids) => handleRuleChange(rule.id, 'toCities', ids)}
+                                       />
+                                    </TableCell>
+                                    <TableCell>
+                                         <Input 
+                                            type="number" 
+                                            placeholder="2.50"
+                                            value={rule.price}
+                                            onChange={(e) => handleRuleChange(rule.id, 'price', e.target.value)}
+                                        />
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <div className="flex justify-center gap-2">
+                                            <Button variant="ghost" size="icon" onClick={() => handleSaveRule(rule.id)}>
+                                                <Icon name="Save" className="h-4 w-4 text-primary" />
+                                            </Button>
+                                             <Button variant="ghost" size="icon" onClick={() => handleDeleteRule(rule.id)}>
+                                                <Icon name="Trash2" className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                        </TableBody>
+                    </Table>
                 </CardContent>
             </Card>
-            
-            <div className="flex justify-end pt-4">
-                <Button size="lg" onClick={handleSave}>
-                    <Icon name="Save" className="ml-2 h-4 w-4" /> حفظ كل التغييرات
-                </Button>
-            </div>
         </div>
     );
 }
