@@ -139,7 +139,7 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
                     <AvatarImage src={user.avatar} alt={user.name} />
                     <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <div className="space-y-1">
+                <div className="space-y-1 text-right">
                     <h3 className="font-semibold">{user.name}</h3>
                     <p className="text-sm text-muted-foreground">{user.email}</p>
                     {role && <Badge variant="secondary">{role.name}</Badge>}
@@ -212,40 +212,38 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-2 h-12">
+            <div className="flex flex-row-reverse items-center gap-2 h-12">
                 {selectedUserIds.length > 0 ? (
                      <div className='flex items-center gap-2 w-full'>
-                        <span className='text-sm font-semibold text-muted-foreground'>{selectedUserIds.length} محدد</span>
+                        <Button variant="ghost" size="icon" onClick={() => setSelectedUserIds([])}><Icon name="X" /></Button>
                         <Separator orientation="vertical" className="h-6 mx-1" />
-                        <Button variant="outline" size="sm" onClick={() => onEdit(selectedUser!)} disabled={selectedUserIds.length !== 1}>
-                           <Icon name="Edit" className="ml-2" /> تعديل
+                        <Button variant="destructive" size="sm" onClick={confirmDelete}>
+                           <Icon name="Trash2" className="mr-2" /> حذف المحدد
                         </Button>
                         {!isDriverTab && <Button variant="outline" size="sm" onClick={() => setChangeRoleDialogOpen(true)}>
-                           <Icon name="UsersCog" className="ml-2" /> تغيير الدور
+                           <Icon name="UsersCog" className="mr-2" /> تغيير الدور
                         </Button>}
-                        <Button variant="destructive" size="sm" onClick={confirmDelete}>
-                           <Icon name="Trash2" className="ml-2" /> حذف المحدد
+                        <Button variant="outline" size="sm" onClick={() => onEdit(selectedUser!)} disabled={selectedUserIds.length !== 1}>
+                           <Icon name="Edit" className="mr-2" /> تعديل
                         </Button>
-                        <div className="mr-auto">
-                          <Button variant="ghost" size="icon" onClick={() => setSelectedUserIds([])}><Icon name="X" /></Button>
-                        </div>
+                        <span className='mr-auto text-sm font-semibold text-muted-foreground'>{selectedUserIds.length} محدد</span>
                     </div>
                 ) : (
                     <>
-                        <div className="relative flex-1 w-full sm:max-w-xs">
-                            <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pl-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                        </div>
                         <div className="flex gap-2">
                              <Button onClick={onAdd}>
-                                <Icon name="UserPlus" className="ml-2" /> إضافة جديد
+                                <Icon name="UserPlus" className="mr-2" /> إضافة جديد
                              </Button>
                              <Button variant="outline">
-                                <Icon name="FileUp" className="ml-2" /> استيراد
+                                <Icon name="FileUp" className="mr-2" /> استيراد
                             </Button>
                              <Button variant="outline">
-                                <Icon name="FileDown" className="ml-2" /> تصدير
+                                <Icon name="FileDown" className="mr-2" /> تصدير
                             </Button>
+                        </div>
+                        <div className="relative flex-1 w-full sm:max-w-xs">
+                            <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pr-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                         </div>
                     </>
                 )}
