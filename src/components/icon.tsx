@@ -11,7 +11,7 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 // Add all solid icons to the library, so we can use them by name
 library.add(fas);
 
-type IconName = keyof typeof LucideIcons | 'UserCog' | 'UsersCog' | 'ShieldCheck' | 'KeyRound';
+type IconName = keyof typeof LucideIcons | 'UserCog' | 'UsersCog' | 'ShieldCheck' | 'KeyRound' | 'HandCoins' | 'CalendarClock' | 'CheckCheck' | 'Repeat' | 'ThumbsDown' | 'Ban' | 'PhoneOff' | 'Archive';
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
   name: IconName;
@@ -97,6 +97,14 @@ const faMapping: { [key in IconName]?: import('@fortawesome/fontawesome-svg-core
   Check: 'check',
   ShieldCheck: 'shield-check',
   KeyRound: 'key',
+  HandCoins: 'hand-holding-dollar',
+  CalendarClock: 'calendar-clock',
+  CheckCheck: 'check-double',
+  Repeat: 'repeat',
+  ThumbsDown: 'thumbs-down',
+  Ban: 'ban',
+  PhoneOff: 'phone-slash',
+  Archive: 'box-archive',
 };
 
 const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons } } = {
@@ -179,6 +187,14 @@ const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons }
   Check: { feather: 'Check' },
   ShieldCheck: { feather: 'Shield' },
   KeyRound: { feather: 'Key' },
+  HandCoins: { feather: 'DollarSign' },
+  CalendarClock: { feather: 'Calendar' },
+  CheckCheck: { feather: 'CheckSquare' },
+  Repeat: { feather: 'Repeat' },
+  ThumbsDown: { feather: 'ThumbsDown' },
+  Ban: { feather: 'Slash' },
+  PhoneOff: { feather: 'PhoneOff' },
+  Archive: { feather: 'Archive' },
 };
 
 
