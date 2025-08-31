@@ -59,6 +59,8 @@ const paperSizeClasses = {
   label_4x6: 'w-[101.6mm] h-[152.4mm] p-4 text-sm',
   label_4x4: 'w-[101.6mm] h-[101.6mm] p-3 text-xs',
   label_4x2: 'w-[101.6mm] h-[50.8mm] p-2 text-[10px]',
+  label_3x2: 'w-[76.2mm] h-[50.8mm] p-2 text-[9px]',
+  label_2x3: 'w-[50.8mm] h-[76.2mm] p-2 text-[9px]',
 };
 
 const CustomFieldsSection = ({ fields, onUpdate, onAdd, onRemove }: { fields: {label: string, value: string}[], onUpdate: (index: number, field: 'label'|'value', value: string) => void, onAdd: () => void, onRemove: (index: number) => void }) => (
@@ -309,6 +311,8 @@ export default function PolicySettingsPage() {
                 <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="a5" id="a5" /><Label htmlFor="a5">A5</Label></div>
                 <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="label_4x6" id="label_4x6" /><Label htmlFor="label_4x6">ملصق حراري (4x6 inch)</Label></div>
                 <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="label_4x4" id="label_4x4" /><Label htmlFor="label_4x4">ملصق حراري (4x4 inch)</Label></div>
+                <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="label_3x2" id="label_3x2" /><Label htmlFor="label_3x2">ملصق حراري (3x2 inch)</Label></div>
+                <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="label_2x3" id="label_2x3" /><Label htmlFor="label_2x3">ملصق حراري (2x3 inch)</Label></div>
                 <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="label_4x2" id="label_4x2" /><Label htmlFor="label_4x2">ملصق حراري (4x2 inch)</Label></div>
               </RadioGroup>
           </CardContent></Card>
