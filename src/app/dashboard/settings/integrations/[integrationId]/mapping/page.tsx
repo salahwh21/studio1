@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useActionState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { suggestMappingAction } from '@/app/actions/suggest-mapping';
-import { useFormState } from 'react-dom';
 
 
 const mockPayloads = [
@@ -56,7 +55,7 @@ export default function FieldMappingPage() {
     const [lastPayload, setLastPayload] = useState(JSON.stringify(mockPayloads[0].data, null, 2));
 
     // AI Suggestion Form State
-    const [aiState, formAction] = useFormState(suggestMappingAction, { data: null, error: null, success: false });
+    const [aiState, formAction] = useActionState(suggestMappingAction, { data: null, error: null, success: false });
 
     useEffect(() => {
         if(aiState.success && aiState.data) {
@@ -240,3 +239,5 @@ export default function FieldMappingPage() {
         </div>
     );
 }
+
+    
