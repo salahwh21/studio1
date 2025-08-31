@@ -225,7 +225,7 @@ const AreasView = ({
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <div className="flex gap-2 sm:mr-auto">
+                <div className="flex gap-2 sm:ml-auto">
                     {selectedAreas.length > 0 ? (
                         <>
                             <span className="text-sm text-muted-foreground">{selectedAreas.length} محدد</span>
@@ -251,23 +251,23 @@ const AreasView = ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-right w-[50px]">
+                <TableHead className="text-center w-[60px] px-4">
                    <Checkbox onCheckedChange={(checked) => handleSelectAll(!!checked)} checked={isAllSelected} indeterminate={isIndeterminate} aria-label="Select all rows" />
                 </TableHead>
-                 <TableHead className="text-right w-[50px]">#</TableHead>
-                <TableHead className="text-right">اسم المنطقة</TableHead>
-                <TableHead className="text-right">معرّف المنطقة</TableHead>
+                 <TableHead className="text-center w-[80px] px-4 border-l">#</TableHead>
+                <TableHead className="text-right px-4 border-l">اسم المنطقة</TableHead>
+                <TableHead className="text-right px-4 border-l">معرّف المنطقة</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredAreas.length > 0 ? filteredAreas.map((area, index) => (
                 <TableRow key={area.id} data-state={selectedAreas.includes(area.id) ? 'checked' : 'unchecked'}>
-                    <TableCell className="text-right">
+                    <TableCell className="text-center px-4">
                         <Checkbox checked={selectedAreas.includes(area.id)} onCheckedChange={(checked) => onSelectionChange(area.id, !!checked)} />
                     </TableCell>
-                    <TableCell className="text-right">{index + 1}</TableCell>
-                    <TableCell className="font-medium text-right">{area.name}</TableCell>
-                    <TableCell className="font-mono text-muted-foreground text-right">{area.id}</TableCell>
+                    <TableCell className="text-center px-4 border-l">{index + 1}</TableCell>
+                    <TableCell className="font-medium text-right px-4 border-l">{area.name}</TableCell>
+                    <TableCell className="font-mono text-muted-foreground text-right px-4 border-l">{area.id}</TableCell>
                 </TableRow>
               )) : (
                 <TableRow>
@@ -515,5 +515,3 @@ export default function AreasPage() {
     </>
   );
 }
-
-    
