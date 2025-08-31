@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/icon';
@@ -27,13 +26,6 @@ import {
   DialogTitle,
   DialogClose,
 } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -48,101 +40,125 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 
 // Sub-component for displaying cities as cards
 const CitiesView = ({
   cities,
+  selectedCities,
   onAddCity,
   onEditCity,
-  onDeleteCity,
+  onDeleteCities,
   onSelectCity,
+  onSelectionChange
 }: {
   cities: City[];
+  selectedCities: string[];
   onAddCity: () => void;
   onEditCity: (city: City) => void;
-  onDeleteCity: (city: City) => void;
+  onDeleteCities: (ids: string[]) => void;
   onSelectCity: (city: City) => void;
+  onSelectionChange: (id: string, checked: boolean) => void;
 }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const filteredCities = cities.filter(city => city.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
+    const handleSelectAll = (checked: boolean) => {
+        const allCityIds = filteredCities.map(c => c.id);
+        allCityIds.forEach(id => onSelectionChange(id, checked));
+    }
+
+    const isAllSelected = filteredCities.length > 0 && selectedCities.length === filteredCities.length;
+
     return (
         <div className="space-y-6">
             <Card className="shadow-sm">
-            <CardHeader>
-                <div className="flex justify-between items-start">
-                    <div>
-                        <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                        <Icon name="MapPin" /> إدارة المناطق
-                        </CardTitle>
-                        <CardDescription className="mt-1">
-                        إدارة المدن والمناطق التي تتم خدمتها في عمليات التوصيل.
-                        </CardDescription>
-                    </div>
-                     <Button variant="outline" size="icon" asChild>
-                        <Link href="/dashboard/settings">
-                        <Icon name="ArrowLeft" className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <div className="flex flex-col sm:flex-row items-center gap-4">
-                     <div className="relative w-full sm:max-w-xs">
-                        <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input 
-                            placeholder="بحث عن مدينة..." 
-                            className="pr-10"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex gap-2 sm:mr-auto">
-                         <Button onClick={onAddCity}>
-                            <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة مدينة
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                            <Icon name="MapPin" /> إدارة المناطق
+                            </CardTitle>
+                            <CardDescription className="mt-1">
+                            إدارة المدن والمناطق التي تتم خدمتها في عمليات التوصيل.
+                            </CardDescription>
+                        </div>
+                        <Button variant="outline" size="icon" asChild>
+                            <Link href="/dashboard/settings">
+                            <Icon name="ArrowLeft" className="h-4 w-4" />
+                            </Link>
                         </Button>
-                        <Button variant="outline"><Icon name="Upload" className="mr-2 h-4 w-4" /> استيراد</Button>
-                        <Button variant="outline"><Icon name="Download" className="mr-2 h-4 w-4" /> تصدير</Button>
                     </div>
-                </div>
-            </CardContent>
+                </CardHeader>
+                <CardContent>
+                     <div className="flex flex-col sm:flex-row items-center gap-4">
+                         <div className="relative w-full sm:max-w-xs">
+                            <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input 
+                                placeholder="بحث عن مدينة..." 
+                                className="pr-10"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex items-center gap-2 sm:mr-auto">
+                            {selectedCities.length > 0 ? (
+                                <>
+                                    <span className="text-sm text-muted-foreground">{selectedCities.length} محدد</span>
+                                    <Separator orientation="vertical" className="h-6 mx-2" />
+                                    <Button variant="outline" size="sm" onClick={() => onEditCity(cities.find(c => c.id === selectedCities[0])!)} disabled={selectedCities.length !== 1}>
+                                        <Icon name="Edit" className="h-4 w-4 ml-2" /> تعديل
+                                    </Button>
+                                    <Button variant="destructive" size="sm" onClick={() => onDeleteCities(selectedCities)}>
+                                        <Icon name="Trash2" className="h-4 w-4 ml-2" /> حذف
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Button onClick={onAddCity}>
+                                        <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة مدينة
+                                    </Button>
+                                    <Button variant="outline"><Icon name="Upload" className="mr-2 h-4 w-4" /> استيراد</Button>
+                                    <Button variant="outline"><Icon name="Download" className="mr-2 h-4 w-4" /> تصدير</Button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </CardContent>
             </Card>
+
+            <div className="flex items-center px-2">
+                <Checkbox id="select-all-cities" onCheckedChange={handleSelectAll} checked={isAllSelected} />
+                <Label htmlFor="select-all-cities" className="mr-2">تحديد كل المدن</Label>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredCities.map((city) => (
-                <Card key={city.id} className="hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out flex flex-col">
-                <CardHeader>
-                    <div className="flex justify-between items-start">
-                    <div className="space-y-1 cursor-pointer" onClick={() => onSelectCity(city)}>
-                        <CardTitle className="text-xl font-bold">{city.name}</CardTitle>
-                        <CardDescription>
-                        {city.areas.length} مناطق
-                        </CardDescription>
-                    </div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                            <Icon name="MoreVertical" className="h-4 w-4" />
+                <Card 
+                    key={city.id} 
+                    className="hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out flex flex-col data-[state=checked]:border-primary data-[state=checked]:ring-2 data-[state=checked]:ring-primary"
+                    data-state={selectedCities.includes(city.id) ? 'checked' : 'unchecked'}
+                >
+                    <CardHeader>
+                         <div className="flex justify-between items-start">
+                             <div className="space-y-1 cursor-pointer flex-1" onClick={() => onSelectCity(city)}>
+                                <CardTitle className="text-xl font-bold">{city.name}</CardTitle>
+                                <CardDescription>{city.areas.length} مناطق</CardDescription>
+                            </div>
+                            <Checkbox 
+                                className="h-5 w-5"
+                                checked={selectedCities.includes(city.id)} 
+                                onCheckedChange={(checked) => onSelectionChange(city.id, !!checked)}
+                            />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="mt-auto">
+                        <Button variant="secondary" onClick={() => onSelectCity(city)} className="w-full">
+                            <Icon name="List" className="mr-2 h-4 w-4" />
+                            عرض المناطق
                         </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => onEditCity(city)}>
-                            تعديل
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => onDeleteCity(city)} className="text-destructive">
-                            حذف
-                        </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    </div>
-                </CardHeader>
-                <CardFooter className="mt-auto">
-                    <Button onClick={() => onSelectCity(city)} className="w-full">
-                    <Icon name="List" className="mr-2 h-4 w-4" />
-                    عرض المناطق
-                    </Button>
-                </CardFooter>
+                    </CardContent>
                 </Card>
             ))}
             </div>
@@ -154,19 +170,30 @@ const CitiesView = ({
 // Sub-component for displaying areas within a city
 const AreasView = ({
   city,
+  selectedAreas,
   onBack,
   onAddArea,
   onEditArea,
-  onDeleteArea,
+  onDeleteAreas,
+  onSelectionChange,
 }: {
   city: City;
+  selectedAreas: string[];
   onBack: () => void;
   onAddArea: () => void;
   onEditArea: (area: Area) => void;
-  onDeleteArea: (area: Area) => void;
+  onDeleteAreas: (ids: string[]) => void;
+  onSelectionChange: (id: string, checked: boolean) => void;
 }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const filteredAreas = city.areas.filter(area => area.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    const handleSelectAll = (checked: boolean) => {
+        const allAreaIds = filteredAreas.map(a => a.id);
+        allAreaIds.forEach(id => onSelectionChange(id, checked));
+    }
+    
+    const isAllSelected = filteredAreas.length > 0 && selectedAreas.length === filteredAreas.length;
 
     return (
     <div className="space-y-6">
@@ -198,9 +225,22 @@ const AreasView = ({
                     />
                 </div>
                 <div className="flex gap-2 sm:mr-auto">
-                    <Button onClick={onAddArea}>
-                        <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة منطقة جديدة
-                    </Button>
+                    {selectedAreas.length > 0 ? (
+                        <>
+                            <span className="text-sm text-muted-foreground">{selectedAreas.length} محدد</span>
+                            <Separator orientation="vertical" className="h-6 mx-2" />
+                            <Button variant="outline" size="sm" onClick={() => onEditArea(city.areas.find(a => a.id === selectedAreas[0])!)} disabled={selectedAreas.length !== 1}>
+                                <Icon name="Edit" className="h-4 w-4 ml-2" /> تعديل
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => onDeleteAreas(selectedAreas)}>
+                                <Icon name="Trash2" className="h-4 w-4 ml-2" /> حذف
+                            </Button>
+                        </>
+                    ) : (
+                        <Button onClick={onAddArea}>
+                            <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة منطقة جديدة
+                        </Button>
+                    )}
                 </div>
             </div>
         </CardContent>
@@ -210,31 +250,27 @@ const AreasView = ({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                   <Checkbox onCheckedChange={handleSelectAll} checked={isAllSelected} aria-label="Select all rows" />
+                </TableHead>
+                 <TableHead className="w-12">#</TableHead>
                 <TableHead>اسم المنطقة</TableHead>
                 <TableHead>معرّف المنطقة</TableHead>
-                <TableHead className="text-left">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAreas.length > 0 ? filteredAreas.map((area) => (
-                <TableRow key={area.id}>
-                  <TableCell className="font-medium">{area.name}</TableCell>
-                  <TableCell>{area.id}</TableCell>
-                  <TableCell className="text-left">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon"><Icon name="MoreVertical" className="h-4 w-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onSelect={() => onEditArea(area)}>تعديل</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => onDeleteArea(area)} className="text-destructive">حذف</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+              {filteredAreas.length > 0 ? filteredAreas.map((area, index) => (
+                <TableRow key={area.id} data-state={selectedAreas.includes(area.id) ? 'checked' : 'unchecked'}>
+                    <TableCell>
+                        <Checkbox checked={selectedAreas.includes(area.id)} onCheckedChange={(checked) => onSelectionChange(area.id, !!checked)} />
+                    </TableCell>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell className="font-medium">{area.name}</TableCell>
+                    <TableCell className="font-mono text-muted-foreground">{area.id}</TableCell>
                 </TableRow>
               )) : (
                 <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center">
+                    <TableCell colSpan={4} className="h-24 text-center">
                        لا توجد نتائج للبحث أو لم تتم إضافة مناطق بعد.
                     </TableCell>
                 </TableRow>
@@ -265,7 +301,6 @@ const AreaDialog = ({
   const [name, setName] = useState('');
 
   // Use an effect to update the local state when the dialog opens or the selected entity changes.
-  // This ensures the input field has the correct value when editing.
   useState(() => {
     if (open && entity) {
       setName(entity.name);
@@ -312,8 +347,11 @@ export default function AreasPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'city' | 'area'>('city');
   const [selectedEntity, setSelectedEntity] = useState<City | Area | null>(null);
-  const [entityToDelete, setEntityToDelete] = useState<City | Area | null>(null);
+  const [entityToDelete, setEntityToDelete] = useState<(City | Area)[] | null>(null);
   const [deleteType, setDeleteType] = useState<'city' | 'area'>('city');
+
+  const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
+  const [selectedAreaIds, setSelectedAreaIds] = useState<string[]>([]);
 
   // Handlers for Cities
   const handleAddCity = () => {
@@ -328,10 +366,15 @@ export default function AreasPage() {
     setDialogOpen(true);
   };
 
-  const handleDeleteCity = (city: City) => {
-    setEntityToDelete(city);
-    setDeleteType('city');
+  const handleDeleteCities = (ids: string[]) => {
+      const citiesToDelete = cities.filter(c => ids.includes(c.id));
+      setEntityToDelete(citiesToDelete);
+      setDeleteType('city');
   };
+
+  const handleCitySelection = (id: string, checked: boolean) => {
+      setSelectedCityIds(prev => checked ? [...prev, id] : prev.filter(cityId => cityId !== id));
+  }
 
   // Handlers for Areas
   const handleAddArea = () => {
@@ -346,10 +389,16 @@ export default function AreasPage() {
       setDialogOpen(true);
   };
   
-  const handleDeleteArea = (area: Area) => {
-      setEntityToDelete(area);
+  const handleDeleteAreas = (ids: string[]) => {
+      if (!selectedCity) return;
+      const areasToDelete = selectedCity.areas.filter(a => ids.includes(a.id));
+      setEntityToDelete(areasToDelete);
       setDeleteType('area');
   };
+  
+  const handleAreaSelection = (id: string, checked: boolean) => {
+      setSelectedAreaIds(prev => checked ? [...prev, id] : prev.filter(areaId => areaId !== id));
+  }
 
   // Generic save handler
   const handleSave = (name: string) => {
@@ -369,6 +418,7 @@ export default function AreasPage() {
         addCity(name);
         toast({ title: 'تمت الإضافة', description: 'تمت إضافة المدينة بنجاح.' });
       }
+      setSelectedCityIds([]);
     } else { // It's an 'area'
         if (selectedCity) {
             if (selectedEntity) { // Editing area
@@ -378,11 +428,9 @@ export default function AreasPage() {
                 addArea(selectedCity.id, name);
                 toast({ title: 'تمت الإضافة', description: 'تمت إضافة المنطقة بنجاح.' });
             }
-            // Update the selectedCity view with the latest data
+            setSelectedAreaIds([]);
             const updatedCity = useAreasStore.getState().cities.find(c => c.id === selectedCity.id);
-            if (updatedCity) {
-                setSelectedCity(updatedCity);
-            }
+            if (updatedCity) setSelectedCity(updatedCity);
         }
     }
     setDialogOpen(false);
@@ -391,35 +439,35 @@ export default function AreasPage() {
   const confirmDelete = () => {
       if (!entityToDelete) return;
       if (deleteType === 'city') {
-          deleteCity(entityToDelete.id);
-          toast({ title: 'تم الحذف', description: `تم حذف مدينة "${entityToDelete.name}" بنجاح.` });
+          entityToDelete.forEach(entity => deleteCity(entity.id));
+          toast({ title: 'تم الحذف', description: `تم حذف ${entityToDelete.length} مدن بنجاح.` });
+          setSelectedCityIds([]);
       } else if (selectedCity) {
-          deleteArea(selectedCity.id, entityToDelete.id);
+          entityToDelete.forEach(entity => deleteArea(selectedCity.id, entity.id));
           const updatedCity = useAreasStore.getState().cities.find(c => c.id === selectedCity.id);
-          if (updatedCity) {
-            setSelectedCity(updatedCity);
-          }
-          toast({ title: 'تم الحذف', description: `تم حذف منطقة "${entityToDelete.name}" بنجاح.` });
+          if (updatedCity) setSelectedCity(updatedCity);
+          toast({ title: 'تم الحذف', description: `تم حذف ${entityToDelete.length} مناطق بنجاح.` });
+          setSelectedAreaIds([]);
       }
       setEntityToDelete(null);
   };
   
 
   if (selectedCity) {
-    // Find the latest version of the city from the store in case it was updated
     const currentCityData = cities.find(c => c.id === selectedCity.id);
     if (!currentCityData) {
-        // City was deleted, so go back
         setSelectedCity(null);
         return null;
     }
     return (
         <AreasView 
             city={currentCityData}
+            selectedAreas={selectedAreaIds}
             onBack={() => setSelectedCity(null)}
             onAddArea={handleAddArea}
             onEditArea={handleEditArea}
-            onDeleteArea={handleDeleteArea}
+            onDeleteAreas={handleDeleteAreas}
+            onSelectionChange={handleAreaSelection}
         />
     )
   }
@@ -428,10 +476,16 @@ export default function AreasPage() {
     <>
       <CitiesView
         cities={cities}
+        selectedCities={selectedCityIds}
         onAddCity={handleAddCity}
         onEditCity={handleEditCity}
-        onDeleteCity={handleDeleteCity}
-        onSelectCity={setSelectedCity}
+        onDeleteCities={handleDeleteCities}
+        onSelectCity={(city) => {
+            setSelectedCity(city);
+            setSelectedCityIds([]);
+            setSelectedAreaIds([]);
+        }}
+        onSelectionChange={handleCitySelection}
       />
       <AreaDialog
         open={dialogOpen}
@@ -445,7 +499,7 @@ export default function AreasPage() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
                     <AlertDialogDescription>
-                        هل أنت متأكد من حذف "{entityToDelete?.name}"؟ لا يمكن التراجع عن هذا الإجراء.
+                        هل أنت متأكد من حذف {entityToDelete?.length} {deleteType === 'city' ? 'مدن' : 'مناطق'}؟ لا يمكن التراجع عن هذا الإجراء.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -457,5 +511,3 @@ export default function AreasPage() {
     </>
   );
 }
-
-    
