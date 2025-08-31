@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -195,6 +196,14 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
         setSelectedUserIds(prev => checked ? [...prev, id] : prev.filter(userId => userId !== id));
     };
 
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedUserIds(filteredUsers.map(u => u.id));
+        } else {
+            setSelectedUserIds([]);
+        }
+    };
+
     const confirmDelete = () => {
         onDelete(users.filter(u => selectedUserIds.includes(u.id)));
         setSelectedUserIds([]);
@@ -207,6 +216,8 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
     }
 
     const selectedUser = users.find(u => u.id === selectedUserIds[0]);
+    const isAllFilteredSelected = filteredUsers.length > 0 && selectedUserIds.length === filteredUsers.length;
+
 
     return (
         <div className="space-y-4" dir="rtl">
@@ -243,9 +254,15 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
                                 تصدير <Icon name="FileDown" className="mr-2" /> 
                             </Button>
                         </div>
-                        <div className="relative w-full sm:max-w-xs">
-                            <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pl-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                            <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                <Checkbox id="select-all" checked={isAllFilteredSelected} onCheckedChange={handleSelectAll} />
+                                <Label htmlFor="select-all">تحديد الكل</Label>
+                            </div>
+                            <div className="relative w-full sm:max-w-xs">
+                                <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pr-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                            </div>
                         </div>
                     </div>
                 )}
