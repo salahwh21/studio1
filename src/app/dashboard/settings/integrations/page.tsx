@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/icon';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
+import { Switch } from '@/components/ui/switch';
 
 
 const integrationsList = [
@@ -34,7 +35,7 @@ const integrationsList = [
     { id: 'ycloud', name: 'YCloud', iconName: 'MessageSquare' as const, description: 'إرسال رسائل WhatsApp للعملاء عبر YCloud.', category: 'communication', type: 'standard' },
     { id: 'whatsapp', name: 'WhatsApp', iconName: 'MessageSquare' as const, description: 'ربط النظام لإرسال إشعارات عبر WhatsApp.', category: 'communication', type: 'standard' },
     { id: 'stripe', name: 'Stripe', iconName: 'CreditCard' as const, description: 'تفعيل الدفع الإلكتروني عبر بطاقات الائتمان.', category: 'payment', type: 'standard' },
-    { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const, description: 'ربط النظام بآلاف التطبيقات الأخرى لأتمتة المهام.', category: 'automation', type: 'standard' },
+    { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const, description: 'ربط النظام بآلاف التطبيقات الأخرى لأتمتة المهام.', category: 'automation', type: 'factory' },
     { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const, description: 'ربط أي منصة تدعم الويب هوك لاستقبال الطلبات.', category: 'custom', type: 'factory' },
     { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const, description: 'للمطورين: ربط النظام مع أي واجهة برمجية مخصصة.', category: 'custom', type: 'factory' }
 ];
@@ -55,6 +56,7 @@ type Connection = {
     integrationId: string; // ID from the integrationsList
     name: string; // User-defined name for this instance
     apiKey?: string;
+    enabled: boolean;
 };
 
 const ConnectionDialog = ({ open, onOpenChange, integration, onSave }: { open: boolean, onOpenChange: (open: boolean) => void, integration: any | null, onSave: (name: string, apiKey: string) => void }) => {
@@ -135,6 +137,16 @@ export default function IntegrationsPage() {
     const handleActionClick = (integration: any) => {
         setDialogState({ open: true, integration });
     };
+    
+     const handleToggleConnection = (connectionId: string, enabled: boolean) => {
+        const newConnections = connections.map(c => 
+            c.id === connectionId ? { ...c, enabled } : c
+        );
+        saveConnections(newConnections);
+        toast({
+            title: enabled ? 'تم تفعيل التكامل' : 'تم إلغاء تفعيل التكامل',
+        });
+    };
 
     const handleSaveIntegration = (name: string, apiKey: string) => {
         if (dialogState.integration) {
@@ -143,6 +155,7 @@ export default function IntegrationsPage() {
                 integrationId: dialogState.integration.id,
                 name: name,
                 apiKey: apiKey,
+                enabled: true,
             };
             const newConnections = [...connections, newConnection];
             saveConnections(newConnections);
@@ -229,14 +242,23 @@ export default function IntegrationsPage() {
                                <CardDescription className="text-xs">{integrationInfo.name}</CardDescription>
                             </div>
                          </div>
-                         <Badge variant="default" className="bg-green-100 text-green-700">متصل</Badge>
+                         <Badge variant={connection.enabled ? 'default' : 'secondary'} className={connection.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}>
+                          {connection.enabled ? 'مفعل' : 'معطل'}
+                        </Badge>
                      </div>
                  </CardHeader>
                  <CardContent className="p-3 pt-0">
                      <Separator className="mb-3" />
-                     <div className="flex justify-end gap-2">
-                        <Button variant="destructive" size="sm" onClick={() => handleDisconnect(connection.id)}>قطع الاتصال</Button>
-                        <Button variant="secondary" size="sm" onClick={() => router.push(`/dashboard/settings/integrations/${connection.id}`)}>إدارة</Button>
+                     <div className="flex items-center justify-between gap-2">
+                         <Switch 
+                            checked={connection.enabled}
+                            onCheckedChange={(checked) => handleToggleConnection(connection.id, checked)}
+                            aria-label={`تفعيل أو تعطيل ${connection.name}`}
+                        />
+                        <div className="flex gap-2">
+                            <Button variant="destructive" size="sm" onClick={() => handleDisconnect(connection.id)}>قطع الاتصال</Button>
+                            <Button variant="secondary" size="sm" onClick={() => router.push(`/dashboard/settings/integrations/${connection.id}`)}>إدارة</Button>
+                        </div>
                      </div>
                  </CardContent>
              </Card>
@@ -312,3 +334,5 @@ export default function IntegrationsPage() {
         </div>
     );
 }
+
+    
