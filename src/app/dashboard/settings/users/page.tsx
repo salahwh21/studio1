@@ -122,12 +122,6 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
     >
         <CardContent className="p-3 flex justify-between items-center">
             <div className='flex items-center gap-3'>
-                 <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={(checked) => onSelectionChange(user.id, !!checked)}
-                    className="h-5 w-5"
-                    aria-label={`تحديد المستخدم ${user.name}`}
-                />
                 <Link href={`/dashboard/settings/users/${user.id}`} className="flex items-center gap-3 flex-1 text-right" onClick={(e) => {
                     if(isSelected) {
                         e.preventDefault();
@@ -145,6 +139,12 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
                     </div>
                 </Link>
             </div>
+             <Checkbox
+                checked={isSelected}
+                onCheckedChange={(checked) => onSelectionChange(user.id, !!checked)}
+                className="h-5 w-5"
+                aria-label={`تحديد المستخدم ${user.name}`}
+            />
         </CardContent>
     </Card>
 );
@@ -226,7 +226,7 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
                         <Button variant="destructive" size="sm" onClick={confirmDelete}>
                            <Icon name="Trash2" className="ml-2" /> حذف المحدد
                         </Button>
-                        <div className="mr-auto">
+                        <div className="ml-auto">
                             <Button variant="ghost" size="icon" onClick={() => setSelectedUserIds([])}>
                                 <Icon name="X" />
                             </Button>
@@ -246,8 +246,8 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
                             </Button>
                         </div>
                         <div className="relative w-full sm:max-w-xs">
-                            <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pl-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-                            <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pr-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                            <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         </div>
                     </div>
                 )}
