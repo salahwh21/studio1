@@ -125,9 +125,22 @@ export default function IntegrationsPage() {
     useEffect(() => {
         try {
             const saved = localStorage.getItem('user-integrations');
-            if(saved) {
-                setConnections(JSON.parse(saved));
+            let userConnections: Connection[] = saved ? JSON.parse(saved) : [];
+
+            const shopifyExists = userConnections.some(c => c.integrationId === 'shopify');
+
+            if (!shopifyExists) {
+                userConnections.push({
+                    id: nanoid(),
+                    integrationId: 'shopify',
+                    name: 'متجري على شوبيفاي',
+                    apiKey: 'shpat_dummy_api_key_for_demo',
+                    enabled: true,
+                });
             }
+            
+            setConnections(userConnections);
+
         } catch (e) {
             console.error("Failed to parse integrations from localStorage", e);
         }
