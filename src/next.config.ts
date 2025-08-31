@@ -9,15 +9,6 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  experimental: {
-    allowedDevOrigins: [
-        "https://*.google.com",
-        "https://*.cloud.google.com",
-        "https://*.run.app",
-        "https://*.web.app",
-        "https://*.firebaseapp.com"
-    ]
-  },
   images: {
     remotePatterns: [
       {
