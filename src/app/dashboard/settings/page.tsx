@@ -22,6 +22,7 @@ const settingsItems: {
   { href: '/dashboard/settings/statuses', iconName: 'ListChecks', title: 'حالات التوصيل', description: 'تخصيص مراحل وحالات دورة حياة الطلب.' },
   { href: '#', iconName: 'Bell', title: 'الإشعارات', description: 'التحكم في قوالب الرسائل والإشعارات التلقائية.' },
   { href: '#', iconName: 'Share2', title: 'التكاملات', description: 'ربط النظام مع خدمات وتطبيقات خارجية.' },
+  { href: '#', iconName: 'Bot', title: 'The AI Agent', description: 'بناء وتخصيص مهام وكيل الذكاء الاصطناعي.' },
   { href: '#', iconName: 'MessageSquareQuote', title: 'الدعم الفني', description: 'الحصول على مساعدة أو طلب ميزات جديدة.' },
 ];
 
