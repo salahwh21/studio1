@@ -13,11 +13,11 @@ export type City = {
   areas: Area[];
 };
 
-const defaultCities: City[] = [
-    {
+const defaultCities: any[] = [
+  {
     "id": "CITY_AMM",
     "name": "عمان",
-    "areas": [
+    "regions": [
       {
         "id": "REG_AMM_001",
         "name": "تلاع العلي"
@@ -867,7 +867,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_IRB",
     "name": "إربد",
-    "areas": [
+    "regions": [
       {
         "id": "REG_IRB_001",
         "name": "الحي الشرقي"
@@ -1393,7 +1393,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_ZAR",
     "name": "الزرقاء",
-    "areas": [
+    "regions": [
       {
         "id": "REG_ZAR_001",
         "name": "الزرقاء الجديدة"
@@ -1731,7 +1731,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_AQA",
     "name": "العقبة",
-    "areas": [
+    "regions": [
       {
         "id": "REG_AQA_001",
         "name": "البلد القديمة"
@@ -1905,7 +1905,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_SLT",
     "name": "السلط",
-    "areas": [
+    "regions": [
       {
         "id": "REG_SLT_001",
         "name": "وسط البلد"
@@ -2035,7 +2035,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_MDB",
     "name": "مادبا",
-    "areas": [
+    "regions": [
       {
         "id": "REG_MDB_001",
         "name": "وسط المدينة"
@@ -2205,7 +2205,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_KAR",
     "name": "الكرك",
-    "areas": [
+    "regions": [
       {
         "id": "REG_KAR_001",
         "name": "المزار الجنوبي"
@@ -2403,7 +2403,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_JER",
     "name": "جرش",
-    "areas": [
+    "regions": [
       {
         "id": "REG_JER_001",
         "name": "مخيم جرش"
@@ -2537,7 +2537,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_AJL",
     "name": "عجلون",
-    "areas": [
+    "regions": [
       {
         "id": "REG_AJL_001",
         "name": "عنجرة"
@@ -2647,7 +2647,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_MAA",
     "name": "معان",
-    "areas": [
+    "regions": [
       {
         "id": "REG_MAA_002",
         "name": "الشوبك"
@@ -2725,7 +2725,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_TAF",
     "name": "الطفيلة",
-    "areas": [
+    "regions": [
       {
         "id": "REG_TAF_001",
         "name": "بصيرا"
@@ -2787,7 +2787,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_MAF",
     "name": "المفرق",
-    "areas": [
+    "regions": [
       {
         "id": "REG_MAF_001",
         "name": "المفرق البلد"
@@ -3057,7 +3057,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_WAD",
     "name": "وادي عربة",
-    "areas": [
+    "regions": [
       {
         "id": "REG_WAD_001",
         "name": "قريقرة"
@@ -3067,7 +3067,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_AZR",
     "name": "الازرق",
-    "areas": [
+    "regions": [
       {
         "id": "REG_AZR_001",
         "name": "الازرق"
@@ -3077,7 +3077,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_AGH",
     "name": "الاغوار",
-    "areas": [
+    "regions": [
       {
         "id": "REG_AGH_001",
         "name": "الاغوار الجنوبية"
@@ -3135,7 +3135,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_DES",
     "name": "طريق الصحراوي",
-    "areas": [
+    "regions": [
       {
         "id": "REG_DES_001",
         "name": "الابيض"
@@ -3205,7 +3205,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_BLQ",
     "name": "البلقاء",
-    "areas": [
+    "regions": [
       {
         "id": "REG_BLQ_001",
         "name": "الشونة الجنوبية"
@@ -3251,7 +3251,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_PET",
     "name": "البتراء",
-    "areas": [
+    "regions": [
       {
         "id": "REG_PET_001",
         "name": "وادي موسى"
@@ -3269,7 +3269,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_RAM",
     "name": "الرمثا",
-    "areas": [
+    "regions": [
       {
         "id": "REG_RAM_001",
         "name": "الرمثا البلد"
@@ -3311,7 +3311,7 @@ const defaultCities: City[] = [
   {
     "id": "CITY_SHO",
     "name": "الشوبك",
-    "areas": [
+    "regions": [
       {
         "id": "REG_SHO_001",
         "name": "الشوبك البلد"
@@ -3329,14 +3329,14 @@ const defaultCities: City[] = [
   {
     "id": "CITY_MOW",
     "name": "الموقر",
-    "areas": [
+    "regions": [
       {
         "id": "REG_MOW_001",
         "name": "الموقر"
       }
     ]
   }
-].map(city => ({...city, areas: city.regions}));
+].map(city => ({...city, areas: city.regions || []}));
 
 
 // Use a deep copy for the initial state to prevent mutation issues
