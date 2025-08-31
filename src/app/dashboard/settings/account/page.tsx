@@ -1,0 +1,150 @@
+
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useTheme } from 'next-themes';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import Icon from '@/components/icon';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
+
+export default function AccountSettingsPage() {
+  const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
+
+  // Mock user data
+  const [name, setName] = useState('المدير المسؤول');
+  const [email, setEmail] = useState('admin@alwameed.com');
+  const [avatar, setAvatar] = useState<string | null>('https://i.pravatar.cc/150?u=admin');
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setAvatar(event.target?.result as string);
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
+  const handleProfileSave = () => {
+    toast({ title: "تم الحفظ", description: "تم تحديث معلومات ملفك الشخصي بنجاح." });
+  };
+  
+  const handlePasswordSave = () => {
+    // Add validation logic here
+    toast({ title: "تم التغيير", description: "تم تحديث كلمة المرور بنجاح." });
+  };
+
+
+  return (
+    <div className="space-y-6">
+      <Card className="shadow-sm">
+        <CardHeader className="flex flex-row items-start justify-between">
+          <div>
+            <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
+              <Icon name="User" /> إعدادات الحساب
+            </CardTitle>
+            <CardDescription className="mt-1">
+              إدارة معلومات ملفك الشخصي، إعدادات الأمان، وتفضيلاتك.
+            </CardDescription>
+          </div>
+           <Button variant="outline" size="icon" asChild>
+            <Link href="/dashboard/settings">
+              <Icon name="ArrowLeft" className="h-4 w-4" />
+            </Link>
+          </Button>
+        </CardHeader>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Profile Card */}
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>الملف الشخصي</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+             <div className="flex flex-col items-center space-y-4">
+                <Avatar className="h-24 w-24 border-2 border-primary">
+                    <AvatarImage src={avatar || ''} alt={name} />
+                    <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <Button asChild variant="outline">
+                    <Label htmlFor="avatar-upload" className="cursor-pointer">
+                        <Icon name="Upload" className="mr-2 h-4 w-4" />
+                        تغيير الصورة
+                        <input id="avatar-upload" type="file" className="sr-only" accept="image/*" onChange={handleAvatarChange} />
+                    </Label>
+                </Button>
+            </div>
+            <Separator />
+            <div className="space-y-2">
+              <Label htmlFor="name">الاسم</Label>
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">البريد الإلكتروني</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <Button onClick={handleProfileSave} className="w-full">
+                <Icon name="Save" className="mr-2 h-4 w-4" />
+                حفظ تغييرات الملف الشخصي
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Security and Preferences Card */}
+        <div className="lg:col-span-2 space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>أمان الحساب</CardTitle>
+                    <CardDescription>تغيير كلمة المرور الخاصة بك.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="current-password">كلمة المرور الحالية</Label>
+                        <Input id="current-password" type="password" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="new-password">كلمة المرور الجديدة</Label>
+                        <Input id="new-password" type="password" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="confirm-password">تأكيد كلمة المرور الجديدة</Label>
+                        <Input id="confirm-password" type="password" />
+                    </div>
+                     <Button onClick={handlePasswordSave}>
+                        <Icon name="Save" className="mr-2 h-4 w-4" />
+                        تغيير كلمة المرور
+                    </Button>
+                </CardContent>
+            </Card>
+
+            <Card>
+                 <CardHeader>
+                    <CardTitle>التفضيلات</CardTitle>
+                    <CardDescription>تخصيص تجربة استخدامك للنظام.</CardDescription>
+                </CardHeader>
+                 <CardContent className="flex items-center gap-4">
+                    <span className="text-sm font-medium">المظهر:</span>
+                     <Button variant={theme === 'light' ? 'default' : 'outline'} onClick={() => setTheme('light')}>
+                        <Icon name="Sun" className="mr-2 h-4 w-4" />
+                        فاتح
+                    </Button>
+                     <Button variant={theme === 'dark' ? 'default' : 'outline'} onClick={() => setTheme('dark')}>
+                        <Icon name="Moon" className="mr-2 h-4 w-4" />
+                        داكن
+                    </Button>
+                 </CardContent>
+            </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
