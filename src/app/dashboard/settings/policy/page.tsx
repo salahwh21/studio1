@@ -58,10 +58,142 @@ const paperSizeClasses = {
   label: 'w-[101.6mm] h-[152.4mm] p-4 text-sm',
 };
 
+const DefaultLayout = ({ settings }: { settings: any }) => (
+    <>
+        {/* Header */}
+        <header className="flex justify-between items-start border-b-2 border-black pb-2">
+        <div className="text-right">
+            {settings.showCompanyLogo && <div className="h-12"><Logo /></div>}
+            {settings.showCompanyName && <h1 className="font-bold text-lg mt-1">شركة الوميض للتوصيل</h1>}
+            {settings.showCompanyAddress && <p className="text-xs">عمان, الأردن - 0790123456</p>}
+        </div>
+        <div className="text-left">
+            <h2 className="font-bold">بوليصة شحن</h2>
+            <p className="text-xs font-mono">ORD-1719810001</p>
+            <p className="text-xs">{new Date().toLocaleDateString('ar-JO')}</p>
+        </div>
+        </header>
+
+        {/* Body */}
+        <main className="flex-grow my-4 grid grid-cols-2 gap-4">
+        <div className="border border-black rounded p-2">
+            <h3 className="font-bold border-b border-black mb-2">من (المرسل)</h3>
+            <p>تاجر أ</p>
+            <p>0780123456</p>
+            <p>مخزن الصويفية</p>
+        </div>
+        <div className="border border-black rounded p-2">
+            <h3 className="font-bold border-b border-black mb-2">إلى (المستلم)</h3>
+            <p>محمد جاسم</p>
+            <p>07701112233</p>
+            <p>الصويفية, عمان, شارع الوكالات, بناية 15, الطابق 3</p>
+        </div>
+        </main>
+         {/* Details */}
+        {settings.showItems && (
+        <div className="mb-4">
+            <table className="w-full text-xs border-collapse border border-black">
+                <thead>
+                    <tr className="bg-gray-200">
+                        <th className="border border-black p-1">المنتج</th>
+                        <th className="border border-black p-1">الكمية</th>
+                        <th className="border border-black p-1">السعر</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td className="border border-black p-1">منتج 1</td>
+                        <td className="border border-black p-1 text-center">2</td>
+                        <td className="border border-black p-1 text-center">15.00</td>
+                    </tr>
+                    <tr>
+                        <td className="border border-black p-1">منتج 2</td>
+                        <td className="border border-black p-1 text-center">1</td>
+                        <td className="border border-black p-1 text-center">20.50</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        )}
+
+        {/* Footer */}
+        <footer className="mt-auto pt-2 space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+            <div>
+                {settings.showRefNumber && <p className="text-xs">الرقم المرجعي: <span className="font-bold">REF-00101</span></p>}
+                {settings.showPrice && <div className="border-2 border-black rounded-lg p-2 mt-2 text-center">
+                    <p className="font-bold text-sm">المبلغ المطلوب</p>
+                    <p className="font-bold text-xl">35.50 د.أ</p>
+                </div>}
+            </div>
+            {settings.showBarcode && <div className="flex flex-col items-center justify-center">
+            <BarcodeIcon />
+            <p className="text-xs font-mono tracking-widest mt-1">ORD-1719810001</p>
+            </div>}
+        </div>
+        {settings.footerNotes && <p className="text-xs text-center border-t-2 border-black pt-2">{settings.footerNotes}</p>}
+        </footer>
+    </>
+);
+
+const CompactLayout = ({ settings }: { settings: any }) => (
+    <>
+        <div className="grid grid-cols-2 gap-x-4 border-b-2 border-black pb-2">
+            <div className="text-right space-y-1">
+                {settings.showCompanyLogo && <div className="h-8"><Logo /></div>}
+                {settings.showCompanyName && <h1 className="font-bold text-base">شركة الوميض للتوصيل</h1>}
+            </div>
+            <div className="text-left space-y-1">
+                <div className="flex flex-col items-end">
+                  {settings.showBarcode && <div className="flex flex-col items-center justify-center scale-75 origin-right">
+                      <BarcodeIcon />
+                      <p className="text-[8px] font-mono tracking-wider mt-1">ORD-1719810001</p>
+                  </div>}
+                </div>
+            </div>
+        </div>
+        <main className="flex-grow my-2 space-y-2">
+            <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className='space-y-0.5'>
+                    <p className='font-bold'>المرسل:</p>
+                    <p>تاجر أ (0780123456)</p>
+                </div>
+                <div className='space-y-0.5'>
+                    <p className='font-bold'>الرقم المرجعي:</p>
+                    <p>REF-00101</p>
+                </div>
+                 <div className='space-y-0.5'>
+                    <p className='font-bold'>تاريخ الطلب:</p>
+                    <p>{new Date().toLocaleDateString('ar-JO')}</p>
+                </div>
+            </div>
+            <div className="border border-black rounded p-2 space-y-1 text-xs">
+                <p className="font-bold">المستلم: محمد جاسم</p>
+                <p>الهاتف: 07701112233</p>
+                <p className="font-bold">العنوان: الصويفية, عمان, شارع الوكالات, بناية 15, الطابق 3</p>
+            </div>
+        </main>
+        {settings.showItems && (
+            <div className="text-[10px] my-2">
+               <p>المحتويات: منتج 1 (x2), منتج 2 (x1)</p>
+            </div>
+        )}
+        <footer className="mt-auto pt-2 space-y-2 border-t-2 border-black">
+            {settings.showPrice && <div className="text-center">
+                <p className="font-bold text-sm">المبلغ المطلوب</p>
+                <p className="font-bold text-xl">35.50 د.أ</p>
+            </div>}
+            {settings.footerNotes && <p className="text-[10px] text-center">{settings.footerNotes}</p>}
+        </footer>
+    </>
+);
+
+
 export default function PolicySettingsPage() {
   const { toast } = useToast();
   const [settings, setSettings] = useState({
     paperSize: 'a4',
+    layout: 'default',
     showCompanyLogo: true,
     showCompanyName: true,
     showCompanyAddress: false,
@@ -78,7 +210,7 @@ export default function PolicySettingsPage() {
     try {
       const savedSettings = localStorage.getItem('policySettings');
       if (savedSettings) {
-        setSettings(JSON.parse(savedSettings));
+        setSettings(prev => ({...prev, ...JSON.parse(savedSettings)}));
       }
     } catch (error) {
       console.error('Failed to load policy settings:', error);
@@ -111,6 +243,16 @@ export default function PolicySettingsPage() {
       <Switch id={id} checked={checked} onCheckedChange={(val) => handleSettingChange(id, val)} />
     </div>
   );
+  
+  const renderLayout = () => {
+      switch(settings.layout) {
+          case 'compact':
+            return <CompactLayout settings={settings} />;
+          case 'default':
+          default:
+            return <DefaultLayout settings={settings} />;
+      }
+  }
 
   return (
     <div className="space-y-6">
@@ -159,6 +301,28 @@ export default function PolicySettingsPage() {
               </RadioGroup>
             </CardContent>
           </Card>
+          
+           <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">تصميم البوليصة</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RadioGroup
+                value={settings.layout}
+                onValueChange={(val) => handleSettingChange('layout', val)}
+              >
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <RadioGroupItem value="default" id="layout-default" />
+                  <Label htmlFor="layout-default">التصميم الافتراضي</Label>
+                </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <RadioGroupItem value="compact" id="layout-compact" />
+                  <Label htmlFor="layout-compact">التصميم المدمج (للملصقات)</Label>
+                </div>
+              </RadioGroup>
+            </CardContent>
+          </Card>
+
 
           <Card>
             <CardHeader>
@@ -200,80 +364,7 @@ export default function PolicySettingsPage() {
             <CardContent className="bg-muted p-4 sm:p-8 flex items-center justify-center">
               <div className={cn("bg-white text-black shadow-lg mx-auto font-sans", paperSizeClasses[settings.paperSize as keyof typeof paperSizeClasses])}>
                 <div className="flex flex-col h-full">
-                  {/* Header */}
-                  <header className="flex justify-between items-start border-b-2 border-black pb-2">
-                    <div className="text-right">
-                      {settings.showCompanyLogo && <div className="h-12"><Logo /></div>}
-                      {settings.showCompanyName && <h1 className="font-bold text-lg mt-1">شركة الوميض للتوصيل</h1>}
-                      {settings.showCompanyAddress && <p className="text-xs">عمان, الأردن - 0790123456</p>}
-                    </div>
-                    <div className="text-left">
-                      <h2 className="font-bold">بوليصة شحن</h2>
-                      <p className="text-xs font-mono">ORD-1719810001</p>
-                      <p className="text-xs">{new Date().toLocaleDateString('ar-JO')}</p>
-                    </div>
-                  </header>
-
-                  {/* Body */}
-                  <main className="flex-grow my-4 grid grid-cols-2 gap-4">
-                    <div className="border border-black rounded p-2">
-                      <h3 className="font-bold border-b border-black mb-2">من (المرسل)</h3>
-                      <p>تاجر أ</p>
-                      <p>0780123456</p>
-                      <p>مخزن الصويفية</p>
-                    </div>
-                    <div className="border border-black rounded p-2">
-                      <h3 className="font-bold border-b border-black mb-2">إلى (المستلم)</h3>
-                      <p>محمد جاسم</p>
-                      <p>07701112233</p>
-                      <p>الصويفية, عمان, شارع الوكالات, بناية 15, الطابق 3</p>
-                    </div>
-                  </main>
-
-                  {/* Details */}
-                   {settings.showItems && (
-                     <div className="mb-4">
-                        <table className="w-full text-xs border-collapse border border-black">
-                            <thead>
-                                <tr className="bg-gray-200">
-                                    <th className="border border-black p-1">المنتج</th>
-                                    <th className="border border-black p-1">الكمية</th>
-                                    <th className="border border-black p-1">السعر</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td className="border border-black p-1">منتج 1</td>
-                                    <td className="border border-black p-1 text-center">2</td>
-                                    <td className="border border-black p-1 text-center">15.00</td>
-                                </tr>
-                                <tr>
-                                    <td className="border border-black p-1">منتج 2</td>
-                                    <td className="border border-black p-1 text-center">1</td>
-                                    <td className="border border-black p-1 text-center">20.50</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                   )}
-
-                  {/* Footer */}
-                  <footer className="mt-auto pt-2 space-y-4">
-                     <div className="grid grid-cols-2 gap-4">
-                         <div>
-                            {settings.showRefNumber && <p className="text-xs">الرقم المرجعي: <span className="font-bold">REF-00101</span></p>}
-                             {settings.showPrice && <div className="border-2 border-black rounded-lg p-2 mt-2 text-center">
-                                <p className="font-bold text-sm">المبلغ المطلوب</p>
-                                <p className="font-bold text-xl">35.50 د.أ</p>
-                            </div>}
-                         </div>
-                        {settings.showBarcode && <div className="flex flex-col items-center justify-center">
-                          <BarcodeIcon />
-                          <p className="text-xs font-mono tracking-widest mt-1">ORD-1719810001</p>
-                        </div>}
-                     </div>
-                    {settings.footerNotes && <p className="text-xs text-center border-t-2 border-black pt-2">{settings.footerNotes}</p>}
-                  </footer>
+                    {renderLayout()}
                 </div>
               </div>
             </CardContent>
@@ -288,3 +379,5 @@ export default function PolicySettingsPage() {
     </div>
   );
 }
+
+    
