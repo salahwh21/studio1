@@ -38,8 +38,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { MoreHorizontal } from 'lucide-react';
 import Icon from '@/components/icon';
-import { useRolesStore, allPermissions } from '@/store/roles-store';
+import { useRolesStore, allPermissionGroups } from '@/store/roles-store';
 import type { Role } from '@/store/roles-store';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 
 export default function RolesPermissionsPage() {
@@ -53,6 +54,18 @@ export default function RolesPermissionsPage() {
     setTempPermissions(role.permissions);
     setIsDialogOpen(true);
   };
+  
+  const handleGroupPermissionChange = (groupPermissions: {id: string, label: string}[], checked: boolean) => {
+    const groupPermissionIds = groupPermissions.map(p => p.id);
+    setTempPermissions(prev => {
+        const otherPermissions = prev.filter(p => !groupPermissionIds.includes(p) && p !== 'all');
+        if(checked) {
+            return [...otherPermissions, ...groupPermissionIds];
+        } else {
+            return otherPermissions;
+        }
+    })
+  }
 
   const handlePermissionChange = (permissionId: string, checked: boolean) => {
     setTempPermissions(prev => {
@@ -63,7 +76,10 @@ export default function RolesPermissionsPage() {
       }
 
       const isCurrentlyAll = prev.includes('all');
-      const currentPermissions = isCurrentlyAll ? allPermissions.map(p => p.id) : prev;
+      
+      const allPermissionIds = allPermissionGroups.flatMap(g => g.permissions).map(p => p.id);
+      
+      const currentPermissions = isCurrentlyAll ? allPermissionIds : prev;
 
       if (checked) {
         newPermissions = [...currentPermissions, permissionId];
@@ -71,7 +87,7 @@ export default function RolesPermissionsPage() {
         newPermissions = currentPermissions.filter(p => p !== permissionId);
       }
       
-      if (newPermissions.length === allPermissions.length) {
+      if (newPermissions.length === allPermissionIds.length) {
         return ['all'];
       }
       
@@ -91,7 +107,7 @@ export default function RolesPermissionsPage() {
     setSelectedRole(null);
   };
   
-  const isAllTempSelected = tempPermissions.includes('all') || tempPermissions.length === allPermissions.length;
+  const isAllTempSelected = tempPermissions.includes('all');
 
 
   return (
@@ -180,11 +196,11 @@ export default function RolesPermissionsPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>إدارة صلاحيات: {selectedRole?.name}</DialogTitle>
             <DialogDescription>
-              اختر الصفحات والقوائم التي يمكن لهذا الدور الوصول إليها.
+              اختر الصلاحيات التي يمكن لهذا الدور الوصول إليها.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
@@ -195,23 +211,47 @@ export default function RolesPermissionsPage() {
                   onCheckedChange={handleSelectAll}
                 />
                 <Label htmlFor="select-all" className="font-bold">
-                  تحديد الكل
+                  تحديد كل الصلاحيات
                 </Label>
               </div>
-              <div className="grid grid-cols-2 gap-4 max-h-60 overflow-y-auto">
-              {allPermissions.map(permission => (
-                <div key={permission.id} className="flex items-center space-x-2 space-x-reverse">
-                  <Checkbox
-                    id={permission.id}
-                    checked={isAllTempSelected || tempPermissions.includes(permission.id)}
-                    onCheckedChange={(checked) => handlePermissionChange(permission.id, !!checked)}
-                  />
-                  <Label htmlFor={permission.id} className="font-normal">
-                    {permission.label}
-                  </Label>
-                </div>
-              ))}
-              </div>
+              <Accordion type="multiple" className="w-full max-h-80 overflow-y-auto pr-2">
+                {allPermissionGroups.map(group => {
+                  const groupPermissionIds = group.permissions.map(p => p.id);
+                  const isAllGroupSelected = groupPermissionIds.every(id => tempPermissions.includes(id)) || isAllTempSelected;
+                  const isIndeterminate = groupPermissionIds.some(id => tempPermissions.includes(id)) && !isAllGroupSelected;
+
+                  return (
+                     <AccordionItem value={group.id} key={group.id}>
+                        <AccordionTrigger className="hover:no-underline">
+                           <div className="flex items-center gap-2">
+                            <Checkbox 
+                                id={`group-${group.id}`} 
+                                checked={isAllGroupSelected}
+                                indeterminate={isIndeterminate}
+                                onCheckedChange={(checked) => handleGroupPermissionChange(group.permissions, !!checked)}
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                            <Label htmlFor={`group-${group.id}`} className="font-semibold text-base">{group.label}</Label>
+                           </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pr-8 space-y-3 pt-2">
+                             {group.permissions.map(permission => (
+                                <div key={permission.id} className="flex items-center space-x-2 space-x-reverse">
+                                  <Checkbox
+                                    id={permission.id}
+                                    checked={isAllTempSelected || tempPermissions.includes(permission.id)}
+                                    onCheckedChange={(checked) => handlePermissionChange(permission.id, !!checked)}
+                                  />
+                                  <Label htmlFor={permission.id} className="font-normal text-muted-foreground">
+                                    {permission.label}
+                                  </Label>
+                                </div>
+                              ))}
+                        </AccordionContent>
+                    </AccordionItem>
+                  )
+                })}
+              </Accordion>
           </div>
           <DialogFooter>
             <DialogClose asChild>
