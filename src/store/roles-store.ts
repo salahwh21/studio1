@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 export type Role = {
-  id: 'admin' | 'supervisor' | 'customer_service' | 'driver';
+  id: 'admin' | 'supervisor' | 'customer_service' | 'driver' | 'merchant';
   name: string;
   description: string;
   userCount: number;
@@ -18,6 +18,7 @@ export const allPermissions = [
   { id: 'financials', label: 'المحاسبة' },
   { id: 'settings', label: 'الإعدادات' },
   { id: 'driver-app', label: 'تطبيق السائق' },
+  { id: 'merchant-portal', label: 'بوابة التاجر' },
 ];
 
 const initialRoles: Role[] = [
@@ -48,6 +49,13 @@ const initialRoles: Role[] = [
     description: 'يستخدم تطبيق السائق فقط لتحديث حالات الطلبات.',
     userCount: 15,
     permissions: ['driver-app'],
+  },
+  {
+    id: 'merchant',
+    name: 'تاجر',
+    description: 'يستخدم بوابة التجار لمتابعة الطلبات والأمور المالية.',
+    userCount: 50,
+    permissions: ['merchant-portal'],
   },
 ];
 
