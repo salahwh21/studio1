@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -85,6 +86,8 @@ const faMapping: { [key in IconName]?: import('@fortawesome/fontawesome-svg-core
   RefreshCw: 'sync',
   Download: 'download',
   UserCog: 'user-cog',
+  ListChecks: 'tasks',
+  Upload: 'upload',
 };
 
 const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons } } = {
@@ -156,6 +159,8 @@ const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons }
   RefreshCw: { feather: 'RefreshCw'},
   Download: { feather: 'Download'},
   UserCog: { feather: 'User' },
+  ListChecks: { feather: 'CheckSquare' },
+  Upload: { feather: 'Upload' },
 };
 
 
