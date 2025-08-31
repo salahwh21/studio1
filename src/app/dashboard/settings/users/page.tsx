@@ -122,7 +122,7 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
         data-state={isSelected ? 'checked' : 'unchecked'}
     >
         <CardContent 
-            className="p-3 flex items-center gap-3"
+            className="p-3 flex flex-row-reverse items-center gap-3"
         >
             <Checkbox
                 checked={isSelected}
@@ -130,7 +130,7 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
                 className="h-5 w-5"
                 aria-label={`تحديد المستخدم ${user.name}`}
             />
-             <Link href={`/dashboard/settings/users/${user.id}`} className="flex items-center gap-3 flex-1" onClick={(e) => {
+             <Link href={`/dashboard/settings/users/${user.id}`} className="flex items-center gap-3 flex-1 text-right" onClick={(e) => {
                  if(isSelected) {
                      e.preventDefault();
                      onSelectionChange(user.id, false);
@@ -140,7 +140,7 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
                     <AvatarImage src={user.avatar} alt={user.name} />
                     <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <div className="space-y-1 text-right">
+                <div className="space-y-1">
                     <h3 className="font-semibold">{user.name}</h3>
                     <p className="text-sm text-muted-foreground">{user.email}</p>
                     {role && <Badge variant="secondary">{role.name}</Badge>}
@@ -213,7 +213,7 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-2 justify-between items-center h-12">
+            <div className="flex flex-col sm:flex-row-reverse gap-2 justify-between items-center h-12">
                 {selectedUserIds.length > 0 ? (
                      <div className='flex items-center gap-2 w-full'>
                         <span className='text-sm font-semibold text-muted-foreground'>{selectedUserIds.length} محدد</span>
@@ -232,7 +232,7 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
                         </div>
                     </div>
                 ) : (
-                    <div className='flex justify-between w-full'>
+                    <div className='flex justify-between w-full flex-row-reverse'>
                         <div className="flex gap-2">
                              <Button onClick={onAdd}>
                                 <Icon name="UserPlus" className="mr-2" /> إضافة جديد
