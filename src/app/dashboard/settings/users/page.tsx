@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -33,7 +32,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-
 
 const UserDialog = ({
   open,
@@ -83,11 +81,11 @@ const UserDialog = ({
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
                         <Label htmlFor="name">اسم المستخدم</Label>
-                        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                        <Input id="name" placeholder="أدخل الاسم..." value={name} onChange={(e) => setName(e.target.value)} />
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="email">البريد الإلكتروني / رقم الهاتف</Label>
-                        <Input id="email" type="text" value={email} onChange={(e) => setEmail(e.target.value)} />
+                        <Input id="email" type="text" placeholder="أدخل البريد الإلكتروني أو رقم الهاتف..." value={email} onChange={(e) => setEmail(e.target.value)} />
                     </div>
                      {!isDriver && (
                         <div className="space-y-2">
@@ -122,7 +120,13 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
         data-state={isSelected ? 'checked' : 'unchecked'}
     >
         <CardContent className="p-3 flex justify-between items-center">
-             <div className='flex items-center gap-3'>
+            <div className='flex items-center gap-3'>
+                 <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={(checked) => onSelectionChange(user.id, !!checked)}
+                    className="h-5 w-5"
+                    aria-label={`تحديد المستخدم ${user.name}`}
+                />
                 <Link href={`/dashboard/settings/users/${user.id}`} className="flex items-center gap-3 flex-1 text-right" onClick={(e) => {
                     if(isSelected) {
                         e.preventDefault();
@@ -131,7 +135,7 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
                 }}>
                     <Avatar className="h-12 w-12 border">
                         <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
+                        <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div className="space-y-1 text-right">
                         <h3 className="font-semibold">{user.name}</h3>
@@ -140,12 +144,6 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
                     </div>
                 </Link>
             </div>
-            <Checkbox
-                checked={isSelected}
-                onCheckedChange={(checked) => onSelectionChange(user.id, !!checked)}
-                className="h-5 w-5"
-                aria-label={`تحديد المستخدم ${user.name}`}
-            />
         </CardContent>
     </Card>
 );
@@ -181,7 +179,6 @@ const ChangeRoleDialog = ({ open, onOpenChange, onSave, roles, userCount }: { op
     )
 };
 
-
 const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUpdateRole }: { users: User[]; roles: Role[]; isDriverTab: boolean; onEdit: (user: User) => void; onDelete: (users: User[]) => void; onAdd: () => void; onBulkUpdateRole: (userIds: string[], roleId: string) => void; }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
@@ -212,45 +209,43 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
     const selectedUser = users.find(u => u.id === selectedUserIds[0]);
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4" dir="rtl">
             <div className="flex items-center justify-between gap-2 h-12">
                 {selectedUserIds.length > 0 ? (
                      <div className='flex items-center gap-2 w-full'>
-                        <Button variant="ghost" size="icon" onClick={() => setSelectedUserIds([])}>
-                            <Icon name="X" />
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={confirmDelete}>
-                           <Icon name="Trash2" className="ml-2" /> حذف المحدد
+                        <span className='text-sm font-semibold text-muted-foreground'>{selectedUserIds.length} محدد</span>
+                        <Separator orientation="vertical" className="h-6 mx-1" />
+                        <Button variant="outline" size="sm" onClick={() => onEdit(selectedUser!)} disabled={selectedUserIds.length !== 1}>
+                           <Icon name="Edit" className="ml-2" /> تعديل
                         </Button>
                         {!isDriverTab && <Button variant="outline" size="sm" onClick={() => setChangeRoleDialogOpen(true)}>
                            <Icon name="UsersCog" className="ml-2" /> تغيير الدور
                         </Button>}
-                        <Button variant="outline" size="sm" onClick={() => onEdit(selectedUser!)} disabled={selectedUserIds.length !== 1}>
-                           <Icon name="Edit" className="ml-2" /> تعديل
+                        <Button variant="destructive" size="sm" onClick={confirmDelete}>
+                           <Icon name="Trash2" className="ml-2" /> حذف المحدد
                         </Button>
-                        <span className='mr-auto text-sm font-semibold text-muted-foreground'>{selectedUserIds.length} محدد</span>
+                        <div className="mr-auto">
+                            <Button variant="ghost" size="icon" onClick={() => setSelectedUserIds([])}>
+                                <Icon name="X" />
+                            </Button>
+                        </div>
                     </div>
                 ) : (
                     <div className="flex justify-between w-full">
-                         <div className="relative w-full sm:max-w-xs">
-                            <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                                placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} 
-                                className="pr-10" 
-                                value={searchQuery} 
-                                onChange={e => setSearchQuery(e.target.value)} 
-                            />
-                        </div>
                          <div className="flex gap-2">
-                             <Button variant="outline">
-                                <Icon name="FileDown" className="mr-2" /> تصدير
-                            </Button>
-                             <Button variant="outline">
-                                <Icon name="FileUp" className="mr-2" /> استيراد 
-                            </Button>
                              <Button onClick={onAdd}>
-                                <Icon name="UserPlus" className="mr-2" /> إضافة جديد
+                                إضافة جديد <Icon name="UserPlus" className="mr-2" /> 
                              </Button>
+                             <Button variant="outline">
+                                استيراد <Icon name="FileUp" className="mr-2" /> 
+                            </Button>
+                             <Button variant="outline">
+                                تصدير <Icon name="FileDown" className="mr-2" /> 
+                            </Button>
+                        </div>
+                        <div className="relative w-full sm:max-w-xs">
+                            <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pl-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                            <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         </div>
                     </div>
                 )}
@@ -284,7 +279,6 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
     );
 };
 
-
 export default function UsersPage() {
   const { toast } = useToast();
   const { users, addUser, updateUser, deleteUser } = useUsersStore();
@@ -298,7 +292,6 @@ export default function UsersPage() {
   const employees = useMemo(() => users.filter(u => u.roleId !== 'driver' && u.roleId !== 'merchant'), [users]);
   const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
   const merchants = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
-
 
   const handleAddNew = () => {
       setSelectedUser(null);
@@ -322,7 +315,6 @@ export default function UsersPage() {
     }
   }
 
-
   const handleBulkUpdateRole = (userIds: string[], roleId: string) => {
     userIds.forEach(id => {
         const user = users.find(u => u.id === id);
@@ -333,7 +325,6 @@ export default function UsersPage() {
     toast({ title: 'تم التحديث', description: `تم تغيير دور ${userIds.length} مستخدمين بنجاح.` });
   }
 
-  
   const handleSave = (data: Omit<User, 'id' | 'password'>) => {
       if (selectedUser) {
           updateUser(selectedUser.id, data);
@@ -346,7 +337,7 @@ export default function UsersPage() {
   }
  
   return (
-      <div className="space-y-6">
+      <div className="space-y-6" dir="rtl">
         <Card className="shadow-sm">
           <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
@@ -368,8 +359,8 @@ export default function UsersPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="merchants">التجار ({merchants.length})</TabsTrigger>
-                <TabsTrigger value="drivers">السائقون ({drivers.length})</TabsTrigger>
-                <TabsTrigger value="employees">الموظفون ({employees.length})</TabsTrigger>
+                <TabsTrigger value="drivers">السائقين ({drivers.length})</TabsTrigger>
+                <TabsTrigger value="employees">الموظفين ({employees.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="employees" className="mt-4">
                  <UserList

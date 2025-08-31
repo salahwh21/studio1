@@ -74,6 +74,9 @@ export default function UserEditPage() {
     const [userRoleId, setUserRoleId] = useState('');
     const [isActive, setIsActive] = useState(true);
     
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -174,11 +177,21 @@ export default function UserEditPage() {
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="new-password">كلمة المرور الجديدة</Label>
-                                <Input id="new-password" type="password" placeholder="••••••••" />
+                                <div className="relative">
+                                    <Input id="new-password" type={showNewPassword ? 'text' : 'password'} placeholder="••••••••" />
+                                    <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowNewPassword(prev => !prev)}>
+                                        <Icon name={showNewPassword ? 'EyeOff' : 'Eye'} className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="confirm-password">تأكيد كلمة المرور</Label>
-                                <Input id="confirm-password" type="password" placeholder="••••••••" />
+                                <div className="relative">
+                                    <Input id="confirm-password" type={showConfirmPassword ? 'text' : 'password'} placeholder="••••••••" />
+                                     <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowConfirmPassword(prev => !prev)}>
+                                        <Icon name={showConfirmPassword ? 'EyeOff' : 'Eye'} className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
