@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { suggestMappingAction } from '@/app/actions/suggest-mapping';
@@ -115,13 +115,6 @@ export default function FieldMappingPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {/* 
-                              **هنا تمت إضافة الزر الجديد**
-                              - هذا النموذج يحتوي على زر "اقتراح باستخدام الذكاء الاصطناعي".
-                              - عند الضغط عليه، يقوم بتشغيل formAction الذي يستدعي الـ Flow الخاص بالذكاء الاصطناعي.
-                              - يقوم الـ Flow بتحليل آخر بيانات مستلمة (lastPayload) واقتراح أفضل ربط للحقول.
-                              - يتم بعد ذلك تحديث الجدول أدناه بالاقتراحات تلقائيًا.
-                            */}
                             <form action={formAction}>
                                 <input type="hidden" name="payload" value={lastPayload} />
                                 <Button type="submit" variant="outline" className="gap-2 mb-4">
