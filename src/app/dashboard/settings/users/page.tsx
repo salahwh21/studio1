@@ -3,6 +3,8 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { CSVLink } from 'react-csv';
+
 import {
   Card,
   CardDescription,
@@ -180,10 +182,11 @@ const ChangeRoleDialog = ({ open, onOpenChange, onSave, roles, userCount }: { op
     )
 };
 
-const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUpdateRole }: { users: User[]; roles: Role[]; isDriverTab: boolean; onEdit: (user: User) => void; onDelete: (users: User[]) => void; onAdd: () => void; onBulkUpdateRole: (userIds: string[], roleId: string) => void; }) => {
+const UserList = ({ users, roles, isDriverTab, onAdd, onEdit, onDelete, onBulkUpdateRole, onImport }: { users: User[]; roles: Role[]; isDriverTab: boolean; onAdd: () => void; onEdit: (user: User) => void; onDelete: (users: User[]) => void; onBulkUpdateRole: (userIds: string[], roleId: string) => void; onImport: (data: any[]) => void; }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
     const [changeRoleDialogOpen, setChangeRoleDialogOpen] = useState(false);
+    const importInputRef = React.useRef<HTMLInputElement>(null);
     
     const filteredUsers = useMemo(() => 
         users.filter(user => 
@@ -218,6 +221,28 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
     const selectedUser = users.find(u => u.id === selectedUserIds[0]);
     const isAllFilteredSelected = filteredUsers.length > 0 && selectedUserIds.length === filteredUsers.length;
 
+    const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            const lines = text.split('\n').filter(line => line.trim() !== '');
+            const headers = lines[0].split(',').map(h => h.trim());
+            const data = lines.slice(1).map(line => {
+                const values = line.split(',').map(v => v.trim());
+                return headers.reduce((obj, header, index) => {
+                    (obj as any)[header] = values[index];
+                    return obj;
+                }, {});
+            });
+            onImport(data);
+        };
+        reader.readAsText(file);
+        event.target.value = ''; // Reset input
+    };
+
 
     return (
         <div className="space-y-4" dir="rtl">
@@ -245,14 +270,18 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
                     <div className="flex justify-between w-full">
                          <div className="flex gap-2">
                              <Button onClick={onAdd}>
-                                إضافة جديد <Icon name="UserPlus" className="mr-2" /> 
+                                <Icon name="UserPlus" className="ml-2" /> إضافة جديد
                              </Button>
-                             <Button variant="outline">
-                                استيراد <Icon name="FileUp" className="mr-2" /> 
+                              <Button variant="outline" onClick={() => importInputRef.current?.click()}>
+                                <Icon name="FileUp" className="ml-2" /> استيراد
                             </Button>
-                             <Button variant="outline">
-                                تصدير <Icon name="FileDown" className="mr-2" /> 
-                            </Button>
+                            <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleFileImport} />
+
+                             <CSVLink data={users} headers={[{label: 'name', key: 'name'}, {label: 'email', key: 'email'}, {label: 'roleId', key: 'roleId'}]} filename={"users.csv"} className="inline-block">
+                                <Button variant="outline">
+                                    <Icon name="FileDown" className="ml-2" /> تصدير
+                                </Button>
+                            </CSVLink>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
@@ -352,6 +381,26 @@ export default function UsersPage() {
       }
       setDialogOpen(false);
   }
+  
+  const handleImport = (data: any[]) => {
+      let addedCount = 0;
+      data.forEach(item => {
+          if (item.name && item.email && item.roleId) {
+              addUser({
+                  name: item.name,
+                  email: item.email,
+                  roleId: item.roleId,
+                  avatar: '',
+              });
+              addedCount++;
+          }
+      });
+      if (addedCount > 0) {
+        toast({ title: "تم الاستيراد", description: `تمت إضافة ${addedCount} مستخدمين بنجاح.` });
+      } else {
+        toast({ variant: 'destructive', title: 'فشل الاستيراد', description: 'لم يتم العثور على بيانات صالحة في الملف.' });
+      }
+  }
  
   return (
       <div className="space-y-6" dir="rtl">
@@ -375,9 +424,9 @@ export default function UsersPage() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="merchants">التجار ({merchants.length})</TabsTrigger>
-                <TabsTrigger value="drivers">السائقين ({drivers.length})</TabsTrigger>
                 <TabsTrigger value="employees">الموظفين ({employees.length})</TabsTrigger>
+                <TabsTrigger value="drivers">السائقين ({drivers.length})</TabsTrigger>
+                <TabsTrigger value="merchants">التجار ({merchants.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="employees" className="mt-4">
                  <UserList
@@ -388,6 +437,7 @@ export default function UsersPage() {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onBulkUpdateRole={handleBulkUpdateRole}
+                    onImport={handleImport}
                 />
             </TabsContent>
             <TabsContent value="drivers" className="mt-4">
@@ -399,6 +449,7 @@ export default function UsersPage() {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onBulkUpdateRole={handleBulkUpdateRole}
+                    onImport={handleImport}
                 />
             </TabsContent>
              <TabsContent value="merchants" className="mt-4">
@@ -410,6 +461,7 @@ export default function UsersPage() {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onBulkUpdateRole={handleBulkUpdateRole}
+                    onImport={handleImport}
                 />
             </TabsContent>
         </Tabs>
