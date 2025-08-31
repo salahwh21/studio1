@@ -41,22 +41,13 @@ const integrationsList = [
     { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const, category: 'custom' }
 ];
 
-const mockSyncHistory = [
-    { id: 1, description: "تم استيراد 15 طلبًا جديدًا بنجاح.", status: 'success', timestamp: "2023-08-31 10:45 ص" },
-    { id: 2, description: "فشل تحديث حالة الطلب #SH-1024.", status: 'failure', timestamp: "2023-08-31 10:30 ص" },
-    { id: 3, description: "تم تحديث حالة 50 طلبًا إلى 'جاري التوصيل'.", status: 'success', timestamp: "2023-08-31 09:00 ص" },
-    { id: 4, description: "تم بدء المزامنة اليدوية.", status: 'success', timestamp: "2023-08-31 08:55 ص" },
-];
-
-
 export default function IntegrationDetailPage() {
     const params = useParams();
-    const { integrationId } = params; // This will be the unique ID of the connection instance
+    const { integrationId } = params;
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
     const [connection, setConnection] = useState<any | null>(null);
     const [integrationInfo, setIntegrationInfo] = useState<any | null>(null);
-    const [webhookUrl, setWebhookUrl] = useState('');
 
     useEffect(() => {
         // In a real app, you'd fetch the connection details from your backend using the integrationId
@@ -67,21 +58,12 @@ export default function IntegrationDetailPage() {
             const foundIntegrationInfo = integrationsList.find(i => i.id === foundConnection.integrationId);
             setConnection(foundConnection);
             setIntegrationInfo(foundIntegrationInfo);
-
-            if (foundIntegrationInfo?.category === 'custom' || foundIntegrationInfo?.id === 'zapier') {
-                 setWebhookUrl(`${window.location.origin}/api/v1/webhooks/orders/${foundConnection.id}`);
-            }
         }
         setIsLoading(false);
     }, [integrationId]);
 
     const handleSaveChanges = () => {
         toast({ title: 'تم الحفظ', description: `تم حفظ إعدادات ${connection?.name} بنجاح.` });
-    };
-    
-    const handleCopyWebhook = () => {
-        navigator.clipboard.writeText(webhookUrl);
-        toast({ title: 'تم النسخ', description: 'تم نسخ رابط الويب هوك إلى الحافظة.' });
     };
 
     if (isLoading) {
@@ -103,10 +85,6 @@ export default function IntegrationDetailPage() {
             </Card>
         );
     }
-    
-    const requiresApiKey = integrationInfo.category !== 'custom' && integrationInfo.id !== 'zapier';
-    const isWebhookBased = integrationInfo.category === 'custom' || integrationInfo.id === 'zapier';
-
 
     return (
         <div className="space-y-6">
@@ -121,64 +99,27 @@ export default function IntegrationDetailPage() {
                             <CardDescription className="mt-1">إدارة وتخصيص إعدادات الربط مع {integrationInfo.name}.</CardDescription>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button><Icon name="RefreshCw" className="ml-2" /> مزامنة الآن</Button>
-                        <Button variant="outline" size="icon" asChild>
-                            <Link href="/dashboard/settings/integrations"><Icon name="ArrowLeft" className="h-4 w-4" /></Link>
-                        </Button>
-                    </div>
+                    <Button variant="outline" size="icon" asChild>
+                        <Link href="/dashboard/settings/integrations"><Icon name="ArrowLeft" className="h-4 w-4" /></Link>
+                    </Button>
                 </CardHeader>
             </Card>
             
-            {requiresApiKey && (
-                <Card>
-                    <CardHeader><CardTitle>بيانات الربط</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="api-key">مفتاح الربط (API Key)</Label>
-                            <Input id="api-key" type="password" defaultValue={connection.apiKey || '************'} />
+            <Card>
+                <CardHeader><CardTitle>بيانات الربط</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="api-key">مفتاح الربط (API Key)</Label>
+                        <Input id="api-key" type="password" defaultValue={connection.apiKey || '************'} />
+                    </div>
+                    {integrationInfo.id === 'shopify' && (
+                         <div className="space-y-2">
+                            <Label htmlFor="store-url">رابط المتجر</Label>
+                            <Input id="store-url" placeholder="https://your-store.myshopify.com" />
                         </div>
-                        {integrationInfo.id === 'shopify' && (
-                            <div className="space-y-2">
-                                <Label htmlFor="store-url">رابط المتجر</Label>
-                                <Input id="store-url" placeholder="https://your-store.myshopify.com" />
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
-
-            {isWebhookBased && (
-                 <Card>
-                    <CardHeader><CardTitle>رابط الويب هوك</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
-                        <p className="text-sm text-muted-foreground">
-                            استخدم هذا الرابط في {integrationInfo.name} لإرسال البيانات إلى نظامنا. هذا الرابط خاص بهذا التكامل فقط.
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <Input readOnly value={webhookUrl} className="font-mono"/>
-                            <Button onClick={handleCopyWebhook} variant="outline" size="icon"><Icon name="Copy" className="h-4 w-4" /></Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {isWebhookBased && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>إعدادات متقدمة للويب هوك</CardTitle>
-                        <CardDescription>إدارة ربط الحقول وسجل البيانات المستلمة.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                         <Button asChild>
-                            <Link href={`/dashboard/settings/integrations/${integrationId}/mapping`}>
-                                <Icon name="Settings2" className="ml-2"/>
-                                إدارة ربط الحقول وسجل البيانات
-                            </Link>
-                         </Button>
-                    </CardContent>
-                </Card>
-            )}
+                    )}
+                </CardContent>
+            </Card>
             
             <Card>
                 <CardHeader><CardTitle>إعدادات المزامنة</CardTitle></CardHeader>
@@ -203,44 +144,6 @@ export default function IntegrationDetailPage() {
                             </SelectContent>
                         </Select>
                     </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader className="flex items-center justify-between">
-                    <CardTitle>سجل المزامنة</CardTitle>
-                    <Button variant="outline" size="sm" onClick={() => toast({ title: 'جاري التحديث...', description: 'تم طلب سجلات المزامنة الجديدة.' })}>
-                        <Icon name="RefreshCw" className="ml-2" />
-                        تحديث
-                    </Button>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>الحدث</TableHead>
-                                <TableHead>الحالة</TableHead>
-                                <TableHead>التاريخ والوقت</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {mockSyncHistory.map((item) => (
-                                <TableRow key={item.id}>
-                                    <TableCell>{item.description}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={item.status === 'success' ? 'default' : 'destructive'} className={item.status === 'success' ? 'bg-green-100 text-green-800' : ''}>
-                                            {item.status === 'success' ? 
-                                                <Icon name="CheckCircle2" className="ml-1 text-green-600" /> : 
-                                                <Icon name="XCircle" className="ml-1" />
-                                            }
-                                            {item.status === 'success' ? 'نجاح' : 'فشل'}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>{item.timestamp}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
                 </CardContent>
             </Card>
 
