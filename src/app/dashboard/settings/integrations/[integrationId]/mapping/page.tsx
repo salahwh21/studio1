@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,13 +13,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { suggestMappingAction } from '@/app/actions/suggest-mapping';
+import { useFormState } from 'react-dom';
 
 
 const mockPayloads = [
   { id: 'payload_1', receivedAt: '2023-09-01 11:05:12', status: 'success', data: { customer_name: 'علي حسن', phone_number: '0791112233', address_details: 'عمان, الدوار السابع', items: '2x بيتزا', total_price: 20.50 } },
-  { id: 'payload_2', receivedAt: '2023-09-01 10:55:41', status: 'failed', data: { name: 'سارة وليد', total: 15, details: { street: 'شارع الجامعة' } } },
+  { id: 'payload_2', receivedAt: '2023-09-01 10:55:41', status: 'failed', data: { name: 'سارة وليد', total: 15, details: { street: 'شارع الجامعة', city: 'الزرقاء' } } },
   { id: 'payload_3', receivedAt: '2023-09-01 10:45:02', status: 'success', data: { customer_name: 'خالد أحمد', phone_number: '0785556677', address_details: 'الزرقاء, حي معصوم', items: '1x عطر', total_price: 55 } },
 ];
 
@@ -32,18 +35,42 @@ const ourOrderFields = [
     { key: 'referenceNumber', label: 'الرقم المرجعي' },
 ];
 
+type Mapping = {
+    id: number;
+    source: string;
+    destination: string;
+};
+
 
 export default function FieldMappingPage() {
     const params = useParams();
     const { integrationId } = params;
     const { toast } = useToast();
     
-    const [mappings, setMappings] = useState([
+    const [mappings, setMappings] = useState<Mapping[]>([
         { id: 1, source: 'customer_name', destination: 'recipient' },
         { id: 2, source: 'phone_number', destination: 'phone' },
         { id: 3, source: 'address_details', destination: 'address' },
         { id: 4, source: 'total_price', destination: 'cod' },
     ]);
+    const [lastPayload, setLastPayload] = useState(JSON.stringify(mockPayloads[0].data, null, 2));
+
+    // AI Suggestion Form State
+    const [aiState, formAction] = useFormState(suggestMappingAction, { data: null, error: null, success: false });
+
+    useEffect(() => {
+        if(aiState.success && aiState.data) {
+            const newMappings = aiState.data.suggestedMappings.map((m, i) => ({
+                id: Date.now() + i,
+                source: m.source,
+                destination: m.destination
+            }));
+            setMappings(newMappings);
+            toast({ title: "تم اقتراح الربط", description: "قام الذكاء الاصطناعي بملء الحقول المقترحة." });
+        } else if (aiState.error) {
+            toast({ variant: 'destructive', title: "خطأ في الاقتراح", description: aiState.error });
+        }
+    }, [aiState, toast]);
 
     const handleAddMapping = () => {
         setMappings([...mappings, { id: Date.now(), source: '', destination: '' }]);
@@ -89,6 +116,13 @@ export default function FieldMappingPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
+                            <form action={formAction}>
+                                <input type="hidden" name="payload" value={lastPayload} />
+                                <Button type="submit" variant="outline" className="gap-2 mb-4">
+                                    <Icon name="Wand2" className="h-4 w-4" />
+                                    اقتراح باستخدام الذكاء الاصطناعي
+                                </Button>
+                            </form>
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -102,7 +136,7 @@ export default function FieldMappingPage() {
                                         <TableRow key={mapping.id}>
                                             <TableCell>
                                                 <Input 
-                                                    placeholder="e.g., customer_name" 
+                                                    placeholder="e.g., customer.name" 
                                                     value={mapping.source}
                                                     onChange={(e) => handleMappingChange(mapping.id, 'source', e.target.value)}
                                                 />
@@ -166,17 +200,25 @@ export default function FieldMappingPage() {
                                             <TableCell>
                                                 <Dialog>
                                                     <DialogTrigger asChild>
-                                                        <Button variant="outline" size="sm">عرض Payload</Button>
+                                                        <Button variant="outline" size="sm" onClick={() => setLastPayload(JSON.stringify(payload.data, null, 2))}>
+                                                          عرض Payload
+                                                        </Button>
                                                     </DialogTrigger>
                                                     <DialogContent className="max-w-2xl">
                                                         <DialogHeader>
                                                             <DialogTitle>بيانات الطلب المستلمة</DialogTitle>
+                                                             <DialogDescription>استخدم هذه البيانات كمرجع عند اقتراح ربط الحقول.</DialogDescription>
                                                         </DialogHeader>
                                                         <ScrollArea className="max-h-96 w-full rounded-md border mt-4">
                                                             <pre className="p-4 text-sm text-left font-mono" dir="ltr">
                                                                 {JSON.stringify(payload.data, null, 2)}
                                                             </pre>
                                                         </ScrollArea>
+                                                        <DialogFooter>
+                                                            <DialogClose asChild>
+                                                                <Button>إغلاق</Button>
+                                                            </DialogClose>
+                                                        </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
                                             </TableCell>
