@@ -7,9 +7,7 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
-  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/icon';
@@ -26,6 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreVertical } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 const StatusCard = ({ status, onUpdate, onDelete }: { status: Status; onUpdate: (id: string, newStatus: Partial<Status>) => void; onDelete: (id: string) => void; }) => {
@@ -56,7 +55,12 @@ const StatusCard = ({ status, onUpdate, onDelete }: { status: Status; onUpdate: 
         </CardHeader>
         <CardContent className="mt-auto">
             <div className="flex items-center justify-between rounded-md border p-2">
-                <Label className="text-sm">
+                 <Label htmlFor={`status-active-${status.id}`} className="text-sm flex items-center gap-2 cursor-pointer">
+                    <Checkbox 
+                        id={`status-active-${status.id}`}
+                        checked={status.isActive} 
+                        onCheckedChange={(checked) => onUpdate(status.id, { isActive: !!checked })}
+                    />
                     الحالة
                 </Label>
                  <Badge variant={status.isActive ? 'default' : 'secondary'} className={status.isActive ? 'bg-green-100 text-green-800' : ''}>
@@ -127,12 +131,12 @@ export default function StatusesPage() {
         ))}
       </div>
 
-      <CardFooter className="p-0 pt-6">
+       <div className="flex justify-start pt-6 mt-6 border-t">
          <Button size="lg" onClick={handleSaveChanges}>
             <Icon name="Save" className="mr-2 h-4 w-4" />
-            حفظ التغييرات
+            حفظ كل التغييرات
           </Button>
-      </CardFooter>
+      </div>
     </div>
 
     <AlertDialog open={!!statusToDelete} onOpenChange={() => setStatusToDelete(null)}>
