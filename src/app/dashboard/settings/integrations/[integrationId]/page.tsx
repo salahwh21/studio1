@@ -41,6 +41,28 @@ const integrationsList = [
     { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const, category: 'custom' }
 ];
 
+const mockImportableOrders = [
+    { shopifyId: '#1102', customer: 'خالد الفايد', total: '150.00 SAR', shopifyStatus: 'paid' },
+    { shopifyId: '#1103', customer: 'مريم العتيبي', total: '275.50 SAR', shopifyStatus: 'paid' },
+    { shopifyId: '#1104', customer: 'يوسف الأحمد', total: '99.00 SAR', shopifyStatus: 'fulfilled' },
+];
+
+const ourStatuses = [
+    { code: "PENDING", name: "بالانتظار" },
+    { code: "OUT_FOR_DELIVERY", name: "جاري التوصيل" },
+    { code: "DELIVERED", name: "تم التوصيل" },
+    { code: "RETURNED", name: "مرتجع" },
+    { code: "CANCELLED", name: "ملغي" },
+];
+
+const shopifyStatuses = [
+    { code: "unfulfilled", name: "Unfulfilled" },
+    { code: "fulfilled", name: "Fulfilled" },
+    { code: "partially_fulfilled", name: "Partially Fulfilled" },
+    { code: "cancelled", name: "Cancelled" },
+];
+
+
 export default function IntegrationDetailPage() {
     const params = useParams();
     const { integrationId } = params;
@@ -87,6 +109,7 @@ export default function IntegrationDetailPage() {
     }
     
     const isWebhookBased = ['generic-webhook', 'zapier'].includes(integrationInfo.id);
+    const isShopifyLike = ['shopify', 'woocommerce', 'salla', 'zid'].includes(integrationInfo.id);
 
     return (
         <div className="space-y-6">
@@ -180,6 +203,60 @@ export default function IntegrationDetailPage() {
                     </div>
                 </CardContent>
             </Card>
+            
+            {isShopifyLike && (
+                 <>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>مواءمة حالات الطلب</CardTitle>
+                            <CardDescription>اربط حالات الطلب في نظامنا مع الحالات في {integrationInfo.name} لضمان تحديث الحالات بشكل صحيح.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {ourStatuses.map(status => (
+                                <div key={status.code} className="space-y-2">
+                                    <Label>{status.name}</Label>
+                                    <Select>
+                                        <SelectTrigger><SelectValue placeholder={`اختر حالة ${integrationInfo.name}...`} /></SelectTrigger>
+                                        <SelectContent>
+                                            {shopifyStatuses.map(s => <SelectItem key={s.code} value={s.code}>{s.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>الطلبات الجاهزة للاستيراد</CardTitle>
+                            <CardDescription>هذه الطلبات حالتها `Paid` أو `Fulfilled` في {integrationInfo.name} وجاهزة للسحب.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>رقم الطلب ({integrationInfo.name})</TableHead>
+                                        <TableHead>العميل</TableHead>
+                                        <TableHead>المبلغ</TableHead>
+                                        <TableHead>الحالة</TableHead>
+                                        <TableHead>إجراء</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {mockImportableOrders.map(order => (
+                                        <TableRow key={order.shopifyId}>
+                                            <TableCell className="font-mono">{order.shopifyId}</TableCell>
+                                            <TableCell>{order.customer}</TableCell>
+                                            <TableCell>{order.total}</TableCell>
+                                            <TableCell><Badge variant="secondary">{order.shopifyStatus}</Badge></TableCell>
+                                            <TableCell><Button variant="outline" size="sm">استيراد</Button></TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </>
+            )}
 
             <div className="flex justify-end">
                 <Button onClick={handleSaveChanges}><Icon name="Save" className="ml-2" /> حفظ كل التغييرات</Button>
