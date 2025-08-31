@@ -249,57 +249,63 @@ const UserList = ({ users, roles, isDriverTab, onAdd, onEdit, onDelete, onBulkUp
 
     return (
         <div className="space-y-4" dir="rtl">
-            <div className="flex items-center justify-between gap-2 h-12">
-                {selectedUserIds.length > 0 ? (
-                     <div className='flex items-center gap-2 w-full'>
-                        <span className='text-sm font-semibold text-muted-foreground'>{selectedUserIds.length} محدد</span>
-                        <Separator orientation="vertical" className="h-6 mx-1" />
-                        <Button variant="outline" size="sm" onClick={() => onEdit(selectedUser!)} disabled={selectedUserIds.length !== 1}>
-                           <Icon name="Edit" className="ml-2" /> تعديل
-                        </Button>
-                        {!isDriverTab && <Button variant="outline" size="sm" onClick={() => setChangeRoleDialogOpen(true)}>
-                           <Icon name="UsersCog" className="ml-2" /> تغيير الدور
-                        </Button>}
-                        <Button variant="destructive" size="sm" onClick={confirmDelete}>
-                           <Icon name="Trash2" className="ml-2" /> حذف المحدد
-                        </Button>
-                        <div className="mr-auto">
-                            <Button variant="ghost" size="icon" onClick={() => setSelectedUserIds([])}>
-                                <Icon name="X" />
-                            </Button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="flex justify-between w-full">
-                         <div className="flex gap-2">
-                             <Button onClick={onAdd}>
-                                <Icon name="UserPlus" className="ml-2" /> إضافة جديد
-                             </Button>
-                              <Button variant="outline" onClick={() => importInputRef.current?.click()}>
-                                <Icon name="FileUp" className="ml-2" /> استيراد
-                            </Button>
-                            <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleFileImport} />
-                             {CSVLink && (
-                                <CSVLink data={users} headers={[{label: 'name', key: 'name'}, {label: 'email', key: 'email'}, {label: 'roleId', key: 'roleId'}]} filename={"users.csv"} className="inline-block">
-                                    <Button variant="outline">
-                                        <Icon name="FileDown" className="ml-2" /> تصدير
+             <Card>
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-2 h-10">
+                        {selectedUserIds.length > 0 ? (
+                            <div className='flex items-center gap-2 w-full'>
+                                <span className='text-sm font-semibold text-muted-foreground'>{selectedUserIds.length} محدد</span>
+                                <Separator orientation="vertical" className="h-6 mx-1" />
+                                <Button variant="outline" size="sm" onClick={() => onEdit(selectedUser!)} disabled={selectedUserIds.length !== 1}>
+                                <Icon name="Edit" className="ml-2" /> تعديل
+                                </Button>
+                                {!isDriverTab && <Button variant="outline" size="sm" onClick={() => setChangeRoleDialogOpen(true)}>
+                                <Icon name="UsersCog" className="ml-2" /> تغيير الدور
+                                </Button>}
+                                <Button variant="destructive" size="sm" onClick={confirmDelete}>
+                                <Icon name="Trash2" className="ml-2" /> حذف المحدد
+                                </Button>
+                                <div className="mr-auto">
+                                    <Button variant="ghost" size="icon" onClick={() => setSelectedUserIds([])}>
+                                        <Icon name="X" />
                                     </Button>
-                                </CSVLink>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                                <Checkbox id="select-all" checked={isAllFilteredSelected} onCheckedChange={handleSelectAll} />
-                                <Label htmlFor="select-all">تحديد الكل</Label>
+                                </div>
                             </div>
-                            <div className="relative w-full sm:max-w-xs">
-                                <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pr-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                        ) : (
+                            <div className="flex justify-between w-full">
+                                <div className="flex gap-2">
+                                    <Button onClick={onAdd}>
+                                        <Icon name="UserPlus" className="ml-2" /> إضافة جديد
+                                    </Button>
+                                    <Button variant="outline" onClick={() => importInputRef.current?.click()}>
+                                        <Icon name="FileUp" className="ml-2" /> استيراد
+                                    </Button>
+                                    <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleFileImport} />
+                                    {CSVLink && (
+                                        <CSVLink data={users} headers={[{label: 'name', key: 'name'}, {label: 'email', key: 'email'}, {label: 'roleId', key: 'roleId'}]} filename={"users.csv"} className="inline-block">
+                                            <Button variant="outline">
+                                                <Icon name="FileDown" className="ml-2" /> تصدير
+                                            </Button>
+                                        </CSVLink>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-4">
+                                     <div className="relative w-full sm:max-w-xs">
+                                        <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pr-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
-                )}
+                </CardContent>
+            </Card>
+
+            <div className="flex items-center gap-4">
+                 <Checkbox id="select-all" checked={isAllFilteredSelected} onCheckedChange={handleSelectAll} />
+                <Label htmlFor="select-all">تحديد كل الظاهر ({filteredUsers.length})</Label>
             </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredUsers.map(user => (
                     <UserCard 
