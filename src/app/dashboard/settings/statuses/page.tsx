@@ -20,7 +20,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from '@/components/ui/checkbox';
 
 
-const StatusCard = ({ status, onDelete }: { status: Status; onDelete: (id: string) => void; }) => {
+const StatusCard = ({ status }: { status: Status; onDelete: (id: string) => void; }) => {
   return (
     <Card className="hover:border-primary hover:shadow-lg transition-all duration-200 flex flex-col">
         <CardHeader>
@@ -34,9 +34,6 @@ const StatusCard = ({ status, onDelete }: { status: Status; onDelete: (id: strin
                         <span>{status.name}</span>
                     </CardTitle>
                 </Link>
-                <Button variant="ghost" size="icon" onClick={() => onDelete(status.id)} aria-label={`حذف حالة ${status.name}`}>
-                    <Icon name="Trash2" className="h-4 w-4 text-destructive" />
-                </Button>
             </div>
         </CardHeader>
         <CardContent className="mt-auto">
