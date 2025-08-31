@@ -486,7 +486,13 @@ export default function AreasPage() {
                 if (typeof text !== 'string') {
                     throw new Error("File is not readable");
                 }
-                const importedCities: City[] = JSON.parse(text);
+                const rawData: any[] = JSON.parse(text);
+
+                // Map 'regions' to 'areas' if present
+                const importedCities: City[] = rawData.map(city => ({
+                  ...city,
+                  areas: city.areas || city.regions || []
+                }));
                 
                 const isValid = Array.isArray(importedCities) && importedCities.every(c => 
                     c.id && 
