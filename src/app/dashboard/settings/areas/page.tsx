@@ -62,73 +62,93 @@ const CitiesView = ({
   onEditCity: (city: City) => void;
   onDeleteCity: (city: City) => void;
   onSelectCity: (city: City) => void;
-}) => (
-  <div className="space-y-6">
-    <Card className="shadow-sm">
-      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Icon name="MapPin" /> إدارة المناطق
-          </CardTitle>
-          <CardDescription className="mt-1">
-            إدارة المدن والمناطق التي تتم خدمتها في عمليات التوصيل.
-          </CardDescription>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="icon" asChild>
-            <Link href="/dashboard/settings">
-              <Icon name="ArrowLeft" className="h-4 w-4" />
-            </Link>
-          </Button>
-          <Button onClick={onAddCity}>
-            <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة مدينة
-          </Button>
-          <Button variant="outline"><Icon name="Upload" className="mr-2 h-4 w-4" /> استيراد</Button>
-          <Button variant="outline"><Icon name="Download" className="mr-2 h-4 w-4" /> تصدير</Button>
-        </div>
-      </CardHeader>
-    </Card>
+}) => {
+    const [searchQuery, setSearchQuery] = useState('');
+    const filteredCities = cities.filter(city => city.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {cities.map((city) => (
-        <Card key={city.id} className="hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out flex flex-col">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div className="space-y-1 cursor-pointer" onClick={() => onSelectCity(city)}>
-                <CardTitle className="text-xl font-bold">{city.name}</CardTitle>
-                <CardDescription>
-                  {city.areas.length} مناطق
-                </CardDescription>
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Icon name="MoreVertical" className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={() => onEditCity(city)}>
-                    تعديل
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => onDeleteCity(city)} className="text-destructive">
-                    حذف
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+    return (
+        <div className="space-y-6">
+            <Card className="shadow-sm">
+            <CardHeader>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                        <Icon name="MapPin" /> إدارة المناطق
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                        إدارة المدن والمناطق التي تتم خدمتها في عمليات التوصيل.
+                        </CardDescription>
+                    </div>
+                     <Button variant="outline" size="icon" asChild>
+                        <Link href="/dashboard/settings">
+                        <Icon name="ArrowLeft" className="h-4 w-4" />
+                        </Link>
+                    </Button>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                     <div className="relative w-full sm:max-w-xs">
+                        <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input 
+                            placeholder="بحث عن مدينة..." 
+                            className="pr-10"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex gap-2 sm:mr-auto">
+                         <Button onClick={onAddCity}>
+                            <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة مدينة
+                        </Button>
+                        <Button variant="outline"><Icon name="Upload" className="mr-2 h-4 w-4" /> استيراد</Button>
+                        <Button variant="outline"><Icon name="Download" className="mr-2 h-4 w-4" /> تصدير</Button>
+                    </div>
+                </div>
+            </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredCities.map((city) => (
+                <Card key={city.id} className="hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out flex flex-col">
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                    <div className="space-y-1 cursor-pointer" onClick={() => onSelectCity(city)}>
+                        <CardTitle className="text-xl font-bold">{city.name}</CardTitle>
+                        <CardDescription>
+                        {city.areas.length} مناطق
+                        </CardDescription>
+                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                            <Icon name="MoreVertical" className="h-4 w-4" />
+                        </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => onEditCity(city)}>
+                            تعديل
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={() => onDeleteCity(city)} className="text-destructive">
+                            حذف
+                        </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    </div>
+                </CardHeader>
+                <CardFooter className="mt-auto">
+                    <Button onClick={() => onSelectCity(city)} className="w-full">
+                    <Icon name="List" className="mr-2 h-4 w-4" />
+                    عرض المناطق
+                    </Button>
+                </CardFooter>
+                </Card>
+            ))}
             </div>
-          </CardHeader>
-          <CardFooter className="mt-auto">
-            <Button onClick={() => onSelectCity(city)} className="w-full">
-              <Icon name="List" className="mr-2 h-4 w-4" />
-              عرض المناطق
-            </Button>
-          </CardFooter>
-        </Card>
-      ))}
-    </div>
-  </div>
-);
+        </div>
+    )
+};
 
 
 // Sub-component for displaying areas within a city
@@ -147,23 +167,25 @@ const AreasView = ({
 }) => (
     <div className="space-y-6">
       <Card className="shadow-sm">
-        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Icon name="MapPin" /> مناطق مدينة: {city.name}
-            </CardTitle>
-            <CardDescription className="mt-1">
-              إدارة المناطق التابعة لهذه المدينة.
-            </CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="icon" onClick={onBack}>
-              <Icon name="ArrowLeft" className="h-4 w-4" />
-            </Button>
-             <Button onClick={onAddArea}>
-                <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة منطقة جديدة
-            </Button>
-          </div>
+        <CardHeader>
+             <div className="flex justify-between items-start">
+                <div>
+                    <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                        <Icon name="MapPin" /> مناطق مدينة: {city.name}
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                        إدارة المناطق التابعة لهذه المدينة.
+                    </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="icon" onClick={onBack}>
+                    <Icon name="ArrowLeft" className="h-4 w-4" />
+                    </Button>
+                    <Button onClick={onAddArea}>
+                        <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة منطقة جديدة
+                    </Button>
+                </div>
+            </div>
         </CardHeader>
       </Card>
       <Card>
@@ -218,13 +240,16 @@ const AreaDialog = ({
 }) => {
   const [name, setName] = useState('');
 
+  // Use an effect to update the local state when the dialog opens or the selected entity changes.
+  // This ensures the input field has the correct value when editing.
   useState(() => {
-    if (entity) {
+    if (open && entity) {
       setName(entity.name);
-    } else {
+    } else if (open) {
       setName('');
     }
   }, [entity, open]);
+
 
   const handleSave = () => {
     onSave(name);
@@ -304,6 +329,14 @@ export default function AreasPage() {
 
   // Generic save handler
   const handleSave = (name: string) => {
+    if (!name) {
+        toast({
+            variant: 'destructive',
+            title: 'خطأ',
+            description: 'الاسم لا يمكن أن يكون فارغًا.'
+        });
+        return;
+    }
     if (dialogType === 'city') {
       if (selectedEntity) { // Editing city
         updateCity(selectedEntity.id, { name });
@@ -321,6 +354,11 @@ export default function AreasPage() {
                 addArea(selectedCity.id, name);
                 toast({ title: 'تمت الإضافة', description: 'تمت إضافة المنطقة بنجاح.' });
             }
+            // Update the selectedCity view with the latest data
+            const updatedCity = useAreasStore.getState().cities.find(c => c.id === selectedCity.id);
+            if (updatedCity) {
+                setSelectedCity(updatedCity);
+            }
         }
     }
     setDialogOpen(false);
@@ -333,6 +371,10 @@ export default function AreasPage() {
           toast({ title: 'تم الحذف', description: `تم حذف مدينة "${entityToDelete.name}" بنجاح.` });
       } else if (selectedCity) {
           deleteArea(selectedCity.id, entityToDelete.id);
+          const updatedCity = useAreasStore.getState().cities.find(c => c.id === selectedCity.id);
+          if (updatedCity) {
+            setSelectedCity(updatedCity);
+          }
           toast({ title: 'تم الحذف', description: `تم حذف منطقة "${entityToDelete.name}" بنجاح.` });
       }
       setEntityToDelete(null);
@@ -340,9 +382,16 @@ export default function AreasPage() {
   
 
   if (selectedCity) {
+    // Find the latest version of the city from the store in case it was updated
+    const currentCityData = cities.find(c => c.id === selectedCity.id);
+    if (!currentCityData) {
+        // City was deleted, so go back
+        setSelectedCity(null);
+        return null;
+    }
     return (
         <AreasView 
-            city={selectedCity}
+            city={currentCityData}
             onBack={() => setSelectedCity(null)}
             onAddArea={handleAddArea}
             onEditArea={handleEditArea}
@@ -384,3 +433,5 @@ export default function AreasPage() {
     </>
   );
 }
+
+    
