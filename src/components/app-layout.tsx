@@ -32,21 +32,21 @@ type NavItem = {
 };
 
 const allNavItems: NavItem[] = [
-  { href: '/dashboard', iconName: 'LayoutDashboard', label: 'لوحة التحكم', permissionId: 'dashboard' },
-  { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'عرض الطلبات', permissionId: 'orders' },
-  { href: '/dashboard/parse-order', iconName: 'PackagePlus', label: 'إضافة طلبات', permissionId: 'parse-order' },
-  { href: '/dashboard/optimize', iconName: 'Wand2', label: 'تحسين المسار', permissionId: 'optimize' },
-  { href: '/dashboard/drivers-map', iconName: 'Map', label: 'خريطة السائقين', permissionId: 'drivers-map' },
-  { href: '/dashboard/returns', iconName: 'Undo2', label: 'إدارة المرتجعات', permissionId: 'returns' },
-  { href: '/dashboard/financials', iconName: 'Calculator', label: 'المحاسبة', permissionId: 'financials' },
-  { href: '/dashboard/settings', iconName: 'Settings', label: 'الإعدادات', permissionId: 'settings' },
+  { href: '/dashboard', iconName: 'LayoutDashboard', label: 'لوحة التحكم', permissionId: 'dashboard:view' },
+  { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'عرض الطلبات', permissionId: 'orders:view' },
+  { href: '/dashboard/parse-order', iconName: 'PackagePlus', label: 'إضافة طلبات', permissionId: 'parse-order:use' },
+  { href: '/dashboard/optimize', iconName: 'Wand2', label: 'تحسين المسار', permissionId: 'optimize:use' },
+  { href: '/dashboard/drivers-map', iconName: 'Map', label: 'خريطة السائقين', permissionId: 'drivers-map:view' },
+  { href: '/dashboard/returns', iconName: 'Undo2', label: 'إدارة المرتجعات', permissionId: 'returns:view' },
+  { href: '/dashboard/financials', iconName: 'Calculator', label: 'المحاسبة', permissionId: 'financials:view' },
+  { href: '/dashboard/settings', iconName: 'Settings', label: 'الإعدادات', permissionId: 'settings:view' },
 ];
 
 const mobileMainItems: NavItem[] = [
-  { href: '/dashboard', iconName: 'LayoutDashboard', label: 'الرئيسية', permissionId: 'dashboard' },
-  { href: '/dashboard/parse-order', iconName: 'PackagePlus', label: 'إضافة', permissionId: 'parse-order' },
-  { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'الطلبات', permissionId: 'orders' },
-  { href: '/dashboard/drivers-map', iconName: 'Map', label: 'الخريطة', permissionId: 'drivers-map' },
+  { href: '/dashboard', iconName: 'LayoutDashboard', label: 'الرئيسية', permissionId: 'dashboard:view' },
+  { href: '/dashboard/parse-order', iconName: 'PackagePlus', label: 'إضافة', permissionId: 'parse-order:use' },
+  { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'الطلبات', permissionId: 'orders:view' },
+  { href: '/dashboard/drivers-map', iconName: 'Map', label: 'الخريطة', permissionId: 'drivers-map:view' },
 ];
 
 
@@ -64,6 +64,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     const hasPermission = (permissionId: string) => {
         if (!userPermissions) return false;
         if (userPermissions.includes('all')) return true;
+        // Check for specific permission or wildcard group permission (e.g., 'orders:*')
+        const [group] = permissionId.split(':');
+        if (userPermissions.includes(`${group}:*`)) return true;
         return userPermissions.includes(permissionId);
     };
 
@@ -146,9 +149,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </SheetTrigger>
                     <SheetContent side="bottom" className="h-auto rounded-t-lg p-4">
                         <SheetHeader>
-                            <SheetTitle className="sr-only">قائمة إضافية</SheetTitle>
+                            <SheetTitle>قائمة إضافية</SheetTitle>
                         </SheetHeader>
-                       <div className="grid grid-cols-2 gap-4">
+                       <div className="grid grid-cols-2 gap-4 mt-4">
                             {mobileMoreItems.map((item) => (
                                  <Link 
                                     key={item.href} 
