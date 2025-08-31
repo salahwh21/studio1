@@ -11,7 +11,7 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 // Add all solid icons to the library, so we can use them by name
 library.add(fas);
 
-type IconName = keyof typeof LucideIcons | 'UserCog' | 'UsersCog';
+type IconName = keyof typeof LucideIcons | 'UserCog' | 'UsersCog' | 'ShieldCheck' | 'KeyRound';
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
   name: IconName;
@@ -95,6 +95,8 @@ const faMapping: { [key in IconName]?: import('@fortawesome/fontawesome-svg-core
   FileDown: 'file-arrow-down',
   X: 'times',
   Check: 'check',
+  ShieldCheck: 'shield-check',
+  KeyRound: 'key',
 };
 
 const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons } } = {
@@ -175,6 +177,8 @@ const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons }
   FileDown: { feather: 'FileDown' },
   X: { feather: 'X' },
   Check: { feather: 'Check' },
+  ShieldCheck: { feather: 'Shield' },
+  KeyRound: { feather: 'Key' },
 };
 
 
