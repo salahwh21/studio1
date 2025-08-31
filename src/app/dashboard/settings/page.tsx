@@ -19,7 +19,7 @@ const settingsItems: {
   { href: '#', iconName: 'Store', title: 'التجار', description: 'إدارة حسابات التجار وتسعير التوصيل الخاص بهم.' },
   { href: '/dashboard/settings/areas', iconName: 'MapPin', title: 'المناطق', description: 'تحديد المدن والمناطق لعمليات التوصيل.' },
   { href: '#', iconName: 'DollarSign', title: 'قوائم الأسعار', description: 'إنشاء وتعديل قوائم أسعار التوصيل المختلفة.' },
-  { href: '#', iconName: 'ListChecks', title: 'حالات التوصيل', description: 'تخصيص مراحل وحالات دورة حياة الطلب.' },
+  { href: '/dashboard/settings/statuses', iconName: 'ListChecks', title: 'حالات التوصيل', description: 'تخصيص مراحل وحالات دورة حياة الطلب.' },
   { href: '#', iconName: 'Bell', title: 'الإشعارات', description: 'التحكم في قوالب الرسائل والإشعارات التلقائية.' },
   { href: '#', iconName: 'Share2', title: 'التكاملات', description: 'ربط النظام مع خدمات وتطبيقات خارجية.' },
   { href: '#', iconName: 'MessageSquareQuote', title: 'الدعم الفني', description: 'الحصول على مساعدة أو طلب ميزات جديدة.' },
