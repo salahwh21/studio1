@@ -209,7 +209,7 @@ export default function IntegrationsPage() {
             warning: { text: 'تحذير', color: 'text-yellow-600', icon: 'AlertCircle' as const },
             error: { text: 'خطأ', color: 'text-red-600', icon: 'XCircle' as const },
             inactive: { text: 'غير نشط', color: 'text-gray-500', icon: 'Clock' as const }
-        }[connection.health];
+        }[connection.health] || { text: 'غير معروف', color: 'text-gray-500', icon: 'HelpCircle' as const };
         
          return (
              <Card className="bg-card shadow-sm hover:shadow-lg transition-shadow">
@@ -321,5 +321,3 @@ export default function IntegrationsPage() {
         </div>
     );
 }
-
-    
