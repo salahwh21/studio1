@@ -116,6 +116,13 @@ export default function FieldMappingPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
+                            {/* 
+                              **هنا تمت إضافة الزر الجديد**
+                              - هذا النموذج يحتوي على زر "اقتراح باستخدام الذكاء الاصطناعي".
+                              - عند الضغط عليه، يقوم بتشغيل formAction الذي يستدعي الـ Flow الخاص بالذكاء الاصطناعي.
+                              - يقوم الـ Flow بتحليل آخر بيانات مستلمة (lastPayload) واقتراح أفضل ربط للحقول.
+                              - يتم بعد ذلك تحديث الجدول أدناه بالاقتراحات تلقائيًا.
+                            */}
                             <form action={formAction}>
                                 <input type="hidden" name="payload" value={lastPayload} />
                                 <Button type="submit" variant="outline" className="gap-2 mb-4">
