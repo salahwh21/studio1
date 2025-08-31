@@ -57,10 +57,10 @@ const paperSizeClasses = {
   a4: 'w-[210mm] h-[297mm] p-8',
   a5: 'w-[148mm] h-[210mm] p-6',
   label_4x6: 'w-[101.6mm] h-[152.4mm] p-4 text-sm',
-  label_4x4: 'w-[101.6mm] h-[101.6mm] p-3 text-xs',
-  label_4x2: 'w-[101.6mm] h-[50.8mm] p-2 text-[10px]',
-  label_3x2: 'w-[76.2mm] h-[50.8mm] p-2 text-[9px] leading-tight',
-  label_2x3: 'w-[50.8mm] h-[76.2mm] p-2 text-[9px] leading-tight',
+  label_4x4: 'w-[101.6mm] h-[101.6mm] p-3 text-[10px] leading-tight',
+  label_4x2: 'w-[101.6mm] h-[50.8mm] p-2 text-[9px] leading-tight',
+  label_3x2: 'w-[76.2mm] h-[50.8mm] p-2 text-[8px] leading-tight',
+  label_2x3: 'w-[50.8mm] h-[76.2mm] p-2 text-[8px] leading-tight',
 };
 
 const CustomFieldsSection = ({ fields, onUpdate, onAdd, onRemove }: { fields: {label: string, value: string}[], onUpdate: (index: number, field: 'label'|'value', value: string) => void, onAdd: () => void, onRemove: (index: number) => void }) => (
@@ -367,4 +367,3 @@ export default function PolicySettingsPage() {
     </div>
   );
 }
-
