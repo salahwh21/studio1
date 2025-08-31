@@ -68,6 +68,7 @@ export default function FontsColorsPage() {
   const [secondary, setSecondary] = useState('#F1F5F9');
   const [secondaryForeground, setSecondaryForeground] = useState('#0F172A');
   const [destructive, setDestructive] = useState('#EF4444');
+  const [destructiveForeground, setDestructiveForeground] = useState('#FFFFFF');
   const [border, setBorder] = useState('#E5E7EB');
   const [input, setInput] = useState('#E5E7EB');
   const [ring, setRing] = useState('#F96941');
@@ -107,6 +108,7 @@ export default function FontsColorsPage() {
       setSecondary(settings.secondary || '#F1F5F9');
       setSecondaryForeground(settings.secondaryForeground || '#0F172A');
       setDestructive(settings.destructive || '#EF4444');
+      setDestructiveForeground(settings.destructiveForeground || '#FFFFFF');
       setBorder(settings.border || '#E5E7EB');
       setInput(settings.input || '#E5E7EB');
       setRing(settings.ring || '#F96941');
@@ -128,13 +130,13 @@ export default function FontsColorsPage() {
 
   const themeSettings = useMemo(() => ({
     primary, primaryForeground, background, foreground, mutedForeground, accent, card, cardForeground,
-    popover, popoverForeground, secondary, secondaryForeground, destructive, border, input, ring,
+    popover, popoverForeground, secondary, secondaryForeground, destructive, destructiveForeground, border, input, ring,
     chart1, chart2, chart3, chart4, chart5,
     sidebarBackground, sidebarForeground, sidebarAccent, sidebarAccentForeground, sidebarBorder,
     fontFamily, baseFontSize
   }), [
       primary, primaryForeground, background, foreground, mutedForeground, accent, card, cardForeground,
-      popover, popoverForeground, secondary, secondaryForeground, destructive, border, input, ring,
+      popover, popoverForeground, secondary, secondaryForeground, destructive, destructiveForeground, border, input, ring,
       chart1, chart2, chart3, chart4, chart5,
       sidebarBackground, sidebarForeground, sidebarAccent, sidebarAccentForeground, sidebarBorder,
       fontFamily, baseFontSize
@@ -149,12 +151,13 @@ export default function FontsColorsPage() {
     '--preview-card': card,
     '--preview-card-foreground': cardForeground,
     '--preview-destructive': destructive,
+    '--preview-destructive-foreground': destructiveForeground,
     '--preview-border': border,
     '--preview-font-size': `${baseFontSize}px`,
     fontFamily: fonts.find(f => f.name === fontFamily)?.variable || 'sans-serif',
   } as React.CSSProperties), [
       primary, primaryForeground, background, foreground, accent, 
-      card, cardForeground, destructive, border, 
+      card, cardForeground, destructive, destructiveForeground, border, 
       baseFontSize, fontFamily
   ]);
   
@@ -164,7 +167,9 @@ export default function FontsColorsPage() {
     const formData = new FormData();
     
     Object.entries(themeSettings).forEach(([key, value]) => {
-        formData.append(key, value.toString());
+        if(value !== null && value !== undefined) {
+            formData.append(key, value.toString());
+        }
     });
 
     try {
@@ -246,6 +251,7 @@ export default function FontsColorsPage() {
                     <ColorInput id="secondary" label="خلفية ثانوي" value={secondary} onChange={(e) => setSecondary(e.target.value)} />
                     <ColorInput id="secondaryForeground" label="نص ثانوي" value={secondaryForeground} onChange={(e) => setSecondaryForeground(e.target.value)} />
                     <ColorInput id="destructive" label="لون الحذف" value={destructive} onChange={(e) => setDestructive(e.target.value)} />
+                    <ColorInput id="destructiveForeground" label="نص الحذف" value={destructiveForeground} onChange={(e) => setDestructiveForeground(e.target.value)} />
                     <ColorInput id="border" label="لون الحواف" value={border} onChange={(e) => setBorder(e.target.value)} />
                     <ColorInput id="input" label="لون حقول الإدخال" value={input} onChange={(e) => setInput(e.target.value)} />
                     <ColorInput id="ring" label="لون التركيز (Ring)" value={ring} onChange={(e) => setRing(e.target.value)} />
@@ -332,8 +338,10 @@ export default function FontsColorsPage() {
                     
                     <div className="space-y-3 text-sm mt-4">
                         <Alert variant="destructive" className="border-l-4" style={{ backgroundColor: `${destructive}1A`, borderColor: 'var(--preview-destructive)', color: 'var(--preview-destructive)' }}>
-                            <XCircle className="h-5 w-5" style={{color: 'var(--preview-destructive)'}}/>
-                            <AlertTitle>هذه رسالة خطأ.</AlertTitle>
+                            <Button variant="destructive" style={{ backgroundColor: 'var(--preview-destructive)', color: 'var(--preview-destructive-foreground)', fontSize: `${baseFontSize}px`}}>
+                                <XCircle className="h-5 w-5" />
+                                <AlertTitle>هذا زر خطأ.</AlertTitle>
+                            </Button>
                         </Alert>
                     </div>
                 </div>
