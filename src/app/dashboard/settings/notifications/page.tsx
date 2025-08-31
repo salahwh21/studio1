@@ -158,36 +158,34 @@ const SortableTemplateCard = ({ template, index, control, remove, statuses }: { 
     )
 }
 
-const NotificationsForm = ({ settings, onSave }: { settings: FormValues, onSave: (data: FormValues) => void }) => {
+const NotificationsForm = ({ defaultValues, onSave }: { defaultValues: FormValues, onSave: (data: FormValues) => void }) => {
     const { statuses } = useStatusesStore();
     
     const { control, handleSubmit, watch, reset } = useForm<FormValues>({
-        defaultValues: settings
+        defaultValues: defaultValues
     });
     
     useEffect(() => {
+        reset(defaultValues);
+    }, [defaultValues, reset]);
+
+    const { fields, append, remove, move } = useFieldArray({ control, name: "manualTemplates" });
+    const { fields: aiRules, replace: replaceAiRules } = useFieldArray({ control, name: "aiSettings.rules" });
+
+    useEffect(() => {
         const allStatusIds = statuses.map(s => s.code);
-        const existingRuleIds = new Set(settings.aiSettings.rules.map(r => r.statusId));
+        const existingRuleIds = new Set((defaultValues.aiSettings.rules || []).map(r => r.statusId));
         
         const newRules = allStatusIds
             .map(statusId => {
-                const existingRule = settings.aiSettings.rules.find(r => r.statusId === statusId);
+                const existingRule = (defaultValues.aiSettings.rules || []).find(r => r.statusId === statusId);
                 if (existingRule) return existingRule;
                 return { statusId, recipients: [] };
             });
 
-        reset({
-            manualTemplates: settings.manualTemplates,
-            aiSettings: {
-                ...settings.aiSettings,
-                rules: newRules
-            }
-        });
-    }, [settings, statuses, reset]);
+        replaceAiRules(newRules);
+    }, [statuses, defaultValues.aiSettings.rules, replaceAiRules]);
 
-
-    const { fields, append, remove, move } = useFieldArray({ control, name: "manualTemplates" });
-    const { fields: aiRules } = useFieldArray({ control, name: "aiSettings.rules" });
 
     const sensors = useSensors(useSensor(PointerSensor));
     
@@ -380,9 +378,7 @@ export default function NotificationsSettingsPage() {
                 </CardHeader>
             </Card>
 
-            <NotificationsForm settings={context.settings.notifications} onSave={handleSave} />
+            <NotificationsForm defaultValues={context.settings.notifications} onSave={handleSave} />
         </div>
     );
 }
-
-    
