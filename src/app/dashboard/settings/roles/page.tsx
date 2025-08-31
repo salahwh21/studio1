@@ -56,22 +56,26 @@ export default function RolesPermissionsPage() {
 
   const handlePermissionChange = (permissionId: string, checked: boolean) => {
     setTempPermissions(prev => {
+      let newPermissions: string[];
+
       if (permissionId === 'all') {
-        return checked ? allPermissions.map(p => p.id) : [];
+        return checked ? ['all'] : [];
+      }
+
+      const isCurrentlyAll = prev.includes('all');
+      const currentPermissions = isCurrentlyAll ? allPermissions.map(p => p.id) : prev;
+
+      if (checked) {
+        newPermissions = [...currentPermissions, permissionId];
+      } else {
+        newPermissions = currentPermissions.filter(p => p !== permissionId);
       }
       
-      const newPermissions = checked
-        ? [...prev, permissionId]
-        : prev.filter(p => p !== permissionId);
-
       if (newPermissions.length === allPermissions.length) {
         return ['all'];
       }
-      if (prev.includes('all') && !checked) {
-        return allPermissions.filter(p => p.id !== permissionId).map(p => p.id);
-      }
       
-      return newPermissions.filter(p => p !== 'all');
+      return newPermissions;
     });
   };
   
@@ -86,11 +90,6 @@ export default function RolesPermissionsPage() {
     setIsDialogOpen(false);
     setSelectedRole(null);
   };
-  
-  const isAllSelectedForRole = (role: Role | null) => {
-    if (!role) return false;
-    return role.permissions.includes('all') || role.permissions.length === allPermissions.length;
-  }
   
   const isAllTempSelected = tempPermissions.includes('all') || tempPermissions.length === allPermissions.length;
 

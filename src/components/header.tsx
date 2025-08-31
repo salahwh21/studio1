@@ -57,6 +57,7 @@ export function AppHeader() {
   const userPermissions = userRole?.permissions || [];
 
   const hasPermission = (permissionId: string) => {
+      if (!userPermissions) return false;
       if (userPermissions.includes('all')) return true;
       return userPermissions.includes(permissionId);
   };
