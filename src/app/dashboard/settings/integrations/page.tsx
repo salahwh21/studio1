@@ -169,6 +169,8 @@ export default function IntegrationsPage() {
     const IntegrationCard = ({ integration }: { integration: typeof integrationsList[0] }) => {
         const isFactory = integration.type === 'factory';
         const [logoError, setLogoError] = useState(false);
+        
+        const isCustomIntegration = integration.category === 'custom';
         const logoUrl = `https://logo.clearbit.com/${integration.id.split('-')[0]}.com`;
 
         return (
@@ -177,7 +179,7 @@ export default function IntegrationsPage() {
                     <div className="flex justify-between items-start">
                         <div className="flex items-center gap-4">
                             <div className="bg-primary/10 text-primary p-3 rounded-lg h-12 w-12 flex items-center justify-center">
-                               {logoError ? (
+                               {logoError || isCustomIntegration ? (
                                     <Icon name={integration.iconName} className="h-6 w-6" />
                                ) : (
                                     <Image 
