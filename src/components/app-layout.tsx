@@ -17,7 +17,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { AppHeader } from '@/components/header';
 import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from './ui/button';
 import { useEffect, useState } from 'react';
 import Icon from '@/components/icon';
@@ -145,6 +145,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         </button>
                     </SheetTrigger>
                     <SheetContent side="bottom" className="h-auto rounded-t-lg p-4">
+                        <SheetHeader>
+                            <SheetTitle className="sr-only">قائمة إضافية</SheetTitle>
+                        </SheetHeader>
                        <div className="grid grid-cols-2 gap-4">
                             {mobileMoreItems.map((item) => (
                                  <Link 
