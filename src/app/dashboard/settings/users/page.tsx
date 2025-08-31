@@ -120,16 +120,8 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
         className="hover:border-primary transition-colors duration-200 data-[state=checked]:border-primary data-[state=checked]:ring-2 data-[state=checked]:ring-primary" 
         data-state={isSelected ? 'checked' : 'unchecked'}
     >
-        <CardContent 
-            className="p-3 flex items-center gap-3"
-        >
-            <Checkbox
-                checked={isSelected}
-                onCheckedChange={(checked) => onSelectionChange(user.id, !!checked)}
-                className="h-5 w-5"
-                aria-label={`تحديد المستخدم ${user.name}`}
-            />
-             <Link href={`/dashboard/settings/users/${user.id}`} className="flex items-center gap-3 flex-1 text-right" onClick={(e) => {
+        <CardContent className="p-3 flex items-center justify-between">
+            <Link href={`/dashboard/settings/users/${user.id}`} className="flex items-center gap-3 flex-1 text-right" onClick={(e) => {
                  if(isSelected) {
                      e.preventDefault();
                      onSelectionChange(user.id, false);
@@ -145,6 +137,12 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
                     {role && <Badge variant="secondary">{role.name}</Badge>}
                 </div>
             </Link>
+            <Checkbox
+                checked={isSelected}
+                onCheckedChange={(checked) => onSelectionChange(user.id, !!checked)}
+                className="h-5 w-5 ml-3"
+                aria-label={`تحديد المستخدم ${user.name}`}
+            />
         </CardContent>
     </Card>
 );
@@ -212,38 +210,42 @@ const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd, onBulkUp
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-row-reverse items-center gap-2 h-12">
+            <div className="flex items-center justify-between gap-2 h-12">
                 {selectedUserIds.length > 0 ? (
                      <div className='flex items-center gap-2 w-full'>
-                        <Button variant="ghost" size="icon" onClick={() => setSelectedUserIds([])}><Icon name="X" /></Button>
+                        <span className='text-sm font-semibold text-muted-foreground'>{selectedUserIds.length} محدد</span>
                         <Separator orientation="vertical" className="h-6 mx-1" />
-                        <Button variant="destructive" size="sm" onClick={confirmDelete}>
-                           <Icon name="Trash2" className="mr-2" /> حذف المحدد
+                        <Button variant="outline" size="sm" onClick={() => onEdit(selectedUser!)} disabled={selectedUserIds.length !== 1}>
+                           <Icon name="Edit" className="ml-2" /> تعديل
                         </Button>
                         {!isDriverTab && <Button variant="outline" size="sm" onClick={() => setChangeRoleDialogOpen(true)}>
-                           <Icon name="UsersCog" className="mr-2" /> تغيير الدور
+                           <Icon name="UsersCog" className="ml-2" /> تغيير الدور
                         </Button>}
-                        <Button variant="outline" size="sm" onClick={() => onEdit(selectedUser!)} disabled={selectedUserIds.length !== 1}>
-                           <Icon name="Edit" className="mr-2" /> تعديل
+                        <Button variant="destructive" size="sm" onClick={confirmDelete}>
+                           <Icon name="Trash2" className="ml-2" /> حذف المحدد
                         </Button>
-                        <span className='mr-auto text-sm font-semibold text-muted-foreground'>{selectedUserIds.length} محدد</span>
+                        <div className="mr-auto">
+                            <Button variant="ghost" size="icon" onClick={() => setSelectedUserIds([])}>
+                                <Icon name="X" />
+                            </Button>
+                        </div>
                     </div>
                 ) : (
                     <>
-                        <div className="flex gap-2">
-                             <Button onClick={onAdd}>
-                                <Icon name="UserPlus" className="mr-2" /> إضافة جديد
-                             </Button>
-                             <Button variant="outline">
-                                <Icon name="FileUp" className="mr-2" /> استيراد
-                            </Button>
-                             <Button variant="outline">
-                                <Icon name="FileDown" className="mr-2" /> تصدير
-                            </Button>
-                        </div>
-                        <div className="relative flex-1 w-full sm:max-w-xs">
+                        <div className="relative w-full sm:max-w-xs">
                             <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pr-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                        </div>
+                         <div className="flex gap-2">
+                             <Button onClick={onAdd}>
+                                <Icon name="UserPlus" className="ml-2" /> إضافة جديد
+                             </Button>
+                             <Button variant="outline">
+                                <Icon name="FileUp" className="ml-2" /> استيراد
+                            </Button>
+                             <Button variant="outline">
+                                <Icon name="FileDown" className="ml-2" /> تصدير
+                            </Button>
                         </div>
                     </>
                 )}
