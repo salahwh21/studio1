@@ -4,7 +4,6 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import Link from 'next/link';
-import { nanoid } from 'nanoid';
 import { Bot, PlusCircle, Trash2, ArrowLeft, MessageSquare, Smartphone, Wand2, Save, GripVertical } from 'lucide-react';
 
 import { useStatusesStore, type Status } from '@/store/statuses-store';
@@ -196,7 +195,7 @@ const NotificationsForm = ({ settings, onSave }: { settings: FormValues, onSave:
 
     const handleAddTemplate = () => {
         append({
-            id: nanoid(),
+            id: `tpl_${Date.now()}`,
             statusId: '',
             recipients: ['customer'],
             whatsApp: '',
