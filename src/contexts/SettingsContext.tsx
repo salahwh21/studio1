@@ -20,8 +20,6 @@ export type AiNotificationRule = {
 };
 
 interface NotificationsSettings {
-  useAI: boolean;
-  aiTone: 'friendly' | 'formal' | 'concise';
   manualTemplates: NotificationTemplate[];
   aiSettings: {
       useAI: boolean;
@@ -48,8 +46,6 @@ export const SettingsContext = createContext<SettingsContextType | undefined>(un
 // 4. Define default settings data, including our templates
 const defaultSettingsData: ComprehensiveSettings = {
   notifications: {
-    useAI: false, // Legacy, will be removed
-    aiTone: 'friendly', // Legacy, will be removed
     manualTemplates: [
       { id: nanoid(), statusId: 'OUT_FOR_DELIVERY', recipients: ['customer'], whatsApp: 'مرحباً {{customerName}}، طلبك رقم *{{orderId}}* في طريقه إليك الآن مع السائق {{driverName}}. نتمنى لك يوماً سعيداً!', sms: 'طلبك {{orderId}} خرج للتوصيل. الوميض.' },
       { id: nanoid(), statusId: 'DELIVERED', recipients: ['customer', 'merchant'], whatsApp: 'مرحباً {{customerName}}، تم توصيل طلبك رقم *{{orderId}}* بنجاح. شكراً لثقتكم بخدماتنا!', sms: 'تم توصيل طلبك {{orderId}}. الوميض.' },
@@ -76,17 +72,18 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       const item = window.localStorage.getItem('comprehensiveAppSettings');
       if (item) {
         const savedSettings = JSON.parse(item);
-        // Merge saved settings with defaults to avoid errors if new settings are added
-        // A deep merge would be better for nested objects
+        // Deep merge for nested settings objects to prevent data loss on updates
         const mergedSettings = {
           ...defaultSettingsData,
           ...savedSettings,
           notifications: {
             ...defaultSettingsData.notifications,
             ...(savedSettings.notifications || {}),
+            manualTemplates: savedSettings.notifications?.manualTemplates || defaultSettingsData.notifications.manualTemplates,
             aiSettings: {
               ...defaultSettingsData.notifications.aiSettings,
               ...(savedSettings.notifications?.aiSettings || {}),
+              rules: savedSettings.notifications?.aiSettings?.rules || defaultSettingsData.notifications.aiSettings.rules,
             }
           },
         };

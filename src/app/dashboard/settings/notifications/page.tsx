@@ -159,8 +159,7 @@ const SortableTemplateCard = ({ template, index, control, remove, statuses }: { 
     )
 }
 
-const NotificationsForm = ({ settings, setSetting }: { settings: FormValues, setSetting: (key: any, value: any) => void }) => {
-    const { toast } = useToast();
+const NotificationsForm = ({ settings, onSave }: { settings: FormValues, onSave: (data: FormValues) => void }) => {
     const { statuses } = useStatusesStore();
     
     const { control, handleSubmit, watch, reset } = useForm<FormValues>({
@@ -168,19 +167,24 @@ const NotificationsForm = ({ settings, setSetting }: { settings: FormValues, set
     });
     
     useEffect(() => {
-        const initialRules = statuses.map(status => ({
-            statusId: status.code,
-            recipients: []
-        }));
+        // This ensures the form is re-initialized when the settings from context are loaded.
+        const allStatusIds = statuses.map(s => s.code);
+        const existingRuleIds = new Set(settings.aiSettings.rules.map(r => r.statusId));
         
-        const existingRules = new Map(settings.aiSettings.rules.map(rule => [rule.statusId, rule]));
-        
-        const mergedRules = initialRules.map(defaultRule => 
-            existingRules.get(defaultRule.statusId) || defaultRule
-        );
-        
-        reset({ ...settings, aiSettings: { ...settings.aiSettings, rules: mergedRules } });
+        const newRules = allStatusIds
+            .map(statusId => {
+                const existingRule = settings.aiSettings.rules.find(r => r.statusId === statusId);
+                if (existingRule) return existingRule;
+                return { statusId, recipients: [] };
+            });
 
+        reset({
+            manualTemplates: settings.manualTemplates,
+            aiSettings: {
+                ...settings.aiSettings,
+                rules: newRules
+            }
+        });
     }, [settings, statuses, reset]);
 
 
@@ -188,14 +192,8 @@ const NotificationsForm = ({ settings, setSetting }: { settings: FormValues, set
     const { fields: aiRules } = useFieldArray({ control, name: "aiSettings.rules" });
 
     const sensors = useSensors(useSensor(PointerSensor));
-
-    const handleSave = (data: FormValues) => {
-        setSetting('notifications', data);
-        toast({
-            title: "تم الحفظ بنجاح!",
-            description: "تم حفظ إعدادات الإشعارات.",
-        });
-    };
+    
+    const isAiEnabled = watch('aiSettings.useAI');
 
     const handleAddTemplate = () => {
         append({
@@ -220,7 +218,7 @@ const NotificationsForm = ({ settings, setSetting }: { settings: FormValues, set
 
 
     return (
-        <form onSubmit={handleSubmit(handleSave)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSave)} className="space-y-6">
             <Card className="bg-gradient-to-br from-primary/10 to-transparent">
                 <CardHeader>
                     <div className="flex items-center justify-between">
@@ -236,78 +234,72 @@ const NotificationsForm = ({ settings, setSetting }: { settings: FormValues, set
                             )}/>
                     </div>
                 </CardHeader>
-                <Controller
-                    name="aiSettings.useAI"
-                    control={control}
-                    render={({ field }) => (
-                         field.value && (
-                            <CardContent className="animate-in fade-in duration-300 space-y-4">
-                                <Separator />
-                                <div className="space-y-2">
-                                    <Label>نبرة الرسالة</Label>
-                                    <Controller name="aiSettings.aiTone" control={control} render={({ field }) => (
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <SelectTrigger className="w-full md:w-1/3"><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="friendly">ودية</SelectItem>
-                                                <SelectItem value="formal">رسمية</SelectItem>
-                                                <SelectItem value="concise">مختصرة</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    )}/>
-                                </div>
-                                <div className="space-y-2">
-                                     <Label>قواعد إرسال الرسائل الذكية</Label>
-                                     <Card className="overflow-hidden">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>الحالة</TableHead>
-                                                    {recipientOptions.map(opt => <TableHead key={opt.value} className="text-center">{opt.label}</TableHead>)}
+                {isAiEnabled && (
+                    <CardContent className="animate-in fade-in duration-300 space-y-4">
+                        <Separator />
+                        <div className="space-y-2">
+                            <Label>نبرة الرسالة</Label>
+                            <Controller name="aiSettings.aiTone" control={control} render={({ field }) => (
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <SelectTrigger className="w-full md:w-1/3"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="friendly">ودية</SelectItem>
+                                        <SelectItem value="formal">رسمية</SelectItem>
+                                        <SelectItem value="concise">مختصرة</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}/>
+                        </div>
+                        <div className="space-y-2">
+                             <Label>قواعد إرسال الرسائل الذكية</Label>
+                             <Card className="overflow-hidden">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>الحالة</TableHead>
+                                            {recipientOptions.map(opt => <TableHead key={opt.value} className="text-center">{opt.label}</TableHead>)}
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {aiRules.map((rule, index) => {
+                                            const statusInfo = statusMap.get(rule.statusId);
+                                            if (!statusInfo) return null;
+                                            return (
+                                                <TableRow key={rule.id}>
+                                                    <TableCell>
+                                                         <div className="flex items-center gap-2">
+                                                            <Icon name={statusInfo.icon as any} style={{ color: statusInfo.color }} className="h-4 w-4" />
+                                                            {statusInfo.name}
+                                                        </div>
+                                                    </TableCell>
+                                                    {recipientOptions.map(opt => (
+                                                        <TableCell key={opt.value} className="text-center">
+                                                             <Controller
+                                                                name={`aiSettings.rules.${index}.recipients`}
+                                                                control={control}
+                                                                render={({ field }) => (
+                                                                    <Checkbox
+                                                                        checked={field.value?.includes(opt.value)}
+                                                                        onCheckedChange={(checked) => {
+                                                                             const currentRecipients = field.value || [];
+                                                                            return checked
+                                                                                ? field.onChange([...currentRecipients, opt.value])
+                                                                                : field.onChange(currentRecipients.filter((value: Recipient) => value !== opt.value))
+                                                                        }}
+                                                                    />
+                                                                )}
+                                                             />
+                                                        </TableCell>
+                                                    ))}
                                                 </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {aiRules.map((rule, index) => {
-                                                    const statusInfo = statusMap.get(rule.statusId);
-                                                    if (!statusInfo) return null;
-                                                    return (
-                                                        <TableRow key={rule.id}>
-                                                            <TableCell>
-                                                                 <div className="flex items-center gap-2">
-                                                                    <Icon name={statusInfo.icon as any} style={{ color: statusInfo.color }} className="h-4 w-4" />
-                                                                    {statusInfo.name}
-                                                                </div>
-                                                            </TableCell>
-                                                            {recipientOptions.map(opt => (
-                                                                <TableCell key={opt.value} className="text-center">
-                                                                     <Controller
-                                                                        name={`aiSettings.rules.${index}.recipients`}
-                                                                        control={control}
-                                                                        render={({ field }) => (
-                                                                            <Checkbox
-                                                                                checked={field.value?.includes(opt.value)}
-                                                                                onCheckedChange={(checked) => {
-                                                                                     const currentRecipients = field.value || [];
-                                                                                    return checked
-                                                                                        ? field.onChange([...currentRecipients, opt.value])
-                                                                                        : field.onChange(currentRecipients.filter((value: Recipient) => value !== opt.value))
-                                                                                }}
-                                                                            />
-                                                                        )}
-                                                                     />
-                                                                </TableCell>
-                                                            ))}
-                                                        </TableRow>
-                                                    )
-                                                })}
-                                            </TableBody>
-                                        </Table>
-                                     </Card>
-                                </div>
-                            </CardContent>
-                        )
-                    )}
-                />
+                                            )
+                                        })}
+                                    </TableBody>
+                                </Table>
+                             </Card>
+                        </div>
+                    </CardContent>
+                )}
             </Card>
 
             <div className="space-y-4">
@@ -344,19 +336,36 @@ const NotificationsForm = ({ settings, setSetting }: { settings: FormValues, set
 
 export default function NotificationsSettingsPage() {
     const context = useSettings();
+    const { toast } = useToast();
 
+    const handleSave = (data: FormValues) => {
+        if (context) {
+            context.setSetting('notifications', data);
+            toast({
+                title: "تم الحفظ بنجاح!",
+                description: "تم حفظ إعدادات الإشعارات.",
+            });
+        }
+    };
+    
     if (!context || !context.isHydrated) {
         return (
             <div className="space-y-6">
-                <Skeleton className="h-24 w-full" />
+                 <Card>
+                    <CardHeader className="flex flex-row items-start justify-between">
+                        <div>
+                            <Skeleton className="h-8 w-64" />
+                            <Skeleton className="h-4 w-80 mt-2" />
+                        </div>
+                        <Skeleton className="h-10 w-10" />
+                    </CardHeader>
+                </Card>
                 <Skeleton className="h-48 w-full" />
                 <Skeleton className="h-48 w-full" />
             </div>
         );
     }
-
-    const { settings, setSetting } = context;
-
+    
     return (
         <div className="space-y-6">
             <Card>
@@ -373,8 +382,7 @@ export default function NotificationsSettingsPage() {
                 </CardHeader>
             </Card>
 
-            <NotificationsForm settings={settings.notifications} setSetting={setSetting} />
+            <NotificationsForm settings={context.settings.notifications} onSave={handleSave} />
         </div>
     );
 }
-
