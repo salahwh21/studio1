@@ -15,7 +15,6 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/icon';
 import { useStatusesStore, type Status } from '@/store/statuses-store';
 import { useToast } from '@/hooks/use-toast';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -57,14 +56,12 @@ const StatusCard = ({ status, onUpdate, onDelete }: { status: Status; onUpdate: 
         </CardHeader>
         <CardContent className="mt-auto">
             <div className="flex items-center justify-between rounded-md border p-2">
-                <Label htmlFor={`status-active-${status.id}`} className="text-sm cursor-pointer">
-                    الحالة مفعلة
+                <Label className="text-sm">
+                    الحالة
                 </Label>
-                <Switch
-                    id={`status-active-${status.id}`}
-                    checked={status.isActive}
-                    onCheckedChange={(checked) => onUpdate(status.id, { isActive: checked })}
-                />
+                 <Badge variant={status.isActive ? 'default' : 'secondary'} className={status.isActive ? 'bg-green-100 text-green-800' : ''}>
+                    {status.isActive ? 'مفعلة' : 'غير مفعلة'}
+                </Badge>
             </div>
         </CardContent>
     </Card>
