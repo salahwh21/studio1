@@ -16,7 +16,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { nanoid } from 'nanoid';
 
 // Mock data for price lists - replace with a store later
 const mockPriceLists = [
@@ -32,6 +31,8 @@ type PricingRule = {
     toCities: string[]; // Array of city IDs
     price: string;
 }
+
+const generateId = () => `rule_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 const CitySelectionDialog = ({
     cities,
@@ -114,7 +115,7 @@ export default function PriceListDetailPage() {
 
     const handleAddRule = () => {
         setRules(prev => [...prev, {
-            id: nanoid(),
+            id: generateId(),
             name: '',
             fromCities: [],
             toCities: [],
@@ -262,4 +263,3 @@ export default function PriceListDetailPage() {
         </div>
     );
 }
-
