@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -28,6 +27,7 @@ const integrationsList = [
     { id: 'fedex', name: 'FedEx', iconName: 'Globe' as const, description: 'ربط وتتبع الشحنات مع شركة فيديكس.', category: 'shipping', requiresApiKey: true, requiresWebhook: false },
     { id: 'odoo', name: 'Odoo', iconName: 'Briefcase' as const, description: 'مزامنة الطلبات والفواتير مع نظام Odoo ERP الخاص بك.', category: 'erp' },
     { id: 'twilio', name: 'Twilio', iconName: 'MessageSquare' as const, description: 'إرسال رسائل SMS للعملاء بحالة الطلب.', category: 'communication', requiresApiKey: true, requiresWebhook: false },
+    { id: 'stripe', name: 'Stripe', iconName: 'CreditCard' as const, description: 'تفعيل الدفع الإلكتروني عبر بطاقات الائتمان.', category: 'payment', requiresApiKey: true, requiresWebhook: false },
     { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const, description: 'ربط النظام بآلاف التطبيقات الأخرى لأتمتة المهام.', category: 'automation', requiresApiKey: false, requiresWebhook: true },
     { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const, description: 'ربط أي منصة تدعم الويب هوك لاستقبال الطلبات.', category: 'custom', requiresApiKey: false, requiresWebhook: true },
     { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const, description: 'للمطورين: ربط النظام مع أي واجهة برمجية مخصصة.', category: 'custom', requiresApiKey: true, requiresWebhook: false }
@@ -37,6 +37,7 @@ const categories = [
     { id: 'all', name: 'الكل' },
     { id: 'e-commerce', name: 'تجارة إلكترونية' },
     { id: 'shipping', name: 'شركات شحن' },
+    { id: 'payment', name: 'دفع إلكتروني' },
     { id: 'erp', name: 'أنظمة ERP' },
     { id: 'communication', name: 'تواصل' },
     { id: 'automation', name: 'أتمتة' },
@@ -190,7 +191,7 @@ export default function IntegrationsPage() {
             </Card>
 
             <Tabs defaultValue="all" className="w-full">
-                <TabsList className="grid w-full grid-cols-7">
+                <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${categories.length}, minmax(0, 1fr))` }}>
                     {categories.map(cat => <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>)}
                 </TabsList>
                 

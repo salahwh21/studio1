@@ -13,6 +13,8 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 // Mock data, in a real app this would come from a store or API
 const integrationsList = [
@@ -24,6 +26,7 @@ const integrationsList = [
     { id: 'dhl', name: 'DHL', iconName: 'Globe' as const },
     { id: 'odoo', name: 'Odoo', iconName: 'Briefcase' as const },
     { id: 'twilio', name: 'Twilio', iconName: 'MessageSquare' as const },
+    { id: 'stripe', name: 'Stripe', iconName: 'CreditCard' as const },
     { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const },
     { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const },
     { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const }
