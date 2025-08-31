@@ -167,7 +167,6 @@ const NotificationsForm = ({ settings, onSave }: { settings: FormValues, onSave:
     });
     
     useEffect(() => {
-        // This ensures the form is re-initialized when the settings from context are loaded.
         const allStatusIds = statuses.map(s => s.code);
         const existingRuleIds = new Set(settings.aiSettings.rules.map(r => r.statusId));
         
