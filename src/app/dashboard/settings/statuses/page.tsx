@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   Card,
@@ -19,63 +19,81 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { MoreVertical } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 
 const StatusCard = ({ status, onUpdate, onDelete }: { status: Status; onUpdate: (id: string, newStatus: Partial<Status>) => void; onDelete: (id: string) => void; }) => {
   return (
-    <AccordionItem value={status.id} className="border-b-0">
-      <Card className="overflow-hidden">
-        <div className="flex items-center p-3 gap-4">
-           <AccordionTrigger className="p-0 flex-1 justify-start gap-4">
-              <Icon name="ChevronDown" className="h-5 w-5 shrink-0 transition-transform duration-200" />
-              <div className="flex items-center gap-2">
-                  <Badge style={{ backgroundColor: status.color, color: '#fff' }} className="border-none">
-                      <Icon name={status.icon as any} className="h-4 w-4 mr-1" />
-                      {status.name}
-                  </Badge>
-              </div>
-            </AccordionTrigger>
-          <div className="flex items-center gap-4 ml-auto">
-            <div className="flex items-center space-x-2 space-x-reverse">
-              <Switch
-                id={`status-active-${status.id}`}
-                checked={status.isActive}
-                onCheckedChange={(checked) => onUpdate(status.id, { isActive: checked })}
-              />
-              <Label htmlFor={`status-active-${status.id}`} className="text-sm">مفعلة</Label>
+    <Card className="hover:border-primary hover:shadow-lg transition-all duration-200 flex flex-col">
+        <CardHeader>
+             <div className="flex items-start justify-between">
+                <Link href={`/dashboard/settings/statuses/${status.id}`} className="space-y-2 flex-1">
+                    <Badge style={{ backgroundColor: status.color, color: '#fff' }} className="border-none text-xs">
+                        {status.name}
+                    </Badge>
+                    <CardTitle className="text-lg font-bold flex items-center gap-2 pt-2">
+                        <Icon name={status.icon as any} className="h-5 w-5" />
+                        <span>{status.name}</span>
+                    </CardTitle>
+                </Link>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => { /* Navigate to edit page */ }}>تعديل</DropdownMenuItem>
+                        <DropdownMenuSeparator/>
+                        <DropdownMenuItem onSelect={() => onDelete(status.id)} className="text-destructive">حذف</DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => onDelete(status.id)}>
-              <Icon name="Trash2" className="h-4 w-4 text-destructive" />
-            </Button>
-          </div>
-        </div>
-         <AccordionContent>
-            <div className="p-4 border-t bg-muted/50">
-                <p className="text-center text-muted-foreground">سيتم عرض إعدادات الحالة التفصيلية هنا لاحقًا.</p>
+        </CardHeader>
+        <CardContent className="mt-auto">
+            <div className="flex items-center justify-between rounded-md border p-2">
+                <Label htmlFor={`status-active-${status.id}`} className="text-sm cursor-pointer">
+                    الحالة مفعلة
+                </Label>
+                <Switch
+                    id={`status-active-${status.id}`}
+                    checked={status.isActive}
+                    onCheckedChange={(checked) => onUpdate(status.id, { isActive: checked })}
+                />
             </div>
-        </AccordionContent>
-      </Card>
-    </AccordionItem>
+        </CardContent>
+    </Card>
   );
 };
 
 export default function StatusesPage() {
   const { toast } = useToast();
   const { statuses, updateStatus, deleteStatus } = useStatusesStore();
+  const [statusToDelete, setStatusToDelete] = useState<Status | null>(null);
   
   const handleUpdate = (id: string, newStatus: Partial<Status>) => {
       updateStatus(id, newStatus);
       toast({ title: 'تم التحديث', description: 'تم تحديث حالة الطلب.' });
   }
   
-  const handleDelete = (id: string) => {
-      // Add confirmation dialog later
-      deleteStatus(id);
-      toast({ title: 'تم الحذف', description: 'تم حذف حالة الطلب.' });
+  const handleDeleteRequest = (id: string) => {
+      const status = statuses.find(s => s.id === id);
+      if (status) {
+          setStatusToDelete(status);
+      }
+  }
+
+  const confirmDelete = () => {
+      if (statusToDelete) {
+          deleteStatus(statusToDelete.id);
+          toast({ title: 'تم الحذف', description: `تم حذف حالة "${statusToDelete.name}".`});
+          setStatusToDelete(null);
+      }
   }
   
   const handleSaveChanges = () => {
@@ -84,6 +102,7 @@ export default function StatusesPage() {
   };
 
   return (
+    <>
     <div className="space-y-6">
       <Card className="shadow-sm">
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -105,11 +124,11 @@ export default function StatusesPage() {
         </CardHeader>
       </Card>
 
-       <Accordion type="multiple" className="w-full space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {statuses.map(status => (
-          <StatusCard key={status.id} status={status} onUpdate={handleUpdate} onDelete={handleDelete} />
+          <StatusCard key={status.id} status={status} onUpdate={handleUpdate} onDelete={handleDeleteRequest} />
         ))}
-      </Accordion>
+      </div>
 
       <CardFooter className="p-0 pt-6">
          <Button size="lg" onClick={handleSaveChanges}>
@@ -118,5 +137,21 @@ export default function StatusesPage() {
           </Button>
       </CardFooter>
     </div>
+
+    <AlertDialog open={!!statusToDelete} onOpenChange={() => setStatusToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                <AlertDialogDescription>
+                    هل أنت متأكد من حذف حالة "{statusToDelete?.name}"؟ لا يمكن التراجع عن هذا الإجراء.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">حذف</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
