@@ -461,18 +461,41 @@ export default function AreasPage() {
         return null;
     }
     return (
-        <AreasView 
-            city={currentCityData}
-            selectedAreas={selectedAreaIds}
-            onBack={() => {
-                setSelectedCity(null);
-                setSelectedAreaIds([]);
-            }}
-            onAddArea={handleAddArea}
-            onEditArea={handleEditArea}
-            onDeleteAreas={handleDeleteAreas}
-            onSelectionChange={handleAreaSelection}
-        />
+        <>
+            <AreasView 
+                city={currentCityData}
+                selectedAreas={selectedAreaIds}
+                onBack={() => {
+                    setSelectedCity(null);
+                    setSelectedAreaIds([]);
+                }}
+                onAddArea={handleAddArea}
+                onEditArea={handleEditArea}
+                onDeleteAreas={handleDeleteAreas}
+                onSelectionChange={handleAreaSelection}
+            />
+            <AreaDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                onSave={handleSave}
+                entity={selectedEntity}
+                type={dialogType}
+            />
+            <AlertDialog open={!!entityToDelete} onOpenChange={() => setEntityToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            هل أنت متأكد من حذف {entityToDelete?.length} {deleteType === 'city' ? 'مدن' : 'مناطق'}؟ لا يمكن التراجع عن هذا الإجراء.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">حذف</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     )
   }
 
