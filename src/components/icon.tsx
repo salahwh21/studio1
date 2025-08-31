@@ -89,6 +89,9 @@ const faMapping: { [key in IconName]?: import('@fortawesome/fontawesome-svg-core
   UserCog: 'user-cog',
   ListChecks: 'tasks',
   Upload: 'upload',
+  UserPlus: 'user-plus',
+  FileUp: 'file-arrow-up',
+  FileDown: 'file-arrow-down',
 };
 
 const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons } } = {
@@ -163,6 +166,9 @@ const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons }
   UserCog: { feather: 'User' },
   ListChecks: { feather: 'CheckSquare' },
   Upload: { feather: 'Upload' },
+  UserPlus: { feather: 'UserPlus' },
+  FileUp: { feather: 'FileUp' },
+  FileDown: { feather: 'FileDown' },
 };
 
 

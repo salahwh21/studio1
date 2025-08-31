@@ -1,13 +1,14 @@
-
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
   CardContent,
+  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/icon';
@@ -33,17 +34,32 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import Link from 'next/link';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-const UserDialog = ({ open, onOpenChange, onSave, user, roles }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (user: Omit<User, 'id' | 'password'>) => void, user: User | null, roles: Role[] }) => {
+
+const UserDialog = ({
+  open,
+  onOpenChange,
+  onSave,
+  user,
+  roles,
+  isDriver,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (user: Omit<User, 'id' | 'password'>) => void;
+  user: User | null;
+  roles: Role[];
+  isDriver?: boolean;
+}) => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [roleId, setRoleId] = useState<Role['id'] | ''>('');
 
-    useState(() => {
+    React.useEffect(() => {
         if(user) {
             setName(user.name);
             setEmail(user.email);
@@ -51,9 +67,9 @@ const UserDialog = ({ open, onOpenChange, onSave, user, roles }: { open: boolean
         } else {
             setName('');
             setEmail('');
-            setRoleId('');
+            setRoleId(isDriver ? 'driver' : '');
         }
-    }, [user, open]);
+    }, [user, open, isDriver]);
 
     const handleSave = () => {
         if (!name || !email || !roleId) return;
@@ -64,7 +80,7 @@ const UserDialog = ({ open, onOpenChange, onSave, user, roles }: { open: boolean
          <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{user ? 'تعديل مستخدم' : 'إضافة مستخدم جديد'}</DialogTitle>
+                    <DialogTitle>{user ? `تعديل ${isDriver ? 'سائق' : 'موظف'}` : `إضافة ${isDriver ? 'سائق' : 'موظف'} جديد`}</DialogTitle>
                     <DialogDescription>
                         {user ? 'قم بتعديل بيانات المستخدم.' : 'أدخل بيانات المستخدم الجديد. سيتم تعيين كلمة مرور افتراضية له.'}
                     </DialogDescription>
@@ -75,22 +91,24 @@ const UserDialog = ({ open, onOpenChange, onSave, user, roles }: { open: boolean
                         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="email">البريد الإلكتروني</Label>
-                        <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                        <Label htmlFor="email">البريد الإلكتروني / رقم الهاتف</Label>
+                        <Input id="email" type="text" value={email} onChange={(e) => setEmail(e.target.value)} />
                     </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="roleId">الدور</Label>
-                        <Select value={roleId} onValueChange={(value) => setRoleId(value as Role['id'])}>
-                            <SelectTrigger id="roleId">
-                                <SelectValue placeholder="اختر دورًا..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {roles.map(role => (
-                                    <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                     {!isDriver && (
+                        <div className="space-y-2">
+                            <Label htmlFor="roleId">الدور</Label>
+                            <Select value={roleId} onValueChange={(value) => setRoleId(value as Role['id'])}>
+                                <SelectTrigger id="roleId">
+                                    <SelectValue placeholder="اختر دورًا..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {roles.filter(r => r.id !== 'driver').map(role => (
+                                        <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                     )}
                 </div>
                 <DialogFooter>
                     <DialogClose asChild>
@@ -103,6 +121,71 @@ const UserDialog = ({ open, onOpenChange, onSave, user, roles }: { open: boolean
     )
 }
 
+const UserCard = ({ user, role, onEdit, onDelete }: { user: User; role?: Role; onEdit: (user: User) => void; onDelete: (user: User) => void; }) => (
+    <Card className="hover:border-primary transition-colors duration-200">
+        <CardContent className="p-4 flex items-center gap-4">
+            <Avatar className="h-14 w-14 border">
+                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 space-y-1">
+                <h3 className="font-semibold">{user.name}</h3>
+                <p className="text-sm text-muted-foreground">{user.email}</p>
+                 {role && <Badge variant="secondary">{role.name}</Badge>}
+            </div>
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon"><Icon name="MoreVertical" className="h-4 w-4" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => onEdit(user)}><Icon name="Edit" className="ml-2"/>تعديل</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => onDelete(user)} className="text-destructive"><Icon name="Trash2" className="ml-2"/>حذف</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </CardContent>
+    </Card>
+);
+
+const UserList = ({ users, roles, isDriverTab, onEdit, onDelete, onAdd }: { users: User[]; roles: Role[]; isDriverTab: boolean; onEdit: (user: User) => void; onDelete: (user: User) => void; onAdd: () => void; }) => {
+    const [searchQuery, setSearchQuery] = useState('');
+    
+    const filteredUsers = useMemo(() => 
+        users.filter(user => 
+            user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            user.email.toLowerCase().includes(searchQuery.toLowerCase())
+        ), [users, searchQuery]
+    );
+
+    return (
+        <div className="space-y-4">
+             <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                    <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder={`بحث عن ${isDriverTab ? 'سائق' : 'موظف'}...`} className="pr-10" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                </div>
+                <div className="flex gap-2">
+                     <Button onClick={onAdd}><Icon name="UserPlus" className="ml-2" /> إضافة جديد</Button>
+                     <Button variant="outline"><Icon name="FileUp" className="ml-2" /> استيراد</Button>
+                     <Button variant="outline"><Icon name="FileDown" className="ml-2" /> تصدير</Button>
+                </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredUsers.map(user => (
+                    <UserCard key={user.id} user={user} role={roles.find(r => r.id === user.roleId)} onEdit={onEdit} onDelete={onDelete} />
+                ))}
+            </div>
+            {filteredUsers.length === 0 && (
+                 <div className="text-center py-10 text-muted-foreground">
+                    <Icon name="Search" className="mx-auto h-10 w-10 mb-4" />
+                    <p>لا توجد نتائج للبحث.</p>
+                </div>
+            )}
+        </div>
+    );
+};
+
+
 export default function UsersPage() {
   const { toast } = useToast();
   const { users, addUser, updateUser, deleteUser } = useUsersStore();
@@ -111,6 +194,10 @@ export default function UsersPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [activeTab, setActiveTab] = useState('employees');
+
+  const employees = useMemo(() => users.filter(u => u.roleId !== 'driver'), [users]);
+  const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
 
   const handleAddNew = () => {
       setSelectedUser(null);
@@ -157,60 +244,40 @@ export default function UsersPage() {
                 إضافة وتعديل المستخدمين وتعيين أدوارهم وصلاحياتهم في النظام.
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="icon" asChild>
-                  <Link href="/dashboard/settings">
-                      <Icon name="ArrowLeft" className="h-4 w-4" />
-                  </Link>
-              </Button>
-              <Button onClick={handleAddNew}>
-                <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة مستخدم جديد
-              </Button>
-            </div>
+            <Button variant="outline" size="icon" asChild>
+                <Link href="/dashboard/settings">
+                    <Icon name="ArrowLeft" className="h-4 w-4" />
+                </Link>
+            </Button>
           </CardHeader>
         </Card>
 
-        <Card>
-            <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>المستخدم</TableHead>
-                            <TableHead>الدور</TableHead>
-                            <TableHead><span className="sr-only">إجراءات</span></TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {users.map(user => (
-                             <TableRow key={user.id}>
-                                <TableCell className="font-medium flex items-center gap-3">
-                                    <Icon name="User" className="h-8 w-8 p-1.5 bg-muted rounded-full" />
-                                    <div>
-                                        <p>{user.name}</p>
-                                        <p className="text-xs text-muted-foreground">{user.email}</p>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant="secondary">{roles.find(r => r.id === user.roleId)?.name || user.roleId}</Badge>
-                                </TableCell>
-                                <TableCell className="text-left">
-                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon"><Icon name="MoreVertical" className="h-4 w-4" /></Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onSelect={() => handleEdit(user)}>تعديل</DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem onSelect={() => handleDelete(user)} className="text-destructive">حذف</DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="employees">الموظفين ({employees.length})</TabsTrigger>
+                <TabsTrigger value="drivers">السائقين ({drivers.length})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="employees" className="mt-4">
+                 <UserList
+                    users={employees}
+                    roles={roles}
+                    isDriverTab={false}
+                    onAdd={handleAddNew}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                />
+            </TabsContent>
+            <TabsContent value="drivers" className="mt-4">
+                 <UserList
+                    users={drivers}
+                    roles={roles}
+                    isDriverTab={true}
+                    onAdd={handleAddNew}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                />
+            </TabsContent>
+        </Tabs>
         
         <UserDialog
             open={dialogOpen}
@@ -218,6 +285,7 @@ export default function UsersPage() {
             onSave={handleSave}
             user={selectedUser}
             roles={roles}
+            isDriver={activeTab === 'drivers'}
         />
         
         <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
