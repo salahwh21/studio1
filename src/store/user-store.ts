@@ -1,3 +1,4 @@
+
 'use client';
 
 import { create } from 'zustand';
@@ -17,11 +18,19 @@ const initialUsers: User[] = [
     { id: 'user-1', name: 'المدير المسؤول', email: 'admin@alwameed.com', roleId: 'admin', avatar: '', password: '123456789' },
     { id: 'user-2', name: 'أحمد مشرف', email: 'ahmad@alwameed.com', roleId: 'supervisor', avatar: '', password: '123456789' },
     { id: 'user-3', name: 'فاطمة خدمة عملاء', email: 'fatima@alwameed.com', roleId: 'customer_service', avatar: '', password: '123456789' },
-    { id: 'driver-1', name: 'علي الأحمد', email: '0791111111', roleId: 'driver', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d', password: '123456789' },
-    { id: 'driver-2', name: 'محمد الخالد', email: '0782222222', roleId: 'driver', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026705d', password: '123456789' },
-    { id: 'driver-3', name: 'يوسف إبراهيم', email: '0773333333', roleId: 'driver', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026707d', password: '123456789' },
     { id: 'merchant-1', name: 'تاجر أ', email: 'merchant-a@example.com', roleId: 'merchant', avatar: '', password: '123456789' },
     { id: 'merchant-2', name: 'متجر العامري', email: 'amiri-store@example.com', roleId: 'merchant', avatar: '', password: '123456789' },
+    // Drivers from image
+    { id: 'driver-1', name: 'ابو العبد', email: '0799754316', roleId: 'driver', avatar: '', password: '123456789' },
+    { id: 'driver-2', name: 'محمد سويد', email: '0799780790', roleId: 'driver', avatar: '', password: '123456789' },
+    { id: 'driver-3', name: 'احمد عزاوي', email: '0787085576', roleId: 'driver', avatar: '', password: '123456789' },
+    { id: 'driver-4', name: 'محافظات', email: '0778132881', roleId: 'driver', avatar: '', password: '123456789' },
+    { id: 'driver-5', name: 'Ebox', email: '0797953190', roleId: 'driver', avatar: '', password: '123456789' },
+    { id: 'driver-6', name: 'سامي سويد', email: '0797274740', roleId: 'driver', avatar: '', password: '123456789' },
+    { id: 'driver-7', name: 'مجد كميل', email: '0789358393', roleId: 'driver', avatar: '', password: '123456789' },
+    { id: 'driver-8', name: 'سامر الطباخي', email: '0790690353', roleId: 'driver', avatar: '', password: '123456789' },
+    { id: 'driver-9', name: 'فارس الأسمر', email: '0795365013', roleId: 'driver', avatar: '', password: '123456789' },
+    { id: 'driver-10', name: 'حسن زيغان', email: '0786112230', roleId: 'driver', avatar: '', password: '123456789' },
 ];
 
 type UsersState = {
