@@ -162,6 +162,23 @@ export default function IntegrationDetailPage() {
                     </CardContent>
                 </Card>
             )}
+
+            {isWebhookBased && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>إعدادات متقدمة للويب هوك</CardTitle>
+                        <CardDescription>إدارة ربط الحقول وسجل البيانات المستلمة.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                         <Button asChild>
+                            <Link href={`/dashboard/settings/integrations/${integrationId}/mapping`}>
+                                <Icon name="Settings2" className="ml-2"/>
+                                إدارة ربط الحقول وسجل البيانات
+                            </Link>
+                         </Button>
+                    </CardContent>
+                </Card>
+            )}
             
             <Card>
                 <CardHeader><CardTitle>إعدادات المزامنة</CardTitle></CardHeader>
