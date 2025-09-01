@@ -12,8 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Check, ChevronsUpDown, Printer, Trash2 } from 'lucide-react';
 import { useActionState } from 'react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
-// import { useReactToPrint } from 'react-to-print';
-// import { PrintablePolicy } from '@/components/printable-policy';
+import { PrintablePolicy } from '@/components/printable-policy';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -74,11 +73,9 @@ const AddOrderPage = () => {
   });
   
   const componentToPrintRef = useRef(null);
-  // const handlePrint = useReactToPrint({
-  //     content: () => componentToPrintRef.current,
-  // });
+  
   const handlePrint = () => {
-    toast({ variant: 'destructive', title: 'ميزة الطباعة معطلة مؤقتاً', description: 'يتم العمل على إصلاح مشكلة توافق في مكتبة الطباعة.'});
+    window.print();
   }
 
   const form = useForm<OrderFormValues>({
@@ -225,9 +222,9 @@ const AddOrderPage = () => {
 
   return (
     <div className="space-y-6">
-       <div style={{ display: 'none' }}>
+       <div id="printable-area" className="hidden">
             <div ref={componentToPrintRef}>
-                {/* <PrintablePolicy orders={ordersToPrint} /> */}
+                <PrintablePolicy orders={ordersToPrint} />
             </div>
        </div>
 
