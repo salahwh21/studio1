@@ -71,6 +71,10 @@ const shopifyStatuses = [
     { code: "cancelled", name: "Cancelled" },
 ];
 
+const initialRules = [
+    { id: 1, conditionField: 'city', conditionOperator: 'equals', conditionValue: 'إربد', action: 'assign_driver', actionValue: 'فريق المحافظات', enabled: true },
+    { id: 2, conditionField: 'tags', conditionOperator: 'contains', conditionValue: 'VIP', action: 'set_price_list', actionValue: 'أسعار VIP', enabled: true },
+];
 
 export default function IntegrationDetailPage() {
     const params = useParams();
@@ -79,6 +83,7 @@ export default function IntegrationDetailPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [connection, setConnection] = useState<any | null>(null);
     const [integrationInfo, setIntegrationInfo] = useState<any | null>(null);
+    const [rules, setRules] = useState(initialRules);
 
     useEffect(() => {
         // In a real app, you'd fetch the connection details from your backend using the integrationId
@@ -95,6 +100,15 @@ export default function IntegrationDetailPage() {
 
     const handleSaveChanges = () => {
         toast({ title: 'تم الحفظ', description: `تم حفظ إعدادات ${connection?.name} بنجاح.` });
+    };
+
+    const handleAddRule = () => {
+        const newRule = { id: rules.length + 1, conditionField: '', conditionOperator: 'equals', conditionValue: '', action: '', actionValue: '', enabled: true };
+        setRules([...rules, newRule]);
+    };
+
+    const handleRemoveRule = (id: number) => {
+        setRules(rules.filter(rule => rule.id !== id));
     };
 
     if (isLoading) {
@@ -182,15 +196,66 @@ export default function IntegrationDetailPage() {
                           أتمتة العمليات عن طريق إنشاء قواعد "إذا حدث ... إذن افعل ...".
                         </CardDescription>
                       </CardHeader>
-                      <CardContent>
-                          <div className="border rounded-lg p-8 text-center space-y-4 bg-muted/50">
-                            <Icon name="Bot" className="mx-auto h-12 w-12 text-muted-foreground" />
-                            <h3 className="font-semibold">قريبًا: واجهة بناء القواعد الذكية</h3>
-                            <p className="text-sm text-muted-foreground">
-                              ستتمكن هنا من بناء قواعد مخصصة لتوجيه الطلبات وتغيير الأسعار وإرسال إشعارات مشروطة والمزيد.
-                            </p>
-                            <Button variant="secondary" disabled>إضافة قاعدة جديدة</Button>
-                          </div>
+                       <CardContent>
+                          <Table>
+                              <TableHeader>
+                                  <TableRow>
+                                      <TableHead className="w-1/4">إذا كان الحقل</TableHead>
+                                      <TableHead className="w-1/4">والشرط</TableHead>
+                                      <TableHead className="w-1/4">والقيمة</TableHead>
+                                      <TableHead className="w-1/4">إذن نفذ الإجراء</TableHead>
+                                      <TableHead>الحالة</TableHead>
+                                      <TableHead>حذف</TableHead>
+                                  </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                  {rules.map(rule => (
+                                      <TableRow key={rule.id}>
+                                          <TableCell>
+                                              <Select defaultValue={rule.conditionField}>
+                                                  <SelectTrigger><SelectValue placeholder="اختر حقل..."/></SelectTrigger>
+                                                  <SelectContent>
+                                                      <SelectItem value="city">المدينة</SelectItem>
+                                                      <SelectItem value="tags">العلامات (Tags)</SelectItem>
+                                                      <SelectItem value="total">المجموع</SelectItem>
+                                                  </SelectContent>
+                                              </Select>
+                                          </TableCell>
+                                           <TableCell>
+                                              <Select defaultValue={rule.conditionOperator}>
+                                                  <SelectTrigger><SelectValue placeholder="اختر شرط..."/></SelectTrigger>
+                                                  <SelectContent>
+                                                      <SelectItem value="equals">يساوي</SelectItem>
+                                                      <SelectItem value="contains">يحتوي على</SelectItem>
+                                                      <SelectItem value="greater_than">أكبر من</SelectItem>
+                                                  </SelectContent>
+                                              </Select>
+                                          </TableCell>
+                                          <TableCell><Input placeholder="أدخل القيمة" defaultValue={rule.conditionValue}/></TableCell>
+                                          <TableCell>
+                                               <Select defaultValue={rule.action}>
+                                                  <SelectTrigger><SelectValue placeholder="اختر إجراء..."/></SelectTrigger>
+                                                  <SelectContent>
+                                                      <SelectItem value="assign_driver">تعيين سائق</SelectItem>
+                                                      <SelectItem value="set_price_list">تطبيق قائمة أسعار</SelectItem>
+                                                      <SelectItem value="do_not_import">لا تستورد الطلب</SelectItem>
+                                                  </SelectContent>
+                                              </Select>
+                                          </TableCell>
+                                          <TableCell><Switch checked={rule.enabled}/></TableCell>
+                                          <TableCell>
+                                              <Button variant="ghost" size="icon" onClick={() => handleRemoveRule(rule.id)}>
+                                                  <Icon name="Trash2" className="h-4 w-4 text-destructive"/>
+                                              </Button>
+                                          </TableCell>
+                                      </TableRow>
+                                  ))}
+                              </TableBody>
+                          </Table>
+                          <Button variant="outline" className="mt-4 w-full" onClick={handleAddRule}>
+                            <Icon name="PlusCircle" className="mr-2 h-4 w-4"/>
+                            إضافة قاعدة جديدة
+                          </Button>
                       </CardContent>
                     </Card>
                     
@@ -349,5 +414,3 @@ export default function IntegrationDetailPage() {
         </div>
     );
 }
-
-    
