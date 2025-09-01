@@ -26,8 +26,8 @@ import { cn } from '@/lib/utils';
 
 
 const orderSchema = z.object({
-  recipientName: z.string().min(1, "الاسم مطلوب"),
-  phone: z.string().regex(/^07[789]\d{7}$/, "رقم الهاتف غير صالح."),
+  recipientName: z.string().optional(),
+  phone: z.string().regex(/^07[789]\d{7}$/, "رقم هاتف أردني غير صالح."),
   region: z.string({ required_error: "الرجاء اختيار المنطقة." }),
   city: z.string({ required_error: "الرجاء اختيار مدينة." }),
   address: z.string().optional(),
@@ -100,7 +100,7 @@ const AddOrderPage = () => {
       id: nanoid(10),
       source: 'Manual',
       referenceNumber: data.referenceNumber || '',
-      recipient: data.recipientName,
+      recipient: data.recipientName || 'زبون غير مسمى',
       phone: data.phone,
       address: `${data.address ? `${data.address}, ` : ''}${regionName}, ${data.city}`,
       city: data.city,
@@ -206,7 +206,7 @@ const AddOrderPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField control={form.control} name="recipientName" render={({ field }) => ( <FormItem><FormLabel>المستلم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                     <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>الهاتف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
-                    <FormField control={form.control} name="referenceNumber" render={({ field }) => ( <FormItem><FormLabel>رقم مرجعي</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="referenceNumber" render={({ field }) => ( <FormItem><FormLabel>رقم مرجعي (اختياري)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                      <FormField control={form.control} name="region" render={({ field }) => ( 
