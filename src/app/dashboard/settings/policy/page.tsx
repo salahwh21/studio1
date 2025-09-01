@@ -165,7 +165,7 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: 
       minWidth={GRID_SIZE * 2}
       minHeight={GRID_SIZE * 2}
       grid={[GRID_SIZE, GRID_SIZE]}
-      enable={{ top: false, right: true, bottom: true, left: false, bottomRight: true }}
+      enable={{ top: true, right: true, bottom: true, left: true, topRight: true, bottomRight: true, bottomLeft: true, topLeft: true }}
       style={style}
       ref={(node) => setNodeRef(node?.resizable as HTMLElement | null)}
       {...attributes}
@@ -190,9 +190,18 @@ const ToolboxItem = ({ tool, onClick }: { tool: typeof toolboxItems[0]; onClick:
 };
 
 // ---------- Properties Panel ----------
-const PropertiesPanel = ({ selectedElement, onUpdate, onDelete }: { selectedElement: PolicyElement | null; onUpdate: (id: string, updates: Partial<PolicyElement>) => void; onDelete: (id: string) => void; }) => {
+const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onFocus }: { 
+    selectedElement: PolicyElement | null; 
+    onUpdate: (id: string, updates: Partial<PolicyElement>) => void; 
+    onDelete: (id: string) => void;
+    onFocus: (id: string) => void;
+}) => {
   if (!selectedElement) {
     return <div className="text-muted-foreground text-center p-4">حدد عنصر لتعديل خصائصه</div>;
+  }
+
+  const handleFocus = () => {
+      onFocus(selectedElement.id);
   }
 
   const handleChange = (field: keyof PolicyElement, value: any) => {
@@ -206,10 +215,10 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete }: { selectedElem
     }
   };
 
-  const isShape = ['rect', 'circle', 'triangle', 'line'].includes(selectedElement.type);
+  const isShape = ['rect', 'line'].includes(selectedElement.type);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" onFocus={handleFocus}>
       <h3 className="font-bold text-lg text-center">{selectedElement.type}</h3>
       
       {selectedElement.type === 'text' && (
@@ -246,7 +255,7 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete }: { selectedElem
       
       {(selectedElement.type === 'rect') && <div className="space-y-2"><Label>لون التعبئة</Label><Input type="color" value={selectedElement.backgroundColor ?? '#ffffff'} onChange={(e) => handleChange('backgroundColor', e.target.value)} className="h-10 w-full"/></div>}
       
-      {(selectedElement.type === 'rect') && (
+      {(isShape) && (
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-2"><Label>لون الحد</Label><Input type="color" value={selectedElement.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full"/></div>
             <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={selectedElement.borderWidth ?? 1} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
@@ -538,7 +547,12 @@ export default function PolicyEditorPage() {
                     <Card>
                         <CardHeader><CardTitle>الخصائص</CardTitle></CardHeader>
                         <CardContent>
-                            <PropertiesPanel selectedElement={selectedElement} onUpdate={handleUpdateElement} onDelete={handleDeleteElement} />
+                            <PropertiesPanel 
+                                selectedElement={selectedElement} 
+                                onUpdate={handleUpdateElement} 
+                                onDelete={handleDeleteElement}
+                                onFocus={(id) => setSelectedIds([id])}
+                            />
                         </CardContent>
                     </Card>
                      <Card>
