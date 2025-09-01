@@ -1,7 +1,5 @@
-
 'use client';
 
-import { useContext } from 'react';
 import { Upload, Facebook, Instagram, MessageSquare, X, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
 import Link from 'next/link';
 import Icon from '@/components/icon';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const SocialInput = ({ id, label, icon: IconComponent, placeholder, value, onChange }: { id: string; label: string; icon: React.ElementType; placeholder: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
   <div className="space-y-2">
@@ -58,8 +57,14 @@ export default function LoginExperiencePage() {
   const { toast } = useToast();
   const context = useSettings();
 
-  if (!context) {
-    return <div>جاري تحميل إعدادات تجربة المستخدم...</div>;
+  if (!context || !context.isHydrated) {
+    return (
+        <div className="space-y-6">
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-48 w-full" />
+        </div>
+    );
   }
   
   const { settings, updateLoginSetting, updateSocialLink } = context;
@@ -68,10 +73,6 @@ export default function LoginExperiencePage() {
     const reader = new FileReader();
     reader.onloadend = () => {
       updateLoginSetting(id as any, reader.result as string);
-       toast({
-        title: 'تم رفع الملف!',
-        description: `تم تحديث ${id === 'loginLogo' ? 'الشعار' : 'صورة الخلفية'}.`,
-      });
     };
     reader.readAsDataURL(file);
   };
@@ -85,7 +86,7 @@ export default function LoginExperiencePage() {
     // so this is just for user feedback.
     toast({
       title: 'تم الحفظ بنجاح!',
-      description: 'يتم حفظ تغييراتك تلقائيًا عند كل تعديل.',
+      description: 'تم تحديث إعدادات صفحة تسجيل الدخول.',
     });
   };
 

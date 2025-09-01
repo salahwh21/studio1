@@ -105,14 +105,13 @@ interface ComprehensiveSettings {
 // 2. Define the context shape
 interface SettingsContextType {
   settings: ComprehensiveSettings;
-  setSetting: <K extends keyof ComprehensiveSettings, V extends ComprehensiveSettings[K]>(key: K, value: V) => void;
+  setSetting: <K extends keyof ComprehensiveSettings>(key: K, value: V) => void;
   updateOrderSetting: <K extends keyof OrderSettings>(key: K, value: OrderSettings[K]) => void;
   updateLoginSetting: <K extends keyof LoginSettings>(key: K, value: LoginSettings[K]) => void;
   updateSocialLink: <K extends keyof SocialLinks>(key: K, value: SocialLinks[K]) => void;
   updateRegionalSetting: <K extends keyof RegionalSettings>(key: K, value: RegionalSettings[K]) => void;
   updateUiSetting: <K extends keyof UiSettings>(key: K, value: UiSettings[K]) => void;
   updatePolicySetting: <K extends keyof PolicySettings>(key: K, value: PolicySettings[K]) => void;
-  setPolicySettings: (newPolicySettings: PolicySettings) => void;
   isHydrated: boolean;
 }
 
@@ -276,8 +275,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const updateRegionalSetting = (key: keyof RegionalSettings, value: any) => updateNestedSetting('regional', key, value);
   const updateUiSetting = (key: keyof UiSettings, value: any) => updateNestedSetting('ui', key, value);
   const updatePolicySetting = (key: keyof PolicySettings, value: any) => updateNestedSetting('policy', key, value);
-  
-  const setPolicySettings = (newPolicySettings: PolicySettings) => setSetting('policy', newPolicySettings);
 
   const updateSocialLink = (key: keyof SocialLinks, value: string) => {
       setSettings(prev => ({
@@ -292,7 +289,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       }))
   }
 
-  const value = { settings, setSetting, updateOrderSetting, updateLoginSetting, updateSocialLink, updateRegionalSetting, updateUiSetting, updatePolicySetting, setPolicySettings, isHydrated };
+  const value = { settings, setSetting, updateOrderSetting, updateLoginSetting, updateSocialLink, updateRegionalSetting, updateUiSetting, updatePolicySetting, isHydrated };
 
   return (
     <SettingsContext.Provider value={value}>

@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect, useContext } from 'react';
+import { useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -12,8 +11,6 @@ import Icon from '@/components/icon';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
-import { Logo } from '@/components/logo';
 import { Input } from '@/components/ui/input';
 import { Trash2 } from 'lucide-react';
 import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';

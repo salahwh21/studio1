@@ -1,9 +1,7 @@
-
 'use client';
 
 import { BotMessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useContext } from 'react';
 import { useSettings } from '@/contexts/SettingsContext';
 
 export function Logo({ className }: { className?: string }) {

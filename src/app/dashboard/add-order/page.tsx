@@ -50,7 +50,7 @@ type OrderFormValues = z.infer<typeof orderSchema>;
 const AddOrderPage = () => {
   const { toast } = useToast();
   const { users } = useUsersStore();
-  const { addOrder, deleteOrders, updateOrderField, nextOrderNumber } = useOrdersStore();
+  const { addOrder, deleteOrders, updateOrderField } = useOrdersStore();
   const { cities } = useAreasStore();
   const { statuses } = useStatusesStore();
   const { settings: orderSettings } = useSettings();

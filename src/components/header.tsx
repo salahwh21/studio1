@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -23,6 +22,7 @@ import { Logo } from './logo';
 import { useSettings } from '@/contexts/SettingsContext';
 import Icon from '@/components/icon';
 import { useRolesStore } from '@/store/roles-store';
+import { Skeleton } from './ui/skeleton';
 
 type NavItem = {
   href: string;
@@ -49,8 +49,15 @@ export function AppHeader() {
   const context = useSettings();
   
   if (!context || !context.isHydrated) {
-    // Render a skeleton or a placeholder while settings are loading
-    return <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 sm:px-6"></header>;
+    return (
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 sm:px-6">
+            <Skeleton className="h-8 w-32" />
+            <div className="flex items-center gap-2">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <Skeleton className="h-8 w-8 rounded-full" />
+            </div>
+        </header>
+    );
   }
 
   const { settings } = context;

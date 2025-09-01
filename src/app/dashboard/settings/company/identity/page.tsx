@@ -1,9 +1,8 @@
-
 'use client';
 
-import { useState, useContext } from 'react';
+import { useState } from 'react';
 import {
-  Upload, X, Building, Smartphone, FileText, Barcode, Image as ImageIcon, Save, LayoutDashboard
+  Upload, X, Save
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,16 +13,11 @@ import Image from 'next/image';
 import { useSettings } from '@/contexts/SettingsContext';
 import Link from 'next/link';
 import Icon from '@/components/icon';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const logoSections = [
-  { id: 'admin', label: 'شعار لوحة التحكم', iconName: 'Building' as const, iconColor: 'text-blue-500' },
-  { id: 'header', label: 'شعار الهيدر', iconName: 'LayoutDashboard' as const, iconColor: 'text-indigo-500' },
-  { id: 'merchant', label: 'شعار لوحة التاجر', iconName: 'Smartphone' as const, iconColor: 'text-green-500' },
-  { id: 'driver', label: 'شعار تطبيق السائق', iconName: 'Smartphone' as const, iconColor: 'text-purple-500' },
-  { id: 'invoice', label: 'شعار الفاتورة', iconName: 'FileText' as const, iconColor: 'text-yellow-500' },
-  { id: 'barcode', label: 'شعار الباركود', iconName: 'Barcode' as const, iconColor: 'text-orange-500' },
-  { id: 'multi', label: 'شعار متعدد الاستخدامات', iconName: 'Image' as const, iconColor: 'text-red-500' },
-  { id: 'favicon', label: 'أيقونة الموقع (Favicon)', iconName: 'Image' as const, iconColor: 'text-gray-500' },
+  { id: 'loginLogo', label: 'شعار صفحة الدخول', iconName: 'LogIn' as const, iconColor: 'text-blue-500' },
+  { id: 'headerLogo', label: 'شعار رأس الصفحة', iconName: 'LayoutDashboard' as const, iconColor: 'text-indigo-500' },
 ];
 
 type LocalLogosState = {
@@ -51,7 +45,7 @@ const LogoUploader = ({ id, label, iconName, iconColor, logoData, onFileChange, 
               <Image src={logoData.src} alt={label} width={120} height={40} style={{ objectFit: 'contain' }} className="rounded-md p-1"/>
           </div>
         ) : (
-          <ImageIcon className="h-8 w-8 text-muted-foreground"/>
+          <Icon name="Image" className="h-8 w-8 text-muted-foreground"/>
         )}
       </div>
       <div className="flex w-full gap-2">
@@ -81,22 +75,22 @@ export default function CompanyIdentityPage() {
   const { toast } = useToast();
   const context = useSettings();
 
-  if (!context) {
-    return <div>جاري تحميل الإعدادات...</div>;
+  if (!context || !context.isHydrated) {
+    return (
+        <div className="space-y-6">
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-48 w-full" />
+        </div>
+    );
   }
   
   const { settings, updateLoginSetting } = context;
 
   const [companyName, setCompanyName] = useState(settings.login.companyName);
   const [logos, setLogos] = useState<LocalLogosState>({
-    admin: { src: settings.login.loginLogo },
-    header: { src: settings.login.headerLogo },
-    merchant: { src: null },
-    driver: { src: null },
-    invoice: { src: null },
-    barcode: { src: null },
-    multi: { src: null },
-    favicon: { src: null },
+    loginLogo: { src: settings.login.loginLogo },
+    headerLogo: { src: settings.login.headerLogo },
   });
 
   const handleFileChange = (id: string, file: File) => {
@@ -113,8 +107,8 @@ export default function CompanyIdentityPage() {
 
   const handleSaveChanges = () => {
     updateLoginSetting('companyName', companyName);
-    updateLoginSetting('loginLogo', logos.admin.src);
-    updateLoginSetting('headerLogo', logos.header.src);
+    updateLoginSetting('loginLogo', logos.loginLogo.src);
+    updateLoginSetting('headerLogo', logos.headerLogo.src);
     
     toast({
       title: 'تم الحفظ بنجاح!',

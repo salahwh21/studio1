@@ -1,7 +1,5 @@
-
 'use client';
 
-import { useContext } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
 import Icon from '@/components/icon';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const currencies = [
@@ -58,8 +57,14 @@ export default function RegionalSettingsPage() {
     const { toast } = useToast();
     const context = useSettings();
 
-    if (!context) {
-        return <div>جاري تحميل الإعدادات الإقليمية...</div>;
+    if (!context || !context.isHydrated) {
+        return (
+            <div className="space-y-6">
+                <Skeleton className="h-28 w-full" />
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-64 w-full" />
+            </div>
+        );
     }
 
     const { settings, updateRegionalSetting } = context;
