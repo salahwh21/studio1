@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   DndContext,
@@ -27,10 +27,11 @@ import Icon from '@/components/icon';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useSettings } from '@/contexts/SettingsContext';
 
 // Types for Editor Elements
 type ElementType = 'text' | 'image' | 'barcode' | 'rect';
-type PolicyElement = {
+export type PolicyElement = {
   id: string;
   type: ElementType;
   x: number;
@@ -113,6 +114,7 @@ const PolicyCanvas = ({ paperSize, elements, onSelectElement, selectedElementId 
   return (
     <div
       ref={setNodeRef}
+      data-droppable-id="canvas"
       className={cn(
         'relative bg-white rounded-lg shadow-inner overflow-hidden mx-auto transition-all',
         isOver ? 'outline outline-2 outline-offset-2 outline-primary' : ''
@@ -209,14 +211,14 @@ const PropertiesPanel = ({ selectedElement, onElementUpdate, onElementDelete }: 
                 )}
                  <div className="space-y-1">
                     <Label htmlFor="width">العرض (px)</Label>
-                    <Input id="width" type="number" value={selectedElement.width} onChange={(e) => handleChange('width', parseInt(e.target.value, 10))} />
+                    <Input id="width" type="number" value={Math.round(selectedElement.width)} onChange={(e) => handleChange('width', parseInt(e.target.value, 10))} />
                 </div>
                  <div className="space-y-1">
                     <Label htmlFor="height">الارتفاع (px)</Label>
-                    <Input id="height" type="number" value={selectedElement.height} onChange={(e) => handleChange('height', parseInt(e.target.value, 10))} />
+                    <Input id="height" type="number" value={Math.round(selectedElement.height)} onChange={(e) => handleChange('height', parseInt(e.target.value, 10))} />
                 </div>
                  <div className="space-y-1">
-                    <Label>الموضع</Label>
+                    <Label>الموضع (X, Y)</Label>
                     <div className="grid grid-cols-2 gap-2">
                         <Input aria-label="X position" type="number" value={Math.round(selectedElement.x)} onChange={(e) => handleChange('x', parseInt(e.target.value, 10))} />
                         <Input aria-label="Y position" type="number" value={Math.round(selectedElement.y)} onChange={(e) => handleChange('y', parseInt(e.target.value, 10))} />
@@ -233,7 +235,8 @@ export default function PolicyEditorPage() {
   const [elements, setElements] = useState<PolicyElement[]>([]);
   const [activeDragItem, setActiveDragItem] = useState<Active | null>(null);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
-  const [paperSize, setPaperSize] = useState<PaperSize>('a4');
+  const { settings, updatePolicySetting } = useSettings();
+  const paperSize = settings.policy.paperSize;
   
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -256,7 +259,6 @@ export default function PolicyEditorPage() {
         if (!canvasRect) return;
 
         const type = active.data.current?.type as ElementType;
-        // Adjust drop position relative to the canvas
         const dropX = active.rect.current.translated!.left - canvasRect.left;
         const dropY = active.rect.current.translated!.top - canvasRect.top;
 
@@ -282,7 +284,7 @@ export default function PolicyEditorPage() {
         setElements(prev =>
             prev.map(el =>
                 el.id === active.id
-                ? { ...el, x: el.x + delta.x, y: el.y + delta.y }
+                ? { ...el, x: Math.round(el.x + delta.x), y: Math.round(el.y + delta.y) }
                 : el
             )
         );
@@ -311,7 +313,7 @@ export default function PolicyEditorPage() {
                     <CardDescription>قم بتصميم بوليصة الشحن الخاصة بك عبر سحب وإفلات العناصر.</CardDescription>
                 </div>
                  <div className="flex items-center gap-4 w-full md:w-auto">
-                     <Select value={paperSize} onValueChange={(value) => setPaperSize(value as PaperSize)}>
+                     <Select value={paperSize} onValueChange={(value) => updatePolicySetting('paperSize', value as PaperSize)}>
                         <SelectTrigger className="w-full md:w-[200px]">
                             <SelectValue placeholder="اختر حجم الورق" />
                         </SelectTrigger>
@@ -371,7 +373,7 @@ export default function PolicyEditorPage() {
                      <div style={{
                          width: activeDragItem.data.current?.element.width,
                          height: activeDragItem.data.current?.element.height,
-                     }} className="bg-primary/20 border-2 border-primary rounded-md"></div>
+                     }} className="bg-primary/20 border-2 border-primary rounded-md opacity-75"></div>
                 ) : null}
             </DragOverlay>
 
@@ -379,3 +381,4 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
