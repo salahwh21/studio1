@@ -25,6 +25,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useStatusesStore } from '@/store/statuses-store';
 
 
 const orderSchema = z.object({
@@ -46,6 +48,7 @@ const AddOrderPage = () => {
   const { users } = useUsersStore();
   const { addOrder, deleteOrders, updateOrderField } = useOrdersStore();
   const { cities } = useAreasStore();
+  const { statuses } = useStatusesStore();
   const [isPending, startTransition] = useTransition();
 
   const [selectedMerchantId, setSelectedMerchantId] = useState<string>('');
@@ -91,9 +94,16 @@ const AddOrderPage = () => {
   }, [codValue, selectedCity]);
 
   const handleUpdateRecentlyAdded = (orderId: string, field: keyof Order, value: any) => {
-    setRecentlyAdded(prev => prev.map(o => o.id === orderId ? {...o, [field]: value} : o));
-    // Also update the global store
-    updateOrderField(orderId, field, value);
+    // If updating region, also update city
+    if (field === 'region') {
+        const [regionName, cityName] = value.split('_');
+        updateOrderField(orderId, 'region', regionName);
+        updateOrderField(orderId, 'city', cityName);
+        setRecentlyAdded(prev => prev.map(o => o.id === orderId ? {...o, region: regionName, city: cityName} : o));
+    } else {
+        updateOrderField(orderId, field, value);
+        setRecentlyAdded(prev => prev.map(o => o.id === orderId ? {...o, [field]: value} : o));
+    }
   };
   
   const handleAddOrder = (data: OrderFormValues) => {
@@ -330,13 +340,13 @@ const AddOrderPage = () => {
                             <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAllRecent} /></TableHead>
                             <TableHead className="text-center border-l">#</TableHead>
                             <TableHead className="text-center border-l">رقم الطلب</TableHead>
-                            <TableHead className="text-center border-l">المتجر</TableHead>
+                            <TableHead className="text-center border-l w-48">المتجر</TableHead>
                             <TableHead className="text-center border-l w-48">المستلم</TableHead>
                             <TableHead className="text-center border-l w-40">الهاتف</TableHead>
-                            <TableHead className="text-center border-l">المنطقة</TableHead>
-                            <TableHead className="text-center border-l">المدينة</TableHead>
+                            <TableHead className="text-center border-l w-40">المنطقة</TableHead>
+                            <TableHead className="text-center border-l w-32">المدينة</TableHead>
                             <TableHead className="text-center border-l w-32">قيمة التحصيل</TableHead>
-                            <TableHead className="text-center">الحالة</TableHead>
+                            <TableHead className="text-center w-40">الحالة</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -344,33 +354,82 @@ const AddOrderPage = () => {
                              <TableRow key={order.id}>
                                 <TableCell className="text-center border-l"><Checkbox checked={selectedRecent.includes(order.id)} onCheckedChange={() => handleSelectRecent(order.id)} /></TableCell>
                                 <TableCell className="text-center border-l">{index+1}</TableCell>
-                                <TableCell className="text-center border-l">{order.id}</TableCell>
-                                <TableCell className="text-center border-l">{order.merchant}</TableCell>
+                                <TableCell className="text-center border-l font-mono text-xs">{order.id}</TableCell>
+                                <TableCell className="text-center border-l">
+                                    <Select
+                                        value={order.merchant}
+                                        onValueChange={(value) => handleUpdateRecentlyAdded(order.id, 'merchant', value)}
+                                    >
+                                        <SelectTrigger className="h-8 text-center border-0 focus:ring-0 bg-transparent">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {merchantOptions.map(m => (
+                                                <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </TableCell>
                                 <TableCell className="text-center border-l">
                                     <Input
                                         value={order.recipient}
                                         onChange={(e) => handleUpdateRecentlyAdded(order.id, 'recipient', e.target.value)}
-                                        className="h-8 text-center"
+                                        className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-0 bg-transparent"
                                     />
                                 </TableCell>
                                 <TableCell className="text-center border-l">
                                      <Input
                                         value={order.phone}
                                         onChange={(e) => handleUpdateRecentlyAdded(order.id, 'phone', e.target.value)}
-                                        className="h-8 text-center"
+                                        className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-0 bg-transparent"
                                     />
                                 </TableCell>
-                                <TableCell className="text-center border-l">{order.region}</TableCell>
+                                <TableCell className="text-center border-l">
+                                      <Select
+                                        value={`${order.region}_${order.city}`}
+                                        onValueChange={(value) => handleUpdateRecentlyAdded(order.id, 'region', value)}
+                                    >
+                                        <SelectTrigger className="h-8 text-center border-0 focus:ring-0 bg-transparent">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {allRegions.map(r => (
+                                                <SelectItem key={`${r.id}-${r.cityName}`} value={`${r.name}_${r.cityName}`}>
+                                                    {r.name} ({r.cityName})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </TableCell>
                                 <TableCell className="text-center border-l">{order.city}</TableCell>
                                 <TableCell className="text-center border-l">
                                     <Input
                                         type="number"
                                         value={order.cod}
                                         onChange={(e) => handleUpdateRecentlyAdded(order.id, 'cod', parseFloat(e.target.value) || 0)}
-                                        className="h-8 text-center"
+                                        className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-0 bg-transparent"
                                     />
                                 </TableCell>
-                                <TableCell className="text-center">{order.status}</TableCell>
+                                <TableCell className="text-center">
+                                      <Select
+                                        value={order.status}
+                                        onValueChange={(value) => handleUpdateRecentlyAdded(order.id, 'status', value)}
+                                    >
+                                        <SelectTrigger className="h-8 text-center border-0 focus:ring-0 bg-transparent">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {statuses.filter(s => s.isActive).map(s => (
+                                                <SelectItem key={s.id} value={s.name}>
+                                                     <div className="flex items-center gap-2">
+                                                        <Icon name={s.icon as any} style={{ color: s.color }} className="h-4 w-4" />
+                                                        {s.name}
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </TableCell>
                              </TableRow>
                         ))}
                     </TableBody>
