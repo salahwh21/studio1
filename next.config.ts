@@ -38,10 +38,12 @@ const nextConfig: NextConfig = {
     ],
   },
   devIndicators: {
+    buildActivity: false
+  },
+  experimental: {
+    // This is the setting that needs to be added.
     allowedDevOrigins: [
-        "http://localhost:3000",
-        "http://localhost:6006",
-        "https://*.cluster-zj37zwdounao2uiqvtma64veco.cloudworkstations.dev",
+      "https://*.cloudworkstations.dev"
     ]
   }
 };
