@@ -13,6 +13,7 @@ import {
   DragEndEvent,
   DragOverlay,
   Active,
+  DragStartEvent,
 } from '@dnd-kit/core';
 import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { nanoid } from 'nanoid';
@@ -101,12 +102,11 @@ const DraggableItem = React.forwardRef<HTMLDivElement, { element: PolicyElement,
 DraggableItem.displayName = 'DraggableItem';
 
 
-const PolicyCanvas = ({ paperSize, elements, onElementsChange, selectedElement, onSelectElement }: {
+const PolicyCanvas = ({ paperSize, elements, onSelectElement, selectedElementId }: {
     paperSize: PaperSize,
     elements: PolicyElement[],
-    onElementsChange: React.Dispatch<React.SetStateAction<PolicyElement[]>>,
-    selectedElement: string | null,
     onSelectElement: (id: string | null) => void,
+    selectedElementId: string | null,
 }) => {
   const { setNodeRef, isOver } = useDroppable({ id: 'canvas' });
 
@@ -124,7 +124,7 @@ const PolicyCanvas = ({ paperSize, elements, onElementsChange, selectedElement, 
       onClick={() => onSelectElement(null)}
     >
       {elements.map(el => (
-        <DraggableItem key={el.id} element={el} isSelected={selectedElement === el.id} onSelect={onSelectElement} />
+        <DraggableItem key={el.id} element={el} isSelected={selectedElementId === el.id} onSelect={onSelectElement} />
       ))}
     </div>
   );
@@ -168,7 +168,7 @@ const Toolbox = () => {
 
 
 // --------------- Properties Panel Components ---------------
-const PropertiesPanel = ({ selectedElement, onElementUpdate }: { selectedElement: PolicyElement | null, onElementUpdate: (id: string, updates: Partial<PolicyElement>) => void }) => {
+const PropertiesPanel = ({ selectedElement, onElementUpdate, onElementDelete }: { selectedElement: PolicyElement | null, onElementUpdate: (id: string, updates: Partial<PolicyElement>) => void, onElementDelete: (id: string) => void }) => {
     if (!selectedElement) {
         return (
             <Card className="shadow-lg h-full">
@@ -186,7 +186,14 @@ const PropertiesPanel = ({ selectedElement, onElementUpdate }: { selectedElement
 
     return (
         <Card className="shadow-lg h-full">
-            <CardHeader><CardTitle className="text-base">خصائص العنصر</CardTitle></CardHeader>
+            <CardHeader>
+                <div className="flex justify-between items-center">
+                    <CardTitle className="text-base">خصائص العنصر</CardTitle>
+                    <Button variant="ghost" size="icon" className="text-destructive h-7 w-7" onClick={() => onElementDelete(selectedElement.id)}>
+                        <Icon name="Trash2" className="w-4 h-4"/>
+                    </Button>
+                </div>
+            </CardHeader>
             <CardContent className="space-y-4">
                 {selectedElement.type === 'text' && (
                     <>
@@ -196,7 +203,7 @@ const PropertiesPanel = ({ selectedElement, onElementUpdate }: { selectedElement
                         </div>
                         <div className="space-y-1">
                             <Label htmlFor="fontSize">حجم الخط (px)</Label>
-                            <Input id="fontSize" type="number" value={selectedElement.fontSize} onChange={(e) => handleChange('fontSize', parseInt(e.target.value, 10))} />
+                            <Input id="fontSize" type="number" value={selectedElement.fontSize || 14} onChange={(e) => handleChange('fontSize', parseInt(e.target.value, 10) || 14)} />
                         </div>
                     </>
                 )}
@@ -207,6 +214,13 @@ const PropertiesPanel = ({ selectedElement, onElementUpdate }: { selectedElement
                  <div className="space-y-1">
                     <Label htmlFor="height">الارتفاع (px)</Label>
                     <Input id="height" type="number" value={selectedElement.height} onChange={(e) => handleChange('height', parseInt(e.target.value, 10))} />
+                </div>
+                 <div className="space-y-1">
+                    <Label>الموضع</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Input aria-label="X position" type="number" value={Math.round(selectedElement.x)} onChange={(e) => handleChange('x', parseInt(e.target.value, 10))} />
+                        <Input aria-label="Y position" type="number" value={Math.round(selectedElement.y)} onChange={(e) => handleChange('y', parseInt(e.target.value, 10))} />
+                    </div>
                 </div>
             </CardContent>
         </Card>
@@ -223,24 +237,26 @@ export default function PolicyEditorPage() {
   
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const handleDragStart = (event: DragStartEvent) => {
+  const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveDragItem(event.active);
-  }
+  }, []);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over, delta } = event;
     setActiveDragItem(null);
 
-    // If dropped outside the canvas or no drop zone detected
-    if (!over) {
+    if (!over || over.id !== 'canvas') {
         return; 
     }
-
-    const canvasRect = (over.rect) ? over.rect : {left: 0, top: 0};
     
-    // If it's a new item from the toolbox
-    if (String(active.id).startsWith('toolbox-')) {
+    const isToolboxItem = String(active.id).startsWith('toolbox-');
+    
+    if (isToolboxItem) {
+        const canvasRect = (document.querySelector('[data-droppable-id="canvas"]') as HTMLElement)?.getBoundingClientRect();
+        if (!canvasRect) return;
+
         const type = active.data.current?.type as ElementType;
+        // Adjust drop position relative to the canvas
         const dropX = active.rect.current.translated!.left - canvasRect.left;
         const dropY = active.rect.current.translated!.top - canvasRect.top;
 
@@ -256,10 +272,10 @@ export default function PolicyEditorPage() {
             fontWeight: 'normal',
         };
         setElements(prev => [...prev, newElement]);
+        setSelectedElementId(newElement.id);
         return;
     }
 
-    // If it's an existing item being moved
     const activeElementId = active.id.toString();
     const elementExists = elements.some(el => el.id === activeElementId);
     if (elementExists) {
@@ -275,6 +291,11 @@ export default function PolicyEditorPage() {
 
   const handleElementUpdate = (id: string, updates: Partial<PolicyElement>) => {
       setElements(prev => prev.map(el => el.id === id ? {...el, ...updates} : el));
+  }
+
+  const handleElementDelete = (id: string) => {
+      setElements(prev => prev.filter(el => el.id !== id));
+      setSelectedElementId(null);
   }
   
   const selectedElement = useMemo(() => elements.find(el => el.id === selectedElementId) || null, [elements, selectedElementId]);
@@ -325,22 +346,25 @@ export default function PolicyEditorPage() {
                    <PolicyCanvas 
                      paperSize={paperSize}
                      elements={elements} 
-                     onElementsChange={setElements} 
-                     selectedElement={selectedElementId} 
+                     selectedElementId={selectedElementId} 
                      onSelectElement={setSelectedElementId} 
                     />
                 </div>
 
                 {/* Properties Panel */}
                 <div className="lg:sticky lg:top-24">
-                   <PropertiesPanel selectedElement={selectedElement} onElementUpdate={handleElementUpdate} />
+                   <PropertiesPanel 
+                        selectedElement={selectedElement} 
+                        onElementUpdate={handleElementUpdate} 
+                        onElementDelete={handleElementDelete}
+                    />
                 </div>
             </div>
 
             <DragOverlay>
                 {activeDragItem && String(activeDragItem.id).startsWith('toolbox-') ? (
                     <div className="p-3 rounded-lg border bg-card shadow-lg flex flex-col items-center gap-2 opacity-75">
-                         <Icon name={activeDragItem.data.current?.type === 'text' ? 'Type' : (activeDragItem.data.current?.type === 'image' ? 'Image' : 'Barcode')} className="h-6 w-6" />
+                         <Icon name={activeDragItem.data.current?.type === 'text' ? 'Type' : (activeDragItem.data.current?.type === 'image' ? 'Image' : (activeDragItem.data.current?.type === 'barcode' ? 'Barcode' : 'Square'))} className="h-6 w-6" />
                          <span className="text-xs font-medium">{activeDragItem.data.current?.type}</span>
                     </div>
                 ) : activeDragItem ? (
