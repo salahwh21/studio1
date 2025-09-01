@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -16,9 +17,7 @@ import { Trash2 } from 'lucide-react';
 import { produce } from 'immer';
 import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import Barcode from 'react-barcode';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { PrintablePolicy } from '@/components/printable-policy';
 
 // --------------------- قسم الحقول المخصصة ---------------------
 interface CustomField {
@@ -84,135 +83,6 @@ const CustomFieldsSection = ({ fields, onChange, maxFields = 3 }: { fields: Cust
   );
 };
 
-// --------------------- مكون معاينة البوليصة محسّن للملصقات ---------------------
-interface PrintablePolicyProps {
-  orders: any[];
-  previewSettings: PolicySettings;
-}
-
-const PrintablePolicy: React.FC<PrintablePolicyProps> = ({ orders, previewSettings }) => {
-  const {
-    paperSize,
-    layout,
-    showCompanyLogo,
-    showCompanyName,
-    showCompanyAddress,
-    showRefNumber,
-    showItems,
-    showPrice,
-    showBarcode,
-    customFields,
-    footerNotes,
-  } = previewSettings;
-
-  const paperDimensions: Record<string, { width: number, height: number }> = {
-    a4: { width: 794, height: 1123 },
-    a5: { width: 559, height: 794 },
-    label_4x6: { width: 300, height: 450 },
-    label_4x4: { width: 300, height: 300 },
-    label_3x2: { width: 180, height: 120 },
-    label_2x3: { width: 120, height: 180 },
-    label_4x2: { width: 300, height: 150 },
-  };
-
-  const { width, height } = paperDimensions[paperSize] || { width: 794, height: 1123 };
-
-  const isSmallLabel = ['label_3x2','label_2x3','label_4x2'].includes(paperSize);
-
-  const fontSize = isSmallLabel ? 'text-[8px]' : 'text-sm';
-  const headerFontSize = isSmallLabel ? 'text-[10px] font-bold' : 'text-lg font-bold';
-  const itemFontSize = isSmallLabel ? 'text-[8px]' : 'text-sm';
-  const paddingSize = isSmallLabel ? 'p-1' : 'p-2';
-  const imageSize = isSmallLabel ? 'w-8 h-8' : 'w-16 h-16';
-
-  const renderHeader = () => (
-    <div className="flex flex-col items-start mb-1 space-y-1">
-      {showCompanyLogo && !isSmallLabel && <img src="/logo.png" alt="Logo" className={`${imageSize} object-contain`} />}
-      {showCompanyName && <div className={headerFontSize}>{'اسم الشركة'}</div>}
-      {showCompanyAddress && !isSmallLabel && <div className={`${fontSize}`}>{'عنوان الشركة الكامل'}</div>}
-    </div>
-  );
-
-  const renderItems = () => {
-    if (!showItems || orders.length === 0) return <div className={`${fontSize} italic`}>لا توجد منتجات للعرض</div>;
-    return (
-      <table className={`w-full border-collapse text-right ${itemFontSize}`} dir="rtl">
-        <thead>
-          <tr>
-            <th className="border px-1">المنتج</th>
-            <th className="border px-1">الكمية</th>
-            {showPrice && <th className="border px-1">السعر</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((item, idx) => (
-            <tr key={idx}>
-              <td className="border px-1">{item.name}</td>
-              <td className="border px-1">{item.quantity}</td>
-              {showPrice && <td className="border px-1">{item.price}</td>}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    );
-  };
-
-  const renderCustomFields = () => {
-    if (!customFields || customFields.length === 0) return null;
-    return (
-      <div className="mt-1 space-y-1">
-        {customFields.map((field, idx) => (
-          <div key={idx} className={`${fontSize}`}>
-            <strong>{field.label}:</strong> {field.value}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  return (
-    <div
-      id="policy-preview"
-      className={`border bg-white flex flex-col ${paddingSize}`}
-      style={{
-        width: `${width}px`,
-        minHeight: `${height}px`,
-        fontFamily: 'Arial, sans-serif',
-        lineHeight: '1.2',
-        overflow: 'hidden',
-      }}
-    >
-      {showRefNumber && <div className={`${fontSize} mb-1`}>الرقم المرجعي: 123456</div>}
-      {renderHeader()}
-
-      {layout === 'compact' && (
-        <div className="flex flex-col space-y-1">
-          {renderItems()}
-          {showPrice && <div className={`${fontSize} mt-1 font-bold`}>الإجمالي: 500 ريال</div>}
-        </div>
-      )}
-
-      {layout === 'detailed' && (
-        <div className="flex flex-col space-y-1">
-          {renderItems()}
-          {showPrice && <div className={`${fontSize} mt-1 font-bold`}>الإجمالي: 500 ريال</div>}
-          {!isSmallLabel && renderCustomFields()}
-        </div>
-      )}
-
-      {layout === 'default' && (
-        <div className="flex flex-col space-y-1">
-          {renderItems()}
-          {!isSmallLabel && renderCustomFields()}
-          {showPrice && <div className={`${fontSize} mt-1 font-bold`}>الإجمالي: 500 ريال</div>}
-        </div>
-      )}
-
-      {showBarcode && <div className="mt-1"><Barcode value="1234567890" width={1} height={isSmallLabel?20:30} /></div>}
-      {footerNotes && !isSmallLabel && <div className={`${fontSize} mt-auto border-t pt-1`}>{footerNotes}</div>}
-    </div>
-  );
-};
 
 // --------------------- صفحة إعدادات البوليصة الكاملة مع زر PDF ---------------------
 export default function PolicySettingsPage() {
@@ -250,24 +120,6 @@ export default function PolicySettingsPage() {
     });
   };
 
-  const handleExportPDF = async () => {
-    const element = document.getElementById('policy-preview');
-    if (!element) return;
-
-    const canvas = await html2canvas(element, { scale: 2 });
-    const imgData = canvas.toDataURL('image/png');
-
-    const { width, height } = element.getBoundingClientRect();
-    const pdf = new jsPDF({
-      orientation: width > height ? 'landscape' : 'portrait',
-      unit: 'pt',
-      format: [width, height],
-    });
-
-    pdf.addImage(imgData, 'PNG', 0, 0, width, height);
-    pdf.save('policy.pdf');
-  };
-
   const SwitchControl = ({ id, label, checked }: { id: keyof PolicySettings; label: string; checked: boolean; }) => (
     <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
       <Label htmlFor={id}>{label}</Label>
@@ -299,7 +151,7 @@ export default function PolicySettingsPage() {
             <CardHeader><CardTitle className="text-lg">حجم الورق</CardTitle></CardHeader>
             <CardContent>
               <RadioGroup value={policySettings.paperSize} onValueChange={(val) => handleSettingChange('paperSize', val)}>
-                {['a4','a5','label_4x6','label_4x4','label_3x2','label_2x3','label_4x2'].map(size => (
+                {['a4','a5','label_4x6','label_4x4'].map(size => (
                   <div key={size} className="flex items-center space-x-2 space-x-reverse">
                     <RadioGroupItem value={size} id={size} />
                     <Label htmlFor={size}>{size.replace('_','x').toUpperCase()}</Label>
@@ -376,9 +228,6 @@ export default function PolicySettingsPage() {
             <CardHeader><CardTitle className="text-lg">معاينة حية</CardTitle></CardHeader>
             <CardContent className="bg-muted p-4 sm:p-8 flex flex-col items-center justify-center overflow-auto">
               <PrintablePolicy orders={[]} previewSettings={policySettings} />
-              <Button onClick={handleExportPDF} className="mt-4 w-full sm:w-auto flex items-center justify-center">
-                <Icon name="Printer" className="ml-2 h-4 w-4" /> تصدير PDF / طباعة
-              </Button>
             </CardContent>
           </Card>
         </div>

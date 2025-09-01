@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useState, useEffect, ReactNode, useContext, useCallback } from 'react';
@@ -81,7 +82,7 @@ interface UiSettings {
 
 // Policy
 export interface PolicySettings {
-    paperSize: 'a4' | 'a5' | 'label_4x6' | 'label_4x4' | 'label_4x2' | 'label_3x2' | 'label_2x3';
+    paperSize: 'a4' | 'a5' | 'label_4x6' | 'label_4x4';
     layout: 'default' | 'compact' | 'detailed';
     showCompanyLogo: boolean;
     showCompanyName: boolean;

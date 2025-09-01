@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
@@ -22,13 +21,10 @@ const paperSizeClasses = {
   a5: 'w-[148mm] min-h-[210mm] p-6',
   label_4x6: 'w-[101.6mm] min-h-[152.4mm] p-4 text-sm',
   label_4x4: 'w-[101.6mm] min-h-[101.6mm] p-3 text-[10px] leading-tight',
-  label_4x2: 'w-[101.6mm] min-h-[50.8mm] p-2 text-[9px] leading-tight',
-  label_3x2: 'w-[76.2mm] min-h-[50.8mm] p-2 text-[8px] leading-tight',
-  label_2x3: 'w-[50.8mm] min-h-[76.2mm] p-2 text-[8px] leading-tight',
 };
 
 const renderCustomFields = (customFields: {label: string, value: string}[], isSmallLabel: boolean) => (
-    <div className={cn("mt-2 space-y-1", isSmallLabel ? "text-[7px]" : "text-xs")}>
+    <div className={cn("mt-2 space-y-1", isSmallLabel ? "text-[8px]" : "text-xs")}>
         {customFields.filter(f => f.label).map((field, index) => (
             <div key={index} className="flex justify-between border-t border-dashed pt-1">
                 <span className="font-bold">{field.label}:</span>
@@ -121,23 +117,23 @@ const CompactLayout = ({ settings, loginSettings, order, isSmallLabel }: { setti
             <div className={cn("grid grid-cols-2 gap-x-2 border-b-2 border-black", isSmallLabel ? 'pb-1' : 'pb-2')}>
                 <div className="text-right space-y-1">
                     {settings.showCompanyLogo && <div className={cn(isSmallLabel ? "h-6" : "h-8")}><PolicyLogo loginSettings={loginSettings} /></div>}
-                    {settings.showCompanyName && <h1 className={cn("font-bold", isSmallLabel ? "text-[8px]" : "text-base")}>{loginSettings.companyName || 'شركة الوميض للتوصيل'}</h1>}
+                    {settings.showCompanyName && <h1 className={cn("font-bold", isSmallLabel ? "text-xs" : "text-base")}>{loginSettings.companyName || 'شركة الوميض للتوصيل'}</h1>}
                 </div>
                 <div className="text-left space-y-1">
                     <div className="flex flex-col items-end">
-                      {settings.showBarcode && <div className={cn("flex flex-col items-center justify-center origin-right", isSmallLabel ? "scale-50 -mr-4" : "scale-75")}><Barcode value={order.id} height={30} width={1} displayValue={false} margin={0} /><p className={cn("font-mono tracking-wider mt-1", isSmallLabel ? "text-[6px]" : "text-[8px]")}>{order.id}</p></div>}
+                      {settings.showBarcode && <div className={cn("flex flex-col items-center justify-center origin-right", isSmallLabel ? "scale-75 -mr-4" : "scale-100")}><Barcode value={order.id} height={30} width={1} displayValue={false} margin={0} /><p className={cn("font-mono tracking-wider mt-1", isSmallLabel ? "text-[8px]" : "text-[10px]")}>{order.id}</p></div>}
                     </div>
                 </div>
             </div>
             <main className={cn("flex-grow space-y-1", isSmallLabel ? 'my-1' : 'my-2')}>
-                <div className={cn("grid grid-cols-2 gap-1", isSmallLabel ? 'text-[7px]' : 'text-xs')}><div className='space-y-0.5'><p className='font-bold'>المرسل:</p><p>{order.merchant} (0780123456)</p></div><div className='space-y-0.5'><p className='font-bold'>الرقم المرجعي:</p><p>{order.referenceNumber || 'N/A'}</p></div><div className='space-y-0.5'><p className='font-bold'>تاريخ الطلب:</p><p>{formatDate(order.date, useSettings().settings.regional.dateFormat)}</p></div></div>
-                <div className={cn("border border-black rounded p-1 space-y-0.5", isSmallLabel ? 'text-[7px]' : 'text-xs')}><p className="font-bold">المستلم: {order.recipient}</p><p>الهاتف: {order.phone}</p><p className="font-bold">العنوان: {order.address}</p></div>
+                <div className={cn("grid grid-cols-2 gap-1", isSmallLabel ? 'text-xs' : 'text-sm')}><div className='space-y-0.5'><p className='font-bold'>المرسل:</p><p>{order.merchant} (0780123456)</p></div><div className='space-y-0.5'><p className='font-bold'>الرقم المرجعي:</p><p>{order.referenceNumber || 'N/A'}</p></div><div className='space-y-0.5'><p className='font-bold'>تاريخ الطلب:</p><p>{formatDate(order.date, useSettings().settings.regional.dateFormat)}</p></div></div>
+                <div className={cn("border border-black rounded p-1 space-y-0.5", isSmallLabel ? 'text-xs' : 'text-sm')}><p className="font-bold">المستلم: {order.recipient}</p><p>الهاتف: {order.phone}</p><p className="font-bold">العنوان: {order.address}</p></div>
             </main>
-            {settings.showItems && (<div className={cn(isSmallLabel ? 'text-[7px] my-1' : 'text-[10px] my-2')}><p>المحتويات: منتج 1 (x2), منتج 2 (x1)</p></div>)}
+            {settings.showItems && (<div className={cn(isSmallLabel ? 'text-xs my-1' : 'text-sm my-2')}><p>المحتويات: منتج 1 (x2), منتج 2 (x1)</p></div>)}
             {renderCustomFields(settings.customFields, isSmallLabel)}
             <footer className="mt-auto pt-1 space-y-1 border-t-2 border-black">
-                {settings.showPrice && <div className="text-center"><p className={cn("font-bold", isSmallLabel ? "text-[9px]" : "text-sm")}>المبلغ المطلوب</p><p className={cn("font-bold", isSmallLabel ? "text-base" : "text-xl")}>{formatCurrency(order.cod)}</p></div>}
-                {settings.footerNotes && <p className={cn("text-center", isSmallLabel ? "text-[6px]" : "text-[10px]")}>{settings.footerNotes}</p>}
+                {settings.showPrice && <div className="text-center"><p className={cn("font-bold", isSmallLabel ? "text-sm" : "text-base")}>المبلغ المطلوب</p><p className={cn("font-bold", isSmallLabel ? "text-lg" : "text-2xl")}>{formatCurrency(order.cod)}</p></div>}
+                {settings.footerNotes && <p className={cn("text-center", isSmallLabel ? "text-[9px]" : "text-[10px]")}>{settings.footerNotes}</p>}
             </footer>
         </>
     );
@@ -148,13 +144,13 @@ const DetailedLayout = ({ settings, loginSettings, order, isSmallLabel }: { sett
     return (
         <>
             <header className={cn("grid grid-cols-3 gap-2 border-b-2 border-black items-center", isSmallLabel ? 'pb-1' : 'pb-2')}>
-                <div className="col-span-1">{settings.showCompanyLogo && <div className={cn(isSmallLabel ? "h-6" : "h-10")}><PolicyLogo loginSettings={loginSettings} /></div>}</div>
+                <div className="col-span-1">{settings.showCompanyLogo && <div className={cn(isSmallLabel ? "h-8" : "h-10")}><PolicyLogo loginSettings={loginSettings} /></div>}</div>
                 <div className="col-span-2 text-left">
-                    <h2 className={cn("font-bold", isSmallLabel ? "text-sm" : "text-lg")}>بوليصة شحن</h2>
-                    {settings.showBarcode && <div className="flex flex-col items-end"><div className={cn("origin-right", isSmallLabel ? "scale-50" : "scale-75")}><Barcode value={order.id} height={30} width={1} displayValue={false} margin={0} /></div><p className={cn("font-mono tracking-wider -mt-2", isSmallLabel ? "text-[7px]" : "text-[9px]")}>{order.id}</p></div>}
+                    <h2 className={cn("font-bold", isSmallLabel ? "text-base" : "text-lg")}>بوليصة شحن</h2>
+                    {settings.showBarcode && <div className="flex flex-col items-end"><div className={cn("origin-right", isSmallLabel ? "scale-75" : "scale-100")}><Barcode value={order.id} height={30} width={1} displayValue={false} margin={0} /></div><p className={cn("font-mono tracking-wider -mt-2", isSmallLabel ? "text-[8px]" : "text-[10px]")}>{order.id}</p></div>}
                 </div>
             </header>
-            <main className={cn("flex-grow space-y-1", isSmallLabel ? 'my-1' : 'my-2', isSmallLabel ? 'text-[7px]' : 'text-xs')}>
+            <main className={cn("flex-grow space-y-1", isSmallLabel ? 'my-1' : 'my-2', isSmallLabel ? 'text-xs' : 'text-sm')}>
                 <div className="grid grid-cols-2 gap-2"><p><span className="font-bold">تاريخ الطلب:</span> {formatDate(order.date, useSettings().settings.regional.dateFormat)}</p>{settings.showRefNumber && <p><span className="font-bold">الرقم المرجعي:</span> {order.referenceNumber || 'N/A'}</p>}</div>
                 <div className="grid grid-cols-2 gap-2">
                     <div className="border border-black rounded p-1"><h3 className="font-bold border-b border-black mb-1">المرسل</h3><p>{order.merchant}</p><p>0780123456</p></div>
@@ -165,8 +161,8 @@ const DetailedLayout = ({ settings, loginSettings, order, isSmallLabel }: { sett
             </main>
             {renderCustomFields(settings.customFields, isSmallLabel)}
             <footer className={cn("mt-auto space-y-1 border-t-2 border-black", isSmallLabel ? 'pt-1' : 'pt-2')}>
-                {settings.showPrice && <div className="border-2 border-black rounded-lg p-1 text-center"><p className={cn("font-bold", isSmallLabel ? "text-xs" : "text-sm")}>المبلغ المطلوب</p><p className={cn("font-bold", isSmallLabel ? "text-sm" : "text-lg")}>{formatCurrency(order.cod)}</p></div>}
-                {settings.footerNotes && <p className={cn("text-center pt-1", isSmallLabel ? "text-[7px]" : "text-[9px]")}>{settings.footerNotes}</p>}
+                {settings.showPrice && <div className="border-2 border-black rounded-lg p-1 text-center"><p className={cn("font-bold", isSmallLabel ? "text-base" : "text-lg")}>المبلغ المطلوب</p><p className={cn("font-bold", isSmallLabel ? "text-lg" : "text-xl")}>{formatCurrency(order.cod)}</p></div>}
+                {settings.footerNotes && <p className={cn("text-center pt-1", isSmallLabel ? "text-[8px]" : "text-[9px]")}>{settings.footerNotes}</p>}
             </footer>
         </>
     );
@@ -206,7 +202,6 @@ export const PrintablePolicy = forwardRef<
     const loginSettings = context?.settings.login;
     
     const handleExportPDF = async (overrideSettings?: Partial<PolicySettings>) => {
-        const settingsToUse = { ...activeSettings, ...overrideSettings };
         const printArea = printAreaRef.current;
         if (!printArea) {
             toast({ variant: 'destructive', title: 'خطأ في الطباعة', description: 'لا يمكن العثور على المحتوى للطباعة.' });
@@ -256,7 +251,6 @@ export const PrintablePolicy = forwardRef<
                 
                 pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
             }
-
             pdf.autoPrint();
             window.open(pdf.output('bloburl'), '_blank');
         } catch (err: any) {
@@ -294,6 +288,14 @@ export const PrintablePolicy = forwardRef<
                     </React.Fragment>
                 ))}
             </div>
+             {orders.length === 0 && (
+                <div className="text-center mt-4">
+                     <Button onClick={() => handleExportPDF()}>
+                        <Icon name="Printer" className="ml-2 h-4 w-4" />
+                        طباعة معاينة
+                    </Button>
+                </div>
+            )}
         </div>
     );
 });
