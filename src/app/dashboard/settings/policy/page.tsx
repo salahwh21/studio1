@@ -595,6 +595,41 @@ export default function PolicyEditorPage() {
             { id: "8", type: "line", x: 16, y: 168, width: 352, height: 2, zIndex: 0, content: "", color: "#000000", opacity: 1, backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1, fontSize: 14, fontWeight: 'normal' },
             { id: "9", type: "line", x: 16, y: 312, width: 352, height: 2, zIndex: 0, content: "", color: "#000000", opacity: 1, backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1, fontSize: 14, fontWeight: 'normal' },
         ]
+    },
+    "label_45x75_default": {
+        id: "label_45x75_default", name: "بوليصة 45x75", paperSizeKey: "custom",
+        customDimensions: { width: 45, height: 75 }, margins: { top: 2, right: 2, bottom: 2, left: 2 },
+        elements: [
+            // Barcode and Company Logo
+            { id: "el_brcd", type: "barcode", x: 8, y: 8, width: 104, height: 32, zIndex: 1, content: "{order_id}"},
+            { id: "el_brcd_txt", type: "text", x: 8, y: 40, width: 104, height: 16, zIndex: 1, content: "{order_id}", fontSize: 8, fontWeight: 'normal'},
+            { id: "el_logo", type: "image", x: 120, y: 8, width: 42, height: 24, zIndex: 1, content: "{company_logo}"},
+            // Main Table
+            { id: "el_tbl_outer", type: "rect", x: 8, y: 64, width: 154, height: 160, zIndex: 0, borderWidth: 1, borderColor: '#000000' },
+            // Vertical lines
+            { id: "el_ln_v1", type: "line", x: 50, y: 64, width: 1, height: 160, zIndex: 1, color: '#000000' },
+            { id: "el_ln_v2", type: "line", x: 118, y: 64, width: 1, height: 160, zIndex: 1, color: '#000000' },
+            // Horizontal lines
+            { id: "el_ln_h1", type: "line", x: 8, y: 104, width: 154, height: 1, zIndex: 1, color: '#000000' },
+            { id: "el_ln_h2", type: "line", x: 8, y: 144, width: 154, height: 1, zIndex: 1, color: '#000000' },
+            { id: "el_ln_h3", type: "line", x: 8, y: 184, width: 154, height: 1, zIndex: 1, color: '#000000' },
+            // Row 1
+            { id: "el_h_sender", type: "text", x: 120, y: 66, width: 40, height: 36, zIndex: 2, content: "المرسل", fontSize: 10, fontWeight: 'bold' },
+            { id: "el_v_sender", type: "text", x: 52, y: 66, width: 64, height: 36, zIndex: 2, content: "{merchant_name}", fontSize: 8 },
+            { id: "el_h_recipient", type: "text", x: 10, y: 66, width: 38, height: 36, zIndex: 2, content: "المستلم", fontSize: 10, fontWeight: 'bold' },
+            // Row 2
+            { id: "el_h_city", type: "text", x: 120, y: 106, width: 40, height: 36, zIndex: 2, content: "المدينة", fontSize: 10, fontWeight: 'bold' },
+            { id: "el_v_city", type: "text", x: 52, y: 106, width: 64, height: 36, zIndex: 2, content: "{recipient_address}", fontSize: 8 },
+            { id: "el_h_address", type: "text", x: 10, y: 106, width: 38, height: 36, zIndex: 2, content: "عنوان المستلم", fontSize: 10, fontWeight: 'bold' },
+             // Row 3
+            { id: "el_h_phone", type: "text", x: 120, y: 146, width: 40, height: 36, zIndex: 2, content: "رقم الموبايل", fontSize: 10, fontWeight: 'bold' },
+            { id: "el_v_phone", type: "text", x: 52, y: 146, width: 64, height: 36, zIndex: 2, content: "{recipient_phone}", fontSize: 8 },
+            { id: "el_h_notes", type: "text", x: 10, y: 146, width: 38, height: 36, zIndex: 2, content: "ملاحظات", fontSize: 10, fontWeight: 'bold' },
+             // Row 4
+            { id: "el_h_cod", type: "text", x: 120, y: 186, width: 40, height: 36, zIndex: 2, content: "مبلغ التحصيل", fontSize: 10, fontWeight: 'bold' },
+            { id: "el_v_cod", type: "text", x: 52, y: 186, width: 64, height: 36, zIndex: 2, content: "{cod_amount}", fontSize: 8 },
+            { id: "el_v_notes", type: "text", x: 10, y: 186, width: 38, height: 36, zIndex: 2, content: "{notes}", fontSize: 8 },
+        ]
     }
   };
 
@@ -775,4 +810,5 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
 
