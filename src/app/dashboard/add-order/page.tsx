@@ -86,7 +86,7 @@ const AddOrderPage = () => {
         return;
     }
 
-    const policyElements = input.querySelectorAll('.policy-sheet');
+    const policyElements = Array.from(input.querySelectorAll('.policy-sheet'));
     if (policyElements.length === 0) {
         toast({
             variant: 'destructive',
@@ -103,12 +103,16 @@ const AddOrderPage = () => {
         format: 'a4'
     });
 
-    const promises = Array.from(policyElements).map((element, index) => 
-        html2canvas(element as HTMLElement, { 
-            scale: 2, 
-            allowTaint: true, 
-            useCORS: true 
-        }).then(canvas => {
+    const canvasPromises = policyElements.map(element =>
+        html2canvas(element as HTMLElement, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true
+        })
+    );
+    
+    Promise.all(canvasPromises).then(canvases => {
+        canvases.forEach((canvas, index) => {
             if (index > 0) {
                 pdf.addPage();
             }
@@ -122,12 +126,17 @@ const AddOrderPage = () => {
             const height = width / ratio;
 
             pdf.addImage(imgData, 'PNG', 0, 0, width, height > pdfHeight ? pdfHeight : height);
-        })
-    );
-    
-    Promise.all(promises).then(() => {
+        });
+
         pdf.autoPrint();
         window.open(pdf.output('bloburl'), '_blank');
+    }).catch(err => {
+        console.error("Error generating PDF: ", err);
+        toast({
+            variant: 'destructive',
+            title: 'خطأ أثناء توليد الـ PDF',
+            description: 'حدث خطأ غير متوقع أثناء تحويل البوليصة إلى صورة.'
+        });
     });
   }
 
