@@ -36,9 +36,9 @@ const integrationsList = [
     { id: 'stripe', name: 'Stripe', iconName: 'CreditCard' as const, category: 'payment' },
     { id: 'paypal', name: 'PayPal', iconName: 'CreditCard' as const, category: 'payment' },
     { id: 'paytabs', name: 'PayTabs', iconName: 'CreditCard' as const, category: 'payment' },
-    { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const, category: 'automation' },
-    { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const, category: 'custom' },
-    { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const, category: 'custom' }
+    { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const, category: 'factory', type: 'factory' },
+    { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const, category: 'factory', type: 'factory' },
+    { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const, category: 'factory', type: 'factory' }
 ];
 
 const mockImportableOrders = [
