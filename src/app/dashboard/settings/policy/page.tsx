@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Trash2 } from 'lucide-react';
-import produce from 'immer';
+import { produce } from 'immer';
 import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import Barcode from 'react-barcode';
