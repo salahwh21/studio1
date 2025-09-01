@@ -377,13 +377,17 @@ export default function PolicyEditorPage() {
         })
     );
   }, []);
-
-  const handleSelect = (id: string | null) => {
-    if (id) {
-        setSelectedIds([id]);
-    } else {
-        setSelectedIds([]);
-    }
+  
+  const handleSelect = (id: string | null, isShiftPressed: boolean = false) => {
+      if (isShiftPressed && id) {
+          setSelectedIds(prev => 
+              prev.includes(id) 
+                  ? prev.filter(item => item !== id)
+                  : [...prev, id]
+          );
+      } else {
+          setSelectedIds(id ? [id] : []);
+      }
   };
 
   const handleResizeStop = useCallback((id: string, w: number, h: number) => {
@@ -738,7 +742,7 @@ export default function PolicyEditorPage() {
                               ref={canvasRef}
                               className="relative bg-white rounded-md shadow-inner"
                               style={{ ...paperDimensions }}
-                              onClick={() => handleSelect(null)}
+                              onClick={(e) => handleSelect(null, e.shiftKey)}
                             >
                                 <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
                                     backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
@@ -756,7 +760,7 @@ export default function PolicyEditorPage() {
                                       selected={selectedIds.includes(el.id)}
                                       onSelect={(e, id) => {
                                         e.stopPropagation();
-                                        handleSelect(id);
+                                        handleSelect(id, e.shiftKey);
                                       }}
                                       onResizeStop={handleResizeStop}
                                       onResize={(id, w, h) => handleUpdateElement(id, { width: w, height: h })}
@@ -771,3 +775,5 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
+    
