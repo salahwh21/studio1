@@ -31,6 +31,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useStatusesStore } from '@/store/statuses-store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useSettings } from '@/contexts/SettingsContext';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 
 const orderSchema = z.object({
@@ -72,10 +74,57 @@ const AddOrderPage = () => {
       data: null, error: null, message: ''
   });
   
-  const componentToPrintRef = useRef(null);
+  const componentToPrintRef = useRef<HTMLDivElement>(null);
   
   const handlePrint = () => {
-    window.print();
+    const input = componentToPrintRef.current;
+    if (!input) {
+        toast({
+            variant: 'destructive',
+            title: 'خطأ في الطباعة',
+            description: 'لا يمكن العثور على المحتوى للطباعة.'
+        });
+        return;
+    }
+
+    const policyElements = input.querySelectorAll('.policy-sheet');
+    if (policyElements.length === 0) {
+        toast({
+            variant: 'destructive',
+            title: 'لا طلبات محددة',
+            description: 'الرجاء تحديد طلب واحد على الأقل لطباعة البوليصة.'
+        });
+        return;
+    }
+
+    const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4'
+    });
+
+    const promises = Array.from(policyElements).map((element, index) => 
+        html2canvas(element as HTMLElement, { scale: 2 }).then(canvas => {
+            if (index > 0) {
+                pdf.addPage();
+            }
+            const imgData = canvas.toDataURL('image/png');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            const ratio = canvasWidth / canvasHeight;
+            const width = pdfWidth;
+            const height = width / ratio;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, width, height > pdfHeight ? pdfHeight : height);
+        })
+    );
+    
+    Promise.all(promises).then(() => {
+        pdf.autoPrint();
+        window.open(pdf.output('bloburl'), '_blank');
+    });
   }
 
   const form = useForm<OrderFormValues>({
@@ -217,7 +266,7 @@ const AddOrderPage = () => {
 
   return (
     <div className="space-y-6">
-       <div className="hidden print:block">
+       <div className="hidden">
             <PrintablePolicy ref={componentToPrintRef} orders={ordersToPrint} />
        </div>
 
