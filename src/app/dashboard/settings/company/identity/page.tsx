@@ -112,12 +112,7 @@ export default function CompanyIdentityPage() {
   };
 
   const handleSaveChanges = () => {
-    const finalCompanyName = (typeof companyName === 'string' && companyName.trim() === '') ? 'الوميض' : companyName;
-    if (typeof companyName === 'string' && companyName.trim() === '') {
-        setCompanyName('الوميض');
-    }
-
-    updateLoginSetting('companyName', finalCompanyName);
+    updateLoginSetting('companyName', companyName);
     updateLoginSetting('loginLogo', logos.admin.src);
     updateLoginSetting('headerLogo', logos.header.src);
     

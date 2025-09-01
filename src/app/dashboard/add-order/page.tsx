@@ -3,7 +3,6 @@
 
 import { useState, useMemo, useEffect, useRef, useContext } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useUsersStore, User } from '@/store/user-store';
 import { useOrdersStore, Order } from '@/store/orders-store';
@@ -82,7 +81,7 @@ const AddOrderPage = () => {
     if (!input) return;
 
     html2canvas(input, {
-        scale: 2, // Higher scale for better quality
+        scale: 2,
         useCORS: true,
         backgroundColor: null,
     }).then(canvas => {
@@ -104,9 +103,7 @@ const AddOrderPage = () => {
         let y = 0;
 
         for (let i = 0; i < ordersToPrint.length; i++) {
-             // Each policy is assumed to be A5, so two fit on one A4
-            const policyHeight = pdfHeight / 2;
-            if (i > 0) {
+             if (i > 0) {
                  pdf.addPage();
             }
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, heightInPdf);
@@ -213,9 +210,7 @@ const AddOrderPage = () => {
     const [regionName] = data.region.split('_');
     const orderNumber = nextOrderNumber;
     
-    const newOrder: Order = {
-      id: `${orderSettings.orders.orderPrefix}${orderNumber}`,
-      orderNumber: orderNumber,
+    const newOrder: Omit<Order, 'id' | 'orderNumber'> = {
       source: 'Manual',
       referenceNumber: data.referenceNumber || '',
       recipient: data.recipientName || 'زبون غير مسمى',
@@ -234,8 +229,8 @@ const AddOrderPage = () => {
       notes: data.notes || '',
     };
     
-    addOrder(newOrder);
-    setRecentlyAdded(prev => [newOrder, ...prev]);
+    const addedOrder = addOrder(newOrder);
+    setRecentlyAdded(prev => [addedOrder, ...prev]);
     toast({ title: 'تمت الإضافة', description: `تمت إضافة طلب "${data.recipientName}" بنجاح.` });
     reset({ ...getValues(), recipientName: '', phone: '', whatsapp: '', cod: 0, notes: '', referenceNumber: '', address: '' });
   };
@@ -261,7 +256,7 @@ const AddOrderPage = () => {
 
   return (
     <div className="space-y-6">
-       <div id="printable-area" className="hidden">
+       <div className="hidden">
             <div ref={componentToPrintRef}>
                 <PrintablePolicy orders={ordersToPrint} />
             </div>
@@ -588,5 +583,3 @@ const AddOrderPage = () => {
 };
 
 export default AddOrderPage;
-
-    

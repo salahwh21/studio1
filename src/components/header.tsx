@@ -152,7 +152,7 @@ export function AppHeader() {
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                     <DropdownMenuItem asChild>
-                        <Link href="/dashboard/settings/general">
+                        <Link href="/dashboard/settings/account">
                             <Icon name="User" className="mr-2 h-4 w-4"/>
                             <span>الملف الشخصي</span>
                         </Link>

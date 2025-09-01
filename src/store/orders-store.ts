@@ -2,8 +2,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
-
-// Mock Data - This will be the initial state of our store
 const initialOrders = Array.from({ length: 85 }, (_, i) => ({
   id: `ORD-171981000${1+i}`,
   source: (['Shopify', 'Manual', 'API', 'WooCommerce'] as const)[i % 4],
@@ -26,16 +24,14 @@ const initialOrders = Array.from({ length: 85 }, (_, i) => ({
 
 export type Order = typeof initialOrders[0] & { orderNumber: number };
 
-// Helper to get the highest order number from existing orders
 const getHighestOrderNumber = (orders: Order[]): number => {
     if (orders.length === 0) return 0;
     return Math.max(...orders.map(o => o.orderNumber || 0));
 };
 
-const initialOrderNumber = getHighestOrderNumber(initialOrders as Order[]);
+const initialOrdersWithNumbers = initialOrders.map((o, i) => ({...o, orderNumber: i + 1}));
+const initialOrderNumber = getHighestOrderNumber(initialOrdersWithNumbers);
 
-
-// Define the state structure and actions
 type OrdersState = {
   orders: Order[];
   nextOrderNumber: number;
@@ -43,19 +39,21 @@ type OrdersState = {
   updateOrderStatus: (orderId: string, newStatus: Order['status']) => void;
   updateOrderField: (orderId: string, field: keyof Order, value: any) => void;
   deleteOrders: (orderIds: string[]) => void;
-  addOrder: (order: Omit<Order, 'orderNumber' | 'id'>) => void;
+  addOrder: (order: Omit<Order, 'id' | 'orderNumber'>) => Order;
   refreshOrders: () => void;
 };
 
-// Create the store
-export const useOrdersStore = create<OrdersState>()(immer((set) => ({
-  orders: initialOrders.map((o, i) => ({...o, orderNumber: i + 1})), // Add initial order numbers
-  nextOrderNumber: initialOrders.length + 1,
+export const useOrdersStore = create<OrdersState>()(immer((set, get) => ({
+  orders: initialOrdersWithNumbers,
+  nextOrderNumber: initialOrderNumber + 1,
   
-  setOrders: (orders) => set((state) => {
-      state.orders = orders;
-      state.nextOrderNumber = getHighestOrderNumber(orders) + 1;
-  }),
+  setOrders: (orders) => {
+      const numberedOrders = orders.map((o, i) => ({ ...o, orderNumber: o.orderNumber || i + 1 }));
+      set((state) => {
+          state.orders = numberedOrders;
+          state.nextOrderNumber = getHighestOrderNumber(numberedOrders) + 1;
+      });
+  },
 
   updateOrderStatus: (orderId, newStatus) =>
     set((state) => {
@@ -83,17 +81,24 @@ export const useOrdersStore = create<OrdersState>()(immer((set) => ({
       orders: state.orders.filter((order) => !orderIds.includes(order.id)),
     })),
 
-  addOrder: (orderData) => 
+  addOrder: (orderData) => {
+    let newOrder: Order | null = null;
     set((state) => {
+        const orderPrefix = localStorage.getItem('comprehensiveAppSettings') 
+            ? JSON.parse(localStorage.getItem('comprehensiveAppSettings')!).orders.orderPrefix 
+            : 'ORD-';
+        
         const newOrderNumber = state.nextOrderNumber;
-        const newOrder: Order = {
+        newOrder = {
             ...orderData,
-            id: `new-${newOrderNumber}`, // temp id
+            id: `${orderPrefix}${newOrderNumber}`,
             orderNumber: newOrderNumber,
         };
         state.orders.unshift(newOrder);
         state.nextOrderNumber = newOrderNumber + 1;
-    }),
+    });
+    return newOrder!;
+  },
     
   refreshOrders: () => set((state) => {
       const renumberedOrders = initialOrders.map((o, i) => ({...o, orderNumber: i + 1}));

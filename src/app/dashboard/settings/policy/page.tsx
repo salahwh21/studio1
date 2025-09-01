@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -16,42 +16,8 @@ import { cn } from '@/lib/utils';
 import { Logo } from '@/components/logo';
 import { Input } from '@/components/ui/input';
 import { Trash2 } from 'lucide-react';
-
-const BarcodeIcon = () => (
-  <svg viewBox="0 0 120 30" className="h-10 w-24">
-    <rect x="0" y="0" width="2" height="30" fill="black" />
-    <rect x="4" y="0" width="1" height="30" fill="black" />
-    <rect x="7" y="0" width="3" height="30" fill="black" />
-    <rect x="12" y="0" width="1" height="30" fill="black" />
-    <rect x="15" y="0" width="2" height="30" fill="black" />
-    <rect x="19" y="0" width="2" height="30" fill="black" />
-    <rect x="23" y="0" width="1" height="30" fill="black" />
-    <rect x="26" y="0" width="3" height="30" fill="black" />
-    <rect x="31" y="0" width="1" height="30" fill="black" />
-    <rect x="34" y="0" width="3" height="30" fill="black" />
-    <rect x="39" y="0" width="2" height="30" fill="black" />
-    <rect x="43" y="0" width="1" height="30" fill="black" />
-    <rect x="46" y="0" width="1" height="30" fill="black" />
-    <rect x="49" y="0" width="3" height="30" fill="black" />
-    <rect x="54" y="0" width="2" height="30" fill="black" />
-    <rect x="58" y="0" width="1" height="30" fill="black" />
-    <rect x="61" y="0" width="3" height="30" fill="black" />
-    <rect x="66" y="0" width="1" height="30" fill="black" />
-    <rect x="69" y="0" width="2" height="30" fill="black" />
-    <rect x="73" y="0" width="2" height="30" fill="black" />
-    <rect x="77" y="0" width="1" height="30" fill="black" />
-    <rect x="80" y="0" width="3" height="30" fill="black" />
-    <rect x="85" y="0" width="1" height="30" fill="black" />
-    <rect x="88" y="0" width="3" height="30" fill="black" />
-    <rect x="93" y="0" width="2" height="30" fill="black" />
-    <rect x="97" y="0" width="1" height="30" fill="black" />
-    <rect x="100" y="0" width="1" height="30" fill="black" />
-    <rect x="103" y="0" width="3" height="30" fill="black" />
-    <rect x="108" y="0" width="2" height="30" fill="black" />
-    <rect x="112" y="0" width="1" height="30" fill="black" />
-    <rect x="115" y="0" width="3" height="30" fill="black" />
-  </svg>
-);
+import { useSettings } from '@/contexts/SettingsContext';
+import { PrintablePolicy } from '@/components/printable-policy';
 
 const paperSizeClasses = {
   a4: 'w-[210mm] h-[297mm] p-8',
@@ -92,191 +58,48 @@ const CustomFieldsSection = ({ fields, onUpdate, onAdd, onRemove }: { fields: {l
     </div>
 );
 
-const renderCustomFields = (customFields: {label: string, value: string}[], isSmallLabel: boolean) => (
-    <div className={cn("mt-2 space-y-1", isSmallLabel ? "text-[7px]" : "text-xs")}>
-        {customFields.filter(f => f.label).map((field, index) => (
-            <div key={index} className="flex justify-between border-t border-dashed pt-1">
-                <span className="font-bold">{field.label}:</span>
-                <span>{field.value}</span>
-            </div>
-        ))}
-    </div>
-);
-
-const DefaultLayout = ({ settings, isSmallLabel }: { settings: any, isSmallLabel: boolean }) => (
-    <>
-        <header className="flex justify-between items-start border-b-2 border-black pb-2">
-        <div className="text-right">
-            {settings.showCompanyLogo && <div className="h-12"><Logo /></div>}
-            {settings.showCompanyName && <h1 className="font-bold text-lg mt-1">شركة الوميض للتوصيل</h1>}
-            {settings.showCompanyAddress && <p className="text-xs">عمان, الأردن - 0790123456</p>}
-        </div>
-        <div className="text-left">
-            <h2 className="font-bold">بوليصة شحن</h2>
-            <p className="text-xs font-mono">ORD-1719810001</p>
-            <p className="text-xs">{new Date().toLocaleDateString('ar-JO')}</p>
-        </div>
-        </header>
-
-        <main className="flex-grow my-4 grid grid-cols-2 gap-4">
-        <div className="border border-black rounded p-2">
-            <h3 className="font-bold border-b border-black mb-2">من (المرسل)</h3>
-            <p>تاجر أ</p>
-            <p>0780123456</p>
-            <p>مخزن الصويفية</p>
-        </div>
-        <div className="border border-black rounded p-2">
-            <h3 className="font-bold border-b border-black mb-2">إلى (المستلم)</h3>
-            <p>محمد جاسم</p>
-            <p>07701112233</p>
-            <p>الصويفية, عمان, شارع الوكالات, بناية 15, الطابق 3</p>
-        </div>
-        </main>
-
-        {settings.showItems && (
-        <div className="mb-4">
-            <table className="w-full text-xs border-collapse border border-black">
-                <thead><tr className="bg-gray-200"><th className="border border-black p-1">المنتج</th><th className="border border-black p-1">الكمية</th><th className="border border-black p-1">السعر</th></tr></thead>
-                <tbody><tr><td className="border border-black p-1">منتج 1</td><td className="border border-black p-1 text-center">2</td><td className="border border-black p-1 text-center">15.00</td></tr><tr><td className="border border-black p-1">منتج 2</td><td className="border border-black p-1 text-center">1</td><td className="border border-black p-1 text-center">20.50</td></tr></tbody>
-            </table>
-        </div>
-        )}
-        {renderCustomFields(settings.customFields, isSmallLabel)}
-
-        <footer className="mt-auto pt-2 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    {settings.showRefNumber && <p className="text-xs">الرقم المرجعي: <span className="font-bold">REF-00101</span></p>}
-                    {settings.showPrice && <div className="border-2 border-black rounded-lg p-2 mt-2 text-center"><p className="font-bold text-sm">المبلغ المطلوب</p><p className="font-bold text-xl">35.50 د.أ</p></div>}
-                </div>
-                {settings.showBarcode && <div className="flex flex-col items-center justify-center"><BarcodeIcon /><p className="text-xs font-mono tracking-widest mt-1">ORD-1719810001</p></div>}
-            </div>
-            {settings.footerNotes && <p className="text-xs text-center border-t-2 border-black pt-2">{settings.footerNotes}</p>}
-        </footer>
-    </>
-);
-
-const CompactLayout = ({ settings, isSmallLabel }: { settings: any, isSmallLabel: boolean }) => (
-    <>
-        <div className={cn("grid grid-cols-2 gap-x-2 border-b-2 border-black", isSmallLabel ? 'pb-1' : 'pb-2')}>
-            <div className="text-right space-y-1">
-                {settings.showCompanyLogo && <div className={cn(isSmallLabel ? "h-6" : "h-8")}><Logo /></div>}
-                {settings.showCompanyName && <h1 className={cn("font-bold", isSmallLabel ? "text-[8px]" : "text-base")}>شركة الوميض للتوصيل</h1>}
-            </div>
-            <div className="text-left space-y-1">
-                <div className="flex flex-col items-end">
-                  {settings.showBarcode && <div className={cn("flex flex-col items-center justify-center origin-right", isSmallLabel ? "scale-50 -mr-4" : "scale-75")}><BarcodeIcon /><p className={cn("font-mono tracking-wider mt-1", isSmallLabel ? "text-[6px]" : "text-[8px]")}>ORD-1719810001</p></div>}
-                </div>
-            </div>
-        </div>
-        <main className={cn("flex-grow space-y-1", isSmallLabel ? 'my-1' : 'my-2')}>
-            <div className={cn("grid grid-cols-2 gap-1", isSmallLabel ? 'text-[7px]' : 'text-xs')}><div className='space-y-0.5'><p className='font-bold'>المرسل:</p><p>تاجر أ (0780123456)</p></div><div className='space-y-0.5'><p className='font-bold'>الرقم المرجعي:</p><p>REF-00101</p></div><div className='space-y-0.5'><p className='font-bold'>تاريخ الطلب:</p><p>{new Date().toLocaleDateString('ar-JO')}</p></div></div>
-            <div className={cn("border border-black rounded p-1 space-y-0.5", isSmallLabel ? 'text-[7px]' : 'text-xs')}><p className="font-bold">المستلم: محمد جاسم</p><p>الهاتف: 07701112233</p><p className="font-bold">العنوان: الصويفية, عمان, شارع الوكالات, بناية 15, الطابق 3</p></div>
-        </main>
-        {settings.showItems && (<div className={cn(isSmallLabel ? 'text-[7px] my-1' : 'text-[10px] my-2')}><p>المحتويات: منتج 1 (x2), منتج 2 (x1)</p></div>)}
-        {renderCustomFields(settings.customFields, isSmallLabel)}
-        <footer className="mt-auto pt-1 space-y-1 border-t-2 border-black">
-            {settings.showPrice && <div className="text-center"><p className={cn("font-bold", isSmallLabel ? "text-[9px]" : "text-sm")}>المبلغ المطلوب</p><p className={cn("font-bold", isSmallLabel ? "text-base" : "text-xl")}>35.50 د.أ</p></div>}
-            {settings.footerNotes && <p className={cn("text-center", isSmallLabel ? "text-[6px]" : "text-[10px]")}>{settings.footerNotes}</p>}
-        </footer>
-    </>
-);
-
-const DetailedLayout = ({ settings, isSmallLabel }: { settings: any, isSmallLabel: boolean }) => (
-    <>
-        <header className={cn("grid grid-cols-3 gap-2 border-b-2 border-black items-center", isSmallLabel ? 'pb-1' : 'pb-2')}>
-            <div className="col-span-1">{settings.showCompanyLogo && <div className={cn(isSmallLabel ? "h-6" : "h-10")}><Logo /></div>}</div>
-            <div className="col-span-2 text-left">
-                <h2 className={cn("font-bold", isSmallLabel ? "text-sm" : "text-lg")}>بوليصة شحن</h2>
-                {settings.showBarcode && <div className="flex flex-col items-end"><div className={cn("origin-right", isSmallLabel ? "scale-50" : "scale-75")}><BarcodeIcon /></div><p className={cn("font-mono tracking-wider -mt-2", isSmallLabel ? "text-[7px]" : "text-[9px]")}>ORD-1719810001</p></div>}
-            </div>
-        </header>
-        <main className={cn("flex-grow space-y-1", isSmallLabel ? 'my-1' : 'my-2', isSmallLabel ? 'text-[7px]' : 'text-xs')}>
-            <div className="grid grid-cols-2 gap-2"><p><span className="font-bold">تاريخ الطلب:</span> {new Date().toLocaleDateString('ar-JO')}</p>{settings.showRefNumber && <p><span className="font-bold">الرقم المرجعي:</span> REF-00101</p>}</div>
-            <div className="grid grid-cols-2 gap-2">
-                <div className="border border-black rounded p-1"><h3 className="font-bold border-b border-black mb-1">المرسل</h3><p>تاجر أ</p><p>0780123456</p></div>
-                <div className="border border-black rounded p-1"><h3 className="font-bold border-b border-black mb-1">المستلم</h3><p>محمد جاسم</p><p>07701112233</p></div>
-            </div>
-            <div className="border border-black rounded p-1"><p><span className="font-bold">العنوان:</span> الصويفية, عمان, شارع الوكالات, بناية 15, الطابق 3</p></div>
-            {settings.showItems && <div className="border border-black rounded p-1"><p><span className="font-bold">المحتويات:</span> منتج 1 (x2), منتج 2 (x1)</p></div>}
-        </main>
-        {renderCustomFields(settings.customFields, isSmallLabel)}
-        <footer className={cn("mt-auto space-y-1 border-t-2 border-black", isSmallLabel ? 'pt-1' : 'pt-2')}>
-            {settings.showPrice && <div className="border-2 border-black rounded-lg p-1 text-center"><p className={cn("font-bold", isSmallLabel ? "text-xs" : "text-sm")}>المبلغ المطلوب</p><p className={cn("font-bold", isSmallLabel ? "text-sm" : "text-lg")}>35.50 د.أ</p></div>}
-            {settings.footerNotes && <p className={cn("text-center pt-1", isSmallLabel ? "text-[7px]" : "text-[9px]")}>{settings.footerNotes}</p>}
-        </footer>
-    </>
-);
-
 
 export default function PolicySettingsPage() {
   const { toast } = useToast();
-  const [settings, setSettings] = useState({
-    paperSize: 'a4',
-    layout: 'default',
-    showCompanyLogo: true,
-    showCompanyName: true,
-    showCompanyAddress: false,
-    showRefNumber: true,
-    showItems: false,
-    showPrice: true,
-    showBarcode: true,
-    footerNotes: 'شكرًا لثقتكم بنا. يرجى التأكد من الشحنة قبل استلامها.',
-    customFields: [] as {label: string, value: string}[],
-  });
+  const context = useSettings();
+  
+  if (!context) {
+      return <div>Loading...</div>; // Or a skeleton loader
+  }
+  
+  const { settings, updatePolicySetting, setPolicySettings } = context;
+  const policySettings = settings.policy;
 
-  type SettingsKey = keyof typeof settings;
-
-  useEffect(() => {
-    try {
-      const savedSettings = localStorage.getItem('policySettings');
-      if (savedSettings) {
-        setSettings(prev => ({...prev, ...JSON.parse(savedSettings)}));
-      }
-    } catch (error) {
-      console.error('Failed to load policy settings:', error);
-    }
-  }, []);
-
-  const handleSettingChange = (key: SettingsKey, value: any) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
+  const handleSettingChange = <K extends keyof typeof policySettings>(key: K, value: any) => {
+    updatePolicySetting(key, value);
   };
   
   const handleCustomFieldUpdate = (index: number, field: 'label'|'value', value: string) => {
-      const newFields = [...settings.customFields];
+      const newFields = [...policySettings.customFields];
       newFields[index][field] = value;
       handleSettingChange('customFields', newFields);
   };
 
   const addCustomField = () => {
-      if (settings.customFields.length < 3) {
-          handleSettingChange('customFields', [...settings.customFields, {label: '', value: ''}]);
+      if (policySettings.customFields.length < 3) {
+          handleSettingChange('customFields', [...policySettings.customFields, {label: '', value: ''}]);
       }
   };
 
   const removeCustomField = (index: number) => {
-      const newFields = settings.customFields.filter((_, i) => i !== index);
+      const newFields = policySettings.customFields.filter((_, i) => i !== index);
       handleSettingChange('customFields', newFields);
   };
 
 
   const handleSave = () => {
-    try {
-      localStorage.setItem('policySettings', JSON.stringify(settings));
-      toast({
-        title: 'تم الحفظ بنجاح!',
-        description: 'تم تحديث إعدادات بوليصة الشحن.',
-      });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'فشل الحفظ',
-        description: 'لم نتمكن من حفظ الإعدادات.',
-      });
-    }
+    toast({
+      title: 'تم الحفظ بنجاح!',
+      description: 'تم تحديث إعدادات بوليصة الشحن.',
+    });
   };
 
-  const SwitchControl = ({ id, label, checked }: { id: SettingsKey; label: string; checked: boolean; }) => (
+  const SwitchControl = ({ id, label, checked }: { id: keyof typeof policySettings; label: string; checked: boolean; }) => (
     <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
       <Label htmlFor={id}>{label}</Label>
       <Switch id={id} checked={checked} onCheckedChange={(val) => handleSettingChange(id, val)} />
@@ -284,12 +107,7 @@ export default function PolicySettingsPage() {
   );
   
   const renderLayout = () => {
-      const isSmallLabel = settings.paperSize.startsWith('label_');
-      switch(settings.layout) {
-          case 'compact': return <CompactLayout settings={settings} isSmallLabel={isSmallLabel}/>;
-          case 'detailed': return <DetailedLayout settings={settings} isSmallLabel={isSmallLabel}/>;
-          case 'default': default: return <DefaultLayout settings={settings} isSmallLabel={isSmallLabel}/>;
-      }
+      return <PrintablePolicy orders={[]} previewSettings={policySettings} />
   }
 
   return (
@@ -307,7 +125,7 @@ export default function PolicySettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-1 space-y-6">
           <Card><CardHeader><CardTitle className="text-lg">حجم الورق</CardTitle></CardHeader><CardContent>
-              <RadioGroup value={settings.paperSize} onValueChange={(val) => handleSettingChange('paperSize', val)}>
+              <RadioGroup value={policySettings.paperSize} onValueChange={(val) => handleSettingChange('paperSize', val)}>
                 <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="a4" id="a4" /><Label htmlFor="a4">A4</Label></div>
                 <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="a5" id="a5" /><Label htmlFor="a5">A5</Label></div>
                 <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="label_4x6" id="label_4x6" /><Label htmlFor="label_4x6">ملصق حراري (4x6 inch)</Label></div>
@@ -319,7 +137,7 @@ export default function PolicySettingsPage() {
           </CardContent></Card>
           
            <Card><CardHeader><CardTitle className="text-lg">تصميم البوليصة</CardTitle></CardHeader><CardContent>
-              <RadioGroup value={settings.layout} onValueChange={(val) => handleSettingChange('layout', val)}>
+              <RadioGroup value={policySettings.layout} onValueChange={(val) => handleSettingChange('layout', val)}>
                 <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="default" id="layout-default" /><Label htmlFor="layout-default">التصميم الافتراضي</Label></div>
                 <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="compact" id="layout-compact" /><Label htmlFor="layout-compact">التصميم المدمج (للملصقات)</Label></div>
                 <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="detailed" id="layout-detailed" /><Label htmlFor="layout-detailed">التصميم المفصّل</Label></div>
@@ -327,19 +145,19 @@ export default function PolicySettingsPage() {
           </CardContent></Card>
 
           <Card><CardHeader><CardTitle className="text-lg">محتوى البوليصة</CardTitle></CardHeader><CardContent className="space-y-3">
-              <SwitchControl id="showCompanyLogo" label="إظهار شعار الشركة" checked={settings.showCompanyLogo} />
-              <SwitchControl id="showCompanyName" label="إظهار اسم الشركة" checked={settings.showCompanyName} />
-              <SwitchControl id="showCompanyAddress" label="إظهار عنوان الشركة" checked={settings.showCompanyAddress} />
+              <SwitchControl id="showCompanyLogo" label="إظهار شعار الشركة" checked={policySettings.showCompanyLogo} />
+              <SwitchControl id="showCompanyName" label="إظهار اسم الشركة" checked={policySettings.showCompanyName} />
+              <SwitchControl id="showCompanyAddress" label="إظهار عنوان الشركة" checked={policySettings.showCompanyAddress} />
               <Separator />
-              <SwitchControl id="showRefNumber" label="إظهار الرقم المرجعي" checked={settings.showRefNumber} />
-              <SwitchControl id="showItems" label="إظهار تفاصيل المنتجات" checked={settings.showItems} />
-              <SwitchControl id="showPrice" label="إظهار السعر الإجمالي" checked={settings.showPrice} />
-              <SwitchControl id="showBarcode" label="إظهار الباركود" checked={settings.showBarcode} />
+              <SwitchControl id="showRefNumber" label="إظهار الرقم المرجعي" checked={policySettings.showRefNumber} />
+              <SwitchControl id="showItems" label="إظهار تفاصيل المنتجات" checked={policySettings.showItems} />
+              <SwitchControl id="showPrice" label="إظهار السعر الإجمالي" checked={policySettings.showPrice} />
+              <SwitchControl id="showBarcode" label="إظهار الباركود" checked={policySettings.showBarcode} />
           </CardContent></Card>
 
           <Card><CardHeader><CardTitle className="text-lg">الحقول المخصصة</CardTitle><CardDescription>أضف معلومات إضافية للبوليصة.</CardDescription></CardHeader><CardContent>
                 <CustomFieldsSection 
-                    fields={settings.customFields}
+                    fields={policySettings.customFields}
                     onUpdate={handleCustomFieldUpdate}
                     onAdd={addCustomField}
                     onRemove={removeCustomField}
@@ -347,7 +165,7 @@ export default function PolicySettingsPage() {
           </CardContent></Card>
 
           <Card><CardHeader><CardTitle className="text-lg">ملاحظات التذييل</CardTitle></CardHeader><CardContent>
-              <Textarea value={settings.footerNotes} onChange={(e) => handleSettingChange('footerNotes', e.target.value)} placeholder="اكتب ملاحظاتك هنا..." rows={4}/>
+              <Textarea value={policySettings.footerNotes} onChange={(e) => handleSettingChange('footerNotes', e.target.value)} placeholder="اكتب ملاحظاتك هنا..." rows={4}/>
           </CardContent></Card>
         </div>
 
@@ -355,9 +173,7 @@ export default function PolicySettingsPage() {
           <Card>
             <CardHeader><CardTitle className="text-lg">معاينة حية</CardTitle></CardHeader>
             <CardContent className="bg-muted p-4 sm:p-8 flex items-center justify-center overflow-auto">
-              <div className={cn("bg-white text-black shadow-lg mx-auto font-sans flex-shrink-0", paperSizeClasses[settings.paperSize as keyof typeof paperSizeClasses])}>
-                <div className="flex flex-col h-full">{renderLayout()}</div>
-              </div>
+              {renderLayout()}
             </CardContent>
           </Card>
         </div>

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useContext } from 'react';
+import { useContext } from 'react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,8 +29,6 @@ export default function OrderSettingsPage() {
     const context = useSettings();
 
     const handleSave = () => {
-        // The context saves to localStorage automatically on change,
-        // so this button is mostly for user feedback confirmation.
         toast({
             title: "تم الحفظ بنجاح!",
             description: "تم تحديث إعدادات الطلبات والأرشفة.",
