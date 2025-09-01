@@ -32,7 +32,6 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStatusesStore } from '@/store/statuses-store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import fuzzysort from 'fuzzysort';
 
 
 const orderSchema = z.object({
@@ -125,8 +124,8 @@ const AddOrderPage = () => {
           });
 
           // Smartly set region and city
-          if (region) {
-             const searchResults = fuzzysort.go(region, allRegions, { key: 'name' });
+          if (region && (window as any).fuzzysort) {
+             const searchResults = (window as any).fuzzysort.go(region, allRegions, { key: 'name' });
              if (searchResults.length > 0) {
                  const bestMatch = searchResults[0].obj;
                  setValue('region', `${bestMatch.name}_${bestMatch.cityName}`, { shouldValidate: true });
