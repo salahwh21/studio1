@@ -1,3 +1,4 @@
+
 // PolicyEditorPage.tsx
 'use client';
 
@@ -199,16 +200,12 @@ const ToolboxItem = ({ tool, onClick }: { tool: typeof toolboxItems[0]; onClick:
 };
 
 // ---------- Properties Panel ----------
-const PropertiesPanel = ({ selectedElementId, elements, onUpdate, onDelete, onArrange }: { 
-    selectedElementId: string | null;
-    elements: PolicyElement[];
+const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onArrange }: { 
+    selectedElement: PolicyElement | null;
     onUpdate: (id: string, updates: Partial<PolicyElement>) => void; 
     onDelete: (id: string) => void;
     onArrange: (id: string, direction: 'front' | 'back' | 'forward' | 'backward') => void;
 }) => {
-  const selectedElement = useMemo(() => {
-    return elements.find(el => el.id === selectedElementId) ?? null;
-  }, [elements, selectedElementId]);
 
   if (!selectedElement) {
     return <div className="text-muted-foreground text-center p-4">حدد عنصر لتعديل خصائصه</div>;
@@ -371,16 +368,14 @@ export default function PolicyEditorPage() {
     );
   }, []);
 
-  const handleSelect = useCallback((e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (e.shiftKey) {
-        setSelectedIds((prev) => 
-            prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
-        );
-    } else {
+  const handleSelect = (id: string | null) => {
+      if (id) {
         setSelectedIds([id]);
-    }
-  }, []);
+      } else {
+        setSelectedIds([]);
+      }
+  };
+
 
   const handleResizeStop = useCallback((id: string, w: number, h: number) => {
     setElements((p) => p.map((el) => (el.id === id ? { ...el, width: snapToGrid(w), height: snapToGrid(h) } : el)));
@@ -542,6 +537,11 @@ export default function PolicyEditorPage() {
     return { width: mmToPx(size.width), height: mmToPx(size.height) };
   }, [paperSizeKey, customDimensions]);
 
+  const selectedElement = useMemo(() => {
+    return elements.find(el => selectedIds[0] === el.id) ?? null;
+  }, [elements, selectedIds]);
+
+
   return (
     <div className="space-y-6">
         <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
@@ -615,8 +615,7 @@ export default function PolicyEditorPage() {
                         <CardContent>
                              <PropertiesPanel 
                                 key={selectedIds.length === 1 ? selectedIds[0] : 'none'}
-                                selectedElementId={selectedIds.length === 1 ? selectedIds[0] : null}
-                                elements={elements}
+                                selectedElement={selectedElement}
                                 onUpdate={handleUpdateElement} 
                                 onDelete={handleDeleteElement}
                                 onArrange={handleArrange}
@@ -678,7 +677,12 @@ export default function PolicyEditorPage() {
                             <CardTitle>لوحة التصميم</CardTitle>
                         </CardHeader>
                         <CardContent className="flex-grow w-full bg-muted p-8 rounded-lg overflow-auto flex items-center justify-center min-h-[70vh]">
-                            <div ref={canvasRef} className="relative bg-white rounded-md shadow-inner" style={{ ...paperDimensions }} onClick={() => setSelectedIds([])}>
+                            <div
+                              ref={canvasRef}
+                              className="relative bg-white rounded-md shadow-inner"
+                              style={{ ...paperDimensions }}
+                              onClick={() => handleSelect(null)}
+                            >
                                 <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
                                     backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
                                     backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)`,
@@ -689,9 +693,16 @@ export default function PolicyEditorPage() {
                                     bottom: `${mmToPx(margins.bottom)}px`, left: `${mmToPx(margins.left)}px`,
                                 }}/>
                                 {elements.sort((a,b) => a.zIndex - b.zIndex).map((el) => (
-                                    <DraggableItem key={el.id} element={el} selected={selectedIds.includes(el.id)} onSelect={handleSelect}
-                                        onResizeStop={handleResizeStop}
-                                        onResize={(id, w, h) => handleUpdateElement(id, { width: w, height: h })}
+                                    <DraggableItem
+                                      key={el.id}
+                                      element={el}
+                                      selected={selectedIds.includes(el.id)}
+                                      onSelect={(e, id) => {
+                                        e.stopPropagation();
+                                        handleSelect(id);
+                                      }}
+                                      onResizeStop={handleResizeStop}
+                                      onResize={(id, w, h) => handleUpdateElement(id, { width: w, height: h })}
                                     />
                                 ))}
                             </div>
