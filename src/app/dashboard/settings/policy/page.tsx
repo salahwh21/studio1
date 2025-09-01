@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import {
   DndContext,
@@ -12,7 +12,6 @@ import {
   useSensors,
   DragEndEvent,
   DragOverlay,
-  DragStartEvent,
   Active,
 } from '@dnd-kit/core';
 import { restrictToWindowEdges } from '@dnd-kit/modifiers';
@@ -24,10 +23,9 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/icon';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Types for Editor Elements
 type ElementType = 'text' | 'image' | 'barcode' | 'rect';
@@ -43,10 +41,18 @@ type PolicyElement = {
   fontWeight?: 'normal' | 'bold';
 };
 
+const paperSizes = {
+  a4: { width: 794, height: 1123, label: 'A4 (210x297mm)' },
+  a5: { width: 559, height: 794, label: 'A5 (148x210mm)' },
+  label_4x6: { width: 384, height: 576, label: 'Label (4x6 inch)' },
+  label_4x4: { width: 384, height: 384, label: 'Label (4x4 inch)' },
+};
+type PaperSize = keyof typeof paperSizes;
+
 // --------------- Canvas Components ---------------
 
 const DraggableItem = React.forwardRef<HTMLDivElement, { element: PolicyElement, isSelected: boolean, onSelect: (id: string) => void }>(
-  ({ element, isSelected, onSelect, ...props }, ref) => {
+  ({ element, isSelected, onSelect }, ref) => {
     const {attributes, listeners, setNodeToDrag} = useDraggable({
       id: element.id,
       data: { element },
@@ -95,7 +101,8 @@ const DraggableItem = React.forwardRef<HTMLDivElement, { element: PolicyElement,
 DraggableItem.displayName = 'DraggableItem';
 
 
-const PolicyCanvas = ({ elements, onElementsChange, selectedElement, onSelectElement }: {
+const PolicyCanvas = ({ paperSize, elements, onElementsChange, selectedElement, onSelectElement }: {
+    paperSize: PaperSize,
     elements: PolicyElement[],
     onElementsChange: React.Dispatch<React.SetStateAction<PolicyElement[]>>,
     selectedElement: string | null,
@@ -107,9 +114,13 @@ const PolicyCanvas = ({ elements, onElementsChange, selectedElement, onSelectEle
     <div
       ref={setNodeRef}
       className={cn(
-        'relative w-full h-[80vh] bg-white rounded-lg shadow-inner overflow-hidden',
-        isOver ? 'bg-green-50' : 'bg-gray-50'
+        'relative bg-white rounded-lg shadow-inner overflow-hidden mx-auto transition-all',
+        isOver ? 'outline outline-2 outline-offset-2 outline-primary' : ''
       )}
+      style={{
+        width: paperSizes[paperSize].width,
+        height: paperSizes[paperSize].height,
+      }}
       onClick={() => onSelectElement(null)}
     >
       {elements.map(el => (
@@ -208,6 +219,7 @@ export default function PolicyEditorPage() {
   const [elements, setElements] = useState<PolicyElement[]>([]);
   const [activeDragItem, setActiveDragItem] = useState<Active | null>(null);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  const [paperSize, setPaperSize] = useState<PaperSize>('a4');
   
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -219,18 +231,24 @@ export default function PolicyEditorPage() {
     const { active, over, delta } = event;
     setActiveDragItem(null);
 
-    if (!over || over.id !== 'canvas') {
-      return; // Dropped outside the canvas
+    // If dropped outside the canvas or no drop zone detected
+    if (!over) {
+        return; 
     }
+
+    const canvasRect = (over.rect) ? over.rect : {left: 0, top: 0};
     
     // If it's a new item from the toolbox
     if (String(active.id).startsWith('toolbox-')) {
         const type = active.data.current?.type as ElementType;
+        const dropX = active.rect.current.translated!.left - canvasRect.left;
+        const dropY = active.rect.current.translated!.top - canvasRect.top;
+
         const newElement: PolicyElement = {
             id: nanoid(),
             type,
-            x: 100, // Position should be calculated based on drop point
-            y: 100,
+            x: dropX,
+            y: dropY,
             width: type === 'text' ? 150 : 100,
             height: type === 'text' ? 20 : 100,
             content: type === 'text' ? 'نص جديد' : '',
@@ -242,39 +260,57 @@ export default function PolicyEditorPage() {
     }
 
     // If it's an existing item being moved
-    setElements(prev =>
-      prev.map(el =>
-        el.id === active.id
-          ? { ...el, x: el.x + delta.x, y: el.y + delta.y }
-          : el
-      )
-    );
-  }, []);
+    const activeElementId = active.id.toString();
+    const elementExists = elements.some(el => el.id === activeElementId);
+    if (elementExists) {
+        setElements(prev =>
+            prev.map(el =>
+                el.id === active.id
+                ? { ...el, x: el.x + delta.x, y: el.y + delta.y }
+                : el
+            )
+        );
+    }
+  }, [elements]);
 
   const handleElementUpdate = (id: string, updates: Partial<PolicyElement>) => {
       setElements(prev => prev.map(el => el.id === id ? {...el, ...updates} : el));
   }
   
-  const selectedElement = elements.find(el => el.id === selectedElementId) || null;
+  const selectedElement = useMemo(() => elements.find(el => el.id === selectedElementId) || null, [elements, selectedElementId]);
 
   return (
     <div className="space-y-6" dir="rtl">
         <Card>
-            <CardHeader className="flex flex-row items-start justify-between">
+            <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                     <CardTitle className="text-2xl font-bold flex items-center gap-2">
                     <Icon name="Brush" /> محرر البوليصة المرئي
                     </CardTitle>
                     <CardDescription>قم بتصميم بوليصة الشحن الخاصة بك عبر سحب وإفلات العناصر.</CardDescription>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline">حفظ كقالب</Button>
-                    <Button><Icon name="Printer" className="ml-2"/> طباعة</Button>
-                    <Button variant="outline" size="icon" asChild>
+                 <div className="flex items-center gap-4 w-full md:w-auto">
+                     <Select value={paperSize} onValueChange={(value) => setPaperSize(value as PaperSize)}>
+                        <SelectTrigger className="w-full md:w-[200px]">
+                            <SelectValue placeholder="اختر حجم الورق" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {Object.entries(paperSizes).map(([key, { label }]) => (
+                                <SelectItem key={key} value={key}>{label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                     <Button variant="outline" size="icon" asChild>
                         <Link href="/dashboard/settings/general"><Icon name="ArrowLeft" /></Link>
                     </Button>
                 </div>
             </CardHeader>
+            <CardContent>
+                 <div className="flex justify-start gap-2">
+                    <Button><Icon name="Save" className="ml-2"/> حفظ كقالب</Button>
+                    <Button variant="secondary"><Icon name="Printer" className="ml-2"/> طباعة معاينة</Button>
+                </div>
+            </CardContent>
         </Card>
 
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[restrictToWindowEdges]}>
@@ -285,8 +321,14 @@ export default function PolicyEditorPage() {
                 </div>
 
                 {/* Canvas */}
-                <div className="w-full">
-                   <PolicyCanvas elements={elements} onElementsChange={setElements} selectedElement={selectedElementId} onSelectElement={setSelectedElementId} />
+                <div className="w-full bg-muted p-8 rounded-lg overflow-auto">
+                   <PolicyCanvas 
+                     paperSize={paperSize}
+                     elements={elements} 
+                     onElementsChange={setElements} 
+                     selectedElement={selectedElementId} 
+                     onSelectElement={setSelectedElementId} 
+                    />
                 </div>
 
                 {/* Properties Panel */}
@@ -296,11 +338,16 @@ export default function PolicyEditorPage() {
             </div>
 
             <DragOverlay>
-                {activeDragItem && activeDragItem.id.toString().startsWith('toolbox-') ? (
-                    <div className="p-3 rounded-lg border bg-card shadow-lg flex flex-col items-center gap-2">
-                         <Icon name="Type" className="h-6 w-6" />
-                         <span className="text-xs font-medium">نص</span>
+                {activeDragItem && String(activeDragItem.id).startsWith('toolbox-') ? (
+                    <div className="p-3 rounded-lg border bg-card shadow-lg flex flex-col items-center gap-2 opacity-75">
+                         <Icon name={activeDragItem.data.current?.type === 'text' ? 'Type' : (activeDragItem.data.current?.type === 'image' ? 'Image' : 'Barcode')} className="h-6 w-6" />
+                         <span className="text-xs font-medium">{activeDragItem.data.current?.type}</span>
                     </div>
+                ) : activeDragItem ? (
+                     <div style={{
+                         width: activeDragItem.data.current?.element.width,
+                         height: activeDragItem.data.current?.element.height,
+                     }} className="bg-primary/20 border-2 border-primary rounded-md"></div>
                 ) : null}
             </DragOverlay>
 
