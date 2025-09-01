@@ -33,9 +33,6 @@ import {
     AlignVerticalJustifyEnd,
     AlignHorizontalDistributeCenter,
     AlignVerticalDistributeCenter,
-    Circle,
-    Minus,
-    Triangle,
     Save
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -43,7 +40,7 @@ import { useToast } from '@/hooks/use-toast';
 
 
 // ---------- Types ----------
-type ElementType = 'text' | 'image' | 'barcode' | 'rect' | 'circle' | 'line' | 'triangle';
+type ElementType = 'text' | 'image' | 'barcode';
 type FontWeight = 'normal' | 'bold';
 
 type PolicyElement = {
@@ -109,57 +106,7 @@ function ElementContent({ el }: { el: PolicyElement }) {
   if (el.type === 'text') return <div style={baseStyle}>{el.content || 'نص جديد'}</div>;
   if (el.type === 'barcode') return <div style={baseStyle}><Icon name="Barcode" className="h-8 w-8" /></div>;
   if (el.type === 'image') return <div style={baseStyle}><Icon name="Image" className="h-8 w-8 text-muted-foreground" /></div>;
-  if (el.type === 'rect') return (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        borderStyle: 'solid',
-        borderColor: el.borderColor ?? '#6b7280',
-        borderWidth: el.borderWidth ?? 2,
-        opacity: el.opacity ?? 1,
-      }}
-    />
-  );
-  if (el.type === 'circle') return (
-    <div
-        style={{
-        width: '100%',
-        height: '100%',
-        backgroundColor: el.color ?? '#6b7280',
-        borderRadius: '50%',
-        opacity: el.opacity ?? 1,
-        }}
-    />
-  );
-  if (el.type === 'line') return (
-    <div
-        style={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        }}
-    >
-        <div style={{
-            width: '100%',
-            height: el.borderWidth ?? 2,
-            backgroundColor: el.borderColor ?? '#000000',
-            opacity: el.opacity ?? 1,
-        }}/>
-    </div>
-  );
-  if (el.type === 'triangle') return (
-    <div
-        style={{
-            width: '100%',
-            height: '100%',
-            backgroundColor: el.color ?? '#000000',
-            clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
-            opacity: el.opacity ?? 1,
-        }}
-    />
-  );
+  
   return null;
 }
 
@@ -267,9 +214,7 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete }: { selectedElem
         <div className="space-y-2"><Label>العرض</Label><Input type="number" value={selectedElement.width} onChange={(e) => handleNumericChange('width', e.target.value)} /></div>
         <div className="space-y-2"><Label>الارتفاع</Label><Input type="number" value={selectedElement.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
       </div>
-       {(selectedElement.type === 'text' || selectedElement.type === 'circle' || selectedElement.type === 'triangle') && <div className="space-y-2"><Label>اللون</Label><Input type="color" value={selectedElement.color ?? '#000000'} onChange={(e) => handleChange('color', e.target.value)} className="h-10 w-full"/></div>}
-       {(selectedElement.type === 'rect' || selectedElement.type === 'line') && <div className="space-y-2"><Label>لون الحواف</Label><Input type="color" value={selectedElement.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full"/></div>}
-       {(selectedElement.type === 'rect' || selectedElement.type === 'line') && <div className="space-y-2"><Label>عرض الحواف</Label><Input type="number" value={selectedElement.borderWidth ?? 2} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>}
+       {(selectedElement.type === 'text') && <div className="space-y-2"><Label>اللون</Label><Input type="color" value={selectedElement.color ?? '#000000'} onChange={(e) => handleChange('color', e.target.value)} className="h-10 w-full"/></div>}
         <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={selectedElement.opacity ?? 1} onChange={(e) => handleChange('opacity', parseFloat(e.target.value))} /></div>
 
       <Button variant="destructive" onClick={() => onDelete(selectedElement.id)} className="w-full"><Icon name="Trash2" className="ml-2" /> حذف العنصر</Button>
@@ -316,24 +261,12 @@ export default function PolicyEditorPage() {
     const centerX = canvasRect.width / 2 - defaultWidth / 2;
     const centerY = canvasRect.height / 2 - defaultHeight / 2;
 
-    switch(type) {
-        case 'circle':
-            newElement = { ...commonProps, type, x: snapToGrid(centerX), y: snapToGrid(centerY), width: 50, height: 50, content: '', color: '#000000', opacity: 1 };
-            break;
-        case 'line':
-            newElement = { ...commonProps, type, x: snapToGrid(centerX), y: snapToGrid(centerY), width: 200, height: 2, content: '', borderColor: '#000000', borderWidth: 2, opacity: 1 };
-            break;
-        case 'triangle':
-            newElement = { ...commonProps, type, x: snapToGrid(centerX), y: snapToGrid(centerY), width: 50, height: 50, content: '', color: '#000000', opacity: 1 };
-            break;
-        default:
-            newElement = {
-                ...commonProps, type, x: snapToGrid(centerX), y: snapToGrid(centerY),
-                width: type === 'text' ? 160 : defaultWidth, height: type === 'text' ? 32 : defaultHeight,
-                content: type === 'text' ? 'نص جديد' : '', fontSize: 14, fontWeight: 'normal',
-                color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1,
-            };
-    }
+    newElement = {
+        ...commonProps, type, x: snapToGrid(centerX), y: snapToGrid(centerY),
+        width: type === 'text' ? 160 : defaultWidth, height: type === 'text' ? 32 : defaultHeight,
+        content: type === 'text' ? 'نص جديد' : '', fontSize: 14, fontWeight: 'normal',
+        color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1,
+    };
     setElements((prev) => [...prev, newElement]);
     setSelectedIds([newElement.id]);
   }, []);
@@ -560,10 +493,6 @@ export default function PolicyEditorPage() {
                             <ToolboxItem type="text" label="نص" icon="Type" onClick={() => addElement('text')} />
                             <ToolboxItem type="image" label="صورة" icon="Image" onClick={() => addElement('image')} />
                             <ToolboxItem type="barcode" label="باركود" icon="Barcode" onClick={() => addElement('barcode')} />
-                            <ToolboxItem type="rect" label="مربع" icon="Square" onClick={() => addElement('rect')} />
-                            <ToolboxItem type="circle" label="دائرة" icon="Circle" onClick={() => addElement('circle')} />
-                            <ToolboxItem type="line" label="خط" icon="Minus" onClick={() => addElement('line')} />
-                            <ToolboxItem type="triangle" label="مثلث" icon="Triangle" onClick={() => addElement('triangle')} />
                         </CardContent>
                     </Card>
                     <Card>
