@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -75,70 +74,67 @@ const AddOrderPage = () => {
   
   const componentToPrintRef = useRef<HTMLDivElement>(null);
   
-  const handlePrint = async () => {
-    const input = componentToPrintRef.current;
-    if (!input) {
-        toast({
-            variant: 'destructive',
-            title: 'خطأ في الطباعة',
-            description: 'لا يمكن العثور على المحتوى للطباعة.'
-        });
-        return;
-    }
+    const handlePrint = async () => {
+        const input = componentToPrintRef.current;
+        if (!input) {
+            toast({ variant: 'destructive', title: 'خطأ في الطباعة', description: 'لا يمكن العثور على المحتوى للطباعة.' });
+            return;
+        }
 
-    const policyElements = Array.from(input.querySelectorAll('.policy-sheet'));
-    if (policyElements.length === 0) {
-        toast({
-            variant: 'destructive',
-            title: 'لا طلبات محددة',
-            description: 'الرجاء تحديد طلب واحد على الأقل لطباعة البوليصة.'
-        });
-        return;
-    }
+        const policyElements = Array.from(input.querySelectorAll('.policy-sheet'));
+        if (policyElements.length === 0) {
+            toast({ variant: 'destructive', title: 'لا طلبات محددة', description: 'الرجاء تحديد طلب واحد على الأقل لطباعة البوليصة.' });
+            return;
+        }
 
-    const jsPDF = (await import('jspdf')).default;
-    const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: 'a4'
-    });
+        try {
+            const jsPDF = (await import('jspdf')).default;
+            const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
 
-    const canvasPromises = policyElements.map(element =>
-        html2canvas(element as HTMLElement, {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true
-        })
-    );
-    
-    Promise.all(canvasPromises).then(canvases => {
-        canvases.forEach((canvas, index) => {
-            if (index > 0) {
-                pdf.addPage();
+            for (let i = 0; i < policyElements.length; i++) {
+                const element = policyElements[i] as HTMLElement;
+
+                // Wait for images inside the element to load
+                const images = Array.from(element.getElementsByTagName('img'));
+                const imagePromises = images.map(img => {
+                    if (img.complete) return Promise.resolve();
+                    return new Promise<void>((resolve, reject) => {
+                        img.onload = () => resolve();
+                        img.onerror = () => reject(new Error(`Failed to load image: ${img.src}`));
+                    });
+                });
+                await Promise.all(imagePromises);
+
+                // Now generate canvas
+                const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+                const imgData = canvas.toDataURL('image/png');
+
+                if (i > 0) {
+                    pdf.addPage();
+                }
+
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const ratio = canvasWidth / canvasHeight;
+                const width = pdfWidth;
+                const height = width / ratio;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, width, height > pdfHeight ? pdfHeight : height);
             }
-            const imgData = canvas.toDataURL('image/png');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
-            const ratio = canvasWidth / canvasHeight;
-            const width = pdfWidth;
-            const height = width / ratio;
 
-            pdf.addImage(imgData, 'PNG', 0, 0, width, height > pdfHeight ? pdfHeight : height);
-        });
-
-        pdf.autoPrint();
-        window.open(pdf.output('bloburl'), '_blank');
-    }).catch(err => {
-        console.error("Error generating PDF: ", err);
-        toast({
-            variant: 'destructive',
-            title: 'خطأ أثناء توليد الـ PDF',
-            description: 'حدث خطأ غير متوقع أثناء تحويل البوليصة إلى صورة.'
-        });
-    });
-  }
+            pdf.autoPrint();
+            window.open(pdf.output('bloburl'), '_blank');
+        } catch (err: any) {
+            console.error("Error generating PDF: ", err);
+            toast({
+                variant: 'destructive',
+                title: 'خطأ أثناء توليد الـ PDF',
+                description: err.message || 'حدث خطأ غير متوقع أثناء تحويل البوليصة إلى صورة.'
+            });
+        }
+    };
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
@@ -609,3 +605,5 @@ const AddOrderPage = () => {
 };
 
 export default AddOrderPage;
+
+    
