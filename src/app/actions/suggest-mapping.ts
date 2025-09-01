@@ -16,7 +16,7 @@ type State = {
 
 // This is our system's target fields.
 const ourOrderFields = [
-    { key: 'recipient', label: 'اسم المستلم' },
+    { key: 'recipient', label: 'المستلم' },
     { key: 'phone', label: 'رقم الهاتف' },
     { key: 'address', label: 'العنوان' },
     { key: 'cod', label: 'المبلغ المطلوب' },

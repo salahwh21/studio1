@@ -203,7 +203,7 @@ const AddOrderPage = () => {
              <CardHeader><CardTitle>الإدخال اليدوي</CardTitle></CardHeader>
              <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField control={form.control} name="recipientName" render={({ field }) => ( <FormItem><FormLabel>اسم المستلم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="recipientName" render={({ field }) => ( <FormItem><FormLabel>المستلم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                     <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>الهاتف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                     <FormField control={form.control} name="referenceNumber" render={({ field }) => ( <FormItem><FormLabel>رقم مرجعي</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                 </div>
@@ -234,10 +234,10 @@ const AddOrderPage = () => {
                                             <CommandGroup>
                                                 {allRegions.map(r => (
                                                     <CommandItem
-                                                        value={r.name}
+                                                        value={`${r.name} ${r.cityName}`}
                                                         key={`${r.id}-${r.cityName}`}
                                                         onSelect={() => {
-                                                            field.onChange(`${r.name}_${r.cityName}`);
+                                                            form.setValue("region", `${r.name}_${r.cityName}`);
                                                             setRegionPopoverOpen(false);
                                                         }}
                                                     >
@@ -285,4 +285,3 @@ const AddOrderPage = () => {
 };
 
 export default AddOrderPage;
-

@@ -10,11 +10,11 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 const TargetFieldSchema = z.object({
   key: z.string().describe('The system key for the target field (e.g., "recipient").'),
-  label: z.string().describe('The human-readable label for the target field (e.g., "اسم المستلم").'),
+  label: z.string().describe('The human-readable label for the target field (e.g., "المستلم").'),
 });
 
 const SuggestFieldMappingInputSchema = z.object({
