@@ -42,31 +42,25 @@ export interface ButtonProps
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : motion.button;
-    const MotionComp = motion.div;
-
     if (asChild) {
       return (
-        <MotionComp
-          whileTap={{ scale: 0.97, transition: { duration: 0.1 } }}
-          className="inline-block"
-        >
-          <Slot
-            className={cn(buttonVariants({ variant, size, className }))}
-            ref={ref}
-            {...props}
-          />
-        </MotionComp>
-      );
-    }
-    
-    return (
-       <Comp
+        <Slot
           className={cn(buttonVariants({ variant, size, className }))}
           ref={ref}
-          whileTap={{ scale: 0.97 }}
           {...props}
         />
+      )
+    }
+
+    const MotionButton = motion.button;
+
+    return (
+      <MotionButton
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        whileTap={{ scale: 0.97 }}
+        {...props}
+      />
     )
   }
 )
