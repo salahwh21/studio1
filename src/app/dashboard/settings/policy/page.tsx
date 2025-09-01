@@ -2,7 +2,7 @@
 // PolicyEditorPage.tsx
 'use client';
 
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -133,7 +133,7 @@ function ElementContent({ el }: { el: PolicyElement }) {
         <div style={{
             width: '100%',
             height: el.borderWidth ?? 2,
-            backgroundColor: el.borderColor ?? '#6b7280',
+            backgroundColor: el.borderColor ?? '#000000',
             opacity: el.opacity ?? 1,
         }}/>
     </div>
@@ -143,7 +143,7 @@ function ElementContent({ el }: { el: PolicyElement }) {
         style={{
             width: '100%',
             height: '100%',
-            backgroundColor: el.color ?? '#6b7280',
+            backgroundColor: el.color ?? '#000000',
             clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
             opacity: el.opacity ?? 1,
         }}
@@ -256,8 +256,12 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete }: { selectedElem
         <div className="space-y-2"><Label>Y</Label><Input type="number" value={selectedElement.y} onChange={(e) => handleNumericChange('y', e.target.value)} /></div>
         <div className="space-y-2"><Label>العرض</Label><Input type="number" value={selectedElement.width} onChange={(e) => handleNumericChange('width', e.target.value)} /></div>
         <div className="space-y-2"><Label>الارتفاع</Label><Input type="number" value={selectedElement.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
-        <div className="space-y-2"><Label>لون الخط</Label><Input type="color" value={selectedElement.color} onChange={(e) => handleChange('color', e.target.value)} className="h-10"/></div>
       </div>
+       {(selectedElement.type === 'text' || selectedElement.type === 'circle' || selectedElement.type === 'triangle') && <div className="space-y-2"><Label>اللون</Label><Input type="color" value={selectedElement.color ?? '#000000'} onChange={(e) => handleChange('color', e.target.value)} className="h-10 w-full"/></div>}
+       {(selectedElement.type === 'rect' || selectedElement.type === 'line') && <div className="space-y-2"><Label>لون الحواف</Label><Input type="color" value={selectedElement.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full"/></div>}
+       {(selectedElement.type === 'rect' || selectedElement.type === 'line') && <div className="space-y-2"><Label>عرض الحواف</Label><Input type="number" value={selectedElement.borderWidth ?? 2} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>}
+        <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={selectedElement.opacity ?? 1} onChange={(e) => handleChange('opacity', parseFloat(e.target.value))} /></div>
+
       <Button variant="destructive" onClick={() => onDelete(selectedElement.id)} className="w-full"><Icon name="Trash2" className="ml-2" /> حذف العنصر</Button>
     </div>
   );
@@ -272,6 +276,7 @@ export default function PolicyEditorPage() {
   const [elements, setElements] = useState<PolicyElement[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeDrag, setActiveDrag] = useState<Active | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -304,38 +309,36 @@ export default function PolicyEditorPage() {
   const handleDragEnd = useCallback((e: DragEndEvent) => {
     const { active, over, delta } = e;
     setActiveDrag(null);
-    if (!over) return;
-  
+
     const isTool = String(active.id).startsWith('toolbox-');
     
     if (isTool) {
-      const toolType = active.data.current?.type as ElementType;
-      const canvasEl = document.querySelector('[data-droppable-id="canvas"]') as HTMLElement | null;
-      if (!canvasEl) return;
-      
-      const canvasRect = canvasEl.getBoundingClientRect();
-      const dropX = (e.activatorEvent as MouseEvent).clientX - canvasRect.left;
-      const dropY = (e.activatorEvent as MouseEvent).clientY - canvasRect.top;
-      
-      addElementAt(toolType, dropX, dropY);
+        if (canvasRef.current) {
+            const canvasRect = canvasRef.current.getBoundingClientRect();
+            // We use activatorEvent to get the mouse position at the time of the drop
+            const dropX = (e.activatorEvent as MouseEvent).clientX - canvasRect.left;
+            const dropY = (e.activatorEvent as MouseEvent).clientY - canvasRect.top;
+            const toolType = active.data.current?.type as ElementType;
+            addElementAt(toolType, dropX, dropY);
+        }
     } else {
-      const id = String(active.id);
-      setElements((prev) =>
-        prev.map((el) => {
-          if (el.id === id) {
-            return {
-              ...el,
-              x: snapToGrid(el.x + delta.x),
-              y: snapToGrid(el.y + delta.y),
-            };
-          }
-          return el;
-        })
-      );
+        setElements((items) =>
+            items.map((item) => {
+                if (item.id === active.id) {
+                    return {
+                        ...item,
+                        x: snapToGrid(item.x + delta.x),
+                        y: snapToGrid(item.y + delta.y),
+                    };
+                }
+                return item;
+            })
+        );
     }
-  }, [addElementAt]);
+}, [addElementAt]);
 
   const handleSelect = useCallback((e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     if (e.shiftKey) {
         setSelectedIds((prev) => 
             prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
@@ -367,50 +370,52 @@ export default function PolicyEditorPage() {
           switch (type) {
               case 'left':
                   const minX = Math.min(...selected.map(el => el.x));
-                  selected.forEach(el => el.x = minX);
+                  selected.forEach(el => { const original = newElements.find(o => o.id === el.id)!; original.x = minX; });
                   break;
               case 'h-center':
                   const centerX = selected[0].x + selected[0].width / 2;
-                  selected.forEach(el => el.x = centerX - el.width / 2);
+                  selected.forEach(el => { const original = newElements.find(o => o.id === el.id)!; original.x = centerX - el.width / 2; });
                   break;
               case 'right':
                   const maxX = Math.max(...selected.map(el => el.x + el.width));
-                  selected.forEach(el => el.x = maxX - el.width);
+                  selected.forEach(el => { const original = newElements.find(o => o.id === el.id)!; original.x = maxX - el.width; });
                   break;
               case 'top':
                   const minY = Math.min(...selected.map(el => el.y));
-                  selected.forEach(el => el.y = minY);
+                  selected.forEach(el => { const original = newElements.find(o => o.id === el.id)!; original.y = minY; });
                   break;
               case 'v-center':
                   const centerY = selected[0].y + selected[0].height / 2;
-                  selected.forEach(el => el.y = centerY - el.height / 2);
+                  selected.forEach(el => { const original = newElements.find(o => o.id === el.id)!; original.y = centerY - el.height / 2; });
                   break;
               case 'bottom':
                   const maxY = Math.max(...selected.map(el => el.y + el.height));
-                  selected.forEach(el => el.y = maxY - el.height);
+                  selected.forEach(el => { const original = newElements.find(o => o.id === el.id)!; original.y = maxY - el.height; });
                   break;
               case 'dist-h':
                   if (selected.length < 3) return prev;
                   selected.sort((a,b) => a.x - b.x);
-                  const totalWidth = selected.reduce((sum, el) => sum + el.width, 0);
-                  const totalSpace = selected[selected.length - 1].x - selected[0].x - selected[0].width;
-                  const gap = (totalSpace - totalWidth + selected[0].width + selected[selected.length-1].width) / (selected.length - 1);
+                  const totalWidth = selected.slice(1, -1).reduce((sum, el) => sum + el.width, 0);
+                  const totalSpace = selected[selected.length - 1].x - (selected[0].x + selected[0].width);
+                  const gap = (totalSpace - totalWidth) / (selected.length - 1);
                   let currentX = selected[0].x + selected[0].width;
-                  for(let i=1; i<selected.length-1; i++) {
-                      selected[i].x = currentX + gap;
-                      currentX += selected[i].width + gap;
+                  for(let i=1; i<selected.length; i++) {
+                       const original = newElements.find(o => o.id === selected[i].id)!;
+                       original.x = currentX + gap;
+                       currentX += original.width + gap;
                   }
                   break;
               case 'dist-v':
                   if (selected.length < 3) return prev;
                   selected.sort((a,b) => a.y - b.y);
-                  const totalHeight = selected.reduce((sum, el) => sum + el.height, 0);
-                  const totalYSpace = selected[selected.length - 1].y - selected[0].y - selected[0].height;
-                  const yGap = (totalYSpace - totalHeight + selected[0].height + selected[selected.length-1].height) / (selected.length - 1);
+                  const totalHeight = selected.slice(1,-1).reduce((sum, el) => sum + el.height, 0);
+                  const totalYSpace = selected[selected.length - 1].y - (selected[0].y + selected[0].height);
+                  const yGap = (totalYSpace - totalHeight) / (selected.length - 1);
                   let currentY = selected[0].y + selected[0].height;
-                  for(let i=1; i<selected.length-1; i++) {
-                      selected[i].y = currentY + yGap;
-                      currentY += selected[i].height + yGap;
+                  for(let i=1; i<selected.length; i++) {
+                      const original = newElements.find(o => o.id === selected[i].id)!;
+                      original.y = currentY + yGap;
+                      currentY += original.height + yGap;
                   }
                   break;
           }
@@ -516,7 +521,7 @@ export default function PolicyEditorPage() {
                             <CardTitle>لوحة التصميم</CardTitle>
                         </CardHeader>
                         <CardContent className="flex-grow w-full bg-muted p-8 rounded-lg overflow-auto flex items-center justify-center min-h-[70vh]">
-                            <div data-droppable-id="canvas" className="relative bg-white rounded-md shadow-inner" style={{ ...paperDimensions }} onClick={() => setSelectedIds([])}>
+                            <div ref={canvasRef} className="relative bg-white rounded-md shadow-inner" style={{ ...paperDimensions }} onClick={() => setSelectedIds([])}>
                                 <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
                                     backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
                                     backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)`,
