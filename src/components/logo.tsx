@@ -13,7 +13,7 @@ export function Logo({ className }: { className?: string }) {
     <div className={cn("flex items-center gap-2", className)}>
       <BotMessageSquare className="h-8 w-8 text-primary" />
       <span className="text-xl font-bold text-foreground">
-        {companyName}
+        {companyName || 'الوميض'}
       </span>
     </div>
   );

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -6,6 +7,7 @@ import { Logo } from '@/components/logo';
 import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
+import Image from 'next/image';
 
 const BarcodeIcon = () => (
   <svg viewBox="0 0 120 30" className="h-10 w-24">
@@ -52,6 +54,7 @@ const paperSizeClasses = {
   label_4x2: 'w-[101.6mm] h-[50.8mm] p-2 text-[9px] leading-tight',
   label_3x2: 'w-[76.2mm] h-[50.8mm] p-2 text-[8px] leading-tight',
   label_2x3: 'w-[50.8mm] h-[76.2mm] p-2 text-[8px] leading-tight',
+  label_4x2: 'w-[101.6mm] h-[50.8mm] p-2 text-[9px] leading-tight',
 };
 
 const renderCustomFields = (customFields: {label: string, value: string}[], isSmallLabel: boolean) => (
@@ -65,12 +68,19 @@ const renderCustomFields = (customFields: {label: string, value: string}[], isSm
     </div>
 );
 
-const DefaultLayout = ({ settings, order, isSmallLabel }: { settings: PolicySettings, order: Order, isSmallLabel: boolean }) => (
+const PolicyLogo = ({ loginSettings }: { loginSettings: any }) => {
+    if (loginSettings.policyLogo) {
+      return <Image src={loginSettings.policyLogo} alt={loginSettings.companyName || "Company Logo"} width={100} height={35} style={{objectFit: 'contain'}} />;
+    }
+    return <Logo />;
+};
+
+const DefaultLayout = ({ settings, loginSettings, order, isSmallLabel }: { settings: PolicySettings, loginSettings: any, order: Order, isSmallLabel: boolean }) => (
     <>
         <header className="flex justify-between items-start border-b-2 border-black pb-2">
         <div className="text-right">
-            {settings.showCompanyLogo && <div className="h-12"><Logo /></div>}
-            {settings.showCompanyName && <h1 className="font-bold text-lg mt-1">شركة الوميض للتوصيل</h1>}
+            {settings.showCompanyLogo && <div className="h-12"><PolicyLogo loginSettings={loginSettings} /></div>}
+            {settings.showCompanyName && <h1 className="font-bold text-lg mt-1">{loginSettings.companyName || 'شركة الوميض للتوصيل'}</h1>}
             {settings.showCompanyAddress && <p className="text-xs">عمان, الأردن - 0790123456</p>}
         </div>
         <div className="text-left">
@@ -118,12 +128,12 @@ const DefaultLayout = ({ settings, order, isSmallLabel }: { settings: PolicySett
     </>
 );
 
-const CompactLayout = ({ settings, order, isSmallLabel }: { settings: PolicySettings, order: Order, isSmallLabel: boolean }) => (
+const CompactLayout = ({ settings, loginSettings, order, isSmallLabel }: { settings: PolicySettings, loginSettings: any, order: Order, isSmallLabel: boolean }) => (
     <>
         <div className={cn("grid grid-cols-2 gap-x-2 border-b-2 border-black", isSmallLabel ? 'pb-1' : 'pb-2')}>
             <div className="text-right space-y-1">
-                {settings.showCompanyLogo && <div className={cn(isSmallLabel ? "h-6" : "h-8")}><Logo /></div>}
-                {settings.showCompanyName && <h1 className={cn("font-bold", isSmallLabel ? "text-[8px]" : "text-base")}>شركة الوميض للتوصيل</h1>}
+                {settings.showCompanyLogo && <div className={cn(isSmallLabel ? "h-6" : "h-8")}><PolicyLogo loginSettings={loginSettings} /></div>}
+                {settings.showCompanyName && <h1 className={cn("font-bold", isSmallLabel ? "text-[8px]" : "text-base")}>{loginSettings.companyName || 'شركة الوميض للتوصيل'}</h1>}
             </div>
             <div className="text-left space-y-1">
                 <div className="flex flex-col items-end">
@@ -144,10 +154,10 @@ const CompactLayout = ({ settings, order, isSmallLabel }: { settings: PolicySett
     </>
 );
 
-const DetailedLayout = ({ settings, order, isSmallLabel }: { settings: PolicySettings, order: Order, isSmallLabel: boolean }) => (
+const DetailedLayout = ({ settings, loginSettings, order, isSmallLabel }: { settings: PolicySettings, loginSettings: any, order: Order, isSmallLabel: boolean }) => (
     <>
         <header className={cn("grid grid-cols-3 gap-2 border-b-2 border-black items-center", isSmallLabel ? 'pb-1' : 'pb-2')}>
-            <div className="col-span-1">{settings.showCompanyLogo && <div className={cn(isSmallLabel ? "h-6" : "h-10")}><Logo /></div>}</div>
+            <div className="col-span-1">{settings.showCompanyLogo && <div className={cn(isSmallLabel ? "h-6" : "h-10")}><PolicyLogo loginSettings={loginSettings} /></div>}</div>
             <div className="col-span-2 text-left">
                 <h2 className={cn("font-bold", isSmallLabel ? "text-sm" : "text-lg")}>بوليصة شحن</h2>
                 {settings.showBarcode && <div className="flex flex-col items-end"><div className={cn("origin-right", isSmallLabel ? "scale-50" : "scale-75")}><BarcodeIcon /></div><p className={cn("font-mono tracking-wider -mt-2", isSmallLabel ? "text-[7px]" : "text-[9px]")}>{order.id}</p></div>}
@@ -171,14 +181,14 @@ const DetailedLayout = ({ settings, order, isSmallLabel }: { settings: PolicySet
 );
 
 
-const Policy: React.FC<{ order: Order; settings: PolicySettings }> = ({ order, settings }) => {
+const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: any }> = ({ order, settings, loginSettings }) => {
     const isSmallLabel = settings.paperSize.startsWith('label_');
 
     const renderLayout = () => {
         switch(settings.layout) {
-            case 'compact': return <CompactLayout settings={settings} order={order} isSmallLabel={isSmallLabel}/>;
-            case 'detailed': return <DetailedLayout settings={settings} order={order} isSmallLabel={isSmallLabel}/>;
-            case 'default': default: return <DefaultLayout settings={settings} order={order} isSmallLabel={isSmallLabel}/>;
+            case 'compact': return <CompactLayout settings={settings} loginSettings={loginSettings} order={order} isSmallLabel={isSmallLabel}/>;
+            case 'detailed': return <DetailedLayout settings={settings} loginSettings={loginSettings} order={order} isSmallLabel={isSmallLabel}/>;
+            case 'default': default: return <DefaultLayout settings={settings} loginSettings={loginSettings} order={order} isSmallLabel={isSmallLabel}/>;
         }
     }
     
@@ -195,8 +205,9 @@ const Policy: React.FC<{ order: Order; settings: PolicySettings }> = ({ order, s
 export const PrintablePolicy = React.forwardRef<HTMLDivElement, { orders: Order[], previewSettings?: PolicySettings }>(({ orders, previewSettings }, ref) => {
     const context = useSettings();
     const settings = previewSettings || context?.settings.policy;
+    const loginSettings = context?.settings.login;
 
-    if (!context?.isHydrated || !settings) {
+    if (!context?.isHydrated || !settings || !loginSettings) {
         return <div ref={ref}><Skeleton className="h-[297mm] w-[210mm]" /></div>;
     }
     
@@ -212,7 +223,7 @@ export const PrintablePolicy = React.forwardRef<HTMLDivElement, { orders: Order[
         <div ref={ref} id="printable-area" className="bg-muted p-4 sm:p-8 flex items-start justify-center flex-wrap gap-4">
             {displayOrders.map((order, index) => (
                 <div key={order.id} className={index > 0 ? "page-break" : ""}>
-                   <Policy order={order} settings={settings} />
+                   <Policy order={order} settings={settings} loginSettings={loginSettings}/>
                 </div>
             ))}
         </div>

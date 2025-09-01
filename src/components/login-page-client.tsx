@@ -89,7 +89,7 @@ export default function LoginPageClient() {
           <div className="mb-4 flex justify-center">
             <LoginLogo />
           </div>
-          <CardTitle className="text-2xl font-bold">{loginSettings.welcomeMessage}</CardTitle>
+          <CardTitle className="text-2xl font-bold">{loginSettings.welcomeMessage || 'مرحباً بعودتك'}</CardTitle>
           <CardDescription>نظام إدارة التوصيل</CardDescription>
         </CardHeader>
         <CardContent>
