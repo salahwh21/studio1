@@ -14,7 +14,6 @@ import { Check, ChevronsUpDown, Printer, Trash2 } from 'lucide-react';
 import { useActionState } from 'react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
 import { PrintablePolicy } from '@/components/printable-policy';
-import html2canvas from 'html2canvas';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -75,72 +74,6 @@ const AddOrderPage = () => {
       data: null, error: null, message: ''
   });
   
-  const componentToPrintRef = useRef<HTMLDivElement>(null);
-  
-    const handlePrint = async () => {
-        const input = componentToPrintRef.current;
-        if (!input) {
-            toast({ variant: 'destructive', title: 'خطأ في الطباعة', description: 'لا يمكن العثور على المحتوى للطباعة.' });
-            return;
-        }
-
-        const policyElements = Array.from(input.querySelectorAll('.policy-sheet'));
-        if (policyElements.length === 0) {
-            toast({ variant: 'destructive', title: 'لا طلبات محددة', description: 'الرجاء تحديد طلب واحد على الأقل لطباعة البوليصة.' });
-            return;
-        }
-
-        try {
-            const jsPDF = (await import('jspdf')).default;
-            const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-
-            for (let i = 0; i < policyElements.length; i++) {
-                const element = policyElements[i] as HTMLElement;
-                
-                const canvas = await html2canvas(element, { scale: 2 });
-                const imgData = canvas.toDataURL('image/png');
-                
-                if (i > 0) {
-                    pdf.addPage();
-                }
-
-                const pdfPageWidth = pdf.internal.pageSize.getWidth();
-                const pdfPageHeight = pdf.internal.pageSize.getHeight();
-                const imgWidth = canvas.width;
-                const imgHeight = canvas.height;
-
-                const ratio = imgWidth / imgHeight;
-                let finalWidth = pdfPageWidth;
-                let finalHeight = finalWidth / ratio;
-
-                if (finalHeight > pdfPageHeight) {
-                    finalHeight = pdfPageHeight;
-                    finalWidth = finalHeight * ratio;
-                }
-                
-                const x = (pdfPageWidth - finalWidth) / 2;
-                const y = (pdfPageHeight - finalHeight) / 2;
-                
-                if (!isNaN(x) && !isNaN(y) && !isNaN(finalWidth) && !isNaN(finalHeight)) {
-                    pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
-                } else {
-                    console.error("Invalid dimensions for PDF image:", {x, y, finalWidth, finalHeight});
-                    throw new Error("Failed to calculate image dimensions for PDF.");
-                }
-            }
-
-            pdf.autoPrint();
-            window.open(pdf.output('bloburl'), '_blank');
-        } catch (err: any) {
-            console.error("Error generating PDF: ", err);
-            toast({
-                variant: 'destructive',
-                title: 'خطأ أثناء توليد الـ PDF',
-                description: err.message || 'حدث خطأ غير متوقع أثناء تحويل البوليصة إلى صورة.'
-            });
-        }
-    };
-
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
     defaultValues: { recipientName: '', phone: '', whatsapp: '', city: '', region: '', address: '', cod: 0, notes: '', referenceNumber: '' },
@@ -285,9 +218,14 @@ const AddOrderPage = () => {
 
   return (
     <div className="space-y-6">
-       <div className="hidden">
-            <PrintablePolicy ref={componentToPrintRef} orders={ordersToPrint} />
-       </div>
+      {ordersToPrint.length > 0 && (
+         <Card>
+           <CardHeader><CardTitle>طباعة البوليصات</CardTitle></CardHeader>
+           <CardContent>
+             <PrintablePolicy orders={ordersToPrint} />
+           </CardContent>
+         </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -461,7 +399,7 @@ const AddOrderPage = () => {
                 <div className="flex items-center justify-between">
                     <CardTitle>طلبات مضافة حديثاً ({recentlyAdded.length})</CardTitle>
                     <div className="flex items-center gap-2">
-                         <Button variant="outline" size="sm" disabled={selectedRecent.length === 0} onClick={handlePrint}><Printer className="h-4 w-4 ml-2"/>طباعة بوليصة</Button>
+                         <Button variant="outline" size="sm" disabled={selectedRecent.length === 0} onClick={() => { /* Print logic moved */ }}><Printer className="h-4 w-4 ml-2"/>طباعة بوليصة</Button>
                          <Button variant="destructive" size="sm" disabled={selectedRecent.length === 0} onClick={handleDeleteSelected}><Trash2 className="h-4 w-4 ml-2"/>حذف المحدد</Button>
                     </div>
                 </div>
@@ -610,6 +548,3 @@ const AddOrderPage = () => {
 };
 
 export default AddOrderPage;
-
-
-    

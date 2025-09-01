@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import type { Order } from '@/store/orders-store';
 import { Logo } from '@/components/logo';
 import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
@@ -10,6 +11,10 @@ import { Skeleton } from './ui/skeleton';
 import Image from 'next/image';
 import Barcode from 'react-barcode';
 import Icon from './icon';
+import { useToast } from '@/hooks/use-toast';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { Button } from './ui/button';
 
 
 const paperSizeClasses = {
@@ -189,14 +194,79 @@ const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: 
     );
 };
 
-export const PrintablePolicy = React.forwardRef<HTMLDivElement, { orders: Order[], previewSettings?: PolicySettings }>(({ orders, previewSettings }, ref) => {
+export const PrintablePolicy = ({ orders, previewSettings }: { orders: Order[], previewSettings?: PolicySettings }) => {
     const context = useSettings();
+    const { toast } = useToast();
+    const printAreaRef = useRef<HTMLDivElement>(null);
+
     const settings = previewSettings || context?.settings.policy;
     const loginSettings = context?.settings.login;
 
     if (!context?.isHydrated || !settings || !loginSettings) {
-        return <div ref={ref}><Skeleton className="h-[297mm] w-[210mm]" /></div>;
+        return <div><Skeleton className="h-[297mm] w-[210mm]" /></div>;
     }
+    
+    const handleExportPDF = async () => {
+        const printArea = printAreaRef.current;
+        if (!printArea) {
+            toast({ variant: 'destructive', title: 'خطأ في الطباعة', description: 'لا يمكن العثور على المحتوى للطباعة.' });
+            return;
+        }
+
+        const policyElements = Array.from(printArea.querySelectorAll('.policy-sheet'));
+        if (policyElements.length === 0) {
+            toast({ variant: 'destructive', title: 'لا طلبات محددة', description: 'الرجاء تحديد طلب واحد على الأقل لطباعة البوليصة.' });
+            return;
+        }
+
+        try {
+            const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+
+            for (let i = 0; i < policyElements.length; i++) {
+                const element = policyElements[i] as HTMLElement;
+                
+                const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+                const imgData = canvas.toDataURL('image/png');
+                
+                if (i > 0) {
+                    pdf.addPage();
+                }
+
+                const pdfPageWidth = pdf.internal.pageSize.getWidth();
+                const pdfPageHeight = pdf.internal.pageSize.getHeight();
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
+
+                const ratio = imgWidth / imgHeight;
+                let finalWidth = pdfPageWidth;
+                let finalHeight = finalWidth / ratio;
+
+                if (finalHeight > pdfPageHeight) {
+                    finalHeight = pdfPageHeight;
+                    finalWidth = finalHeight * ratio;
+                }
+                
+                const x = (pdfPageWidth - finalWidth) / 2;
+                const y = (pdfPageHeight - finalHeight) / 2;
+                
+                if (!isNaN(x) && !isNaN(y) && !isNaN(finalWidth) && !isNaN(finalHeight)) {
+                    pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+                } else {
+                     throw new Error("فشلت عملية حساب أبعاد الصورة للـ PDF.");
+                }
+            }
+
+            pdf.autoPrint();
+            window.open(pdf.output('bloburl'), '_blank');
+        } catch (err: any) {
+            console.error("Error generating PDF: ", err);
+            toast({
+                variant: 'destructive',
+                title: 'خطأ أثناء توليد الـ PDF',
+                description: err.message || 'حدث خطأ غير متوقع أثناء تحويل البوليصة إلى صورة.'
+            });
+        }
+    };
     
     // Create a dummy order for preview if no orders are passed
     const displayOrders = orders.length > 0 ? orders : [{
@@ -207,14 +277,17 @@ export const PrintablePolicy = React.forwardRef<HTMLDivElement, { orders: Order[
     }];
 
     return (
-        <div ref={ref} id="printable-area" className="bg-muted p-4 sm:p-8 flex items-start justify-center flex-wrap gap-4">
-            {displayOrders.map((order, index) => (
-                <React.Fragment key={order.id}>
-                   <Policy order={order} settings={settings} loginSettings={loginSettings}/>
-                </React.Fragment>
-            ))}
+        <div>
+             <div ref={printAreaRef} id="printable-area" className="bg-muted p-4 sm:p-8 flex items-start justify-center flex-wrap gap-4">
+                {displayOrders.map((order, index) => (
+                    <React.Fragment key={order.id}>
+                       <Policy order={order} settings={settings} loginSettings={loginSettings}/>
+                    </React.Fragment>
+                ))}
+            </div>
+             <Button onClick={handleExportPDF} className="mt-4 w-full sm:w-auto flex items-center justify-center">
+                <Icon name="Printer" className="ml-2 h-4 w-4" /> تصدير PDF / طباعة
+            </Button>
         </div>
     );
-});
-
-PrintablePolicy.displayName = 'PrintablePolicy';
+};
