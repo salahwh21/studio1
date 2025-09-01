@@ -104,7 +104,11 @@ const AddOrderPage = () => {
     });
 
     const promises = Array.from(policyElements).map((element, index) => 
-        html2canvas(element as HTMLElement, { scale: 2 }).then(canvas => {
+        html2canvas(element as HTMLElement, { 
+            scale: 2, 
+            allowTaint: true, 
+            useCORS: true 
+        }).then(canvas => {
             if (index > 0) {
                 pdf.addPage();
             }
