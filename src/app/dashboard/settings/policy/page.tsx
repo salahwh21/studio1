@@ -40,7 +40,7 @@ import { useToast } from '@/hooks/use-toast';
 
 
 // ---------- Types ----------
-type ElementType = 'text' | 'image' | 'barcode';
+type ElementType = 'text' | 'image' | 'barcode' | 'rect' | 'line';
 type FontWeight = 'normal' | 'bold';
 
 type PolicyElement = {
@@ -57,6 +57,7 @@ type PolicyElement = {
   borderColor?: string;
   borderWidth?: number;
   opacity?: number;
+  backgroundColor?: string;
 };
 
 type SavedTemplate = {
@@ -97,6 +98,8 @@ const toolboxItems = [
     { type: 'text', label: 'رقم الطلب', icon: 'ClipboardList', content: '{order_id}', defaultWidth: 150, defaultHeight: 24 },
     { type: 'text', label: 'الرقم المرجعي', icon: 'ClipboardCheck', content: '{reference_id}', defaultWidth: 150, defaultHeight: 24 },
     { type: 'text', label: 'نص', icon: 'Type', content: 'نص جديد', defaultWidth: 120, defaultHeight: 24 },
+    { type: 'rect', label: 'مستطيل', icon: 'Square', content: '', defaultWidth: 160, defaultHeight: 80 },
+    { type: 'line', label: 'خط', icon: 'Minus', content: '', defaultWidth: 150, defaultHeight: 2 },
 ];
 
 
@@ -112,7 +115,11 @@ function ElementContent({ el }: { el: PolicyElement }) {
     fontSize: el.fontSize ?? 14,
     fontWeight: el.fontWeight ?? 'normal',
     color: el.color ?? '#111827',
+    borderWidth: el.borderWidth ?? 0,
+    borderColor: el.borderColor ?? 'transparent',
+    borderStyle: 'solid',
     opacity: el.opacity ?? 1,
+    backgroundColor: el.backgroundColor,
     textAlign: 'center',
     padding: 4,
     wordBreak: 'break-word',
@@ -121,6 +128,8 @@ function ElementContent({ el }: { el: PolicyElement }) {
   if (el.type === 'text') return <div style={baseStyle}>{el.content || 'نص جديد'}</div>;
   if (el.type === 'barcode') return <div style={baseStyle}><Icon name="Barcode" className="h-8 w-8" /></div>;
   if (el.type === 'image') return <div style={baseStyle}><Icon name="Image" className="h-8 w-8 text-muted-foreground" /></div>;
+  if (el.type === 'rect') return <div style={baseStyle}></div>;
+  if (el.type === 'line') return <div style={{ ...baseStyle, backgroundColor: el.color ?? '#000000' }}></div>;
   
   return null;
 }
@@ -197,9 +206,12 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete }: { selectedElem
     }
   };
 
+  const isShape = ['rect', 'circle', 'triangle', 'line'].includes(selectedElement.type);
+
   return (
     <div className="space-y-4">
       <h3 className="font-bold text-lg text-center">{selectedElement.type}</h3>
+      
       {selectedElement.type === 'text' && (
         <div className="space-y-2">
           <Label>النص</Label>
@@ -207,11 +219,11 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete }: { selectedElem
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-2">
                 <Label>حجم الخط</Label>
-                <Input type="number" value={selectedElement.fontSize} onChange={(e) => handleNumericChange('fontSize', e.target.value)} />
+                <Input type="number" value={selectedElement.fontSize ?? 14} onChange={(e) => handleNumericChange('fontSize', e.target.value)} />
             </div>
             <div className="space-y-2">
                 <Label>وزن الخط</Label>
-                <Select value={selectedElement.fontWeight} onValueChange={(val: FontWeight) => handleChange('fontWeight', val)}>
+                <Select value={selectedElement.fontWeight ?? 'normal'} onValueChange={(val: FontWeight) => handleChange('fontWeight', val)}>
                     <SelectTrigger><SelectValue/></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="normal">عادي</SelectItem>
@@ -222,14 +234,26 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete }: { selectedElem
           </div>
         </div>
       )}
+
       <div className="grid grid-cols-2 gap-2">
          <div className="space-y-2"><Label>X</Label><Input type="number" value={selectedElement.x} onChange={(e) => handleNumericChange('x', e.target.value)} /></div>
         <div className="space-y-2"><Label>Y</Label><Input type="number" value={selectedElement.y} onChange={(e) => handleNumericChange('y', e.target.value)} /></div>
         <div className="space-y-2"><Label>العرض</Label><Input type="number" value={selectedElement.width} onChange={(e) => handleNumericChange('width', e.target.value)} /></div>
         <div className="space-y-2"><Label>الارتفاع</Label><Input type="number" value={selectedElement.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
       </div>
-       {(selectedElement.type === 'text') && <div className="space-y-2"><Label>اللون</Label><Input type="color" value={selectedElement.color ?? '#000000'} onChange={(e) => handleChange('color', e.target.value)} className="h-10 w-full"/></div>}
-        <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={selectedElement.opacity ?? 1} onChange={(e) => handleChange('opacity', parseFloat(e.target.value))} /></div>
+       
+      {(selectedElement.type === 'text' || selectedElement.type === 'line') && <div className="space-y-2"><Label>اللون</Label><Input type="color" value={selectedElement.color ?? '#000000'} onChange={(e) => handleChange('color', e.target.value)} className="h-10 w-full"/></div>}
+      
+      {(selectedElement.type === 'rect') && <div className="space-y-2"><Label>لون التعبئة</Label><Input type="color" value={selectedElement.backgroundColor ?? '#ffffff'} onChange={(e) => handleChange('backgroundColor', e.target.value)} className="h-10 w-full"/></div>}
+      
+      {(selectedElement.type === 'rect') && (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2"><Label>لون الحد</Label><Input type="color" value={selectedElement.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full"/></div>
+            <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={selectedElement.borderWidth ?? 1} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
+          </div>
+      )}
+      
+      <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={selectedElement.opacity ?? 1} onChange={(e) => handleChange('opacity', parseFloat(e.target.value))} /></div>
 
       <Button variant="destructive" onClick={() => onDelete(selectedElement.id)} className="w-full"><Icon name="Trash2" className="ml-2" /> حذف العنصر</Button>
     </div>
@@ -269,7 +293,7 @@ export default function PolicyEditorPage() {
     
     const newElement: PolicyElement = {
         id: nanoid(),
-        type: tool.type,
+        type: tool.type as ElementType,
         x: snapToGrid(canvasRect.width / 2 - tool.defaultWidth / 2),
         y: snapToGrid(canvasRect.height / 2 - tool.defaultHeight / 2),
         width: tool.defaultWidth,
@@ -279,8 +303,9 @@ export default function PolicyEditorPage() {
         fontWeight: 'normal',
         color: '#000000',
         borderColor: '#000000',
-        borderWidth: 2,
+        borderWidth: 1,
         opacity: 1,
+        backgroundColor: '#ffffff'
     };
     setElements((prev) => [...prev, newElement]);
     setSelectedIds([newElement.id]);
@@ -499,9 +524,9 @@ export default function PolicyEditorPage() {
         </Card>
 
         <DndContext sensors={sensors} onDragEnd={handleDragEnd} modifiers={[createSnapModifier(GRID_SIZE)]}>
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
                 
-                <div className="space-y-6 lg:col-span-1 lg:sticky lg:top-24">
+                <div className="space-y-6 lg:col-span-1">
                      <Card>
                         <CardHeader><CardTitle>الأدوات</CardTitle></CardHeader>
                         <CardContent className="grid grid-cols-2 gap-3">
@@ -565,7 +590,7 @@ export default function PolicyEditorPage() {
                         </CardContent>
                     </Card>
                 </div>
-                <div className="space-y-6 lg:col-span-1 lg:order-first">
+                <div className="space-y-6 lg:col-span-3">
                     <Card>
                         <CardHeader>
                             <CardTitle>لوحة التصميم</CardTitle>
