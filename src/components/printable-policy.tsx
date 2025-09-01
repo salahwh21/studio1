@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -8,43 +7,7 @@ import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 import Image from 'next/image';
-
-const BarcodeIcon = () => (
-  <svg viewBox="0 0 120 30" className="h-10 w-24">
-    <rect x="0" y="0" width="2" height="30" fill="black" />
-    <rect x="4" y="0" width="1" height="30" fill="black" />
-    <rect x="7" y="0" width="3" height="30" fill="black" />
-    <rect x="12" y="0" width="1" height="30" fill="black" />
-    <rect x="15" y="0" width="2" height="30" fill="black" />
-    <rect x="19" y="0" width="2" height="30" fill="black" />
-    <rect x="23" y="0" width="1" height="30" fill="black" />
-    <rect x="26" y="0" width="3" height="30" fill="black" />
-    <rect x="31" y="0" width="1" height="30" fill="black" />
-    <rect x="34" y="0" width="3" height="30" fill="black" />
-    <rect x="39" y="0" width="2" height="30" fill="black" />
-    <rect x="43" y="0" width="1" height="30" fill="black" />
-    <rect x="46" y="0" width="1" height="30" fill="black" />
-    <rect x="49" y="0" width="3" height="30" fill="black" />
-    <rect x="54" y="0" width="2" height="30" fill="black" />
-    <rect x="58" y="0" width="1" height="30" fill="black" />
-    <rect x="61" y="0" width="3" height="30" fill="black" />
-    <rect x="66" y="0" width="1" height="30" fill="black" />
-    <rect x="69" y="0" width="2" height="30" fill="black" />
-    <rect x="73" y="0" width="2" height="30" fill="black" />
-    <rect x="77" y="0" width="1" height="30" fill="black" />
-    <rect x="80" y="0" width="3" height="30" fill="black" />
-    <rect x="85" y="0" width="1" height="30" fill="black" />
-    <rect x="88" y="0" width="3" height="30" fill="black" />
-    <rect x="93" y="0" width="2" height="30" fill="black" />
-    <rect x="97" y="0" width="1" height="30" fill="black" />
-    <rect x="100" y="0" width="1" height="30" fill="black" />
-    <rect x="103" y="0" width="3" height="30" fill="black" />
-    <rect x="108" y="0" width="2" height="30" fill="black" />
-    <rect x="112" y="0" width="1" height="30" fill="black" />
-    <rect x="115" y="0" width="3" height="30" fill="black" />
-  </svg>
-);
-
+import Barcode from 'react-barcode';
 
 const paperSizeClasses = {
   a4: 'w-[210mm] h-[297mm] p-8',
@@ -135,7 +98,7 @@ const DefaultLayout = ({ settings, loginSettings, order, isSmallLabel }: { setti
                         {settings.showRefNumber && <p className="text-xs">الرقم المرجعي: <span className="font-bold">{order.referenceNumber || 'N/A'}</span></p>}
                         {settings.showPrice && <div className="border-2 border-black rounded-lg p-2 mt-2 text-center"><p className="font-bold text-sm">المبلغ المطلوب</p><p className="font-bold text-xl">{formatCurrency(order.cod)}</p></div>}
                     </div>
-                    {settings.showBarcode && <div className="flex flex-col items-center justify-center"><BarcodeIcon /><p className="text-xs font-mono tracking-widest mt-1">{order.id}</p></div>}
+                    {settings.showBarcode && <div className="flex flex-col items-center justify-center"><Barcode value={order.id} height={30} width={1} displayValue={false} margin={0} /><p className="text-xs font-mono tracking-widest mt-1">{order.id}</p></div>}
                 </div>
                 {settings.footerNotes && <p className="text-xs text-center border-t-2 border-black pt-2">{settings.footerNotes}</p>}
             </footer>
@@ -154,7 +117,7 @@ const CompactLayout = ({ settings, loginSettings, order, isSmallLabel }: { setti
                 </div>
                 <div className="text-left space-y-1">
                     <div className="flex flex-col items-end">
-                      {settings.showBarcode && <div className={cn("flex flex-col items-center justify-center origin-right", isSmallLabel ? "scale-50 -mr-4" : "scale-75")}><BarcodeIcon /><p className={cn("font-mono tracking-wider mt-1", isSmallLabel ? "text-[6px]" : "text-[8px]")}>{order.id}</p></div>}
+                      {settings.showBarcode && <div className={cn("flex flex-col items-center justify-center origin-right", isSmallLabel ? "scale-50 -mr-4" : "scale-75")}><Barcode value={order.id} height={30} width={1} displayValue={false} margin={0} /><p className={cn("font-mono tracking-wider mt-1", isSmallLabel ? "text-[6px]" : "text-[8px]")}>{order.id}</p></div>}
                     </div>
                 </div>
             </div>
@@ -180,7 +143,7 @@ const DetailedLayout = ({ settings, loginSettings, order, isSmallLabel }: { sett
                 <div className="col-span-1">{settings.showCompanyLogo && <div className={cn(isSmallLabel ? "h-6" : "h-10")}><PolicyLogo loginSettings={loginSettings} /></div>}</div>
                 <div className="col-span-2 text-left">
                     <h2 className={cn("font-bold", isSmallLabel ? "text-sm" : "text-lg")}>بوليصة شحن</h2>
-                    {settings.showBarcode && <div className="flex flex-col items-end"><div className={cn("origin-right", isSmallLabel ? "scale-50" : "scale-75")}><BarcodeIcon /></div><p className={cn("font-mono tracking-wider -mt-2", isSmallLabel ? "text-[7px]" : "text-[9px]")}>{order.id}</p></div>}
+                    {settings.showBarcode && <div className="flex flex-col items-end"><div className={cn("origin-right", isSmallLabel ? "scale-50" : "scale-75")}><Barcode value={order.id} height={30} width={1} displayValue={false} margin={0} /></div><p className={cn("font-mono tracking-wider -mt-2", isSmallLabel ? "text-[7px]" : "text-[9px]")}>{order.id}</p></div>}
                 </div>
             </header>
             <main className={cn("flex-grow space-y-1", isSmallLabel ? 'my-1' : 'my-2', isSmallLabel ? 'text-[7px]' : 'text-xs')}>

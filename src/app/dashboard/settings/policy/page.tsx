@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -19,7 +18,7 @@ import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
 import { PrintablePolicy } from '@/components/printable-policy';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// ---------- قسم الحقول المخصصة مع التحقق ----------
+// --------------------- قسم الحقول المخصصة ---------------------
 interface CustomField {
   label: string;
   value: string;
@@ -83,7 +82,8 @@ const CustomFieldsSection = ({ fields, onChange, maxFields = 3 }: { fields: Cust
   );
 };
 
-// ---------- الصفحة الرئيسية لإعدادات البوليصة ----------
+
+// --------------------- صفحة إعدادات البوليصة ---------------------
 export default function PolicySettingsPage() {
   const { toast } = useToast();
   const context = useSettings();
@@ -126,11 +126,6 @@ export default function PolicySettingsPage() {
     </div>
   );
 
-  const renderPolicyPreview = () => {
-    // يمكن إضافة معايير خاصة للطباعة حسب الحجم والتصميم
-    return <PrintablePolicy orders={[]} previewSettings={policySettings} />;
-  };
-
   return (
     <div className="space-y-6" dir="rtl">
       {/* رأس الصفحة */}
@@ -157,7 +152,7 @@ export default function PolicySettingsPage() {
             <CardHeader><CardTitle className="text-lg">حجم الورق</CardTitle></CardHeader>
             <CardContent>
               <RadioGroup value={policySettings.paperSize} onValueChange={(val) => handleSettingChange('paperSize', val)}>
-                {['a4','a5','label_4x6','label_4x4','label_4x2','label_3x2','label_2x3'].map(size => (
+                {['a4','a5','label_4x6','label_4x4','label_3x2','label_2x3','label_4x2'].map(size => (
                   <div key={size} className="flex items-center space-x-2 space-x-reverse">
                     <RadioGroupItem value={size} id={size} />
                     <Label htmlFor={size}>{size.replace('_','x').toUpperCase()}</Label>
@@ -233,7 +228,7 @@ export default function PolicySettingsPage() {
           <Card>
             <CardHeader><CardTitle className="text-lg">معاينة حية</CardTitle></CardHeader>
             <CardContent className="bg-muted p-4 sm:p-8 flex items-center justify-center overflow-auto">
-              {renderPolicyPreview()}
+              <PrintablePolicy orders={[]} previewSettings={policySettings} />
             </CardContent>
           </Card>
         </div>
@@ -248,5 +243,3 @@ export default function PolicySettingsPage() {
     </div>
   );
 }
-
-    
