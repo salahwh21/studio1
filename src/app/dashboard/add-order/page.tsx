@@ -238,47 +238,50 @@ const AddOrderPage = () => {
   return (
     <div className="space-y-6">
       <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>إعدادات الطباعة</DialogTitle>
             <DialogDescription>اختر حجم وتصميم البوليصة قبل الطباعة.</DialogDescription>
           </DialogHeader>
-          {printSettings && (
-            <div className="py-4 grid grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <Label>حجم الورق</Label>
-                <RadioGroup value={printSettings.paperSize} onValueChange={(val) => setPrintSettings(prev => prev ? {...prev, paperSize: val as PolicySettings['paperSize']} : null)}>
-                    {['a4','a5','label_4x6','label_4x4'].map(size => (
-                      <div key={size} className="flex items-center space-x-2 space-x-reverse">
-                        <RadioGroupItem value={size} id={`ps-${size}`} />
-                        <Label htmlFor={`ps-${size}`}>{size.replace('_','x').toUpperCase()}</Label>
-                      </div>
-                    ))}
-                </RadioGroup>
-              </div>
-              <div className="space-y-3">
-                 <Label>تصميم البوليصة</Label>
-                 <RadioGroup value={printSettings.layout} onValueChange={(val) => setPrintSettings(prev => prev ? {...prev, layout: val as PolicySettings['layout']} : null)}>
-                    {['default','compact','detailed'].map(layout => (
-                        <div key={layout} className="flex items-center space-x-2 space-x-reverse">
-                            <RadioGroupItem value={layout} id={`ly-${layout}`} />
-                            <Label htmlFor={`ly-${layout}`}>{layout==='default' ? 'افتراضي' : layout==='compact' ? 'مدمج' : 'مفصّل'}</Label>
-                        </div>
-                    ))}
-                 </RadioGroup>
-              </div>
-            </div>
-          )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+             <div className="md:col-span-1 space-y-6">
+                {printSettings && (
+                    <>
+                    <div className="space-y-3">
+                        <Label>حجم الورق</Label>
+                        <RadioGroup value={printSettings.paperSize} onValueChange={(val) => setPrintSettings(prev => prev ? {...prev, paperSize: val as PolicySettings['paperSize']} : null)}>
+                            {['a4','a5','label_4x6','label_4x4'].map(size => (
+                            <div key={size} className="flex items-center space-x-2 space-x-reverse">
+                                <RadioGroupItem value={size} id={`ps-${size}`} />
+                                <Label htmlFor={`ps-${size}`}>{size.replace('_','x').toUpperCase()}</Label>
+                            </div>
+                            ))}
+                        </RadioGroup>
+                    </div>
+                    <div className="space-y-3">
+                        <Label>تصميم البوليصة</Label>
+                        <RadioGroup value={printSettings.layout} onValueChange={(val) => setPrintSettings(prev => prev ? {...prev, layout: val as PolicySettings['layout']} : null)}>
+                            {['default','compact','detailed'].map(layout => (
+                                <div key={layout} className="flex items-center space-x-2 space-x-reverse">
+                                    <RadioGroupItem value={layout} id={`ly-${layout}`} />
+                                    <Label htmlFor={`ly-${layout}`}>{layout==='default' ? 'افتراضي' : layout==='compact' ? 'مدمج' : 'مفصّل'}</Label>
+                                </div>
+                            ))}
+                        </RadioGroup>
+                    </div>
+                    </>
+                )}
+             </div>
+             <div className="md:col-span-2 bg-muted rounded-lg p-4 max-h-[60vh] overflow-auto">
+                <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} previewSettings={printSettings || undefined}/>
+             </div>
+          </div>
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
             <Button onClick={handleConfirmPrint}>تأكيد الطباعة</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      <div className="hidden">
-        {ordersToPrint.length > 0 && <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} />}
-      </div>
 
       <Card>
         <CardHeader>

@@ -40,6 +40,7 @@ import {
     SendToBack,
     ChevronUp,
     ChevronDown,
+    Minus,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -223,8 +224,6 @@ const PropertiesPanel = ({ selectedElementId, elements, onUpdate, onDelete, onAr
       handleChange(field, num);
     }
   };
-
-  const isShape = ['rect', 'line'].includes(selectedElement.type);
 
   return (
     <div className="space-y-4">

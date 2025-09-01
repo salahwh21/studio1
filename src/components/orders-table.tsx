@@ -190,7 +190,7 @@ export function OrdersTable() {
     const { toast } = useToast();
     const [isClient, setIsClient] = useState(false);
     const context = useSettings();
-    const { settings: orderSettings, isHydrated: settingsHydrated } = context;
+    const { settings: orderSettings, isHydrated: settingsHydrated, formatCurrency } = context;
     
     // Zustand store integration
     const { orders, setOrders, updateOrderStatus, deleteOrders, refreshOrders } = useOrdersStore();
@@ -428,7 +428,7 @@ export function OrdersTable() {
                         case 'itemPrice':
                         case 'deliveryFee':
                         case 'cod':
-                            content = (value as number).toFixed(2);
+                            content = formatCurrency(value as number);
                             break;
                         default:
                             content = value as React.ReactNode;
@@ -439,7 +439,7 @@ export function OrdersTable() {
         )
     }
 
-    if (!isClient) {
+    if (!isClient || !settingsHydrated) {
         return <Skeleton className="w-full h-screen" />;
     }
 
@@ -504,7 +504,7 @@ export function OrdersTable() {
                                     {/* Column 3: Status and Amount */}
                                     <div className="col-start-3 col-end-4 row-span-2 flex flex-col items-end justify-start gap-1">
                                         <Badge className={cn("gap-1.5", statusInfo.bgColor, statusInfo.color)}>{statusInfo.label}</Badge>
-                                        <span className="text-lg font-bold text-primary">{order.cod.toFixed(2)} د.أ</span>
+                                        <span className="text-lg font-bold text-primary">{formatCurrency(order.cod)}</span>
                                     </div>
 
                                     {/* Spanning ID and Date */}
@@ -746,7 +746,7 @@ export function OrdersTable() {
                                                                     return (
                                                                         <div key={col.key} className="flex items-center gap-1">
                                                                             <span className="text-muted-foreground">{col.label}:</span>
-                                                                            <span className="text-primary">{totalValue.toFixed(2)}</span>
+                                                                            <span className="text-primary">{formatCurrency(totalValue)}</span>
                                                                         </div>
                                                                     )
                                                                 })}
@@ -776,15 +776,15 @@ export function OrdersTable() {
                             </div>
                             <div className="flex items-center gap-1">
                                 <span className="text-muted-foreground">المستحق للتاجر:</span>
-                                <span className="font-bold text-primary">{footerTotals.itemPrice.toFixed(2)}</span>
+                                <span className="font-bold text-primary">{formatCurrency(footerTotals.itemPrice)}</span>
                             </div>
                              <div className="flex items-center gap-1">
                                 <span className="text-muted-foreground">أجور التوصيل:</span>
-                                <span className="font-bold text-primary">{footerTotals.deliveryFee.toFixed(2)}</span>
+                                <span className="font-bold text-primary">{formatCurrency(footerTotals.deliveryFee)}</span>
                             </div>
                              <div className="flex items-center gap-1">
                                 <span className="text-muted-foreground">قيمة التحصيل:</span>
-                                <span className="font-bold text-primary">{footerTotals.cod.toFixed(2)}</span>
+                                <span className="font-bold text-primary">{formatCurrency(footerTotals.cod)}</span>
                             </div>
                         </div>
                         {!groupBy && (
