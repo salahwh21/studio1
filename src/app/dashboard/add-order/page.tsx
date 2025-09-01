@@ -41,7 +41,7 @@ const orderSchema = z.object({
   region: z.string({ required_error: "الرجاء اختيار المنطقة." }).min(1, "الرجاء اختيار المنطقة."),
   city: z.string({ required_error: "الرجاء اختيار مدينة." }),
   address: z.string().optional(),
-  cod: z.coerce.number().min(0, "المبلغ يجب أن يكون موجبًا."),
+  cod: z.coerce.number(),
   notes: z.string().optional(),
   referenceNumber: z.string().optional(),
 });
@@ -103,7 +103,7 @@ const AddOrderPage = () => {
 
 
   const calculatedFees = useMemo(() => {
-    if (!selectedCity || codValue <= 0) {
+    if (!selectedCity || codValue === undefined) {
       return { deliveryFee: 0, itemPrice: 0 };
     }
     const deliveryFee = selectedCity === 'عمان' ? 2.5 : 3.5;
