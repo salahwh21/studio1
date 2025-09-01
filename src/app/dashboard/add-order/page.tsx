@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -108,30 +109,24 @@ const AddOrderPage = () => {
                 const imgWidth = canvas.width;
                 const imgHeight = canvas.height;
 
-                // Determine the best orientation and scale to fit the image on the page
                 const ratio = imgWidth / imgHeight;
-                let finalWidth, finalHeight;
+                let finalWidth = pdfPageWidth;
+                let finalHeight = finalWidth / ratio;
 
-                if (imgWidth > imgHeight) { // Landscape image
-                    finalWidth = pdfPageWidth;
-                    finalHeight = finalWidth / ratio;
-                    if (finalHeight > pdfPageHeight) {
-                        finalHeight = pdfPageHeight;
-                        finalWidth = finalHeight * ratio;
-                    }
-                } else { // Portrait or square image
+                if (finalHeight > pdfPageHeight) {
                     finalHeight = pdfPageHeight;
                     finalWidth = finalHeight * ratio;
-                    if (finalWidth > pdfPageWidth) {
-                        finalWidth = pdfPageWidth;
-                        finalHeight = finalWidth / ratio;
-                    }
                 }
                 
                 const x = (pdfPageWidth - finalWidth) / 2;
                 const y = (pdfPageHeight - finalHeight) / 2;
                 
-                pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+                if (!isNaN(x) && !isNaN(y) && !isNaN(finalWidth) && !isNaN(finalHeight)) {
+                    pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+                } else {
+                    console.error("Invalid dimensions for PDF image:", {x, y, finalWidth, finalHeight});
+                    throw new Error("Failed to calculate image dimensions for PDF.");
+                }
             }
 
             pdf.autoPrint();
