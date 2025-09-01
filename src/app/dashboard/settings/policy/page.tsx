@@ -1,3 +1,4 @@
+
 // PolicyEditorPage.tsx
 'use client';
 
@@ -13,7 +14,7 @@ import {
   PointerSensor,
   Active,
 } from '@dnd-kit/core';
-import { restrictToWindowEdges, snapGridModifier } from '@dnd-kit/modifiers';
+import { restrictToWindowEdges, createSnapModifier } from '@dnd-kit/modifiers';
 import { nanoid } from 'nanoid';
 import { Resizable } from 're-resizable';
 
@@ -26,7 +27,16 @@ import { Label } from '@/components/ui/label';
 import Icon from '@/components/icon';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { AlignCenter, AlignEndHorizontal, AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, AlignHorizontalJustifyStart, AlignHorizontalSpaceAround, AlignJustify, AlignLeft, AlignRight, AlignStartHorizontal, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignVerticalJustifyStart, DistributeHorizontalSpacing, DistributeVerticalSpacing } from 'lucide-react';
+import { 
+    AlignHorizontalJustifyStart,
+    AlignHorizontalJustifyCenter,
+    AlignHorizontalJustifyEnd,
+    AlignVerticalJustifyStart,
+    AlignVerticalJustifyCenter,
+    AlignVerticalJustifyEnd,
+    AlignHorizontalDistributeCenter,
+    AlignVerticalDistributeCenter
+} from 'lucide-react';
 
 // ---------- Types ----------
 type ElementType = 'text' | 'image' | 'barcode' | 'rect';
@@ -391,12 +401,12 @@ export default function PolicyEditorPage() {
                  <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('top')}><AlignVerticalJustifyStart /></Button>
                  <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('v-center')}><AlignVerticalJustifyCenter /></Button>
                  <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('bottom')}><AlignVerticalJustifyEnd /></Button>
-                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 3} onClick={() => handleAlignment('dist-h')}><DistributeHorizontalSpacing /></Button>
-                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 3} onClick={() => handleAlignment('dist-v')}><DistributeVerticalSpacing /></Button>
+                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 3} onClick={() => handleAlignment('dist-h')}><AlignHorizontalDistributeCenter /></Button>
+                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 3} onClick={() => handleAlignment('dist-v')}><AlignVerticalDistributeCenter /></Button>
             </CardContent>
         </Card>
 
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[snapGridModifier(GRID_SIZE)]}>
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[createSnapModifier(GRID_SIZE)]}>
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
                 <div className="space-y-6">
                     <Card>
@@ -471,7 +481,7 @@ export default function PolicyEditorPage() {
                 </div>
             </div>
             
-            <DragOverlay modifiers={[snapGridModifier(GRID_SIZE)]}>
+            <DragOverlay modifiers={[createSnapModifier(GRID_SIZE)]}>
             {activeDrag && String(activeDrag.id).startsWith('toolbox-') && (
                 <div className="p-3 rounded-lg border bg-card opacity-70 flex flex-col items-center gap-2" style={{width: 100, height: 100}}>
                     <Icon name={activeDrag.data.current?.type === 'text' ? 'Type' : activeDrag.data.current?.type === 'image' ? 'Image' : activeDrag.data.current?.type === 'barcode' ? 'Barcode' : 'Square'} className="w-6 h-6" />
