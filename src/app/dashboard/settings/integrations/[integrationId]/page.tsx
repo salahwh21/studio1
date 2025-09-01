@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsTrigger, TabsList, TabsContent } from '@/components/ui/tabs';
 
 
 // This list can be expanded and moved to a shared file later
@@ -39,6 +40,14 @@ const integrationsList = [
     { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const, category: 'factory', type: 'factory' },
     { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const, category: 'factory', type: 'factory' },
     { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const, category: 'factory', type: 'factory' }
+];
+
+const mockSyncData = [
+    { ourId: 'ORD-101', externalId: '#1101', ourStatus: 'تم التوصيل', externalStatus: 'fulfilled', hasConflict: false },
+    { ourId: 'ORD-102', externalId: '#1102', ourStatus: 'جاري التوصيل', externalStatus: 'unfulfilled', hasConflict: true },
+    { ourId: 'ORD-103', externalId: '#1103', ourStatus: 'مرتجع', externalStatus: 'cancelled', hasConflict: false },
+    { ourId: 'ORD-104', externalId: '#1104', ourStatus: 'تم التوصيل', externalStatus: 'partially_fulfilled', hasConflict: true },
+    { ourId: 'ORD-105', externalId: '#1105', ourStatus: 'فشل المزامنة', externalStatus: 'unfulfilled', hasConflict: true, syncFailed: true },
 ];
 
 const mockImportableOrders = [
@@ -130,156 +139,215 @@ export default function IntegrationDetailPage() {
                 </CardHeader>
             </Card>
             
-            <Card>
-                <CardHeader><CardTitle>بيانات الربط</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                    {isWebhookBased ? (
-                        <div className="space-y-2">
-                             <Label htmlFor="webhook-url">رابط الويب هوك (Webhook URL)</Label>
-                            <div className="flex items-center gap-2">
-                                <Input id="webhook-url" type="text" readOnly defaultValue={`https://api.alwameed.co/webhooks/${connection.id}`} className="font-mono text-sm" />
-                                <Button variant="outline" size="icon" onClick={() => navigator.clipboard.writeText(`https://api.alwameed.co/webhooks/${connection.id}`)}>
-                                    <Icon name="Copy" className="h-4 w-4" />
-                                </Button>
-                            </div>
-                            <CardDescription>استخدم هذا الرابط في نظامك الخارجي لإرسال البيانات إلينا.</CardDescription>
-                        </div>
-                    ) : (
-                         <div className="space-y-2">
-                            <Label htmlFor="api-key">مفتاح الربط (API Key)</Label>
-                            <Input id="api-key" type="password" defaultValue={connection.apiKey || '************'} />
-                        </div>
-                    )}
-                    {integrationInfo.id === 'shopify' && (
-                         <div className="space-y-2">
-                            <Label htmlFor="store-url">رابط المتجر</Label>
-                            <Input id="store-url" placeholder="https://your-store.myshopify.com" />
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Icon name="Wand2"/> محرك قواعد التكامل</CardTitle>
-                <CardDescription>
-                  أتمتة العمليات عن طريق إنشاء قواعد "إذا حدث ... إذن افعل ...".
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                  <div className="border rounded-lg p-8 text-center space-y-4 bg-muted/50">
-                    <Icon name="Bot" className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="font-semibold">قريبًا: واجهة بناء القواعد الذكية</h3>
-                    <p className="text-sm text-muted-foreground">
-                      ستتمكن هنا من بناء قواعد مخصصة لتوجيه الطلبات وتغيير الأسعار وإرسال إشعارات مشروطة والمزيد.
-                    </p>
-                    <Button variant="secondary" disabled>إضافة قاعدة جديدة</Button>
-                  </div>
-              </CardContent>
-            </Card>
-            
-             {isWebhookBased && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>إعدادات متقدمة للويب هوك</CardTitle>
-                        <CardDescription>
-                            قم بإدارة كيفية قراءة البيانات الواردة وتتبع سجل الاستلام.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button asChild>
-                            <Link href={`/dashboard/settings/integrations/${integrationId}/mapping`}>
-                                <Icon name="Settings2" className="ml-2"/>
-                                إدارة ربط الحقول وسجل البيانات
-                            </Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            )}
-
-            <Card>
-                <CardHeader><CardTitle>إعدادات المزامنة</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between rounded-lg border p-3">
-                        <Label htmlFor="sync-orders">مزامنة الطلبات تلقائيًا</Label>
-                        <Switch id="sync-orders" defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg border p-3">
-                        <Label htmlFor="update-status">تحديث حالة الطلب تلقائيًا</Label>
-                        <Switch id="update-status" defaultChecked />
-                    </div>
-                     <div className="space-y-2 pt-2">
-                        <Label htmlFor="default-status">الحالة الافتراضية للطلبات الجديدة</Label>
-                         <Select defaultValue="pending">
-                            <SelectTrigger id="default-status">
-                                <SelectValue placeholder="اختر حالة..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="pending">بالانتظار</SelectItem>
-                                <SelectItem value="processing">قيد المعالجة</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </CardContent>
-            </Card>
-            
-            {isShopifyLike && (
-                 <>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>مواءمة حالات الطلب</CardTitle>
-                            <CardDescription>اربط حالات الطلب في نظامنا مع الحالات في {integrationInfo.name} لضمان تحديث الحالات بشكل صحيح.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {ourStatuses.map(status => (
-                                <div key={status.code} className="space-y-2">
-                                    <Label>{status.name}</Label>
-                                    <Select>
-                                        <SelectTrigger><SelectValue placeholder={`اختر حالة ${integrationInfo.name}...`} /></SelectTrigger>
-                                        <SelectContent>
-                                            {shopifyStatuses.map(s => <SelectItem key={s.code} value={s.code}>{s.name}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
+            <Tabs defaultValue="main-settings">
+                 <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="main-settings"><Icon name="Settings" className="ml-2"/>الإعدادات الرئيسية</TabsTrigger>
+                    <TabsTrigger value="sync-center"><Icon name="RefreshCw" className="ml-2"/>مركز المزامنة</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="main-settings" className="space-y-6 mt-4">
+                     <Card>
+                        <CardHeader><CardTitle>بيانات الربط</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            {isWebhookBased ? (
+                                <div className="space-y-2">
+                                     <Label htmlFor="webhook-url">رابط الويب هوك (Webhook URL)</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Input id="webhook-url" type="text" readOnly defaultValue={`https://api.alwameed.co/webhooks/${connection.id}`} className="font-mono text-sm" />
+                                        <Button variant="outline" size="icon" onClick={() => navigator.clipboard.writeText(`https://api.alwameed.co/webhooks/${connection.id}`)}>
+                                            <Icon name="Copy" className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    <CardDescription>استخدم هذا الرابط في نظامك الخارجي لإرسال البيانات إلينا.</CardDescription>
                                 </div>
-                            ))}
+                            ) : (
+                                 <div className="space-y-2">
+                                    <Label htmlFor="api-key">مفتاح الربط (API Key)</Label>
+                                    <Input id="api-key" type="password" defaultValue={connection.apiKey || '************'} />
+                                </div>
+                            )}
+                            {integrationInfo.id === 'shopify' && (
+                                 <div className="space-y-2">
+                                    <Label htmlFor="store-url">رابط المتجر</Label>
+                                    <Input id="store-url" placeholder="https://your-store.myshopify.com" />
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
+
                     <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Icon name="Wand2"/> محرك قواعد التكامل</CardTitle>
+                        <CardDescription>
+                          أتمتة العمليات عن طريق إنشاء قواعد "إذا حدث ... إذن افعل ...".
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                          <div className="border rounded-lg p-8 text-center space-y-4 bg-muted/50">
+                            <Icon name="Bot" className="mx-auto h-12 w-12 text-muted-foreground" />
+                            <h3 className="font-semibold">قريبًا: واجهة بناء القواعد الذكية</h3>
+                            <p className="text-sm text-muted-foreground">
+                              ستتمكن هنا من بناء قواعد مخصصة لتوجيه الطلبات وتغيير الأسعار وإرسال إشعارات مشروطة والمزيد.
+                            </p>
+                            <Button variant="secondary" disabled>إضافة قاعدة جديدة</Button>
+                          </div>
+                      </CardContent>
+                    </Card>
+                    
+                     {isWebhookBased && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>إعدادات متقدمة للويب هوك</CardTitle>
+                                <CardDescription>
+                                    قم بإدارة كيفية قراءة البيانات الواردة وتتبع سجل الاستلام.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Button asChild>
+                                    <Link href={`/dashboard/settings/integrations/${integrationId}/mapping`}>
+                                        <Icon name="Settings2" className="ml-2"/>
+                                        إدارة ربط الحقول وسجل البيانات
+                                    </Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    <Card>
+                        <CardHeader><CardTitle>إعدادات المزامنة</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between rounded-lg border p-3">
+                                <Label htmlFor="sync-orders">مزامنة الطلبات تلقائيًا</Label>
+                                <Switch id="sync-orders" defaultChecked />
+                            </div>
+                            <div className="flex items-center justify-between rounded-lg border p-3">
+                                <Label htmlFor="update-status">تحديث حالة الطلب تلقائيًا</Label>
+                                <Switch id="update-status" defaultChecked />
+                            </div>
+                             <div className="space-y-2 pt-2">
+                                <Label htmlFor="default-status">الحالة الافتراضية للطلبات الجديدة</Label>
+                                 <Select defaultValue="pending">
+                                    <SelectTrigger id="default-status">
+                                        <SelectValue placeholder="اختر حالة..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="pending">بالانتظار</SelectItem>
+                                        <SelectItem value="processing">قيد المعالجة</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    
+                    {isShopifyLike && (
+                         <>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>مواءمة حالات الطلب</CardTitle>
+                                    <CardDescription>اربط حالات الطلب في نظامنا مع الحالات في {integrationInfo.name} لضمان تحديث الحالات بشكل صحيح.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {ourStatuses.map(status => (
+                                        <div key={status.code} className="space-y-2">
+                                            <Label>{status.name}</Label>
+                                            <Select>
+                                                <SelectTrigger><SelectValue placeholder={`اختر حالة ${integrationInfo.name}...`} /></SelectTrigger>
+                                                <SelectContent>
+                                                    {shopifyStatuses.map(s => <SelectItem key={s.code} value={s.code}>{s.name}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>الطلبات الجاهزة للاستيراد</CardTitle>
+                                    <CardDescription>هذه الطلبات حالتها `Paid` أو `Fulfilled` في {integrationInfo.name} وجاهزة للسحب.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                     <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>رقم الطلب ({integrationInfo.name})</TableHead>
+                                                <TableHead>العميل</TableHead>
+                                                <TableHead>المبلغ</TableHead>
+                                                <TableHead>الحالة</TableHead>
+                                                <TableHead>إجراء</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {mockImportableOrders.map(order => (
+                                                <TableRow key={order.shopifyId}>
+                                                    <TableCell className="font-mono">{order.shopifyId}</TableCell>
+                                                    <TableCell>{order.customer}</TableCell>
+                                                    <TableCell>{order.total}</TableCell>
+                                                    <TableCell><Badge variant="secondary">{order.shopifyStatus}</Badge></TableCell>
+                                                    <TableCell><Button variant="outline" size="sm">استيراد</Button></TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        </>
+                    )}
+
+                    <div className="flex justify-end">
+                        <Button onClick={handleSaveChanges}><Icon name="Save" className="ml-2" /> حفظ كل التغييرات</Button>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="sync-center" className="space-y-6 mt-4">
+                     <Card>
                         <CardHeader>
-                            <CardTitle>الطلبات الجاهزة للاستيراد</CardTitle>
-                            <CardDescription>هذه الطلبات حالتها `Paid` أو `Fulfilled` في {integrationInfo.name} وجاهزة للسحب.</CardDescription>
+                            <CardTitle>مركز مزامنة البيانات</CardTitle>
+                            <CardDescription>مراقبة ومقارنة البيانات بين نظامنا و{integrationInfo.name} لحل أي تعارضات.</CardDescription>
                         </CardHeader>
                         <CardContent>
                              <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>رقم الطلب ({integrationInfo.name})</TableHead>
-                                        <TableHead>العميل</TableHead>
-                                        <TableHead>المبلغ</TableHead>
-                                        <TableHead>الحالة</TableHead>
-                                        <TableHead>إجراء</TableHead>
+                                        <TableHead>رقم الطلب</TableHead>
+                                        <TableHead>حالتنا</TableHead>
+                                        <TableHead>حالة {integrationInfo.name}</TableHead>
+                                        <TableHead className="text-center">الإجراءات</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {mockImportableOrders.map(order => (
-                                        <TableRow key={order.shopifyId}>
-                                            <TableCell className="font-mono">{order.shopifyId}</TableCell>
-                                            <TableCell>{order.customer}</TableCell>
-                                            <TableCell>{order.total}</TableCell>
-                                            <TableCell><Badge variant="secondary">{order.shopifyStatus}</Badge></TableCell>
-                                            <TableCell><Button variant="outline" size="sm">استيراد</Button></TableCell>
+                                    {mockSyncData.map(item => (
+                                        <TableRow key={item.ourId} className={item.hasConflict ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}>
+                                            <TableCell className="font-mono">{item.ourId} / {item.externalId}</TableCell>
+                                            <TableCell><Badge variant="outline">{item.ourStatus}</Badge></TableCell>
+                                            <TableCell><Badge variant="secondary">{item.externalStatus}</Badge></TableCell>
+                                            <TableCell className="text-center">
+                                                {item.syncFailed ? (
+                                                    <Button variant="destructive" size="sm"><Icon name="RefreshCw" className="ml-2"/>إعادة المحاولة</Button>
+                                                ) : item.hasConflict ? (
+                                                    <div className="flex gap-2 justify-center">
+                                                        <Button variant="outline" size="sm" title={`فرض حالتنا (${item.ourStatus}) على النظام الخارجي`}>
+                                                           <Icon name="UploadCloud" className="ml-2"/> مزامنة
+                                                        </Button>
+                                                        <Button variant="outline" size="sm" title={`سحب الحالة (${item.externalStatus}) من النظام الخارجي`}>
+                                                           <Icon name="DownloadCloud" className="ml-2"/> سحب
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-green-600 flex items-center justify-center gap-2">
+                                                        <Icon name="CheckCircle" /> متطابق
+                                                    </span>
+                                                )}
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
                             </Table>
                         </CardContent>
                     </Card>
-                </>
-            )}
-
-            <div className="flex justify-end">
-                <Button onClick={handleSaveChanges}><Icon name="Save" className="ml-2" /> حفظ كل التغييرات</Button>
-            </div>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
+
+    
