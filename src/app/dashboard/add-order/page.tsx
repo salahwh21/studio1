@@ -13,6 +13,9 @@ import { Check, ChevronsUpDown, Printer, Trash2 } from 'lucide-react';
 import { useActionState } from 'react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
 import { PrintablePolicy } from '@/components/printable-policy';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -75,7 +78,45 @@ const AddOrderPage = () => {
   const componentToPrintRef = useRef(null);
   
   const handlePrint = () => {
-    window.print();
+    const input = componentToPrintRef.current;
+    if (!input) return;
+
+    html2canvas(input, {
+        scale: 2, // Higher scale for better quality
+        useCORS: true,
+        backgroundColor: null,
+    }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const ratio = canvasWidth / canvasHeight;
+        const widthInPdf = pdfWidth;
+        const heightInPdf = widthInPdf / ratio;
+
+        const ordersToPrint = recentlyAdded.filter(o => selectedRecent.includes(o.id));
+        let y = 0;
+
+        for (let i = 0; i < ordersToPrint.length; i++) {
+             // Each policy is assumed to be A5, so two fit on one A4
+            const policyHeight = pdfHeight / 2;
+            if (i > 0) {
+                 pdf.addPage();
+            }
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, heightInPdf);
+        }
+
+        const pdfBlob = pdf.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        window.open(pdfUrl);
+        URL.revokeObjectURL(pdfUrl);
+    });
   }
 
   const form = useForm<OrderFormValues>({
@@ -124,8 +165,6 @@ const AddOrderPage = () => {
             cod: cod || 0,
           });
 
-          // Fuzzy search for region is removed for now to avoid dependency issues.
-          // A simpler search can be implemented if needed.
            if (region) {
               const bestMatch = allRegions.find(r => r.name.includes(region) || region.includes(r.name));
                if (bestMatch) {
@@ -549,3 +588,5 @@ const AddOrderPage = () => {
 };
 
 export default AddOrderPage;
+
+    
