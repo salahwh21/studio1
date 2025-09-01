@@ -62,6 +62,7 @@ const AddOrderPage = () => {
   const [merchantPopoverOpen, setMerchantPopoverOpen] = useState(false);
   const [regionPopoverOpen, setRegionPopoverOpen] = useState(false);
   const [popoverStates, setPopoverStates] = useState<Record<string, boolean>>({});
+  const printablePolicyRef = useRef<{ handleExportPDF: () => void }>(null);
 
   const togglePopover = (id: string) => {
     setPopoverStates(prev => ({ ...prev, [id]: !prev[id] }));
@@ -215,6 +216,12 @@ const AddOrderPage = () => {
   const ordersToPrint = useMemo(() => {
     return recentlyAdded.filter(o => selectedRecent.includes(o.id));
   }, [recentlyAdded, selectedRecent]);
+  
+  const handlePrintClick = () => {
+    if (printablePolicyRef.current) {
+      printablePolicyRef.current.handleExportPDF();
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -222,7 +229,7 @@ const AddOrderPage = () => {
          <Card>
            <CardHeader><CardTitle>طباعة البوليصات</CardTitle></CardHeader>
            <CardContent>
-             <PrintablePolicy orders={ordersToPrint} />
+             <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} />
            </CardContent>
          </Card>
       )}
@@ -399,7 +406,7 @@ const AddOrderPage = () => {
                 <div className="flex items-center justify-between">
                     <CardTitle>طلبات مضافة حديثاً ({recentlyAdded.length})</CardTitle>
                     <div className="flex items-center gap-2">
-                         <Button variant="outline" size="sm" disabled={selectedRecent.length === 0} onClick={() => { /* Print logic moved */ }}><Printer className="h-4 w-4 ml-2"/>طباعة بوليصة</Button>
+                         <Button variant="outline" size="sm" disabled={selectedRecent.length === 0} onClick={handlePrintClick}><Printer className="h-4 w-4 ml-2"/>طباعة بوليصة</Button>
                          <Button variant="destructive" size="sm" disabled={selectedRecent.length === 0} onClick={handleDeleteSelected}><Trash2 className="h-4 w-4 ml-2"/>حذف المحدد</Button>
                     </div>
                 </div>

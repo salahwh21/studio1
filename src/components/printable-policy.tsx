@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import type { Order } from '@/store/orders-store';
 import { Logo } from '@/components/logo';
 import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
@@ -194,17 +194,16 @@ const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: 
     );
 };
 
-export const PrintablePolicy = ({ orders, previewSettings }: { orders: Order[], previewSettings?: PolicySettings }) => {
+export const PrintablePolicy = forwardRef<
+    { handleExportPDF: () => void },
+    { orders: Order[], previewSettings?: PolicySettings }
+>(({ orders, previewSettings }, ref) => {
     const context = useSettings();
     const { toast } = useToast();
     const printAreaRef = useRef<HTMLDivElement>(null);
 
     const settings = previewSettings || context?.settings.policy;
     const loginSettings = context?.settings.login;
-
-    if (!context?.isHydrated || !settings || !loginSettings) {
-        return <div><Skeleton className="h-[297mm] w-[210mm]" /></div>;
-    }
     
     const handleExportPDF = async () => {
         const printArea = printAreaRef.current;
@@ -268,6 +267,14 @@ export const PrintablePolicy = ({ orders, previewSettings }: { orders: Order[], 
         }
     };
     
+    useImperativeHandle(ref, () => ({
+        handleExportPDF,
+    }));
+    
+    if (!context?.isHydrated || !settings || !loginSettings) {
+        return <div><Skeleton className="h-[297mm] w-[210mm]" /></div>;
+    }
+    
     // Create a dummy order for preview if no orders are passed
     const displayOrders = orders.length > 0 ? orders : [{
         id: 'ORD-1719810001', recipient: 'محمد جاسم', merchant: 'تاجر أ', date: new Date().toISOString(),
@@ -290,4 +297,6 @@ export const PrintablePolicy = ({ orders, previewSettings }: { orders: Order[], 
             </Button>
         </div>
     );
-};
+});
+
+PrintablePolicy.displayName = 'PrintablePolicy';
