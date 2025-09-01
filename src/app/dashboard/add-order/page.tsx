@@ -9,7 +9,6 @@ import { useUsersStore, User } from '@/store/user-store';
 import { useOrdersStore, Order } from '@/store/orders-store';
 import { useAreasStore, City, Area } from '@/store/areas-store';
 import { useToast } from '@/hooks/use-toast';
-import { nanoid } from 'nanoid';
 import { Check, ChevronsUpDown, Printer, Trash2 } from 'lucide-react';
 import { useActionState } from 'react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
@@ -52,7 +51,7 @@ type OrderFormValues = z.infer<typeof orderSchema>;
 const AddOrderPage = () => {
   const { toast } = useToast();
   const { users } = useUsersStore();
-  const { addOrder, deleteOrders, updateOrderField } = useOrdersStore();
+  const { addOrder, deleteOrders, updateOrderField, nextOrderNumber } = useOrdersStore();
   const { cities } = useAreasStore();
   const { statuses } = useStatusesStore();
   const { settings: orderSettings } = useSettings();
@@ -125,7 +124,6 @@ const AddOrderPage = () => {
             cod: cod || 0,
           });
 
-          // Smartly set region and city
           if (region && (window as any).fuzzysort) {
              const searchResults = (window as any).fuzzysort.go(region, allRegions, { key: 'name' });
              if (searchResults.length > 0) {
@@ -134,7 +132,6 @@ const AddOrderPage = () => {
                  setValue('city', bestMatch.cityName, { shouldValidate: true });
              }
           } else if(city) {
-              // Fallback to city if region is not found
               const cityMatch = cities.find(c => c.name.includes(city));
               if(cityMatch && cityMatch.areas.length > 0) {
                   setValue('region', `${cityMatch.areas[0].name}_${cityMatch.name}`, { shouldValidate: true });
@@ -155,7 +152,6 @@ const AddOrderPage = () => {
 
 
   const handleUpdateRecentlyAdded = (orderId: string, field: keyof Order, value: any) => {
-    // If updating region, also update city
     if (field === 'region') {
         const [regionName, cityName] = value.split('_');
         updateOrderField(orderId, 'region', regionName);
@@ -175,9 +171,11 @@ const AddOrderPage = () => {
     }
     
     const [regionName] = data.region.split('_');
+    const orderNumber = nextOrderNumber;
     
     const newOrder: Order = {
-      id: `${orderSettings.orders.orderPrefix}${nanoid(8)}`,
+      id: `${orderSettings.orders.orderPrefix}${orderNumber}`,
+      orderNumber: orderNumber,
       source: 'Manual',
       referenceNumber: data.referenceNumber || '',
       recipient: data.recipientName || 'زبون غير مسمى',

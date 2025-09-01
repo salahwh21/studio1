@@ -24,24 +24,38 @@ const initialOrders = Array.from({ length: 85 }, (_, i) => ({
   notes: i % 3 === 0 ? 'اتصل قبل الوصول' : '',
 }));
 
-export type Order = typeof initialOrders[0];
+export type Order = typeof initialOrders[0] & { orderNumber: number };
+
+// Helper to get the highest order number from existing orders
+const getHighestOrderNumber = (orders: Order[]): number => {
+    if (orders.length === 0) return 0;
+    return Math.max(...orders.map(o => o.orderNumber || 0));
+};
+
+const initialOrderNumber = getHighestOrderNumber(initialOrders as Order[]);
+
 
 // Define the state structure and actions
 type OrdersState = {
   orders: Order[];
+  nextOrderNumber: number;
   setOrders: (orders: Order[]) => void;
   updateOrderStatus: (orderId: string, newStatus: Order['status']) => void;
   updateOrderField: (orderId: string, field: keyof Order, value: any) => void;
   deleteOrders: (orderIds: string[]) => void;
-  addOrder: (order: Order) => void;
+  addOrder: (order: Omit<Order, 'orderNumber' | 'id'>) => void;
   refreshOrders: () => void;
 };
 
 // Create the store
 export const useOrdersStore = create<OrdersState>()(immer((set) => ({
-  orders: initialOrders,
+  orders: initialOrders.map((o, i) => ({...o, orderNumber: i + 1})), // Add initial order numbers
+  nextOrderNumber: initialOrders.length + 1,
   
-  setOrders: (orders) => set({ orders }),
+  setOrders: (orders) => set((state) => {
+      state.orders = orders;
+      state.nextOrderNumber = getHighestOrderNumber(orders) + 1;
+  }),
 
   updateOrderStatus: (orderId, newStatus) =>
     set((state) => {
@@ -69,10 +83,21 @@ export const useOrdersStore = create<OrdersState>()(immer((set) => ({
       orders: state.orders.filter((order) => !orderIds.includes(order.id)),
     })),
 
-  addOrder: (order) => 
-    set((state) => ({
-        orders: [order, ...state.orders]
-    })),
+  addOrder: (orderData) => 
+    set((state) => {
+        const newOrderNumber = state.nextOrderNumber;
+        const newOrder: Order = {
+            ...orderData,
+            id: `new-${newOrderNumber}`, // temp id
+            orderNumber: newOrderNumber,
+        };
+        state.orders.unshift(newOrder);
+        state.nextOrderNumber = newOrderNumber + 1;
+    }),
     
-  refreshOrders: () => set({ orders: initialOrders }),
+  refreshOrders: () => set((state) => {
+      const renumberedOrders = initialOrders.map((o, i) => ({...o, orderNumber: i + 1}));
+      state.orders = renumberedOrders;
+      state.nextOrderNumber = renumberedOrders.length + 1;
+  }),
 })));
