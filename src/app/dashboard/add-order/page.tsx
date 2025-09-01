@@ -56,6 +56,11 @@ const AddOrderPage = () => {
   
   const [merchantPopoverOpen, setMerchantPopoverOpen] = useState(false);
   const [regionPopoverOpen, setRegionPopoverOpen] = useState(false);
+  const [popoverStates, setPopoverStates] = useState<Record<string, boolean>>({});
+
+  const togglePopover = (id: string) => {
+    setPopoverStates(prev => ({ ...prev, [id]: !prev[id] }));
+  };
   
   const [recentlyAdded, setRecentlyAdded] = useState<Order[]>([]);
   const [selectedRecent, setSelectedRecent] = useState<string[]>([]);
@@ -356,50 +361,84 @@ const AddOrderPage = () => {
                                 <TableCell className="text-center border-l">{index+1}</TableCell>
                                 <TableCell className="text-center border-l font-mono text-xs">{order.id}</TableCell>
                                 <TableCell className="text-center border-l">
-                                    <Select
-                                        value={order.merchant}
-                                        onValueChange={(value) => handleUpdateRecentlyAdded(order.id, 'merchant', value)}
-                                    >
-                                        <SelectTrigger className="h-8 text-center border-0 focus:ring-0 bg-transparent">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {merchantOptions.map(m => (
-                                                <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Popover open={popoverStates[`merchant-${order.id}`]} onOpenChange={() => togglePopover(`merchant-${order.id}`)}>
+                                      <PopoverTrigger asChild>
+                                        <Button variant="ghost" className="w-full h-8 justify-between hover:bg-muted font-normal border">
+                                          {order.merchant}
+                                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-[200px] p-0">
+                                        <Command>
+                                          <CommandInput placeholder="بحث..." />
+                                          <CommandList>
+                                            <CommandEmpty>لم يوجد.</CommandEmpty>
+                                            <CommandGroup>
+                                              {merchantOptions.map(m => (
+                                                <CommandItem
+                                                  key={m.id}
+                                                  value={m.name}
+                                                  onSelect={() => {
+                                                    handleUpdateRecentlyAdded(order.id, 'merchant', m.name);
+                                                    togglePopover(`merchant-${order.id}`);
+                                                  }}
+                                                >
+                                                  <Check className={cn("mr-2 h-4 w-4", order.merchant === m.name ? "opacity-100" : "opacity-0")} />
+                                                  {m.name}
+                                                </CommandItem>
+                                              ))}
+                                            </CommandGroup>
+                                          </CommandList>
+                                        </Command>
+                                      </PopoverContent>
+                                    </Popover>
                                 </TableCell>
                                 <TableCell className="text-center border-l">
                                     <Input
                                         value={order.recipient}
                                         onChange={(e) => handleUpdateRecentlyAdded(order.id, 'recipient', e.target.value)}
-                                        className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-0 bg-transparent"
+                                        className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-0 bg-transparent hover:bg-muted"
                                     />
                                 </TableCell>
                                 <TableCell className="text-center border-l">
                                      <Input
                                         value={order.phone}
                                         onChange={(e) => handleUpdateRecentlyAdded(order.id, 'phone', e.target.value)}
-                                        className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-0 bg-transparent"
+                                        className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-0 bg-transparent hover:bg-muted"
                                     />
                                 </TableCell>
                                 <TableCell className="text-center border-l">
-                                      <Select
-                                        value={`${order.region}_${order.city}`}
-                                        onValueChange={(value) => handleUpdateRecentlyAdded(order.id, 'region', value)}
-                                    >
-                                        <SelectTrigger className="h-8 text-center border-0 focus:ring-0 bg-transparent">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {allRegions.map(r => (
-                                                <SelectItem key={`${r.id}-${r.cityName}`} value={`${r.name}_${r.cityName}`}>
-                                                    {r.name} ({r.cityName})
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Popover open={popoverStates[`region-${order.id}`]} onOpenChange={() => togglePopover(`region-${order.id}`)}>
+                                      <PopoverTrigger asChild>
+                                        <Button variant="ghost" className="w-full h-8 justify-between hover:bg-muted font-normal border">
+                                          {order.region}
+                                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-[200px] p-0">
+                                        <Command>
+                                          <CommandInput placeholder="بحث..." />
+                                          <CommandList>
+                                            <CommandEmpty>لم يوجد.</CommandEmpty>
+                                            <CommandGroup>
+                                              {allRegions.map(r => (
+                                                <CommandItem
+                                                  key={`${r.id}-${r.cityName}`}
+                                                  value={`${r.name} ${r.cityName}`}
+                                                  onSelect={() => {
+                                                    handleUpdateRecentlyAdded(order.id, 'region', `${r.name}_${r.cityName}`);
+                                                    togglePopover(`region-${order.id}`);
+                                                  }}
+                                                >
+                                                  <Check className={cn("mr-2 h-4 w-4", `${order.region}_${order.city}` === `${r.name}_${r.cityName}` ? "opacity-100" : "opacity-0")} />
+                                                  {r.name} ({r.cityName})
+                                                </CommandItem>
+                                              ))}
+                                            </CommandGroup>
+                                          </CommandList>
+                                        </Command>
+                                      </PopoverContent>
+                                    </Popover>
                                 </TableCell>
                                 <TableCell className="text-center border-l">{order.city}</TableCell>
                                 <TableCell className="text-center border-l">
@@ -407,7 +446,7 @@ const AddOrderPage = () => {
                                         type="number"
                                         value={order.cod}
                                         onChange={(e) => handleUpdateRecentlyAdded(order.id, 'cod', parseFloat(e.target.value) || 0)}
-                                        className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-0 bg-transparent"
+                                        className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-0 bg-transparent hover:bg-muted"
                                     />
                                 </TableCell>
                                 <TableCell className="text-center">
@@ -415,7 +454,7 @@ const AddOrderPage = () => {
                                         value={order.status}
                                         onValueChange={(value) => handleUpdateRecentlyAdded(order.id, 'status', value)}
                                     >
-                                        <SelectTrigger className="h-8 text-center border-0 focus:ring-0 bg-transparent">
+                                        <SelectTrigger className="h-8 text-center border-0 focus:ring-0 bg-transparent hover:bg-muted">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
