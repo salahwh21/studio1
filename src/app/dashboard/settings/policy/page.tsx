@@ -156,7 +156,7 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: 
   onResizeStop: (id: string, w: number, h: number) => void;
   onResize: (id: string, w: number, h: number) => void;
 }) => {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: element.id });
+  const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({ id: element.id });
 
   const style: React.CSSProperties = {
     position: 'absolute',
@@ -165,6 +165,7 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: 
     zIndex: element.zIndex,
     outline: selected ? '2px solid hsl(var(--primary))' : 'none',
     outlineOffset: '2px',
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     visibility: isDragging ? 'hidden' : 'visible',
   };
 
@@ -175,16 +176,6 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: 
       {...attributes}
       {...listeners}
     >
-      <button
-        className="no-print absolute -top-2 -right-2 z-20 h-6 w-6 rounded-md bg-background text-primary shadow-md flex items-center justify-center hover:bg-primary/10 transition-colors"
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect(element.id);
-        }}
-        aria-label="Select element"
-      >
-        {selected ? <Icon name="CheckSquare" className="h-4 w-4" /> : <Icon name="Square" className="h-4 w-4" />}
-      </button>
       <Resizable
           size={{ width: element.width, height: element.height }}
           onResize={(_e, _dir, ref) => onResize(element.id, ref.offsetWidth, ref.offsetHeight)}
@@ -194,6 +185,10 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: 
           grid={[GRID_SIZE, GRID_SIZE]}
           enable={{ top: true, right: true, bottom: true, left: true, topRight: true, bottomRight: true, bottomLeft: true, topLeft: true }}
           className="cursor-grab active:cursor-grabbing"
+          onClick={(e) => {
+              e.stopPropagation();
+              onSelect(element.id);
+          }}
           >
           <div style={{ width: '100%', height: '100%' }}>
               <ElementContent el={element} />
@@ -391,14 +386,10 @@ export default function PolicyEditorPage() {
   
   const handleSelect = useCallback((id: string | null) => {
     if (id) {
-        setSelectedIds(prev => {
-            if (prev.includes(id)) {
-                return []; // Deselect if clicking the same selected item's button
-            }
-            return [id]; // Select the new item
-        });
+        // Always create a new array to force re-render
+        setSelectedIds([id]);
     } else {
-        setSelectedIds([]); // Deselect all if clicking on the canvas
+        setSelectedIds([]);
     }
   }, []);
 
