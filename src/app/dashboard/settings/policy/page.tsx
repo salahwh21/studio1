@@ -67,6 +67,7 @@ const DraggableItem = React.forwardRef<HTMLElement, { element: PolicyElement; is
         width: element.width,
         height: element.height,
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+        visibility: isDragging ? 'hidden' : 'visible' as React.CSSProperties['visibility'],
     };
     
     const renderContent = () => {
@@ -87,7 +88,7 @@ const DraggableItem = React.forwardRef<HTMLElement, { element: PolicyElement; is
             size={{ width: element.width, height: element.height }}
             onResizeStop={(e, direction, ref, d) => onResizeStop(element.id, element.width + d.width, element.height + d.height)}
             grid={[GRID_SIZE, GRID_SIZE]}
-            className={cn('absolute p-1 bg-transparent group/item', isDragging ? 'opacity-50 z-20' : 'z-10', isSelected ? 'border-2 border-blue-500' : 'border border-transparent hover:border-blue-300')}
+            className={cn('absolute p-1 bg-transparent group/item', isSelected ? 'border-2 border-blue-500 z-20' : 'border border-transparent hover:border-blue-300 z-10')}
             style={style}
             ref={setNodeRef as any}
             {...listeners}
@@ -347,11 +348,16 @@ export default function PolicyEditorPage() {
                 />
             </main>
             <DragOverlay>
-                {activeDragItem && (
+                {activeDragItem && activeDragItem.data.current?.element && (
                     <div className="p-1 text-xs rounded-sm border bg-card shadow-lg opacity-75">
-                       {activeDragItem.data.current?.element?.content || `أداة: ${activeDragItem.data.current?.type}` || '...'}
+                       {activeDragItem.data.current.element.content || `أداة: ${activeDragItem.data.current.element.type}` || '...'}
                     </div>
                 )}
+                 {activeDragItem && activeDragItem.data.current?.type && (
+                     <div className="p-2 text-xs rounded-lg border bg-card shadow-lg opacity-75">
+                         أداة: {activeDragItem.data.current?.type}
+                     </div>
+                 )}
             </DragOverlay>
         </DndContext>
     </div>
