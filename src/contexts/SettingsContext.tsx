@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useContext, useCallback } from 'react';
 
 // 1. Define the shapes of our settings
 
@@ -108,13 +108,14 @@ interface ComprehensiveSettings {
 // 2. Define the context shape
 interface SettingsContextType {
   settings: ComprehensiveSettings;
-  setSetting: <K extends keyof ComprehensiveSettings>(key: K, value: V) => void;
+  setSetting: <K extends keyof ComprehensiveSettings>(key: K, value: ComprehensiveSettings[K]) => void;
   updateOrderSetting: <K extends keyof OrderSettings>(key: K, value: OrderSettings[K]) => void;
   updateLoginSetting: <K extends keyof LoginSettings>(key: K, value: LoginSettings[K]) => void;
   updateSocialLink: <K extends keyof SocialLinks>(key: K, value: SocialLinks[K]) => void;
   updateRegionalSetting: <K extends keyof RegionalSettings>(key: K, value: RegionalSettings[K]) => void;
   updateUiSetting: <K extends keyof UiSettings>(key: K, value: UiSettings[K]) => void;
   updatePolicySetting: <K extends keyof PolicySettings>(key: K, value: PolicySettings[K]) => void;
+  formatCurrency: (amount: number) => string;
   isHydrated: boolean;
 }
 
@@ -255,7 +256,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   }, [settings, isHydrated]);
 
   // Generic function to update a top-level setting
-  const setSetting = <K extends keyof ComprehensiveSettings, V extends ComprehensiveSettings[K]>(key: K, value: V) => {
+  const setSetting = <K extends keyof ComprehensiveSettings>(key: K, value: ComprehensiveSettings[K]) => {
     setSettings(prevSettings => ({
       ...prevSettings,
       [key]: value,
@@ -294,8 +295,23 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           }
       }))
   }
+  
+  const formatCurrency = useCallback((amount: number): string => {
+    const { currencySymbol, currencySymbolPosition, thousandsSeparator, decimalSeparator } = settings.regional;
+    const fixedAmount = amount.toFixed(2);
+    let [integerPart, decimalPart] = fixedAmount.split('.');
 
-  const value = { settings, setSetting, updateOrderSetting, updateLoginSetting, updateSocialLink, updateRegionalSetting, updateUiSetting, updatePolicySetting, isHydrated };
+    integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSeparator);
+    
+    const formattedNumber = `${integerPart}${decimalSeparator}${decimalPart}`;
+
+    if (currencySymbolPosition === 'before') {
+      return `${currencySymbol} ${formattedNumber}`;
+    }
+    return `${formattedNumber} ${currencySymbol}`;
+  }, [settings.regional]);
+
+  const value = { settings, setSetting, updateOrderSetting, updateLoginSetting, updateSocialLink, updateRegionalSetting, updateUiSetting, updatePolicySetting, formatCurrency, isHydrated };
 
   return (
     <SettingsContext.Provider value={value}>

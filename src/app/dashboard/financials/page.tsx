@@ -40,6 +40,8 @@ import {
   Pie
 } from 'recharts';
 import Icon from '@/components/icon';
+import { useSettings } from '@/contexts/SettingsContext';
+
 
 // --- Data ---
 
@@ -81,83 +83,91 @@ const chartConfig = {
 
 // --- Components ---
 
-const DriverAccountingTab = () => (
-    <Card>
-        <CardHeader>
-            <CardTitle>كشوفات حسابات السائقين</CardTitle>
-            <CardDescription>متابعة الأرصدة والمستحقات والمدفوعات الخاصة بالسائقين.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead className="text-center whitespace-nowrap">اسم السائق</TableHead>
-                        <TableHead className="text-center whitespace-nowrap">الرصيد المستحق</TableHead>
-                        <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
-                        <TableHead className="text-center whitespace-nowrap">إجراء</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {driverAccountingData.map(driver => (
-                        <TableRow key={driver.id}>
-                            <TableCell className="font-medium text-center whitespace-nowrap">{driver.name}</TableCell>
-                            <TableCell className={driver.balance >= 0 ? 'text-green-600 text-center whitespace-nowrap' : 'text-red-600 text-center whitespace-nowrap'}>
-                                {driver.balance.toLocaleString('ar-JO')} د.أ
-                            </TableCell>
-                            <TableCell className="text-center whitespace-nowrap">
-                                <Badge variant={driver.status === 'due' ? 'secondary' : 'default'} className={driver.status === 'due' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}>
-                                    {driver.status === 'due' ? 'مستحق' : 'مدفوع'}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="text-center whitespace-nowrap">
-                                <Button variant="outline" size="sm">عرض التفاصيل</Button>
-                            </TableCell>
+const DriverAccountingTab = () => {
+    const { formatCurrency } = useSettings();
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>كشوفات حسابات السائقين</CardTitle>
+                <CardDescription>متابعة الأرصدة والمستحقات والمدفوعات الخاصة بالسائقين.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="text-center whitespace-nowrap">اسم السائق</TableHead>
+                            <TableHead className="text-center whitespace-nowrap">الرصيد المستحق</TableHead>
+                            <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
+                            <TableHead className="text-center whitespace-nowrap">إجراء</TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </CardContent>
-    </Card>
-);
+                    </TableHeader>
+                    <TableBody>
+                        {driverAccountingData.map(driver => (
+                            <TableRow key={driver.id}>
+                                <TableCell className="font-medium text-center whitespace-nowrap">{driver.name}</TableCell>
+                                <TableCell className={driver.balance >= 0 ? 'text-green-600 text-center whitespace-nowrap' : 'text-red-600 text-center whitespace-nowrap'}>
+                                    {formatCurrency(driver.balance)}
+                                </TableCell>
+                                <TableCell className="text-center whitespace-nowrap">
+                                    <Badge variant={driver.status === 'due' ? 'secondary' : 'default'} className={driver.status === 'due' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}>
+                                        {driver.status === 'due' ? 'مستحق' : 'مدفوع'}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-center whitespace-nowrap">
+                                    <Button variant="outline" size="sm">عرض التفاصيل</Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    )
+};
 
-const MerchantAccountingTab = () => (
-    <Card>
-        <CardHeader>
-            <CardTitle>كشوفات حسابات التجار</CardTitle>
-            <CardDescription>إدارة المستحقات والمدفوعات ورسوم التوصيل للتجار.</CardDescription>
-        </CardHeader>
-        <CardContent>
-             <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead className="text-center whitespace-nowrap">اسم التاجر</TableHead>
-                        <TableHead className="text-center whitespace-nowrap">المبلغ المستحق</TableHead>
-                        <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
-                        <TableHead className="text-center whitespace-nowrap">إجراء</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {merchantAccountingData.map(merchant => (
-                        <TableRow key={merchant.id} className={merchant.status === 'overdue' ? 'bg-red-50 dark:bg-red-900/20' : ''}>
-                            <TableCell className="font-medium text-center whitespace-nowrap">{merchant.name}</TableCell>
-                            <TableCell className="text-center whitespace-nowrap">{merchant.amountDue.toLocaleString('ar-JO')} د.أ</TableCell>
-                            <TableCell className="text-center whitespace-nowrap">
-                                 <Badge variant={merchant.status === 'paid' ? 'default' : (merchant.status === 'due' ? 'secondary' : 'destructive')} className={merchant.status === 'paid' ? 'bg-green-100 text-green-800' : (merchant.status === 'due' ? 'bg-yellow-100 text-yellow-800' : '')}>
-                                    {merchant.status === 'paid' ? 'مدفوع' : (merchant.status === 'due' ? 'مستحق' : 'متأخر')}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="text-center whitespace-nowrap">
-                                <Button variant="outline" size="sm">عرض التفاصيل</Button>
-                            </TableCell>
+const MerchantAccountingTab = () => {
+    const { formatCurrency } = useSettings();
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>كشوفات حسابات التجار</CardTitle>
+                <CardDescription>إدارة المستحقات والمدفوعات ورسوم التوصيل للتجار.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="text-center whitespace-nowrap">اسم التاجر</TableHead>
+                            <TableHead className="text-center whitespace-nowrap">المبلغ المستحق</TableHead>
+                            <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
+                            <TableHead className="text-center whitespace-nowrap">إجراء</TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </CardContent>
-    </Card>
-);
+                    </TableHeader>
+                    <TableBody>
+                        {merchantAccountingData.map(merchant => (
+                            <TableRow key={merchant.id} className={merchant.status === 'overdue' ? 'bg-red-50 dark:bg-red-900/20' : ''}>
+                                <TableCell className="font-medium text-center whitespace-nowrap">{merchant.name}</TableCell>
+                                <TableCell className="text-center whitespace-nowrap">{formatCurrency(merchant.amountDue)}</TableCell>
+                                <TableCell className="text-center whitespace-nowrap">
+                                     <Badge variant={merchant.status === 'paid' ? 'default' : (merchant.status === 'due' ? 'secondary' : 'destructive')} className={merchant.status === 'paid' ? 'bg-green-100 text-green-800' : (merchant.status === 'due' ? 'bg-yellow-100 text-yellow-800' : '')}>
+                                        {merchant.status === 'paid' ? 'مدفوع' : (merchant.status === 'due' ? 'مستحق' : 'متأخر')}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-center whitespace-nowrap">
+                                    <Button variant="outline" size="sm">عرض التفاصيل</Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+};
 
-const ProfitReportsTab = () => (
+const ProfitReportsTab = () => {
+    const { formatCurrency } = useSettings();
+    return (
      <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
             <Card>
@@ -180,7 +190,7 @@ const ProfitReportsTab = () => (
                              <XAxis dataKey="date" tickFormatter={(value) => new Date(value).toLocaleDateString('ar-JO', {day: 'numeric', month: 'short'})} />
                              <YAxis tickFormatter={(value) => `${(value)}`} />
                             <Tooltip
-                                content={<ChartTooltipContent formatter={(value) => (value as number).toLocaleString('ar-JO', { style: 'currency', currency: 'JOD' })} />}
+                                content={<ChartTooltipContent formatter={(value) => formatCurrency(value as number)} />}
                             />
                             <Legend />
                             <Line type="monotone" dataKey="profit" stroke="var(--color-profit)" strokeWidth={2} name="الربح" />
@@ -199,14 +209,14 @@ const ProfitReportsTab = () => (
                         <Icon name="DollarSign" className="h-6 w-6 text-muted-foreground mr-4" />
                         <div>
                             <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
-                            <p className="text-2xl font-bold">4,523 د.أ</p>
+                            <p className="text-2xl font-bold">{formatCurrency(4523)}</p>
                         </div>
                     </div>
                      <div className="flex items-center">
                         <TrendingUp className="h-6 w-6 text-muted-foreground mr-4" />
                         <div>
                             <p className="text-sm text-muted-foreground">متوسط رسوم التوصيل</p>
-                            <p className="text-2xl font-bold">6.25 د.أ</p>
+                            <p className="text-2xl font-bold">{formatCurrency(6.25)}</p>
                         </div>
                     </div>
                 </CardContent>
@@ -238,7 +248,8 @@ const ProfitReportsTab = () => (
             </Card>
         </div>
      </div>
-);
+    );
+};
 
 
 export default function FinancialsPage() {

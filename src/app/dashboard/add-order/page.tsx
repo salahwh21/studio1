@@ -55,7 +55,7 @@ const AddOrderPage = () => {
   const { cities } = useAreasStore();
   const { statuses } = useStatusesStore();
   const context = useSettings();
-  const { settings: orderSettings, isHydrated: settingsHydrated } = context;
+  const { settings: orderSettings, formatCurrency, isHydrated: settingsHydrated } = context;
 
   const [selectedMerchantId, setSelectedMerchantId] = useState<string>('');
   
@@ -435,12 +435,12 @@ const AddOrderPage = () => {
                     <div className="md:col-span-2 grid grid-cols-2 gap-4 rounded-lg border p-3 bg-muted h-fit">
                         <div>
                             <p className="text-xs text-muted-foreground">المستحق للتاجر</p>
-                            <p className="font-bold text-primary">{calculatedFees.itemPrice.toFixed(2)} د.أ</p>
+                            <p className="font-bold text-primary">{formatCurrency(calculatedFees.itemPrice)}</p>
                         </div>
                         <Separator orientation="vertical" className="h-auto"/>
                         <div>
                             <p className="text-xs text-muted-foreground">أجور التوصيل</p>
-                            <p className="font-bold text-primary">{calculatedFees.deliveryFee.toFixed(2)} د.أ</p>
+                            <p className="font-bold text-primary">{formatCurrency(calculatedFees.deliveryFee)}</p>
                         </div>
                     </div>
                 </div>

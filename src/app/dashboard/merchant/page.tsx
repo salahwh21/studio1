@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/tabs';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import Icon from '@/components/icon';
+import { useSettings } from '@/contexts/SettingsContext';
 
 
 const summaryData = {
@@ -83,134 +84,140 @@ const chartConfig = {
 };
 
 
-const SummaryDashboard = () => (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الطرود</CardTitle>
-            <Icon name="Package" className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summaryData.totalParcels}</div>
-            <p className="text-xs text-muted-foreground">في آخر 30 يومًا</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المبالغ الجاهزة للتحصيل</CardTitle>
-            <Icon name="Wallet" className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summaryData.amountReadyForCollection.toLocaleString('ar-JO')} د.أ</div>
-            <p className="text-xs text-muted-foreground">من الطلبات المكتملة</p>
-          </CardContent>
-        </Card>
-        <Card className="col-span-1 md:col-span-2">
-           <CardHeader>
-               <CardTitle className="text-base">حالات الطلبات</CardTitle>
-           </CardHeader>
-           <CardContent className="h-[100px]">
-                 <ChartContainer config={chartConfig} className="h-full w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Tooltip
-                        content={<ChartTooltipContent hideLabel />}
-                      />
-                      <Pie data={summaryData.ordersByStatus} dataKey="value" nameKey="name" innerRadius="30%" startAngle={180} endAngle={-180}>
-                      </Pie>
-                      <Legend content={({ payload }) => (
-                            <ul className="flex flex-wrap gap-x-4 justify-center text-xs mt-2">
-                            {payload?.map((entry, index) => (
-                                <li key={`item-${index}`} className="flex items-center gap-1">
-                                <span className="w-2 h-2 rounded-full" style={{backgroundColor: entry.color}}></span>
-                                {entry.value} ({summaryData.ordersByStatus.find(d => d.name === entry.value)?.value})
-                                </li>
-                            ))}
-                            </ul>
-                        )} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
-           </CardContent>
-        </Card>
-    </div>
-);
+const SummaryDashboard = () => {
+    const { formatCurrency } = useSettings();
+    return (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">إجمالي الطرود</CardTitle>
+                <Icon name="Package" className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{summaryData.totalParcels}</div>
+                <p className="text-xs text-muted-foreground">في آخر 30 يومًا</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">المبالغ الجاهزة للتحصيل</CardTitle>
+                <Icon name="Wallet" className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(summaryData.amountReadyForCollection)}</div>
+                <p className="text-xs text-muted-foreground">من الطلبات المكتملة</p>
+              </CardContent>
+            </Card>
+            <Card className="col-span-1 md:col-span-2">
+               <CardHeader>
+                   <CardTitle className="text-base">حالات الطلبات</CardTitle>
+               </CardHeader>
+               <CardContent className="h-[100px]">
+                     <ChartContainer config={chartConfig} className="h-full w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Tooltip
+                            content={<ChartTooltipContent hideLabel />}
+                          />
+                          <Pie data={summaryData.ordersByStatus} dataKey="value" nameKey="name" innerRadius="30%" startAngle={180} endAngle={-180}>
+                          </Pie>
+                          <Legend content={({ payload }) => (
+                                <ul className="flex flex-wrap gap-x-4 justify-center text-xs mt-2">
+                                {payload?.map((entry, index) => (
+                                    <li key={`item-${index}`} className="flex items-center gap-1">
+                                    <span className="w-2 h-2 rounded-full" style={{backgroundColor: entry.color}}></span>
+                                    {entry.value} ({summaryData.ordersByStatus.find(d => d.name === entry.value)?.value})
+                                    </li>
+                                ))}
+                                </ul>
+                            )} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+               </CardContent>
+            </Card>
+        </div>
+    );
+}
 
-const OrdersManagement = () => (
-    <Card>
-        <CardHeader>
-            <div className="flex items-center justify-between">
-                <div>
-                    <CardTitle>إدارة الطلبات</CardTitle>
-                    <CardDescription>
-                        إضافة وتعديل ومتابعة جميع طلباتك.
-                    </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                     <div className="relative w-full max-w-sm">
-                        <Icon name="Search" className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="بحث بالرقم، اسم العميل..." className="pr-8" />
+const OrdersManagement = () => {
+    const { formatCurrency } = useSettings();
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>إدارة الطلبات</CardTitle>
+                        <CardDescription>
+                            إضافة وتعديل ومتابعة جميع طلباتك.
+                        </CardDescription>
                     </div>
-                     <Button size="sm" className="h-9 gap-1">
-                        <Icon name="PlusCircle" className="h-4 w-4" />
-                        <span className="hidden sm:inline">إضافة طلب</span>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                         <div className="relative w-full max-w-sm">
+                            <Icon name="Search" className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="بحث بالرقم، اسم العميل..." className="pr-8" />
+                        </div>
+                         <Button size="sm" className="h-9 gap-1">
+                            <Icon name="PlusCircle" className="h-4 w-4" />
+                            <span className="hidden sm:inline">إضافة طلب</span>
+                        </Button>
+                    </div>
                 </div>
-            </div>
-        </CardHeader>
-        <CardContent>
-             <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-center whitespace-nowrap">رقم الطلب</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">العميل</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">الهاتف</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">رسوم التوصيل</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">تاريخ الطلب</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">ملاحظات</TableHead>
-                    <TableHead>
-                      <span className="sr-only">إجراءات</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {ordersData.map((order) => (
-                    <TableRow key={order.id} className={order.status === 'delayed' ? 'bg-red-50 dark:bg-red-900/20' : ''}>
-                      <TableCell className="font-medium text-center whitespace-nowrap">{order.id}</TableCell>
-                      <TableCell className="text-center whitespace-nowrap">{order.customer}</TableCell>
-                      <TableCell className="text-center whitespace-nowrap">{order.phone}</TableCell>
-                      <TableCell className="text-center whitespace-nowrap">{getStatusBadge(order.status)}</TableCell>
-                      <TableCell className="text-center whitespace-nowrap">{order.fee.toLocaleString('ar-JO')} د.أ</TableCell>
-                      <TableCell className="text-center whitespace-nowrap">{order.date}</TableCell>
-                      <TableCell className="text-center whitespace-nowrap">{order.notes}</TableCell>
-                      <TableCell className="text-center whitespace-nowrap">
-                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button aria-haspopup="true" size="icon" variant="ghost">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">فتح القائمة</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
-                              <DropdownMenuItem>عرض التفاصيل</DropdownMenuItem>
-                              <DropdownMenuItem>تعديل</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-            </Table>
-        </CardContent>
-         <CardFooter>
-            <div className="text-xs text-muted-foreground">
-              عرض <strong>{ordersData.length}</strong> من <strong>{ordersData.length}</strong> طلبات
-            </div>
-        </CardFooter>
-    </Card>
-);
+            </CardHeader>
+            <CardContent>
+                 <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-center whitespace-nowrap">رقم الطلب</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">العميل</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">الهاتف</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">رسوم التوصيل</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">تاريخ الطلب</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">ملاحظات</TableHead>
+                        <TableHead>
+                          <span className="sr-only">إجراءات</span>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {ordersData.map((order) => (
+                        <TableRow key={order.id} className={order.status === 'delayed' ? 'bg-red-50 dark:bg-red-900/20' : ''}>
+                          <TableCell className="font-medium text-center whitespace-nowrap">{order.id}</TableCell>
+                          <TableCell className="text-center whitespace-nowrap">{order.customer}</TableCell>
+                          <TableCell className="text-center whitespace-nowrap">{order.phone}</TableCell>
+                          <TableCell className="text-center whitespace-nowrap">{getStatusBadge(order.status)}</TableCell>
+                          <TableCell className="text-center whitespace-nowrap">{formatCurrency(order.fee)}</TableCell>
+                          <TableCell className="text-center whitespace-nowrap">{order.date}</TableCell>
+                          <TableCell className="text-center whitespace-nowrap">{order.notes}</TableCell>
+                          <TableCell className="text-center whitespace-nowrap">
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button aria-haspopup="true" size="icon" variant="ghost">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">فتح القائمة</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
+                                  <DropdownMenuItem>عرض التفاصيل</DropdownMenuItem>
+                                  <DropdownMenuItem>تعديل</DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+             <CardFooter>
+                <div className="text-xs text-muted-foreground">
+                  عرض <strong>{ordersData.length}</strong> من <strong>{ordersData.length}</strong> طلبات
+                </div>
+            </CardFooter>
+        </Card>
+    );
+};
 
 
 const ProfilePanel = () => (
@@ -256,6 +263,7 @@ const SettingsPanel = () => (
 
 
 export default function MerchantPage() {
+    const { formatCurrency } = useSettings();
     return (
         <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
@@ -300,7 +308,7 @@ export default function MerchantPage() {
                                         </div>
                                         <div className="text-left">
                                             {getStatusBadge(order.status)}
-                                            <p className="font-semibold text-sm mt-1">{order.fee.toLocaleString('ar-JO')} د.أ</p>
+                                            <p className="font-semibold text-sm mt-1">{formatCurrency(order.fee)}</p>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="p-4 pt-0 text-sm text-muted-foreground">

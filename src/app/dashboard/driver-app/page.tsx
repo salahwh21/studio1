@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Icon from '@/components/icon';
+import { useSettings } from '@/contexts/SettingsContext';
 
 const driver = {
   name: "علي الأحمد",
@@ -37,6 +38,7 @@ const getStatusBadge = (status: string) => {
 
 
 export default function DriverWebAppPage() {
+  const { formatCurrency } = useSettings();
   const statusCounts = driver.orders.reduce((acc, order) => {
     acc[order.status] = (acc[order.status] || 0) + 1;
     return acc;
@@ -87,7 +89,7 @@ export default function DriverWebAppPage() {
                         <Icon name="Wallet" className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{outForDeliveryAmount.toLocaleString('ar-JO')} د.أ</div>
+                        <div className="text-2xl font-bold">{formatCurrency(outForDeliveryAmount)}</div>
                         <p className="text-xs text-muted-foreground">من الطلبات قيد التوصيل</p>
                     </CardContent>
                 </Card>
@@ -158,7 +160,7 @@ export default function DriverWebAppPage() {
                         </div>
                         <div className="flex flex-col items-end gap-2">
                             {getStatusBadge(order.status)}
-                            <span className="font-bold">{order.amount.toLocaleString('ar-JO')} د.أ</span>
+                            <span className="font-bold">{formatCurrency(order.amount)}</span>
                         </div>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
@@ -196,7 +198,7 @@ export default function DriverWebAppPage() {
                       <TableCell className="text-center whitespace-nowrap">{order.customer}</TableCell>
                       <TableCell className="text-center whitespace-nowrap">{order.address}</TableCell>
                       <TableCell className="text-center whitespace-nowrap">{getStatusBadge(order.status)}</TableCell>
-                      <TableCell className="text-center whitespace-nowrap">{order.amount.toLocaleString('ar-JO')} د.أ</TableCell>
+                      <TableCell className="text-center whitespace-nowrap">{formatCurrency(order.amount)}</TableCell>
                        <TableCell className="text-center whitespace-nowrap">{order.notes || '-'}</TableCell>
                       <TableCell className="flex items-center justify-center gap-2 text-center whitespace-nowrap">
                         <Button variant="outline" size="icon" title="اتصال بالعميل">
