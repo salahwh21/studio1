@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Logo } from '@/components/logo';
-import { LoginExperienceContext } from '@/context/LoginExperienceContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import { FacebookIcon } from '@/components/icons/facebook-icon';
 import { InstagramIcon } from '@/components/icons/instagram-icon';
 import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
@@ -52,21 +52,22 @@ const LoginPageSkeleton = () => (
 
 export default function LoginPageClient() {
   const router = useRouter();
-  const context = useContext(LoginExperienceContext);
+  const context = useSettings();
 
   if (!context || !context.isHydrated) {
     return <LoginPageSkeleton />;
   }
   
   const { settings } = context;
+  const loginSettings = settings.login;
   
-  const socialLinksExist = settings.socialLinks.whatsapp || settings.socialLinks.instagram || settings.socialLinks.facebook;
+  const socialLinksExist = loginSettings.socialLinks.whatsapp || loginSettings.socialLinks.instagram || loginSettings.socialLinks.facebook;
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-muted">
-      {settings.loginBg && (
+      {loginSettings.loginBg && (
         <Image
-            src={settings.loginBg}
+            src={loginSettings.loginBg}
             alt="Background"
             layout="fill"
             objectFit="cover"
@@ -78,13 +79,13 @@ export default function LoginPageClient() {
       >
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">
-            {settings.loginLogo ? (
-                <Image src={settings.loginLogo} alt="Company Logo" width={150} height={50} style={{objectFit: 'contain'}} />
+            {loginSettings.loginLogo ? (
+                <Image src={loginSettings.loginLogo} alt="Company Logo" width={150} height={50} style={{objectFit: 'contain'}} />
             ) : (
                 <Logo />
             )}
           </div>
-          <CardTitle className="text-2xl font-bold">{settings.welcomeMessage}</CardTitle>
+          <CardTitle className="text-2xl font-bold">{loginSettings.welcomeMessage}</CardTitle>
           <CardDescription>نظام إدارة التوصيل</CardDescription>
         </CardHeader>
         <CardContent>
@@ -116,7 +117,7 @@ export default function LoginPageClient() {
               دخول كسائق
             </Button>
           </div>
-           {settings.showForgotPassword && (
+           {loginSettings.showForgotPassword && (
               <Button variant="link" size="sm" className="mx-auto mt-4 block">
                 هل نسيت كلمة المرور؟
               </Button>
@@ -126,18 +127,18 @@ export default function LoginPageClient() {
             <>
               <Separator className="my-4"/>
               <div className="flex justify-center gap-4">
-                {settings.socialLinks.whatsapp && (
-                  <a href={`https://wa.me/${settings.socialLinks.whatsapp}`} target="_blank" rel="noopener noreferrer">
+                {loginSettings.socialLinks.whatsapp && (
+                  <a href={`https://wa.me/${loginSettings.socialLinks.whatsapp}`} target="_blank" rel="noopener noreferrer">
                     <Button variant="ghost" size="icon" className="hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"><WhatsappIcon className="h-10 w-10"/></Button>
                   </a>
                 )}
-                {settings.socialLinks.instagram && (
-                  <a href={settings.socialLinks.instagram} target="_blank" rel="noopener noreferrer">
+                {loginSettings.socialLinks.instagram && (
+                  <a href={loginSettings.socialLinks.instagram} target="_blank" rel="noopener noreferrer">
                     <Button variant="ghost" size="icon" className="hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"><InstagramIcon className="h-6 w-6"/></Button>
                   </a>
                 )}
-                 {settings.socialLinks.facebook && (
-                  <a href={settings.socialLinks.facebook} target="_blank" rel="noopener noreferrer">
+                 {loginSettings.socialLinks.facebook && (
+                  <a href={loginSettings.socialLinks.facebook} target="_blank" rel="noopener noreferrer">
                     <Button variant="ghost" size="icon" className="hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"><FacebookIcon className="h-6 w-6"/></Button>
                   </a>
                 )}

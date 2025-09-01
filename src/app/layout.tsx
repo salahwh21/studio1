@@ -3,10 +3,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from 'next-themes';
-
-import { LoginExperienceProvider } from '@/context/LoginExperienceContext';
-import { RegionalSettingsProvider } from '@/context/RegionalSettingsContext';
-import { SettingsProvider } from '@/contexts/SettingsContext'; // Import the new provider
+import { SettingsProvider } from '@/contexts/SettingsContext';
 
 import { 
   Tajawal,
@@ -42,19 +39,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body>
         <SettingsProvider>
-          <LoginExperienceProvider>
-            <RegionalSettingsProvider>
-              <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-              >
-              {children}
-              <Toaster />
-              </ThemeProvider>
-            </RegionalSettingsProvider>
-          </LoginExperienceProvider>
+          <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+          >
+          {children}
+          <Toaster />
+          </ThemeProvider>
         </SettingsProvider>
       </body>
     </html>

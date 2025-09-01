@@ -4,13 +4,20 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Brush, Component, SlidersHorizontal, Square, Circle, Paintbrush, TextSelect, Save, Feather, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import Icon from '@/components/icon';
+import { useSettings } from '@/contexts/SettingsContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 
@@ -20,28 +27,17 @@ const FaIcon = ({className}: {className?: string}) => <FontAwesomeIcon icon="sta
 
 export default function InterfaceCustomizationPage() {
   const { toast } = useToast();
-  const [density, setDensity] = useState('comfortable');
-  const [borderRadius, setBorderRadius] = useState('0.5');
-  const [iconStrokeWidth, setIconStrokeWidth] = useState(2);
-  const [iconLibrary, setIconLibrary] = useState('lucide');
-  const [isMounted, setIsMounted] = useState(false);
+  const { settings, updateUiSetting, isHydrated } = useSettings();
+  
+  const { density, borderRadius, iconStrokeWidth, iconLibrary } = settings.ui;
+  
+  const setDensity = (value: string) => updateUiSetting('density', value);
+  const setBorderRadius = (value: string) => updateUiSetting('borderRadius', value);
+  const setIconStrokeWidth = (value: number) => updateUiSetting('iconStrokeWidth', value);
+  const setIconLibrary = (value: string) => updateUiSetting('iconLibrary', value);
 
   useEffect(() => {
-    const savedDensity = localStorage.getItem('ui-density') || 'comfortable';
-    const savedRadius = localStorage.getItem('ui-border-radius') || '0.5';
-    const savedStrokeWidth = localStorage.getItem('ui-icon-stroke') || '2';
-    const savedIconLibrary = localStorage.getItem('ui-icon-library') || 'lucide';
-    
-    setDensity(savedDensity);
-    setBorderRadius(savedRadius);
-    setIconStrokeWidth(parseFloat(savedStrokeWidth));
-    setIconLibrary(savedIconLibrary);
-    
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (isMounted) {
+    if (isHydrated) {
       document.body.dataset.density = density;
       document.documentElement.style.setProperty('--radius', `${borderRadius}rem`);
       document.body.dataset.iconStroke = iconStrokeWidth.toString();
@@ -51,14 +47,9 @@ export default function InterfaceCustomizationPage() {
       window.dispatchEvent(new StorageEvent('storage', { key: 'ui-icon-stroke', newValue: iconStrokeWidth.toString() }));
 
     }
-  }, [isMounted, density, borderRadius, iconStrokeWidth, iconLibrary]);
+  }, [isHydrated, density, borderRadius, iconStrokeWidth, iconLibrary]);
 
   const handleSaveChanges = () => {
-    localStorage.setItem('ui-density', density);
-    localStorage.setItem('ui-border-radius', borderRadius);
-    localStorage.setItem('ui-icon-stroke', iconStrokeWidth.toString());
-    localStorage.setItem('ui-icon-library', iconLibrary);
-    
     toast({
       title: 'تم حفظ الإعدادات!',
       description: 'تم حفظ تفضيلات الواجهة بنجاح.',
@@ -76,7 +67,7 @@ export default function InterfaceCustomizationPage() {
     }
   }
 
-  if (!isMounted) {
+  if (!isHydrated) {
     return null; // Or a loading skeleton
   }
 

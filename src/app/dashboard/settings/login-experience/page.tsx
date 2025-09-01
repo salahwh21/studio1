@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { LoginExperienceContext } from '@/context/LoginExperienceContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import Link from 'next/link';
 import Icon from '@/components/icon';
 
@@ -56,18 +56,18 @@ const FileUploadButton = ({ id, label, fileSrc, onFileChange, onRemove }: { id: 
 
 export default function LoginExperiencePage() {
   const { toast } = useToast();
-  const context = useContext(LoginExperienceContext);
+  const context = useSettings();
 
   if (!context) {
     return <div>جاري تحميل إعدادات تجربة المستخدم...</div>;
   }
   
-  const { settings, setSetting, setSocialLink } = context;
+  const { settings, updateLoginSetting, updateSocialLink } = context;
 
   const handleFileChange = (id: string, file: File) => {
     const reader = new FileReader();
     reader.onloadend = () => {
-      setSetting(id as keyof typeof settings, reader.result as string);
+      updateLoginSetting(id as any, reader.result as string);
        toast({
         title: 'تم رفع الملف!',
         description: `تم تحديث ${id === 'loginLogo' ? 'الشعار' : 'صورة الخلفية'}.`,
@@ -77,7 +77,7 @@ export default function LoginExperiencePage() {
   };
   
   const handleRemoveFile = (id: string) => {
-      setSetting(id as keyof typeof settings, null);
+      updateLoginSetting(id as any, null);
   }
 
   const handleSaveChanges = () => {
@@ -114,8 +114,8 @@ export default function LoginExperiencePage() {
                         <Label htmlFor="welcomeMessage">رسالة الترحيب</Label>
                         <Input 
                             id="welcomeMessage" 
-                            value={settings.welcomeMessage}
-                            onChange={(e) => setSetting('welcomeMessage', e.target.value)}
+                            value={settings.login.welcomeMessage}
+                            onChange={(e) => updateLoginSetting('welcomeMessage', e.target.value)}
                         />
                     </div>
                     <div className="flex items-center justify-between rounded-lg border p-4">
@@ -124,8 +124,8 @@ export default function LoginExperiencePage() {
                         </Label>
                         <Switch
                         id="showForgotPassword"
-                        checked={settings.showForgotPassword}
-                        onCheckedChange={(checked) => setSetting('showForgotPassword', checked)}
+                        checked={settings.login.showForgotPassword}
+                        onCheckedChange={(checked) => updateLoginSetting('showForgotPassword', checked)}
                         />
                     </div>
                 </CardContent>
@@ -137,14 +137,14 @@ export default function LoginExperiencePage() {
                     <FileUploadButton 
                         id="loginLogo" 
                         label="شعار صفحة الدخول" 
-                        fileSrc={settings.loginLogo}
+                        fileSrc={settings.login.loginLogo}
                         onFileChange={handleFileChange}
                         onRemove={handleRemoveFile}
                     />
                     <FileUploadButton 
                         id="loginBg" 
                         label="خلفية صفحة الدخول"
-                        fileSrc={settings.loginBg}
+                        fileSrc={settings.login.loginBg}
                         onFileChange={handleFileChange}
                         onRemove={handleRemoveFile}
                     />
@@ -154,9 +154,9 @@ export default function LoginExperiencePage() {
             <Card>
                 <CardHeader><CardTitle>روابط التواصل الاجتماعي</CardTitle></CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <SocialInput id="whatsapp" label="رقم واتساب" icon={MessageSquare} placeholder="962..." value={settings.socialLinks.whatsapp} onChange={(e) => setSocialLink('whatsapp', e.target.value)} />
-                    <SocialInput id="instagram" label="رابط انستغرام" icon={Instagram} placeholder="https://instagram.com/..." value={settings.socialLinks.instagram} onChange={(e) => setSocialLink('instagram', e.target.value)} />
-                    <SocialInput id="facebook" label="رابط فيسبوك" icon={Facebook} placeholder="https://facebook.com/..." value={settings.socialLinks.facebook} onChange={(e) => setSocialLink('facebook', e.target.value)} />
+                    <SocialInput id="whatsapp" label="رقم واتساب" icon={MessageSquare} placeholder="962..." value={settings.login.socialLinks.whatsapp} onChange={(e) => updateSocialLink('whatsapp', e.target.value)} />
+                    <SocialInput id="instagram" label="رابط انستغرام" icon={Instagram} placeholder="https://instagram.com/..." value={settings.login.socialLinks.instagram} onChange={(e) => updateSocialLink('instagram', e.target.value)} />
+                    <SocialInput id="facebook" label="رابط فيسبوك" icon={Facebook} placeholder="https://facebook.com/..." value={settings.login.socialLinks.facebook} onChange={(e) => updateSocialLink('facebook', e.target.value)} />
                 </CardContent>
             </Card>
         </div>

@@ -5,6 +5,7 @@ import React, { createContext, useState, useEffect, ReactNode, useContext } from
 
 // 1. Define the shapes of our settings
 
+// Notifications
 export type NotificationTemplate = {
   id: string;
   statusId: string;
@@ -27,6 +28,7 @@ interface NotificationsSettings {
   };
 }
 
+// Orders
 interface OrderSettings {
     orderPrefix: string;
     defaultStatus: string;
@@ -36,10 +38,52 @@ interface OrderSettings {
     archiveWarningDays: number;
 }
 
+// Login
+interface SocialLinks {
+  whatsapp: string;
+  instagram: string;
+  facebook: string;
+}
 
+interface LoginSettings {
+  companyName: string;
+  welcomeMessage: string;
+  loginLogo: string | null;
+  headerLogo: string | null;
+  loginBg: string | null;
+  showForgotPassword: boolean;
+  socialLinks: SocialLinks;
+}
+
+// Regional
+interface RegionalSettings {
+    currency: string;
+    currencySymbol: string;
+    currencySymbolPosition: 'before' | 'after';
+    thousandsSeparator: string;
+    decimalSeparator: string;
+    language: string;
+    timezone: string;
+    dateFormat: string;
+    firstDayOfWeek: string;
+    unitsSystem: 'metric' | 'imperial';
+}
+
+// UI Customization
+interface UiSettings {
+  density: string;
+  borderRadius: string;
+  iconStrokeWidth: number;
+  iconLibrary: string;
+}
+
+// Main settings structure
 interface ComprehensiveSettings {
   notifications: NotificationsSettings;
   orders: OrderSettings;
+  login: LoginSettings;
+  regional: RegionalSettings;
+  ui: UiSettings;
 }
 
 // 2. Define the context shape
@@ -47,13 +91,17 @@ interface SettingsContextType {
   settings: ComprehensiveSettings;
   setSetting: <K extends keyof ComprehensiveSettings, V extends ComprehensiveSettings[K]>(key: K, value: V) => void;
   updateOrderSetting: <K extends keyof OrderSettings>(key: K, value: OrderSettings[K]) => void;
+  updateLoginSetting: <K extends keyof LoginSettings>(key: K, value: LoginSettings[K]) => void;
+  updateSocialLink: <K extends keyof SocialLinks>(key: K, value: SocialLinks[K]) => void;
+  updateRegionalSetting: <K extends keyof RegionalSettings>(key: K, value: RegionalSettings[K]) => void;
+  updateUiSetting: <K extends keyof UiSettings>(key: K, value: UiSettings[K]) => void;
   isHydrated: boolean;
 }
 
 // 3. Create the context
 export const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-// 4. Define default settings data, including our templates
+// 4. Define default settings data
 const defaultSettingsData: ComprehensiveSettings = {
   notifications: {
     manualTemplates: [
@@ -76,6 +124,37 @@ const defaultSettingsData: ComprehensiveSettings = {
     archiveStartStatus: 'COMPLETED',
     archiveAfterDays: 90,
     archiveWarningDays: 7,
+  },
+  login: {
+    companyName: 'الوميض',
+    welcomeMessage: 'مرحباً',
+    loginLogo: null,
+    headerLogo: null,
+    loginBg: null,
+    showForgotPassword: true,
+    socialLinks: {
+      whatsapp: '',
+      instagram: '',
+      facebook: '',
+    },
+  },
+  regional: {
+    currency: 'JOD',
+    currencySymbol: 'د.أ',
+    currencySymbolPosition: 'after',
+    thousandsSeparator: ',',
+    decimalSeparator: '.',
+    language: 'ar',
+    timezone: 'Asia/Amman',
+    dateFormat: 'DD/MM/YYYY',
+    firstDayOfWeek: 'saturday',
+    unitsSystem: 'metric',
+  },
+  ui: {
+    density: 'comfortable',
+    borderRadius: '0.5',
+    iconStrokeWidth: 2,
+    iconLibrary: 'lucide',
   }
 };
 
@@ -90,23 +169,29 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       const item = window.localStorage.getItem('comprehensiveAppSettings');
       if (item) {
         const savedSettings = JSON.parse(item);
-        // Deep merge for nested settings objects to prevent data loss on updates
+        // Deep merge to ensure new default settings are not lost
         const mergedSettings = {
           ...defaultSettingsData,
           ...savedSettings,
           notifications: {
             ...defaultSettingsData.notifications,
             ...(savedSettings.notifications || {}),
-            manualTemplates: savedSettings.notifications?.manualTemplates || defaultSettingsData.notifications.manualTemplates,
-            aiSettings: {
-              ...defaultSettingsData.notifications.aiSettings,
-              ...(savedSettings.notifications?.aiSettings || {}),
-              rules: savedSettings.notifications?.aiSettings?.rules || defaultSettingsData.notifications.aiSettings.rules,
-            }
           },
           orders: {
               ...defaultSettingsData.orders,
               ...(savedSettings.orders || {}),
+          },
+          login: {
+              ...defaultSettingsData.login,
+              ...(savedSettings.login || {}),
+          },
+          regional: {
+            ...defaultSettingsData.regional,
+            ...(savedSettings.regional || {}),
+          },
+          ui: {
+            ...defaultSettingsData.ui,
+            ...(savedSettings.ui || {}),
           }
         };
         setSettings(mergedSettings);
@@ -137,17 +222,39 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     }));
   };
   
-  const updateOrderSetting = <K extends keyof OrderSettings>(key: K, value: OrderSettings[K]) => {
-      setSettings(prev => ({
+  const updateNestedSetting = <T extends keyof ComprehensiveSettings, K extends keyof ComprehensiveSettings[T]>(
+      topLevelKey: T,
+      nestedKey: K,
+      value: ComprehensiveSettings[T][K]
+  ) => {
+       setSettings(prev => ({
           ...prev,
-          orders: {
-              ...prev.orders,
-              [key]: value,
+          [topLevelKey]: {
+              ...prev[topLevelKey],
+              [nestedKey]: value,
           }
       }));
   }
 
-  const value = { settings, setSetting, updateOrderSetting, isHydrated };
+  const updateOrderSetting = (key: keyof OrderSettings, value: any) => updateNestedSetting('orders', key, value);
+  const updateLoginSetting = (key: keyof LoginSettings, value: any) => updateNestedSetting('login', key, value);
+  const updateRegionalSetting = (key: keyof RegionalSettings, value: any) => updateNestedSetting('regional', key, value);
+  const updateUiSetting = (key: keyof UiSettings, value: any) => updateNestedSetting('ui', key, value);
+  
+  const updateSocialLink = (key: keyof SocialLinks, value: string) => {
+      setSettings(prev => ({
+          ...prev,
+          login: {
+              ...prev.login,
+              socialLinks: {
+                  ...prev.login.socialLinks,
+                  [key]: value
+              }
+          }
+      }))
+  }
+
+  const value = { settings, setSetting, updateOrderSetting, updateLoginSetting, updateSocialLink, updateRegionalSetting, updateUiSetting, isHydrated };
 
   return (
     <SettingsContext.Provider value={value}>

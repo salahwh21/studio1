@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
-import { LoginExperienceContext } from '@/context/LoginExperienceContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import Link from 'next/link';
 import Icon from '@/components/icon';
 
@@ -79,18 +79,18 @@ const LogoUploader = ({ id, label, iconName, iconColor, logoData, onFileChange, 
 
 export default function CompanyIdentityPage() {
   const { toast } = useToast();
-  const context = useContext(LoginExperienceContext);
+  const context = useSettings();
 
   if (!context) {
     return <div>جاري تحميل الإعدادات...</div>;
   }
   
-  const { settings, setSetting } = context;
+  const { settings, updateLoginSetting } = context;
 
-  const [companyName, setCompanyName] = useState(settings.companyName);
+  const [companyName, setCompanyName] = useState(settings.login.companyName);
   const [logos, setLogos] = useState<LocalLogosState>({
-    admin: { src: settings.loginLogo },
-    header: { src: settings.headerLogo },
+    admin: { src: settings.login.loginLogo },
+    header: { src: settings.login.headerLogo },
     merchant: { src: null },
     driver: { src: null },
     invoice: { src: null },
@@ -117,9 +117,9 @@ export default function CompanyIdentityPage() {
         setCompanyName('الوميض');
     }
 
-    setSetting('companyName', finalCompanyName);
-    setSetting('loginLogo', logos.admin.src);
-    setSetting('headerLogo', logos.header.src);
+    updateLoginSetting('companyName', finalCompanyName);
+    updateLoginSetting('loginLogo', logos.admin.src);
+    updateLoginSetting('headerLogo', logos.header.src);
     
     toast({
       title: 'تم الحفظ بنجاح!',

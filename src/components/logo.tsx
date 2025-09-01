@@ -1,13 +1,14 @@
+
 'use client';
 
 import { BotMessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useContext } from 'react';
-import { LoginExperienceContext } from '@/context/LoginExperienceContext';
+import { useSettings } from '@/contexts/SettingsContext';
 
 export function Logo({ className }: { className?: string }) {
-  const context = useContext(LoginExperienceContext);
-  const companyName = context?.settings.companyName || 'الوميض';
+  const context = useSettings();
+  const companyName = context?.settings.login.companyName || 'الوميض';
 
   return (
     <div className={cn("flex items-center gap-2", className)}>

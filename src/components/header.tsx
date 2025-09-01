@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Logo } from './logo';
-import { LoginExperienceContext } from '@/context/LoginExperienceContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import Icon from '@/components/icon';
 import { useRolesStore } from '@/store/roles-store';
 
@@ -46,8 +46,8 @@ const allNavItems: NavItem[] = [
 export function AppHeader() {
   const { setTheme, theme } = useTheme();
   const pathname = usePathname();
-  const context = useContext(LoginExperienceContext);
-  const headerLogo = context?.settings.headerLogo;
+  const context = useSettings();
+  const headerLogo = context?.settings.login.headerLogo;
 
   // --- RBAC Logic ---
   const { roles } = useRolesStore();
