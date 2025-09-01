@@ -10,7 +10,7 @@ import { useOrdersStore, Order } from '@/store/orders-store';
 import { useAreasStore, City, Area } from '@/store/areas-store';
 import { useToast } from '@/hooks/use-toast';
 import { nanoid } from 'nanoid';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, Printer, Trash2 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,8 @@ import Icon from '@/components/icon';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
 
@@ -42,7 +44,7 @@ type OrderFormValues = z.infer<typeof orderSchema>;
 const AddOrderPage = () => {
   const { toast } = useToast();
   const { users } = useUsersStore();
-  const { addOrder } = useOrdersStore();
+  const { orders, addOrder, deleteOrders } = useOrdersStore();
   const { cities } = useAreasStore();
   const [isPending, startTransition] = useTransition();
 
@@ -51,6 +53,9 @@ const AddOrderPage = () => {
   
   const [merchantPopoverOpen, setMerchantPopoverOpen] = useState(false);
   const [regionPopoverOpen, setRegionPopoverOpen] = useState(false);
+  
+  const [recentlyAdded, setRecentlyAdded] = useState<Order[]>([]);
+  const [selectedRecent, setSelectedRecent] = useState<string[]>([]);
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
@@ -65,7 +70,6 @@ const AddOrderPage = () => {
   const merchantOptions = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
   const allRegions = useMemo(() => cities.flatMap(c => c.areas.map(a => ({ ...a, cityName: c.name }))).sort((a,b) => a.name.localeCompare(b.name)), [cities]);
   
-  // Auto-select city when region changes
   useEffect(() => {
     if (selectedRegionValue) {
         const [regionName, cityName] = selectedRegionValue.split('_');
@@ -77,12 +81,10 @@ const AddOrderPage = () => {
   }, [selectedRegionValue, allRegions, setValue]);
 
 
-  // Mock pricing logic - in a real app this would be more complex
   const calculatedFees = useMemo(() => {
     if (!selectedCity || codValue <= 0) {
       return { deliveryFee: 0, itemPrice: 0 };
     }
-    // Simple mock logic: fee is 2.5 for Amman, 3.5 for others
     const deliveryFee = selectedCity === 'عمان' ? 2.5 : 3.5;
     const itemPrice = codValue - deliveryFee;
     return { deliveryFee, itemPrice };
@@ -118,19 +120,33 @@ const AddOrderPage = () => {
     };
     
     addOrder(newOrder);
+    setRecentlyAdded(prev => [newOrder, ...prev]);
     toast({ title: 'تمت الإضافة', description: `تمت إضافة طلب "${data.recipientName}" بنجاح.` });
     reset({ ...getValues(), recipientName: '', phone: '', whatsapp: '', cod: 0, notes: '', referenceNumber: '', address: '' });
   };
   
   const handleParseWithAI = () => {
-      // AI parsing logic will be added in a future step.
-      // For now, it just shows a loading state.
       startTransition(() => {
           setTimeout(() => {
             toast({ title: 'جاري التحليل...', description: 'سيقوم الذكاء الاصطناعي بتعبئة الحقول قريبًا.'});
           }, 1000);
       });
   };
+
+  const handleSelectRecent = (id: string) => {
+    setSelectedRecent(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+  
+  const handleSelectAllRecent = (checked: boolean) => {
+    setSelectedRecent(checked ? recentlyAdded.map(o => o.id) : []);
+  };
+  
+  const handleDeleteSelected = () => {
+    deleteOrders(selectedRecent);
+    setRecentlyAdded(prev => prev.filter(o => !selectedRecent.includes(o.id)));
+    toast({ title: "تم الحذف", description: `تم حذف ${selectedRecent.length} طلبات.` });
+    setSelectedRecent([]);
+  }
 
   return (
     <div className="space-y-6">
@@ -167,6 +183,8 @@ const AddOrderPage = () => {
                                         value={m.name}
                                         onSelect={() => {
                                             setSelectedMerchantId(m.id);
+                                            setRecentlyAdded([]);
+                                            setSelectedRecent([]);
                                             setMerchantPopoverOpen(false);
                                         }}
                                     >
@@ -287,8 +305,59 @@ const AddOrderPage = () => {
           </Card>
         </form>
       </Form>
+
+      {recentlyAdded.length > 0 && (
+         <Card>
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <CardTitle>طلبات مضافة حديثاً ({recentlyAdded.length})</CardTitle>
+                    <div className="flex items-center gap-2">
+                         <Button variant="outline" size="sm" disabled={selectedRecent.length === 0}><Printer className="h-4 w-4 ml-2"/>طباعة بوليصة</Button>
+                         <Button variant="destructive" size="sm" disabled={selectedRecent.length === 0} onClick={handleDeleteSelected}><Trash2 className="h-4 w-4 ml-2"/>حذف المحدد</Button>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent>
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-12"><Checkbox onCheckedChange={handleSelectAllRecent} /></TableHead>
+                            <TableHead>#</TableHead>
+                            <TableHead>رقم الطلب</TableHead>
+                            <TableHead>المتجر</TableHead>
+                            <TableHead>المستلم</TableHead>
+                            <TableHead>الهاتف</TableHead>
+                            <TableHead>المنطقة</TableHead>
+                            <TableHead>المدينة</TableHead>
+                            <TableHead>قيمة التحصيل</TableHead>
+                            <TableHead>الحالة</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {recentlyAdded.map((order, index) => (
+                             <TableRow key={order.id}>
+                                <TableCell><Checkbox checked={selectedRecent.includes(order.id)} onCheckedChange={() => handleSelectRecent(order.id)} /></TableCell>
+                                <TableCell>{index+1}</TableCell>
+                                <TableCell>{order.id}</TableCell>
+                                <TableCell>{order.merchant}</TableCell>
+                                <TableCell>{order.recipient}</TableCell>
+                                <TableCell>{order.phone}</TableCell>
+                                <TableCell>{order.region}</TableCell>
+                                <TableCell>{order.city}</TableCell>
+                                <TableCell>{order.cod.toFixed(2)}</TableCell>
+                                <TableCell>{order.status}</TableCell>
+                             </TableRow>
+                        ))}
+                    </TableBody>
+                 </Table>
+            </CardContent>
+         </Card>
+      )}
+
     </div>
   );
 };
 
 export default AddOrderPage;
+
+    
