@@ -95,22 +95,10 @@ const AddOrderPage = () => {
 
             for (let i = 0; i < policyElements.length; i++) {
                 const element = policyElements[i] as HTMLElement;
-
-                const images = Array.from(element.getElementsByTagName('img'));
-                const imagePromises = images.map(img => {
-                    if (img.complete) return Promise.resolve();
-                    return new Promise<void>((resolve, reject) => {
-                        img.onload = () => resolve();
-                        img.onerror = () => reject(new Error(`Failed to load image: ${img.src}`));
-                    });
-                });
-
-                await Promise.all(imagePromises);
-
+                
                 const canvas = await html2canvas(element, {
                     scale: 2,
                     useCORS: true, 
-                    allowTaint: true, 
                 });
 
                 const imgData = canvas.toDataURL('image/png');

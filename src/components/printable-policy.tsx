@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -8,6 +9,8 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 import Image from 'next/image';
 import Barcode from 'react-barcode';
+import Icon from './icon';
+
 
 const paperSizeClasses = {
   a4: 'w-[210mm] h-[297mm] p-8',

@@ -16,6 +16,7 @@ type IconName = keyof typeof LucideIcons | 'UserCog' | 'UsersCog' | 'ShieldCheck
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
   name: IconName;
+  isPrinting?: boolean;
 }
 
 const faMapping: { [key in IconName]?: import('@fortawesome/fontawesome-svg-core').IconName } = {
@@ -214,7 +215,7 @@ const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons }
 };
 
 
-const Icon = ({ name, ...props }: IconProps) => {
+const Icon = ({ name, isPrinting = false, ...props }: IconProps) => {
   const context = useSettings();
   const [isMounted, setIsMounted] = useState(false);
   
@@ -222,7 +223,10 @@ const Icon = ({ name, ...props }: IconProps) => {
       setIsMounted(true);
   }, []);
 
-  const { iconLibrary, iconStrokeWidth } = context?.settings.ui || {};
+  const { iconLibrary: contextIconLibrary, iconStrokeWidth } = context?.settings.ui || {};
+
+  // For printing, always use Lucide to avoid html2canvas issues with complex SVGs.
+  const iconLibrary = isPrinting ? 'lucide' : contextIconLibrary;
 
   if (!isMounted || !context?.isHydrated) {
       const LucideIcon = LucideIcons[name as keyof typeof LucideIcons] as React.ElementType;
