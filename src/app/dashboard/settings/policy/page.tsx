@@ -456,8 +456,9 @@ export default function PolicyEditorPage() {
         </Card>
 
         <DndContext sensors={sensors} onDragEnd={handleDragEnd} modifiers={[createSnapModifier(GRID_SIZE)]}>
-            <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
-                <div className="space-y-6 lg:sticky lg:top-24">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
+                
+                <div className="space-y-6 lg:order-last lg:sticky lg:top-24">
                      <Card>
                         <CardHeader><CardTitle>إعدادات البوليصة</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
@@ -504,7 +505,7 @@ export default function PolicyEditorPage() {
                         </CardContent>
                     </Card>
                 </div>
-                <div className="space-y-6">
+                <div className="space-y-6 lg:col-span-1 lg:order-first">
                     <Card>
                         <CardHeader>
                             <CardTitle>لوحة التصميم</CardTitle>
