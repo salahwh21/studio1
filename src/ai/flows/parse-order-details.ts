@@ -18,7 +18,11 @@ export type ParseOrderDetailsInput = z.infer<typeof ParseOrderDetailsInputSchema
 
 const ParseOrderDetailsOutputSchema = z.object({
   customerName: z.string().describe('اسم العميل'),
-  address: z.string().describe('عنوان التوصيل الكامل (المدينة، المنطقة، الشارع).'),
+  phone: z.string().describe('رقم هاتف العميل'),
+  city: z.string().describe("اسم المدينة (مثال: عمان، الزرقاء)."),
+  region: z.string().describe("اسم المنطقة أو الحي ضمن المدينة (مثال: تلاع العلي، حي معصوم)."),
+  addressDetails: z.string().describe("باقي تفاصيل العنوان مثل اسم الشارع، رقم البناية، أو أي علامة مميزة."),
+  cod: z.number().describe('المبلغ الإجمالي المطلوب تحصيله من العميل (cash on delivery).'),
   items: z.array(z.string()).describe('قائمة بالمنتجات في الطلب.'),
   quantity: z.array(z.number()).describe('كمية كل منتج في الطلب.'),
 });
@@ -32,11 +36,38 @@ const prompt = ai.definePrompt({
   name: 'parseOrderDetailsPrompt',
   input: {schema: ParseOrderDetailsInputSchema},
   output: {schema: ParseOrderDetailsOutputSchema},
-  prompt: `أنت مساعد ذكاء اصطناعي متخصص في استخراج تفاصيل الطلبات من نصوص باللغة العربية. يمكن أن يكون الطلب على شكل نص عادي أو صورة. قم باستخراج اسم العميل، العنوان، المنتجات، والكمية من الطلب التالي.
+  prompt: `You are an expert AI assistant for a logistics company in Jordan. Your task is to accurately extract order details from Arabic text, which could be a formal message or a casual WhatsApp conversation.
 
-الطلب: {{{request}}}
+You must extract the following information:
+- Customer's name.
+- Customer's phone number.
+- The total Cash on Delivery (COD) amount.
+- A list of items and their quantities.
+- The address, which you must break down into three parts:
+    1.  **city**: The main city (e.g., 'عمان', 'الزرقاء', 'إربد').
+    2.  **region**: The specific neighborhood or area within the city (e.g., 'تلاع العلي', 'حي معصوم').
+    3.  **addressDetails**: Any remaining address details like street name, building number, or landmarks.
 
-أخرج البيانات بصيغة JSON. إذا كان الطلب صورة، استخدم تقنية OCR لاستخراج النص قبل تحليل تفاصيل الطلب. ركز على تحديد الكميات بشكل صحيح لكل منتج.`,
+**Important Instructions:**
+- If the text mentions a price "شامل التوصيل" (including delivery), that is the COD amount.
+- Be smart about identifying the region. A customer might write "ماركا الشمالية" or just "ماركا". Your output for 'region' should be "ماركا". "الدوار السابع" should be "الدوار السابع".
+- If you cannot find a specific piece of information, return an empty string for text fields, an empty array for lists, or 0 for the COD.
+
+**Example:**
+- **Input Request:** "مرحبا بدي اوردر باسم احمد علي، تلفون 0791234567، العنوان ماركا الشمالية، شارع 5، والسعر الكلي 15 دينار شامل توصيل. المنتج هو قميص عدد 1."
+- **Expected Output:**
+  - customerName: "احمد علي"
+  - phone: "0791234567"
+  - city: "عمان"
+  - region: "ماركا"
+  - addressDetails: "الشمالية، شارع 5"
+  - cod: 15
+  - items: ["قميص"]
+  - quantity: [1]
+
+**Order to process:**
+{{{request}}}
+`,
 });
 
 const parseOrderDetailsFlow = ai.defineFlow(

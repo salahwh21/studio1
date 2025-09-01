@@ -29,7 +29,7 @@ export async function parseOrderFromRequest(prevState: State, formData: FormData
 
   try {
     const result = await parseOrderDetails(validatedFields.data);
-    if (!result.customerName && result.items.length === 0) {
+    if (!result.customerName && result.items.length === 0 && !result.region) {
         throw new Error("AI model could not extract any details. Please provide a more detailed request.");
     }
     return {

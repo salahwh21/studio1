@@ -11,6 +11,8 @@ import { useAreasStore, City, Area } from '@/store/areas-store';
 import { useToast } from '@/hooks/use-toast';
 import { nanoid } from 'nanoid';
 import { Check, ChevronsUpDown, Printer, Trash2 } from 'lucide-react';
+import { useActionState } from 'react';
+import { parseOrderFromRequest } from '@/app/actions/parse-order';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +29,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStatusesStore } from '@/store/statuses-store';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import fuzzysort from 'fuzzysort';
 
 
 const orderSchema = z.object({
@@ -49,10 +53,8 @@ const AddOrderPage = () => {
   const { addOrder, deleteOrders, updateOrderField } = useOrdersStore();
   const { cities } = useAreasStore();
   const { statuses } = useStatusesStore();
-  const [isPending, startTransition] = useTransition();
 
   const [selectedMerchantId, setSelectedMerchantId] = useState<string>('');
-  const [aiText, setAiText] = useState('');
   
   const [merchantPopoverOpen, setMerchantPopoverOpen] = useState(false);
   const [regionPopoverOpen, setRegionPopoverOpen] = useState(false);
@@ -64,6 +66,10 @@ const AddOrderPage = () => {
   
   const [recentlyAdded, setRecentlyAdded] = useState<Order[]>([]);
   const [selectedRecent, setSelectedRecent] = useState<string[]>([]);
+  
+  const [aiState, formAction, isAiPending] = useActionState(parseOrderFromRequest, {
+      data: null, error: null, message: ''
+  });
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
@@ -97,6 +103,48 @@ const AddOrderPage = () => {
     const itemPrice = codValue - deliveryFee;
     return { deliveryFee, itemPrice };
   }, [codValue, selectedCity]);
+
+  // --- AI Logic ---
+  useEffect(() => {
+      if(aiState.data) {
+          const { customerName, phone, city, region, addressDetails, cod } = aiState.data;
+          
+          form.reset({
+            ...form.getValues(),
+            recipientName: customerName || '',
+            phone: phone || '',
+            address: addressDetails || '',
+            cod: cod || 0,
+          });
+
+          // Smartly set region and city
+          if (region) {
+             const searchResults = fuzzysort.go(region, allRegions, { key: 'name' });
+             if (searchResults.length > 0) {
+                 const bestMatch = searchResults[0].obj;
+                 setValue('region', `${bestMatch.name}_${bestMatch.cityName}`, { shouldValidate: true });
+                 setValue('city', bestMatch.cityName, { shouldValidate: true });
+             }
+          } else if(city) {
+              // Fallback to city if region is not found
+              const cityMatch = cities.find(c => c.name.includes(city));
+              if(cityMatch && cityMatch.areas.length > 0) {
+                  setValue('region', `${cityMatch.areas[0].name}_${cityMatch.name}`, { shouldValidate: true });
+                  setValue('city', cityMatch.name, { shouldValidate: true });
+              }
+          }
+          
+          toast({ title: 'تم تحليل الطلب', description: 'تم ملء الحقول بنجاح. يرجى المراجعة والإضافة.'});
+      }
+       if (aiState.error) {
+            toast({
+                variant: 'destructive',
+                title: 'خطأ في التحليل',
+                description: aiState.error,
+            });
+        }
+  }, [aiState, allRegions, cities, form, setValue, toast])
+
 
   const handleUpdateRecentlyAdded = (orderId: string, field: keyof Order, value: any) => {
     // If updating region, also update city
@@ -144,14 +192,6 @@ const AddOrderPage = () => {
     setRecentlyAdded(prev => [newOrder, ...prev]);
     toast({ title: 'تمت الإضافة', description: `تمت إضافة طلب "${data.recipientName}" بنجاح.` });
     reset({ ...getValues(), recipientName: '', phone: '', whatsapp: '', cod: 0, notes: '', referenceNumber: '', address: '' });
-  };
-  
-  const handleParseWithAI = () => {
-      startTransition(() => {
-          setTimeout(() => {
-            toast({ title: 'جاري التحليل...', description: 'سيقوم الذكاء الاصطناعي بتعبئة الحقول قريبًا.'});
-          }, 1000);
-      });
   };
 
   const handleSelectRecent = (id: string) => {
@@ -222,22 +262,32 @@ const AddOrderPage = () => {
         </CardContent>
       </Card>
       
-        <div className="rounded-lg border bg-amber-50 p-4 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
-            <h3 className="font-bold flex items-center gap-2 mb-1"><Icon name="Wand2" /> الإدخال السريع بالذكاء الاصطناعي</h3>
-            <p className="text-sm text-muted-foreground mb-4">الصق النص الكامل للطلب هنا (مثلاً من رسالة واتساب) وسيقوم النظام بتحليله وتعبئة الحقول تلقائيًا.</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Textarea
-                    placeholder="مثال: مرحبا بدي اوردر باسم احمد علي، تلفون 0791234567، العنوان ماركا الشمالية، والسعر الكلي 15 دينار شامل توصيل"
-                    value={aiText}
-                    onChange={(e) => setAiText(e.target.value)}
-                    className="md:col-span-2 min-h-[100px] bg-background"
-                />
-                <Button className="h-full text-base md:col-span-1" onClick={handleParseWithAI} disabled={isPending || !aiText || !selectedMerchantId}>
-                    {isPending ? <Icon name="Loader2" className="animate-spin" /> : <Icon name="Bot" />}
-                    {isPending ? 'جاري التحليل...' : 'تحليل وتعبئة الحقول'}
-                </Button>
-            </div>
-        </div>
+        <Card className="rounded-lg border bg-amber-50 p-4 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+            <CardHeader className='p-0 pb-4'>
+                <CardTitle className="font-bold flex items-center gap-2"><Icon name="Wand2" /> الإدخال السريع بالذكاء الاصطناعي</CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">الصق النص الكامل للطلب هنا (مثلاً من رسالة واتساب) وسيقوم النظام بتحليله وتعبئة الحقول تلقائيًا.</CardDescription>
+            </CardHeader>
+            <CardContent className='p-0'>
+                <form action={formAction} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Textarea
+                        name="request"
+                        placeholder="مثال: مرحبا بدي اوردر باسم احمد علي، تلفون 0791234567، العنوان ماركا الشمالية، والسعر الكلي 15 دينار شامل توصيل"
+                        className="md:col-span-2 min-h-[100px] bg-background"
+                    />
+                    <Button type="submit" className="h-full text-base md:col-span-1" disabled={isAiPending || !selectedMerchantId}>
+                        {isAiPending ? <Icon name="Loader2" className="animate-spin" /> : <Icon name="Bot" />}
+                        {isAiPending ? 'جاري التحليل...' : 'تحليل وتعبئة الحقول'}
+                    </Button>
+                </form>
+                 {aiState.error && (
+                    <Alert variant="destructive" className="mt-4">
+                        <Icon name="AlertCircle" className="h-4 w-4" />
+                        <AlertTitle>خطأ في التحليل</AlertTitle>
+                        <AlertDescription>{aiState.error}</AlertDescription>
+                    </Alert>
+                )}
+            </CardContent>
+        </Card>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleAddOrder)} className="space-y-6">

@@ -10,11 +10,15 @@ import { SettingsProvider } from '@/contexts/SettingsContext'; // Import the new
 
 import { 
   Tajawal,
-  Inter
+  Inter,
+  Cairo,
+  IBM_Plex_Sans_Arabic
 } from 'next/font/google';
 
 const tajawal = Tajawal({ subsets: ['latin', 'arabic'], weight: ['400', '700'], variable: '--font-tajawal' });
 const inter = Inter({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-inter' });
+const cairo = Cairo({ subsets: ['latin', 'arabic'], weight: ['400', '700'], variable: '--font-cairo' });
+const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({ subsets: ['latin', 'arabic'], weight: ['400', '700'], variable: '--font-ibm-plex-sans-arabic' });
 
 
 export const metadata: Metadata = {
@@ -32,6 +36,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`
         ${tajawal.variable} 
         ${inter.variable}
+        ${cairo.variable}
+        ${ibmPlexSansArabic.variable}
       `}
     >
       <body>
