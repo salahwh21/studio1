@@ -37,6 +37,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  devIndicators: {
+    allowedDevOrigins: [
+        "http://localhost:3000",
+        "http://localhost:6006",
+        "https://*.cluster-zj37zwdounao2uiqvtma64veco.cloudworkstations.dev",
+    ]
+  }
 };
 
 export default nextConfig;
