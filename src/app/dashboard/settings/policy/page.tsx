@@ -6,8 +6,6 @@ import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react'
 import {
   DndContext,
   DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
   useDraggable,
   useSensor,
   useSensors,
@@ -198,11 +196,10 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: 
 };
 
 // ---------- Toolbox item ----------
-const ToolboxItem = ({ type, label, icon }: { type: ElementType; label: string; icon: any; }) => {
-  const { attributes, listeners, setNodeRef } = useDraggable({ id: `toolbox-${type}`, data: { type } });
+const ToolboxItem = ({ type, label, icon, onClick }: { type: ElementType; label: string; icon: any; onClick: () => void; }) => {
   return (
-    <div ref={setNodeRef} {...attributes} {...listeners}
-      className="flex flex-col items-center justify-center gap-2 p-3 rounded-lg border bg-card cursor-grab hover:shadow-lg hover:border-primary transition-all text-center h-24">
+    <div onClick={onClick}
+      className="flex flex-col items-center justify-center gap-2 p-3 rounded-lg border bg-card cursor-pointer hover:shadow-lg hover:border-primary transition-all text-center h-24">
       <Icon name={icon} className="w-6 h-6 text-primary" />
       <span className="text-xs font-semibold">{label}</span>
     </div>
@@ -275,67 +272,59 @@ export default function PolicyEditorPage() {
   const [margins, setMargins] = useState({ top: 10, right: 10, bottom: 10, left: 10 });
   const [elements, setElements] = useState<PolicyElement[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [activeDrag, setActiveDrag] = useState<Active | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const addElementAt = useCallback((type: ElementType, x: number, y: number) => {
+  const addElement = useCallback((type: ElementType) => {
+    if (!canvasRef.current) return;
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    
     let newElement: PolicyElement;
+    const commonProps = { id: nanoid() };
+    const defaultWidth = 120;
+    const defaultHeight = 40;
+    
+    const centerX = canvasRect.width / 2 - defaultWidth / 2;
+    const centerY = canvasRect.height / 2 - defaultHeight / 2;
+
     switch(type) {
         case 'circle':
-            newElement = { id: nanoid(), type, x: snapToGrid(x), y: snapToGrid(y), width: 50, height: 50, content: '', color: '#000000', opacity: 1 };
+            newElement = { ...commonProps, type, x: snapToGrid(centerX), y: snapToGrid(centerY), width: 50, height: 50, content: '', color: '#000000', opacity: 1 };
             break;
         case 'line':
-            newElement = { id: nanoid(), type, x: snapToGrid(x), y: snapToGrid(y), width: 200, height: 2, content: '', borderColor: '#000000', borderWidth: 2, opacity: 1 };
+            newElement = { ...commonProps, type, x: snapToGrid(centerX), y: snapToGrid(centerY), width: 200, height: 2, content: '', borderColor: '#000000', borderWidth: 2, opacity: 1 };
             break;
         case 'triangle':
-            newElement = { id: nanoid(), type, x: snapToGrid(x), y: snapToGrid(y), width: 50, height: 50, content: '', color: '#000000', opacity: 1 };
+            newElement = { ...commonProps, type, x: snapToGrid(centerX), y: snapToGrid(centerY), width: 50, height: 50, content: '', color: '#000000', opacity: 1 };
             break;
         default:
             newElement = {
-                id: nanoid(), type, x: snapToGrid(x), y: snapToGrid(y),
-                width: type === 'text' ? 160 : 100, height: type === 'text' ? 32 : 100,
+                ...commonProps, type, x: snapToGrid(centerX), y: snapToGrid(centerY),
+                width: type === 'text' ? 160 : defaultWidth, height: type === 'text' ? 32 : defaultHeight,
                 content: type === 'text' ? 'نص جديد' : '', fontSize: 14, fontWeight: 'normal',
                 color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1,
             };
     }
-    setElements((p) => [...p, newElement]);
+    setElements((prev) => [...prev, newElement]);
     setSelectedIds([newElement.id]);
   }, []);
 
-  const handleDragStart = useCallback((e: DragStartEvent) => setActiveDrag(e.active), []);
-
   const handleDragEnd = useCallback((e: DragEndEvent) => {
-    const { active, over, delta } = e;
-    setActiveDrag(null);
-
-    const isTool = String(active.id).startsWith('toolbox-');
-    
-    if (isTool) {
-        if (canvasRef.current) {
-            const canvasRect = canvasRef.current.getBoundingClientRect();
-            // We use activatorEvent to get the mouse position at the time of the drop
-            const dropX = (e.activatorEvent as MouseEvent).clientX - canvasRect.left;
-            const dropY = (e.activatorEvent as MouseEvent).clientY - canvasRect.top;
-            const toolType = active.data.current?.type as ElementType;
-            addElementAt(toolType, dropX, dropY);
-        }
-    } else {
-        setElements((items) =>
-            items.map((item) => {
-                if (item.id === active.id) {
-                    return {
-                        ...item,
-                        x: snapToGrid(item.x + delta.x),
-                        y: snapToGrid(item.y + delta.y),
-                    };
-                }
-                return item;
-            })
-        );
-    }
-}, [addElementAt]);
+    const { active, delta } = e;
+    setElements((items) =>
+        items.map((item) => {
+            if (item.id === active.id) {
+                return {
+                    ...item,
+                    x: snapToGrid(item.x + delta.x),
+                    y: snapToGrid(item.y + delta.y),
+                };
+            }
+            return item;
+        })
+    );
+  }, []);
 
   const handleSelect = useCallback((e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -466,7 +455,7 @@ export default function PolicyEditorPage() {
             </CardContent>
         </Card>
 
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[createSnapModifier(GRID_SIZE)]}>
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd} modifiers={[createSnapModifier(GRID_SIZE)]}>
             <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
                 <div className="space-y-6 lg:sticky lg:top-24">
                      <Card>
@@ -499,13 +488,13 @@ export default function PolicyEditorPage() {
                     <Card>
                         <CardHeader><CardTitle>الأدوات</CardTitle></CardHeader>
                         <CardContent className="grid grid-cols-2 gap-3">
-                            <ToolboxItem type="text" label="نص" icon="Type" />
-                            <ToolboxItem type="image" label="صورة" icon="Image" />
-                            <ToolboxItem type="barcode" label="باركود" icon="Barcode" />
-                            <ToolboxItem type="rect" label="مربع" icon="Square" />
-                            <ToolboxItem type="circle" label="دائرة" icon="Circle" />
-                            <ToolboxItem type="line" label="خط" icon="Minus" />
-                            <ToolboxItem type="triangle" label="مثلث" icon="Triangle" />
+                            <ToolboxItem type="text" label="نص" icon="Type" onClick={() => addElement('text')} />
+                            <ToolboxItem type="image" label="صورة" icon="Image" onClick={() => addElement('image')} />
+                            <ToolboxItem type="barcode" label="باركود" icon="Barcode" onClick={() => addElement('barcode')} />
+                            <ToolboxItem type="rect" label="مربع" icon="Square" onClick={() => addElement('rect')} />
+                            <ToolboxItem type="circle" label="دائرة" icon="Circle" onClick={() => addElement('circle')} />
+                            <ToolboxItem type="line" label="خط" icon="Minus" onClick={() => addElement('line')} />
+                            <ToolboxItem type="triangle" label="مثلث" icon="Triangle" onClick={() => addElement('triangle')} />
                         </CardContent>
                     </Card>
                     <Card>
@@ -542,20 +531,6 @@ export default function PolicyEditorPage() {
                     </Card>
                 </div>
             </div>
-            
-            <DragOverlay modifiers={[createSnapModifier(GRID_SIZE)]}>
-            {activeDrag && String(activeDrag.id).startsWith('toolbox-') && (
-                <div className="p-3 rounded-lg border bg-card opacity-70 flex flex-col items-center gap-2" style={{width: 100, height: 100}}>
-                    <Icon name={activeDrag.data.current?.type === 'text' ? 'Type' : activeDrag.data.current?.type === 'image' ? 'Image' : activeDrag.data.current?.type === 'barcode' ? 'Barcode' : 'Square'} className="w-6 h-6" />
-                    <span className="text-xs">{activeDrag.data.current?.type}</span>
-                </div>
-            )}
-            {activeDrag && !String(activeDrag.id).startsWith('toolbox-') && activeDrag.data.current?.element && (
-                <div style={{ width: activeDrag.rect.current.initial?.width, height: activeDrag.rect.current.initial?.height }}>
-                    <ElementContent el={activeDrag.data.current?.element} />
-                </div>
-            )}
-            </DragOverlay>
         </DndContext>
     </div>
   );
