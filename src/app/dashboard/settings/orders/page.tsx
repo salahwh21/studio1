@@ -55,7 +55,7 @@ export default function OrderSettingsPage() {
                         <CardDescription className="mt-1">التحكم في دورة حياة الطلبات وقواعد الأرشفة التلقائية.</CardDescription>
                     </div>
                     <Button variant="outline" size="icon" asChild>
-                        <Link href="/dashboard/settings">
+                        <Link href="/dashboard/settings/general">
                             <Icon name="ArrowLeft" className="h-4 w-4" />
                         </Link>
                     </Button>
@@ -83,7 +83,7 @@ export default function OrderSettingsPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {statuses.filter(s => s.isActive).map(status => (
-                                        <SelectItem key={status.code} value={status.code}>{status.name}</SelectItem>
+                                        <SelectItem key={status.code} value={status.name}>{status.name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -110,7 +110,7 @@ export default function OrderSettingsPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {statuses.filter(s => s.flow.isFinal).map(status => (
-                                        <SelectItem key={status.code} value={status.code}>{status.name}</SelectItem>
+                                        <SelectItem key={status.code} value={status.name}>{status.name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
