@@ -1,4 +1,3 @@
-
 // PolicyEditorPage.tsx
 'use client';
 
@@ -9,14 +8,12 @@ import {
   DragOverlay,
   DragStartEvent,
   useDraggable,
-  useDroppable,
   useSensor,
   useSensors,
   PointerSensor,
   Active,
-  Modifier,
 } from '@dnd-kit/core';
-import { restrictToWindowEdges } from '@dnd-kit/modifiers';
+import { restrictToWindowEdges, snapGridModifier } from '@dnd-kit/modifiers';
 import { nanoid } from 'nanoid';
 import { Resizable } from 're-resizable';
 
@@ -29,6 +26,7 @@ import { Label } from '@/components/ui/label';
 import Icon from '@/components/icon';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { AlignCenter, AlignEndHorizontal, AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, AlignHorizontalJustifyStart, AlignHorizontalSpaceAround, AlignJustify, AlignLeft, AlignRight, AlignStartHorizontal, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignVerticalJustifyStart, DistributeHorizontalSpacing, DistributeVerticalSpacing } from 'lucide-react';
 
 // ---------- Types ----------
 type ElementType = 'text' | 'image' | 'barcode' | 'rect';
@@ -103,15 +101,14 @@ function ElementContent({ el }: { el: PolicyElement }) {
 }
 
 // ---------- Canvas item ----------
-const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize, multiSelect }: {
+const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: {
   element: PolicyElement;
   selected: boolean;
-  onSelect: (id: string, multi?: boolean) => void;
+  onSelect: (e: React.MouseEvent, id: string) => void;
   onResizeStop: (id: string, w: number, h: number) => void;
   onResize: (id: string, w: number, h: number) => void;
-  multiSelect: boolean;
 }) => {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: element.id, data: { element } });
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: element.id, data: { element } });
 
   const style: React.CSSProperties = {
     position: 'absolute',
@@ -139,7 +136,7 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize, mu
       ref={(node) => setNodeRef(node?.resizable as HTMLElement | null)}
       {...attributes}
       {...listeners}
-      onClick={(e) => { e.stopPropagation(); onSelect(element.id, multiSelect); }}
+      onClick={(e) => { e.stopPropagation(); onSelect(e, element.id); }}
     >
       <div style={{ width: '100%', height: '100%' }}>
         <ElementContent el={element} />
@@ -273,9 +270,14 @@ export default function PolicyEditorPage() {
     }
   }, [addElementAt]);
 
-  const handleSelect = useCallback((id: string, multi?: boolean) => {
-    if (multi) setSelectedIds((p) => (p.includes(id) ? p.filter(i => i !== id) : [...p, id]));
-    else setSelectedIds([id]);
+  const handleSelect = useCallback((e: React.MouseEvent, id: string) => {
+    if (e.shiftKey) {
+        setSelectedIds((prev) => 
+            prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
+        );
+    } else {
+        setSelectedIds([id]);
+    }
   }, []);
 
   const handleResizeStop = useCallback((id: string, w: number, h: number) => {
@@ -289,6 +291,66 @@ export default function PolicyEditorPage() {
   const handleDeleteElement = (id: string) => {
       setElements(p => p.filter(el => el.id !== id));
       setSelectedIds([]);
+  };
+
+  const handleAlignment = (type: 'left' | 'h-center' | 'right' | 'top' | 'v-center' | 'bottom' | 'dist-h' | 'dist-v') => {
+      setElements(prev => {
+          const newElements = [...prev];
+          const selected = newElements.filter(el => selectedIds.includes(el.id));
+          if (selected.length < 2) return prev;
+
+          switch (type) {
+              case 'left':
+                  const minX = Math.min(...selected.map(el => el.x));
+                  selected.forEach(el => el.x = minX);
+                  break;
+              case 'h-center':
+                  const centerX = selected[0].x + selected[0].width / 2;
+                  selected.forEach(el => el.x = centerX - el.width / 2);
+                  break;
+              case 'right':
+                  const maxX = Math.max(...selected.map(el => el.x + el.width));
+                  selected.forEach(el => el.x = maxX - el.width);
+                  break;
+              case 'top':
+                  const minY = Math.min(...selected.map(el => el.y));
+                  selected.forEach(el => el.y = minY);
+                  break;
+              case 'v-center':
+                  const centerY = selected[0].y + selected[0].height / 2;
+                  selected.forEach(el => el.y = centerY - el.height / 2);
+                  break;
+              case 'bottom':
+                  const maxY = Math.max(...selected.map(el => el.y + el.height));
+                  selected.forEach(el => el.y = maxY - el.height);
+                  break;
+              case 'dist-h':
+                  if (selected.length < 3) return prev;
+                  selected.sort((a,b) => a.x - b.x);
+                  const totalWidth = selected.reduce((sum, el) => sum + el.width, 0);
+                  const totalSpace = selected[selected.length - 1].x - selected[0].x - selected[0].width;
+                  const gap = (totalSpace - totalWidth + selected[0].width + selected[selected.length-1].width) / (selected.length - 1);
+                  let currentX = selected[0].x + selected[0].width;
+                  for(let i=1; i<selected.length-1; i++) {
+                      selected[i].x = currentX + gap;
+                      currentX += selected[i].width + gap;
+                  }
+                  break;
+              case 'dist-v':
+                  if (selected.length < 3) return prev;
+                  selected.sort((a,b) => a.y - b.y);
+                  const totalHeight = selected.reduce((sum, el) => sum + el.height, 0);
+                  const totalYSpace = selected[selected.length - 1].y - selected[0].y - selected[0].height;
+                  const yGap = (totalYSpace - totalHeight + selected[0].height + selected[selected.length-1].height) / (selected.length - 1);
+                  let currentY = selected[0].y + selected[0].height;
+                  for(let i=1; i<selected.length-1; i++) {
+                      selected[i].y = currentY + yGap;
+                      currentY += selected[i].height + yGap;
+                  }
+                  break;
+          }
+          return newElements;
+      });
   };
 
   const selectedElement = useMemo(() => elements.find((el) => el.id === selectedIds[0]) ?? null, [elements, selectedIds]);
@@ -320,8 +382,49 @@ export default function PolicyEditorPage() {
                 </Button>
             </CardHeader>
         </Card>
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[restrictToWindowEdges]}>
-            <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
+        
+        <Card>
+            <CardContent className="p-2 flex flex-wrap items-center gap-2">
+                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('left')}><AlignHorizontalJustifyStart /></Button>
+                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('h-center')}><AlignHorizontalJustifyCenter /></Button>
+                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('right')}><AlignHorizontalJustifyEnd /></Button>
+                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('top')}><AlignVerticalJustifyStart /></Button>
+                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('v-center')}><AlignVerticalJustifyCenter /></Button>
+                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('bottom')}><AlignVerticalJustifyEnd /></Button>
+                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 3} onClick={() => handleAlignment('dist-h')}><DistributeHorizontalSpacing /></Button>
+                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 3} onClick={() => handleAlignment('dist-v')}><DistributeVerticalSpacing /></Button>
+            </CardContent>
+        </Card>
+
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[snapGridModifier(GRID_SIZE)]}>
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
+                <div className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>لوحة التصميم</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-grow w-full bg-muted p-8 rounded-lg overflow-auto flex items-center justify-center min-h-[70vh]">
+                            <div data-droppable-id="canvas" className="relative bg-white rounded-md shadow-inner" style={{ ...paperDimensions }} onClick={() => setSelectedIds([])}>
+                                <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
+                                    backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
+                                    backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)`,
+                                    backgroundRepeat: 'repeat',
+                                }} />
+                                <div className="absolute border-2 border-dashed border-red-400/50 pointer-events-none" style={{
+                                    top: `${mmToPx(margins.top)}px`, right: `${mmToPx(margins.right)}px`,
+                                    bottom: `${mmToPx(margins.bottom)}px`, left: `${mmToPx(margins.left)}px`,
+                                }}/>
+                                {elements.map((el) => (
+                                    <DraggableItem key={el.id} element={el} selected={selectedIds.includes(el.id)} onSelect={handleSelect}
+                                        onResizeStop={handleResizeStop}
+                                        onResize={(id, w, h) => handleUpdateElement(id, { width: w, height: h })}
+                                    />
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
                  <div className="space-y-6 lg:sticky lg:top-24">
                      <Card>
                         <CardHeader><CardTitle>إعدادات البوليصة</CardTitle></CardHeader>
@@ -366,36 +469,9 @@ export default function PolicyEditorPage() {
                         </CardContent>
                     </Card>
                 </div>
-                <div className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>لوحة التصميم</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex-grow w-full bg-muted p-8 rounded-lg overflow-auto flex items-center justify-center min-h-[70vh]">
-                            <div data-droppable-id="canvas" className="relative bg-white rounded-md shadow-inner" style={{ ...paperDimensions }} onClick={() => setSelectedIds([])}>
-                                <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
-                                    backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
-                                    backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)`,
-                                    backgroundRepeat: 'repeat',
-                                }} />
-                                <div className="absolute border-2 border-dashed border-red-400/50 pointer-events-none" style={{
-                                    top: `${mmToPx(margins.top)}px`, right: `${mmToPx(margins.right)}px`,
-                                    bottom: `${mmToPx(margins.bottom)}px`, left: `${mmToPx(margins.left)}px`,
-                                }}/>
-                                {elements.map((el) => (
-                                    <DraggableItem key={el.id} element={el} selected={selectedIds.includes(el.id)} onSelect={handleSelect}
-                                        onResizeStop={handleResizeStop}
-                                        onResize={(id, w, h) => handleUpdateElement(id, { width: w, height: h })}
-                                        multiSelect={false}
-                                    />
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
             </div>
             
-            <DragOverlay>
+            <DragOverlay modifiers={[snapGridModifier(GRID_SIZE)]}>
             {activeDrag && String(activeDrag.id).startsWith('toolbox-') && (
                 <div className="p-3 rounded-lg border bg-card opacity-70 flex flex-col items-center gap-2" style={{width: 100, height: 100}}>
                     <Icon name={activeDrag.data.current?.type === 'text' ? 'Type' : activeDrag.data.current?.type === 'image' ? 'Image' : activeDrag.data.current?.type === 'barcode' ? 'Barcode' : 'Square'} className="w-6 h-6" />
@@ -412,4 +488,3 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
-
