@@ -7,7 +7,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 
 export function Logo({ className }: { className?: string }) {
   const context = useSettings();
-  const companyName = context?.settings.login.companyName || 'الوميض';
+  const companyName = context?.isHydrated ? context.settings.login.companyName : 'الوميض';
 
   return (
     <div className={cn("flex items-center gap-2", className)}>

@@ -15,6 +15,8 @@ import { InstagramIcon } from '@/components/icons/instagram-icon';
 import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import { Facebook } from 'lucide-react';
 
 
 const LoginPageSkeleton = () => (
@@ -76,9 +78,8 @@ export default function LoginPageClient() {
         <Image
             src={loginSettings.loginBg}
             alt="Background"
-            layout="fill"
-            objectFit="cover"
-            className="absolute inset-0 z-0 opacity-20"
+            fill
+            className="absolute inset-0 z-0 object-cover opacity-20"
         />
       )}
       <Card 
@@ -131,19 +132,25 @@ export default function LoginPageClient() {
               <Separator className="my-4"/>
               <div className="flex justify-center gap-4">
                 {loginSettings.socialLinks.whatsapp && (
-                  <a href={`https://wa.me/${loginSettings.socialLinks.whatsapp}`} target="_blank" rel="noopener noreferrer">
-                    <Button variant="ghost" size="icon" className="hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"><WhatsappIcon className="h-10 w-10"/></Button>
-                  </a>
+                  <Button variant="ghost" size="icon" asChild>
+                    <a href={`https://wa.me/${loginSettings.socialLinks.whatsapp}`} target="_blank" rel="noopener noreferrer">
+                      <WhatsappIcon className="h-6 w-6"/>
+                    </a>
+                  </Button>
                 )}
                 {loginSettings.socialLinks.instagram && (
-                  <a href={loginSettings.socialLinks.instagram} target="_blank" rel="noopener noreferrer">
-                    <Button variant="ghost" size="icon" className="hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"><InstagramIcon className="h-6 w-6"/></Button>
-                  </a>
+                   <Button variant="ghost" size="icon" asChild>
+                    <a href={loginSettings.socialLinks.instagram} target="_blank" rel="noopener noreferrer">
+                      <InstagramIcon className="h-6 w-6"/>
+                    </a>
+                  </Button>
                 )}
                  {loginSettings.socialLinks.facebook && (
-                  <a href={loginSettings.socialLinks.facebook} target="_blank" rel="noopener noreferrer">
-                    <Button variant="ghost" size="icon" className="hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"><FacebookIcon className="h-6 w-6"/></Button>
-                  </a>
+                   <Button variant="ghost" size="icon" asChild>
+                    <a href={loginSettings.socialLinks.facebook} target="_blank" rel="noopener noreferrer">
+                      <FacebookIcon className="h-6 w-6"/>
+                    </a>
+                  </Button>
                 )}
               </div>
             </>

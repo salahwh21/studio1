@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -98,7 +99,7 @@ export function AppHeader() {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 sm:px-6">
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-sidebar px-4 sm:px-6">
         
         <div className="flex items-center gap-4">
           <Link href="/dashboard"><HeaderLogo /></Link>
