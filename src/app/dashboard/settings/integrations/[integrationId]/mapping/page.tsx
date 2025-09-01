@@ -54,8 +54,7 @@ export default function FieldMappingPage() {
     ]);
     const [lastPayload, setLastPayload] = useState(JSON.stringify(mockPayloads[0].data, null, 2));
 
-    // AI Suggestion Form State
-    const [aiState, formAction] = useActionState(suggestMappingAction, { data: null, error: null, success: false });
+    const [aiState, formAction, isAiPending] = useActionState(suggestMappingAction, { data: null, error: null, success: false });
 
     useEffect(() => {
         if(aiState.success && aiState.data) {
@@ -117,9 +116,13 @@ export default function FieldMappingPage() {
                         <CardContent>
                             <form action={formAction}>
                                 <input type="hidden" name="payload" value={lastPayload} />
-                                <Button type="submit" variant="outline" className="gap-2 mb-4">
-                                    <Icon name="Wand2" className="h-4 w-4" />
-                                    اقتراح باستخدام الذكاء الاصطناعي
+                                <Button type="submit" variant="outline" className="gap-2 mb-4" disabled={isAiPending}>
+                                    {isAiPending ? (
+                                        <Icon name="Loader2" className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Icon name="Wand2" className="h-4 w-4" />
+                                    )}
+                                    اقتراح ربط الحقول بالذكاء الاصطناعي
                                 </Button>
                             </form>
                             <Table>
