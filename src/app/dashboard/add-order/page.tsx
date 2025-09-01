@@ -30,6 +30,7 @@ const orderSchema = z.object({
   phone: z.string().regex(/^07[789]\d{7}$/, "رقم الهاتف غير صالح."),
   region: z.string({ required_error: "الرجاء اختيار المنطقة." }),
   city: z.string({ required_error: "الرجاء اختيار مدينة." }),
+  address: z.string().optional(),
   cod: z.coerce.number().min(0, "المبلغ يجب أن يكون موجبًا."),
   notes: z.string().optional(),
   referenceNumber: z.string().optional(),
@@ -52,7 +53,7 @@ const AddOrderPage = () => {
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
-    defaultValues: { recipientName: '', phone: '', city: '', region: '', cod: 0, notes: '', referenceNumber: '' },
+    defaultValues: { recipientName: '', phone: '', city: '', region: '', address: '', cod: 0, notes: '', referenceNumber: '' },
   });
 
   const { watch, setValue, getValues, reset, trigger } = form;
@@ -101,7 +102,7 @@ const AddOrderPage = () => {
       referenceNumber: data.referenceNumber || '',
       recipient: data.recipientName,
       phone: data.phone,
-      address: `${regionName}, ${data.city}`,
+      address: `${data.address ? `${data.address}, ` : ''}${regionName}, ${data.city}`,
       city: data.city,
       region: regionName,
       status: 'بالانتظار',
@@ -116,7 +117,7 @@ const AddOrderPage = () => {
     
     addOrder(newOrder);
     toast({ title: 'تمت الإضافة', description: `تمت إضافة طلب "${data.recipientName}" بنجاح.` });
-    reset({ ...getValues(), recipientName: '', phone: '', cod: 0, notes: '', referenceNumber: '' });
+    reset({ ...getValues(), recipientName: '', phone: '', cod: 0, notes: '', referenceNumber: '', address: '' });
   };
   
   const handleParseWithAI = () => {
@@ -207,7 +208,7 @@ const AddOrderPage = () => {
                     <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>الهاتف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                     <FormField control={form.control} name="referenceNumber" render={({ field }) => ( <FormItem><FormLabel>رقم مرجعي</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                      <FormField control={form.control} name="region" render={({ field }) => ( 
                         <FormItem className="flex flex-col">
                             <FormLabel>المنطقة</FormLabel>
@@ -254,6 +255,7 @@ const AddOrderPage = () => {
                         </FormItem> 
                     )} />
                      <FormField control={form.control} name="city" render={({ field }) => ( <FormItem><FormLabel>المدينة</FormLabel><FormControl><Input {...field} readOnly className="bg-muted" placeholder="سيتم تحديدها تلقائياً" /></FormControl><FormMessage /></FormItem> )} />
+                     <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان (اختياري)</FormLabel><FormControl><Input {...field} placeholder="اسم الشارع، رقم البناية..."/></FormControl><FormMessage /></FormItem> )} />
                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                     <FormField control={form.control} name="cod" render={({ field }) => ( <FormItem className="md:col-span-1"><FormLabel>قيمة التحصيل (COD)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem> )} />
