@@ -22,13 +22,18 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 
 // A placeholder for FontAwesome icon if it were to be used
-const FaIcon = ({className}: {className?: string}) => <FontAwesomeIcon icon="star" className={className} />;
+const FaIcon = ({className}: {className?: string}) => <FontAwesomeIcon icon={"star"} className={className} />;
 
 
 export default function InterfaceCustomizationPage() {
   const { toast } = useToast();
-  const { settings, updateUiSetting, isHydrated } = useSettings();
+  const context = useSettings();
   
+  if (!context || !context.isHydrated) {
+    return null; // Or a loading skeleton
+  }
+  
+  const { settings, updateUiSetting, isHydrated } = context;
   const { density, borderRadius, iconStrokeWidth, iconLibrary } = settings.ui;
   
   const setDensity = (value: string) => updateUiSetting('density', value);
@@ -40,14 +45,8 @@ export default function InterfaceCustomizationPage() {
     if (isHydrated) {
       document.body.dataset.density = density;
       document.documentElement.style.setProperty('--radius', `${borderRadius}rem`);
-      document.body.dataset.iconStroke = iconStrokeWidth.toString();
-      document.body.dataset.iconLibrary = iconLibrary;
-      // Trigger a storage event to notify other components (like Icon)
-      window.dispatchEvent(new StorageEvent('storage', { key: 'ui-icon-library', newValue: iconLibrary }));
-      window.dispatchEvent(new StorageEvent('storage', { key: 'ui-icon-stroke', newValue: iconStrokeWidth.toString() }));
-
     }
-  }, [isHydrated, density, borderRadius, iconStrokeWidth, iconLibrary]);
+  }, [isHydrated, density, borderRadius]);
 
   const handleSaveChanges = () => {
     toast({
@@ -199,9 +198,9 @@ export default function InterfaceCustomizationPage() {
                 <CardContent className="p-4">
                     <div 
                         className="rounded-lg border bg-card p-4 transition-all duration-300"
+                        data-density={density}
                         style={{
                             '--radius': `${borderRadius}rem`,
-                            padding: density === 'compact' ? '0.75rem' : '1rem'
                         } as React.CSSProperties}
                     >
                          <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
@@ -210,8 +209,8 @@ export default function InterfaceCustomizationPage() {
                         </h3>
                         <p className="text-sm text-muted-foreground">هذا مثال لعرض النص داخل البطاقة مع الإعدادات المطبقة.</p>
                         <div className="flex gap-2 mt-4">
-                             <Button style={{ borderRadius: `var(--radius)`, padding: density === 'compact' ? '0.25rem 0.75rem' : '0.5rem 1rem', height: 'auto' }}>زر أساسي</Button>
-                             <Button variant="outline" style={{ borderRadius: `var(--radius)`, padding: density === 'compact' ? '0.25rem 0.75rem' : '0.5rem 1rem', height: 'auto' }}>زر ثانوي</Button>
+                             <Button>زر أساسي</Button>
+                             <Button variant="outline">زر ثانوي</Button>
                         </div>
                     </div>
                 </CardContent>

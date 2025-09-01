@@ -7,6 +7,7 @@ import * as FeatherIcons from 'react-feather';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { fas } from '@fortawesome/free-solid-svg-icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
+import { useSettings } from '@/contexts/SettingsContext';
 
 // Add all solid icons to the library, so we can use them by name
 library.add(fas);
@@ -214,39 +215,21 @@ const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons }
 
 
 const Icon = ({ name, ...props }: IconProps) => {
-  const [library, setLibrary] = useState('lucide');
-  const [strokeWidth, setStrokeWidth] = useState(2);
+  const context = useSettings();
   const [isMounted, setIsMounted] = useState(false);
   
   useEffect(() => {
-      const updateSettings = () => {
-        const savedLibrary = localStorage.getItem('ui-icon-library') || 'lucide';
-        const savedStroke = localStorage.getItem('ui-icon-stroke') || '2';
-        setLibrary(savedLibrary);
-        setStrokeWidth(parseFloat(savedStroke));
-      };
-
-      updateSettings();
       setIsMounted(true);
-
-      const handleStorageChange = (event: StorageEvent) => {
-          if (event.key === 'ui-icon-library' || event.key === 'ui-icon-stroke') {
-              updateSettings();
-          }
-      };
-      
-      window.addEventListener('storage', handleStorageChange);
-      
-      return () => {
-          window.removeEventListener('storage', handleStorageChange);
-      };
   }, []);
 
-  if (!isMounted) {
+  const { iconLibrary, iconStrokeWidth } = context?.settings.ui || {};
+
+  if (!isMounted || !context?.isHydrated) {
       const LucideIcon = LucideIcons[name as keyof typeof LucideIcons] as React.ElementType;
       if (!LucideIcon) return <LucideIcons.HelpCircle {...props} />;
-      return <LucideIcon strokeWidth={strokeWidth} {...props} />;
+      return <LucideIcon {...props} />;
   }
+
 
   let IconComponent: React.ElementType | null = null;
   const lucideName = name as keyof typeof LucideIcons;
@@ -254,7 +237,7 @@ const Icon = ({ name, ...props }: IconProps) => {
   const featherName = iconMapping[lucideName]?.feather;
   const faName = faMapping[lucideName];
 
-  switch (library) {
+  switch (iconLibrary) {
     case 'feather':
       IconComponent = featherName ? FeatherIcons[featherName] : LucideIcons[lucideName];
       break;
@@ -274,12 +257,10 @@ const Icon = ({ name, ...props }: IconProps) => {
   
   if (!IconComponent) {
     const FallbackIcon = LucideIcons.HelpCircle;
-    return <FallbackIcon strokeWidth={strokeWidth} {...props} />;
+    return <FallbackIcon strokeWidth={iconStrokeWidth} {...props} />;
   }
 
-  return <IconComponent strokeWidth={strokeWidth} {...props} />;
+  return <IconComponent strokeWidth={iconStrokeWidth} {...props} />;
 };
 
 export default Icon;
-
-    

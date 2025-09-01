@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -75,8 +76,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             const { density, borderRadius, iconStrokeWidth, iconLibrary } = settingsContext.settings.ui;
             document.body.dataset.density = density;
             document.documentElement.style.setProperty('--radius', `${borderRadius}rem`);
-            document.body.dataset.iconStroke = iconStrokeWidth.toString();
-            document.body.dataset.iconLibrary = iconLibrary;
+            // The Icon component will read these directly from localStorage, no need to set dataset here.
         }
     }, [settingsContext?.isHydrated, settingsContext?.settings.ui]);
 
@@ -96,7 +96,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <div className="flex min-h-screen w-full flex-col bg-muted/40">
+      <div className="flex min-h-screen w-full flex-col bg-muted/40" data-density={settingsContext.settings.ui.density}>
         <AppHeader />
         <main className="flex flex-1 flex-col gap-4 bg-background p-4 sm:p-6 md:p-8 pb-20 md:pb-8">
             {children}
