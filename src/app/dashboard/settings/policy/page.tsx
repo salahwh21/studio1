@@ -1,4 +1,3 @@
-
 // PolicyEditorPage.tsx
 'use client';
 
@@ -312,13 +311,20 @@ export default function PolicyEditorPage() {
 
   const handleDragEnd = useCallback((e: DragEndEvent) => {
     const { active, delta } = e;
+    const canvasRect = canvasRef.current?.getBoundingClientRect();
+    if (!canvasRect) return;
+
     setElements((items) =>
         items.map((item) => {
             if (item.id === active.id) {
+                // Ensure the element stays within the canvas boundaries
+                const newX = Math.max(0, Math.min(item.x + delta.x, canvasRect.width - item.width));
+                const newY = Math.max(0, Math.min(item.y + delta.y, canvasRect.height - item.height));
+
                 return {
                     ...item,
-                    x: snapToGrid(item.x + delta.x),
-                    y: snapToGrid(item.y + delta.y),
+                    x: snapToGrid(newX),
+                    y: snapToGrid(newY),
                 };
             }
             return item;
@@ -460,6 +466,24 @@ export default function PolicyEditorPage() {
                 
                 <div className="space-y-6 lg:order-last lg:sticky lg:top-24">
                      <Card>
+                        <CardHeader><CardTitle>الأدوات</CardTitle></CardHeader>
+                        <CardContent className="grid grid-cols-2 gap-3">
+                            <ToolboxItem type="text" label="نص" icon="Type" onClick={() => addElement('text')} />
+                            <ToolboxItem type="image" label="صورة" icon="Image" onClick={() => addElement('image')} />
+                            <ToolboxItem type="barcode" label="باركود" icon="Barcode" onClick={() => addElement('barcode')} />
+                            <ToolboxItem type="rect" label="مربع" icon="Square" onClick={() => addElement('rect')} />
+                            <ToolboxItem type="circle" label="دائرة" icon="Circle" onClick={() => addElement('circle')} />
+                            <ToolboxItem type="line" label="خط" icon="Minus" onClick={() => addElement('line')} />
+                            <ToolboxItem type="triangle" label="مثلث" icon="Triangle" onClick={() => addElement('triangle')} />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader><CardTitle>الخصائص</CardTitle></CardHeader>
+                        <CardContent>
+                            <PropertiesPanel selectedElement={selectedElement} onUpdate={handleUpdateElement} onDelete={handleDeleteElement} />
+                        </CardContent>
+                    </Card>
+                     <Card>
                         <CardHeader><CardTitle>إعدادات البوليصة</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
@@ -484,24 +508,6 @@ export default function PolicyEditorPage() {
                                      <div className="space-y-2"><Label className="text-xs">اليسار</Label><Input type="number" placeholder="يسار" value={margins.left} onChange={e => setMargins(p => ({...p, left: parseInt(e.target.value, 10) || 0}))}/></div>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader><CardTitle>الأدوات</CardTitle></CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-3">
-                            <ToolboxItem type="text" label="نص" icon="Type" onClick={() => addElement('text')} />
-                            <ToolboxItem type="image" label="صورة" icon="Image" onClick={() => addElement('image')} />
-                            <ToolboxItem type="barcode" label="باركود" icon="Barcode" onClick={() => addElement('barcode')} />
-                            <ToolboxItem type="rect" label="مربع" icon="Square" onClick={() => addElement('rect')} />
-                            <ToolboxItem type="circle" label="دائرة" icon="Circle" onClick={() => addElement('circle')} />
-                            <ToolboxItem type="line" label="خط" icon="Minus" onClick={() => addElement('line')} />
-                            <ToolboxItem type="triangle" label="مثلث" icon="Triangle" onClick={() => addElement('triangle')} />
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader><CardTitle>الخصائص</CardTitle></CardHeader>
-                        <CardContent>
-                            <PropertiesPanel selectedElement={selectedElement} onUpdate={handleUpdateElement} onDelete={handleDeleteElement} />
                         </CardContent>
                     </Card>
                 </div>
