@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  Upload, X, Save
+  Upload, X, Save, ReceiptText, FileText, Globe
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +18,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 const logoSections = [
   { id: 'loginLogo', label: 'شعار صفحة الدخول', iconName: 'LogIn' as const, iconColor: 'text-blue-500' },
   { id: 'headerLogo', label: 'شعار رأس الصفحة', iconName: 'LayoutDashboard' as const, iconColor: 'text-indigo-500' },
+  { id: 'reportsLogo', label: 'شعار الكشوفات والفواتير', iconName: 'FileText' as const, iconColor: 'text-green-500' },
+  { id: 'policyLogo', label: 'شعار البوليصة', iconName: 'ReceiptText' as const, iconColor: 'text-purple-500' },
+  { id: 'favicon', label: 'أيقونة المتصفح (Favicon)', iconName: 'Globe' as const, iconColor: 'text-orange-500' },
 ];
 
 type LocalLogosState = {
@@ -91,6 +94,9 @@ export default function CompanyIdentityPage() {
   const [logos, setLogos] = useState<LocalLogosState>({
     loginLogo: { src: settings.login.loginLogo },
     headerLogo: { src: settings.login.headerLogo },
+    reportsLogo: { src: settings.login.reportsLogo },
+    policyLogo: { src: settings.login.policyLogo },
+    favicon: { src: settings.login.favicon },
   });
 
   const handleFileChange = (id: string, file: File) => {
@@ -109,6 +115,9 @@ export default function CompanyIdentityPage() {
     updateLoginSetting('companyName', companyName);
     updateLoginSetting('loginLogo', logos.loginLogo.src);
     updateLoginSetting('headerLogo', logos.headerLogo.src);
+    updateLoginSetting('reportsLogo', logos.reportsLogo.src);
+    updateLoginSetting('policyLogo', logos.policyLogo.src);
+    updateLoginSetting('favicon', logos.favicon.src);
     
     toast({
       title: 'تم الحفظ بنجاح!',

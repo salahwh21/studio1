@@ -50,6 +50,9 @@ interface LoginSettings {
   loginLogo: string | null;
   headerLogo: string | null;
   loginBg: string | null;
+  reportsLogo: string | null;
+  policyLogo: string | null;
+  favicon: string | null;
   showForgotPassword: boolean;
   socialLinks: SocialLinks;
 }
@@ -148,6 +151,9 @@ const defaultSettingsData: ComprehensiveSettings = {
     loginLogo: null,
     headerLogo: null,
     loginBg: null,
+    reportsLogo: null,
+    policyLogo: null,
+    favicon: null,
     showForgotPassword: true,
     socialLinks: {
       whatsapp: '',
