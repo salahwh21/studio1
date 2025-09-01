@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -95,7 +96,6 @@ const AddOrderPage = () => {
             for (let i = 0; i < policyElements.length; i++) {
                 const element = policyElements[i] as HTMLElement;
 
-                // Wait for images inside the element to load
                 const images = Array.from(element.getElementsByTagName('img'));
                 const imagePromises = images.map(img => {
                     if (img.complete) return Promise.resolve();
@@ -104,12 +104,17 @@ const AddOrderPage = () => {
                         img.onerror = () => reject(new Error(`Failed to load image: ${img.src}`));
                     });
                 });
+
                 await Promise.all(imagePromises);
 
-                // Now generate canvas
-                const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: true });
-                const imgData = canvas.toDataURL('image/png');
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true, 
+                    allowTaint: true, 
+                });
 
+                const imgData = canvas.toDataURL('image/png');
+                
                 if (i > 0) {
                     pdf.addPage();
                 }
@@ -606,3 +611,6 @@ const AddOrderPage = () => {
 };
 
 export default AddOrderPage;
+
+
+    
