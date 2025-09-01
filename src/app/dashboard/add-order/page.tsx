@@ -36,10 +36,10 @@ import { useSettings } from '@/contexts/SettingsContext';
 
 const orderSchema = z.object({
   recipientName: z.string().optional(),
-  phone: z.string().regex(/^07[789]\d{7}$/, "رقم هاتف أردني غير صالح."),
+  phone: z.string().optional(),
   whatsapp: z.string().optional(),
   region: z.string({ required_error: "الرجاء اختيار المنطقة." }).min(1, "الرجاء اختيار المنطقة."),
-  city: z.string({ required_error: "الرجاء اختيار مدينة." }),
+  city: z.string().optional(),
   address: z.string().optional(),
   cod: z.coerce.number(),
   notes: z.string().optional(),
@@ -179,10 +179,10 @@ const AddOrderPage = () => {
       source: 'Manual',
       referenceNumber: data.referenceNumber || '',
       recipient: data.recipientName || 'زبون غير مسمى',
-      phone: data.phone,
+      phone: data.phone || '',
       whatsapp: data.whatsapp || '',
       address: `${data.address ? `${data.address}, ` : ''}${regionName}, ${data.city}`,
-      city: data.city,
+      city: data.city || '',
       region: regionName,
       status: orderSettings.orders.defaultStatus,
       driver: 'غير معين',
@@ -408,7 +408,7 @@ const AddOrderPage = () => {
                  <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAllRecent} /></TableHead>
+                            <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={(checked) => handleSelectAllRecent(!!checked)} /></TableHead>
                             <TableHead className="text-center border-l">#</TableHead>
                             <TableHead className="text-center border-l">رقم الطلب</TableHead>
                             <TableHead className="text-center border-l w-48">المتجر</TableHead>
