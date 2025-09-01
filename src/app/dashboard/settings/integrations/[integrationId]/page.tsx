@@ -120,7 +120,7 @@ export default function IntegrationDetailPage() {
                              <Icon name={integrationInfo.iconName} className="h-6 w-6" />
                          </div>
                         <div>
-                            <CardTitle className="text-2xl font-bold tracking-tight">إعدادات: {connection.name}</CardTitle>
+                            <CardTitle className="text-2xl font-bold tracking-tight">إعدادات التكامل: {connection.name}</CardTitle>
                             <CardDescription className="mt-1">إدارة وتخصيص إعدادات الربط مع {integrationInfo.name}.</CardDescription>
                         </div>
                     </div>
@@ -157,6 +157,25 @@ export default function IntegrationDetailPage() {
                         </div>
                     )}
                 </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Icon name="Wand2"/> محرك قواعد التكامل</CardTitle>
+                <CardDescription>
+                  أتمتة العمليات عن طريق إنشاء قواعد "إذا حدث ... إذن افعل ...".
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                  <div className="border rounded-lg p-8 text-center space-y-4 bg-muted/50">
+                    <Icon name="Bot" className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h3 className="font-semibold">قريبًا: واجهة بناء القواعد الذكية</h3>
+                    <p className="text-sm text-muted-foreground">
+                      ستتمكن هنا من بناء قواعد مخصصة لتوجيه الطلبات وتغيير الأسعار وإرسال إشعارات مشروطة والمزيد.
+                    </p>
+                    <Button variant="secondary" disabled>إضافة قاعدة جديدة</Button>
+                  </div>
+              </CardContent>
             </Card>
             
              {isWebhookBased && (
