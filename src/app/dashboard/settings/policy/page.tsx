@@ -35,8 +35,12 @@ import {
     AlignVerticalDistributeCenter,
     Circle,
     Minus,
-    Triangle
+    Triangle,
+    Save
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+
 
 // ---------- Types ----------
 type ElementType = 'text' | 'image' | 'barcode' | 'rect' | 'circle' | 'line' | 'triangle';
@@ -57,6 +61,16 @@ type PolicyElement = {
   borderWidth?: number;
   opacity?: number;
 };
+
+type SavedTemplate = {
+  id: string;
+  name: string;
+  elements: PolicyElement[];
+  paperSizeKey: PaperSizeKey;
+  customDimensions: { width: number; height: number };
+  margins: { top: number; right: number; bottom: number; left: number };
+};
+
 
 const GRID_SIZE = 8;
 const DPI = 96; // 96 pixels per inch
@@ -272,8 +286,23 @@ export default function PolicyEditorPage() {
   const [elements, setElements] = useState<PolicyElement[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const { toast } = useToast();
 
   const sensors = useSensors(useSensor(PointerSensor));
+
+  useEffect(() => {
+    try {
+      const storedTemplates = localStorage.getItem('policyTemplates');
+      if (storedTemplates) {
+        setSavedTemplates(JSON.parse(storedTemplates));
+      }
+    } catch (error) {
+      console.error("Failed to load templates from localStorage", error);
+    }
+  }, []);
 
   const addElement = useCallback((type: ElementType) => {
     if (!canvasRef.current) return;
@@ -418,6 +447,43 @@ export default function PolicyEditorPage() {
       });
   };
 
+  const handleConfirmSave = () => {
+    if (!templateName) {
+      toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء إدخال اسم للقالب.' });
+      return;
+    }
+    const newTemplate: SavedTemplate = {
+      id: nanoid(),
+      name: templateName,
+      elements,
+      paperSizeKey,
+      customDimensions,
+      margins,
+    };
+    const updatedTemplates = [...savedTemplates, newTemplate];
+    setSavedTemplates(updatedTemplates);
+    localStorage.setItem('policyTemplates', JSON.stringify(updatedTemplates));
+    toast({ title: 'تم الحفظ', description: `تم حفظ قالب "${templateName}" بنجاح.` });
+    setIsSaveDialogOpen(false);
+    setTemplateName('');
+  };
+
+  const loadTemplate = (template: SavedTemplate) => {
+    setElements(template.elements);
+    setPaperSizeKey(template.paperSizeKey);
+    setCustomDimensions(template.customDimensions);
+    setMargins(template.margins);
+    toast({ title: 'تم التحميل', description: `تم تحميل قالب "${template.name}".` });
+  };
+
+  const deleteTemplate = (id: string) => {
+    const updatedTemplates = savedTemplates.filter(t => t.id !== id);
+    setSavedTemplates(updatedTemplates);
+    localStorage.setItem('policyTemplates', JSON.stringify(updatedTemplates));
+    toast({ title: 'تم الحذف', description: 'تم حذف القالب بنجاح.' });
+  };
+
+
   const selectedElement = useMemo(() => elements.find((el) => el.id === selectedIds[0]) ?? null, [elements, selectedIds]);
   
   const paperDimensions = useMemo(() => {
@@ -430,6 +496,26 @@ export default function PolicyEditorPage() {
 
   return (
     <div className="space-y-6">
+        <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                <DialogTitle>حفظ قالب البوليصة</DialogTitle>
+                <DialogDescription>
+                    أدخل اسمًا مميزًا لهذا القالب ليتم حفظه للاستخدام المستقبلي.
+                </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Label htmlFor="templateName">اسم القالب</Label>
+                    <Input id="templateName" value={templateName} onChange={(e) => setTemplateName(e.target.value)} />
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                    <Button onClick={handleConfirmSave}>حفظ القالب</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+
         <Card>
             <CardHeader className="flex flex-row items-start justify-between">
                 <div>
@@ -440,11 +526,14 @@ export default function PolicyEditorPage() {
                         تخصيص محتوى وتصميم بوليصة الشحن.
                     </CardDescription>
                 </div>
-                <Button variant="outline" size="icon" asChild>
-                    <Link href="/dashboard/settings/general">
-                        <Icon name="ArrowLeft" className="h-4 w-4" />
-                    </Link>
-                </Button>
+                 <div className="flex items-center gap-2">
+                    <Button onClick={() => setIsSaveDialogOpen(true)}><Save className="ml-2 h-4 w-4" />حفظ القالب</Button>
+                    <Button variant="outline" size="icon" asChild>
+                        <Link href="/dashboard/settings/general">
+                            <Icon name="ArrowLeft" className="h-4 w-4" />
+                        </Link>
+                    </Button>
+                </div>
             </CardHeader>
         </Card>
         
@@ -464,7 +553,7 @@ export default function PolicyEditorPage() {
         <DndContext sensors={sensors} onDragEnd={handleDragEnd} modifiers={[createSnapModifier(GRID_SIZE)]}>
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
                 
-                <div className="space-y-6 lg:order-last lg:sticky lg:top-24">
+                <div className="space-y-6 lg:col-span-1 lg:sticky lg:top-24">
                      <Card>
                         <CardHeader><CardTitle>الأدوات</CardTitle></CardHeader>
                         <CardContent className="grid grid-cols-2 gap-3">
@@ -508,6 +597,27 @@ export default function PolicyEditorPage() {
                                      <div className="space-y-2"><Label className="text-xs">اليسار</Label><Input type="number" placeholder="يسار" value={margins.left} onChange={e => setMargins(p => ({...p, left: parseInt(e.target.value, 10) || 0}))}/></div>
                                 </div>
                             </div>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader><CardTitle>القوالب المحفوظة</CardTitle></CardHeader>
+                        <CardContent>
+                            {savedTemplates.length === 0 ? (
+                                <p className="text-sm text-muted-foreground text-center">لا توجد قوالب محفوظة.</p>
+                            ) : (
+                                <div className="space-y-2">
+                                {savedTemplates.map(template => (
+                                    <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                    <Button variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
+                                        {template.name}
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteTemplate(template.id)}>
+                                        <Icon name="Trash2" className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                    </div>
+                                ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
