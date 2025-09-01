@@ -49,7 +49,7 @@ const AddOrderPage = () => {
   });
 
   const { watch, setValue, getValues, reset, trigger } = form;
-  const selectedRegion = watch('region');
+  const selectedRegionValue = watch('region');
   const codValue = watch('cod');
   const selectedCity = watch('city');
 
@@ -58,13 +58,14 @@ const AddOrderPage = () => {
   
   // Auto-select city when region changes
   useEffect(() => {
-    if (selectedRegion) {
-        const regionData = allRegions.find(r => r.name === selectedRegion);
+    if (selectedRegionValue) {
+        const [regionName, cityName] = selectedRegionValue.split('_');
+        const regionData = allRegions.find(r => r.name === regionName && r.cityName === cityName);
         if (regionData) {
             setValue('city', regionData.cityName, { shouldValidate: true });
         }
     }
-  }, [selectedRegion, allRegions, setValue]);
+  }, [selectedRegionValue, allRegions, setValue]);
 
 
   // Mock pricing logic - in a real app this would be more complex
@@ -85,15 +86,17 @@ const AddOrderPage = () => {
       return;
     }
     
+    const [regionName] = data.region.split('_');
+    
     const newOrder: Order = {
       id: nanoid(10),
       source: 'Manual',
       referenceNumber: data.referenceNumber || '',
       recipient: data.recipientName,
       phone: data.phone,
-      address: `${data.region}, ${data.city}`,
+      address: `${regionName}, ${data.city}`,
       city: data.city,
-      region: data.region,
+      region: regionName,
       status: 'بالانتظار',
       driver: 'غير معين',
       merchant: merchant.name,
@@ -167,7 +170,7 @@ const AddOrderPage = () => {
                     <FormField control={form.control} name="referenceNumber" render={({ field }) => ( <FormItem><FormLabel>رقم مرجعي</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <FormField control={form.control} name="region" render={({ field }) => ( <FormItem><FormLabel>المنطقة</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر منطقة..." /></SelectTrigger></FormControl><SelectContent>{allRegions.map(r => <SelectItem key={`${r.id}-${r.cityName}`} value={r.name}>{r.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )} />
+                     <FormField control={form.control} name="region" render={({ field }) => ( <FormItem><FormLabel>المنطقة</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر منطقة..." /></SelectTrigger></FormControl><SelectContent>{allRegions.map(r => <SelectItem key={`${r.id}-${r.cityName}`} value={`${r.name}_${r.cityName}`}>{r.name} ({r.cityName})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )} />
                      <FormField control={form.control} name="city" render={({ field }) => ( <FormItem><FormLabel>المدينة</FormLabel><FormControl><Input {...field} readOnly className="bg-muted" placeholder="سيتم تحديدها تلقائياً" /></FormControl><FormMessage /></FormItem> )} />
                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
