@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useContext } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -13,89 +14,105 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Trash2 } from 'lucide-react';
+import { produce } from 'immer';
 import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
 import { PrintablePolicy } from '@/components/printable-policy';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const CustomFieldsSection = ({ fields, onUpdate, onAdd, onRemove }: { fields: {label: string, value: string}[], onUpdate: (index: number, field: 'label'|'value', value: string) => void, onAdd: () => void, onRemove: (index: number) => void }) => (
-    <div className="space-y-2">
-        {fields.map((field, index) => (
-            <div key={index} className="flex items-center gap-2">
-                <Input
-                    placeholder="عنوان الحقل"
-                    value={field.label}
-                    onChange={(e) => onUpdate(index, 'label', e.target.value)}
-                    className="h-9"
-                />
-                <Input
-                    placeholder="قيمة افتراضية"
-                    value={field.value}
-                    onChange={(e) => onUpdate(index, 'value', e.target.value)}
-                    className="h-9"
-                />
-                <Button variant="ghost" size="icon" onClick={() => onRemove(index)} className="h-9 w-9">
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-            </div>
-        ))}
-        {fields.length < 3 && (
-            <Button variant="outline" size="sm" onClick={onAdd} className="w-full">
-                <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة حقل مخصص
-            </Button>
-        )}
+// ---------- قسم الحقول المخصصة مع التحقق ----------
+interface CustomField {
+  label: string;
+  value: string;
+}
+
+const CustomFieldsSection = ({ fields, onChange, maxFields = 3 }: { fields: CustomField[], onChange: (fields: CustomField[]) => void, maxFields?: number }) => {
+  const [error, setError] = useState('');
+
+  const handleUpdate = (index: number, key: 'label'|'value', value: string) => {
+    const newFields = produce(fields, draft => { draft[index][key] = value });
+    onChange(newFields);
+  };
+
+  const handleAdd = () => {
+    if (fields.length >= maxFields) {
+      setError(`لا يمكن إضافة أكثر من ${maxFields} حقول`);
+      return;
+    }
+    setError('');
+    onChange([...fields, {label: '', value: ''}]);
+  };
+
+  const handleRemove = (index: number) => {
+    const newFields = fields.filter((_, i) => i !== index);
+    onChange(newFields);
+    setError('');
+  };
+
+  return (
+    <div className="space-y-3">
+      {fields.map((field, index) => (
+        <div key={index} className="flex items-center gap-2 flex-wrap">
+          <Input
+            placeholder="عنوان الحقل"
+            value={field.label}
+            onChange={(e) => handleUpdate(index, 'label', e.target.value)}
+            className="h-9 flex-1 min-w-[120px]"
+            aria-label="عنوان الحقل"
+          />
+          <Input
+            placeholder="قيمة افتراضية"
+            value={field.value}
+            onChange={(e) => handleUpdate(index, 'value', e.target.value)}
+            className="h-9 flex-1 min-w-[120px]"
+            aria-label="القيمة الافتراضية"
+          />
+          <Button variant="ghost" size="icon" onClick={() => handleRemove(index)} className="h-9 w-9">
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+      ))}
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
+      {fields.length < maxFields && (
+        <Button variant="outline" size="sm" onClick={handleAdd} className="w-full flex items-center justify-center">
+          <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة حقل مخصص
+        </Button>
+      )}
     </div>
-);
+  );
+};
 
-
+// ---------- الصفحة الرئيسية لإعدادات البوليصة ----------
 export default function PolicySettingsPage() {
   const { toast } = useToast();
   const context = useSettings();
-  
+
   if (!context || !context.isHydrated) {
-      return (
-        <div className="space-y-6">
-            <Skeleton className="h-28 w-full" />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-1 space-y-6">
-                    <Skeleton className="h-48 w-full" />
-                    <Skeleton className="h-48 w-full" />
-                </div>
-                <div className="lg:col-span-2">
-                     <Skeleton className="h-96 w-full" />
-                </div>
-            </div>
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-28 w-full" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 space-y-6">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-48 w-full" />
+          </div>
+          <div className="lg:col-span-2">
+            <Skeleton className="h-96 w-full" />
+          </div>
         </div>
-      );
+      </div>
+    );
   }
-  
+
   const { settings, updatePolicySetting } = context;
   const policySettings = settings.policy;
 
   const handleSettingChange = <K extends keyof PolicySettings>(key: K, value: any) => {
     updatePolicySetting(key, value);
   };
-  
-  const handleCustomFieldUpdate = (index: number, field: 'label'|'value', value: string) => {
-      const newFields = [...policySettings.customFields];
-      newFields[index][field] = value;
-      handleSettingChange('customFields', newFields);
-  };
-
-  const addCustomField = () => {
-      if (policySettings.customFields.length < 3) {
-          handleSettingChange('customFields', [...policySettings.customFields, {label: '', value: ''}]);
-      }
-  };
-
-  const removeCustomField = (index: number) => {
-      const newFields = policySettings.customFields.filter((_, i) => i !== index);
-      handleSettingChange('customFields', newFields);
-  };
-
 
   const handleSave = () => {
-    // The settings are saved automatically by the context,
-    // so this button is for user feedback and confirmation.
     toast({
       title: 'تم الحفظ بنجاح!',
       description: 'تم تحديث إعدادات بوليصة الشحن.',
@@ -108,46 +125,69 @@ export default function PolicySettingsPage() {
       <Switch id={id} checked={checked} onCheckedChange={(val) => handleSettingChange(id, val)} />
     </div>
   );
-  
-  const renderLayout = () => {
-      return <PrintablePolicy orders={[]} previewSettings={policySettings} />
-  }
+
+  const renderPolicyPreview = () => {
+    // يمكن إضافة معايير خاصة للطباعة حسب الحجم والتصميم
+    return <PrintablePolicy orders={[]} previewSettings={policySettings} />;
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
+      {/* رأس الصفحة */}
       <Card>
         <CardHeader className="flex flex-row items-start justify-between">
           <div>
-            <CardTitle className="text-2xl font-bold flex items-center gap-2"><Icon name="ReceiptText" /> إعدادات البوليصة</CardTitle>
+            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+              <Icon name="ReceiptText" /> إعدادات البوليصة
+            </CardTitle>
             <CardDescription>تخصيص شكل ومحتوى بوليصة الشحن التي يتم طباعتها.</CardDescription>
           </div>
-          <Button variant="outline" size="icon" asChild><Link href="/dashboard/settings/general"><Icon name="ArrowLeft" /></Link></Button>
+          <Button variant="outline" size="icon" asChild>
+            <Link href="/dashboard/settings/general"><Icon name="ArrowLeft" /></Link>
+          </Button>
         </CardHeader>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        {/* الإعدادات الجانبية */}
         <div className="lg:col-span-1 space-y-6">
-          <Card><CardHeader><CardTitle className="text-lg">حجم الورق</CardTitle></CardHeader><CardContent>
-              <RadioGroup value={policySettings.paperSize} onValueChange={(val) => handleSettingChange('paperSize', val)}>
-                <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="a4" id="a4" /><Label htmlFor="a4">A4</Label></div>
-                <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="a5" id="a5" /><Label htmlFor="a5">A5</Label></div>
-                <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="label_4x6" id="label_4x6" /><Label htmlFor="label_4x6">ملصق حراري (4x6 inch)</Label></div>
-                <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="label_4x4" id="label_4x4" /><Label htmlFor="label_4x4">ملصق حراري (4x4 inch)</Label></div>
-                <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="label_3x2" id="label_3x2" /><Label htmlFor="label_3x2">ملصق حراري (3x2 inch)</Label></div>
-                <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="label_2x3" id="label_2x3" /><Label htmlFor="label_2x3">ملصق حراري (2x3 inch)</Label></div>
-                <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="label_4x2" id="label_4x2" /><Label htmlFor="label_4x2">ملصق حراري (4x2 inch)</Label></div>
-              </RadioGroup>
-          </CardContent></Card>
-          
-           <Card><CardHeader><CardTitle className="text-lg">تصميم البوليصة</CardTitle></CardHeader><CardContent>
-              <RadioGroup value={policySettings.layout} onValueChange={(val) => handleSettingChange('layout', val)}>
-                <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="default" id="layout-default" /><Label htmlFor="layout-default">التصميم الافتراضي</Label></div>
-                <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="compact" id="layout-compact" /><Label htmlFor="layout-compact">التصميم المدمج (للملصقات)</Label></div>
-                <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="detailed" id="layout-detailed" /><Label htmlFor="layout-detailed">التصميم المفصّل</Label></div>
-              </RadioGroup>
-          </CardContent></Card>
 
-          <Card><CardHeader><CardTitle className="text-lg">محتوى البوليصة</CardTitle></CardHeader><CardContent className="space-y-3">
+          {/* حجم الورق */}
+          <Card>
+            <CardHeader><CardTitle className="text-lg">حجم الورق</CardTitle></CardHeader>
+            <CardContent>
+              <RadioGroup value={policySettings.paperSize} onValueChange={(val) => handleSettingChange('paperSize', val)}>
+                {['a4','a5','label_4x6','label_4x4','label_4x2','label_3x2','label_2x3'].map(size => (
+                  <div key={size} className="flex items-center space-x-2 space-x-reverse">
+                    <RadioGroupItem value={size} id={size} />
+                    <Label htmlFor={size}>{size.replace('_','x').toUpperCase()}</Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </CardContent>
+          </Card>
+
+          {/* تصميم البوليصة */}
+          <Card>
+            <CardHeader><CardTitle className="text-lg">تصميم البوليصة</CardTitle></CardHeader>
+            <CardContent>
+              <RadioGroup value={policySettings.layout} onValueChange={(val) => handleSettingChange('layout', val)}>
+                {['default','compact','detailed'].map(layout => (
+                  <div key={layout} className="flex items-center space-x-2 space-x-reverse">
+                    <RadioGroupItem value={layout} id={`layout-${layout}`} />
+                    <Label htmlFor={`layout-${layout}`}>
+                      {layout==='default' ? 'التصميم الافتراضي' : layout==='compact' ? 'التصميم المدمج (للملصقات)' : 'التصميم المفصّل'}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </CardContent>
+          </Card>
+
+          {/* محتوى البوليصة */}
+          <Card>
+            <CardHeader><CardTitle className="text-lg">محتوى البوليصة</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
               <SwitchControl id="showCompanyLogo" label="إظهار شعار الشركة" checked={policySettings.showCompanyLogo} />
               <SwitchControl id="showCompanyName" label="إظهار اسم الشركة" checked={policySettings.showCompanyName} />
               <SwitchControl id="showCompanyAddress" label="إظهار عنوان الشركة" checked={policySettings.showCompanyAddress} />
@@ -156,34 +196,57 @@ export default function PolicySettingsPage() {
               <SwitchControl id="showItems" label="إظهار تفاصيل المنتجات" checked={policySettings.showItems} />
               <SwitchControl id="showPrice" label="إظهار السعر الإجمالي" checked={policySettings.showPrice} />
               <SwitchControl id="showBarcode" label="إظهار الباركود" checked={policySettings.showBarcode} />
-          </CardContent></Card>
+            </CardContent>
+          </Card>
 
-          <Card><CardHeader><CardTitle className="text-lg">الحقول المخصصة</CardTitle><CardDescription>أضف معلومات إضافية للبوليصة.</CardDescription></CardHeader><CardContent>
-                <CustomFieldsSection 
-                    fields={policySettings.customFields}
-                    onUpdate={handleCustomFieldUpdate}
-                    onAdd={addCustomField}
-                    onRemove={removeCustomField}
-                />
-          </CardContent></Card>
+          {/* الحقول المخصصة */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">الحقول المخصصة</CardTitle>
+              <CardDescription>أضف معلومات إضافية للبوليصة.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CustomFieldsSection 
+                fields={policySettings.customFields}
+                onChange={(newFields) => handleSettingChange('customFields', newFields)}
+              />
+            </CardContent>
+          </Card>
 
-          <Card><CardHeader><CardTitle className="text-lg">ملاحظات التذييل</CardTitle></CardHeader><CardContent>
-              <Textarea value={policySettings.footerNotes} onChange={(e) => handleSettingChange('footerNotes', e.target.value)} placeholder="اكتب ملاحظاتك هنا..." rows={4}/>
-          </CardContent></Card>
+          {/* ملاحظات التذييل */}
+          <Card>
+            <CardHeader><CardTitle className="text-lg">ملاحظات التذييل</CardTitle></CardHeader>
+            <CardContent>
+              <Textarea 
+                value={policySettings.footerNotes} 
+                onChange={(e) => handleSettingChange('footerNotes', e.target.value)} 
+                placeholder="اكتب ملاحظاتك هنا..." 
+                rows={4}
+              />
+            </CardContent>
+          </Card>
+
         </div>
 
+        {/* المعاينة الحية */}
         <div className="lg:col-span-2">
           <Card>
             <CardHeader><CardTitle className="text-lg">معاينة حية</CardTitle></CardHeader>
             <CardContent className="bg-muted p-4 sm:p-8 flex items-center justify-center overflow-auto">
-              {renderLayout()}
+              {renderPolicyPreview()}
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* زر الحفظ */}
       <div className="flex justify-start pt-6 mt-6 border-t">
-        <Button size="lg" onClick={handleSave}><Icon name="Save" className="ml-2 h-4 w-4" /> حفظ التغييرات</Button>
+        <Button size="lg" onClick={handleSave}>
+          <Icon name="Save" className="ml-2 h-4 w-4" /> حفظ التغييرات
+        </Button>
       </div>
     </div>
   );
 }
+
+    
