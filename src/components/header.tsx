@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -91,7 +92,7 @@ export function AppHeader() {
   
   const HeaderLogo = () => {
     if (headerLogo) {
-      return <Image src={headerLogo} alt="Company Logo" width={120} height={32} style={{objectFit: 'contain'}} />
+      return <Image src={headerLogo} alt={settings.login.companyName || "Company Logo"} width={120} height={32} style={{objectFit: 'contain'}} />
     }
     return <Logo />;
   }
@@ -101,7 +102,7 @@ export function AppHeader() {
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 sm:px-6">
         
         <div className="flex items-center gap-4">
-          <HeaderLogo />
+          <Link href="/dashboard"><HeaderLogo /></Link>
         </div>
 
         <nav className="hidden flex-1 items-center justify-center md:flex">

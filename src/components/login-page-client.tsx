@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -13,6 +14,7 @@ import { FacebookIcon } from '@/components/icons/facebook-icon';
 import { InstagramIcon } from '@/components/icons/instagram-icon';
 import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
 import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
 
 
 const LoginPageSkeleton = () => (
@@ -61,6 +63,13 @@ export default function LoginPageClient() {
   
   const socialLinksExist = loginSettings.socialLinks.whatsapp || loginSettings.socialLinks.instagram || loginSettings.socialLinks.facebook;
 
+  const LoginLogo = () => {
+    if (loginSettings.loginLogo) {
+        return <Image src={loginSettings.loginLogo} alt={loginSettings.companyName || "Company Logo"} width={150} height={50} style={{objectFit: 'contain'}} />
+    }
+    return <Logo />;
+  }
+
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-muted">
       {loginSettings.loginBg && (
@@ -77,11 +86,7 @@ export default function LoginPageClient() {
       >
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">
-            {loginSettings.loginLogo ? (
-                <Image src={loginSettings.loginLogo} alt="Company Logo" width={150} height={50} style={{objectFit: 'contain'}} />
-            ) : (
-                <Logo />
-            )}
+            <LoginLogo />
           </div>
           <CardTitle className="text-2xl font-bold">{loginSettings.welcomeMessage}</CardTitle>
           <CardDescription>نظام إدارة التوصيل</CardDescription>
