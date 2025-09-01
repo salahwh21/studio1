@@ -96,26 +96,42 @@ const AddOrderPage = () => {
             for (let i = 0; i < policyElements.length; i++) {
                 const element = policyElements[i] as HTMLElement;
                 
-                const canvas = await html2canvas(element, {
-                    scale: 2,
-                    useCORS: true, 
-                });
-
+                const canvas = await html2canvas(element, { scale: 2 });
                 const imgData = canvas.toDataURL('image/png');
                 
                 if (i > 0) {
                     pdf.addPage();
                 }
 
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
-                const canvasWidth = canvas.width;
-                const canvasHeight = canvas.height;
-                const ratio = canvasWidth / canvasHeight;
-                const width = pdfWidth;
-                const height = width / ratio;
+                const pdfPageWidth = pdf.internal.pageSize.getWidth();
+                const pdfPageHeight = pdf.internal.pageSize.getHeight();
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
+
+                // Determine the best orientation and scale to fit the image on the page
+                const ratio = imgWidth / imgHeight;
+                let finalWidth, finalHeight;
+
+                if (imgWidth > imgHeight) { // Landscape image
+                    finalWidth = pdfPageWidth;
+                    finalHeight = finalWidth / ratio;
+                    if (finalHeight > pdfPageHeight) {
+                        finalHeight = pdfPageHeight;
+                        finalWidth = finalHeight * ratio;
+                    }
+                } else { // Portrait or square image
+                    finalHeight = pdfPageHeight;
+                    finalWidth = finalHeight * ratio;
+                    if (finalWidth > pdfPageWidth) {
+                        finalWidth = pdfPageWidth;
+                        finalHeight = finalWidth / ratio;
+                    }
+                }
                 
-                pdf.addImage(imgData, 'PNG', 0, 0, width, height > pdfHeight ? pdfHeight : height);
+                const x = (pdfPageWidth - finalWidth) / 2;
+                const y = (pdfPageHeight - finalHeight) / 2;
+                
+                pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
             }
 
             pdf.autoPrint();

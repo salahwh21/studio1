@@ -13,13 +13,13 @@ import Icon from './icon';
 
 
 const paperSizeClasses = {
-  a4: 'w-[210mm] h-[297mm] p-8',
-  a5: 'w-[148mm] h-[210mm] p-6',
-  label_4x6: 'w-[101.6mm] h-[152.4mm] p-4 text-sm',
-  label_4x4: 'w-[101.6mm] h-[101.6mm] p-3 text-[10px] leading-tight',
-  label_4x2: 'w-[101.6mm] h-[50.8mm] p-2 text-[9px] leading-tight',
-  label_3x2: 'w-[76.2mm] h-[50.8mm] p-2 text-[8px] leading-tight',
-  label_2x3: 'w-[50.8mm] h-[76.2mm] p-2 text-[8px] leading-tight',
+  a4: 'w-[210mm] min-h-[297mm] p-8',
+  a5: 'w-[148mm] min-h-[210mm] p-6',
+  label_4x6: 'w-[101.6mm] min-h-[152.4mm] p-4 text-sm',
+  label_4x4: 'w-[101.6mm] min-h-[101.6mm] p-3 text-[10px] leading-tight',
+  label_4x2: 'w-[101.6mm] min-h-[50.8mm] p-2 text-[9px] leading-tight',
+  label_3x2: 'w-[76.2mm] min-h-[50.8mm] p-2 text-[8px] leading-tight',
+  label_2x3: 'w-[50.8mm] min-h-[76.2mm] p-2 text-[8px] leading-tight',
 };
 
 const renderCustomFields = (customFields: {label: string, value: string}[], isSmallLabel: boolean) => (
@@ -35,7 +35,7 @@ const renderCustomFields = (customFields: {label: string, value: string}[], isSm
 
 const PolicyLogo = ({ loginSettings }: { loginSettings: any }) => {
     if (loginSettings.policyLogo) {
-      return <Image src={loginSettings.policyLogo} alt={loginSettings.companyName || "Company Logo"} width={100} height={35} style={{objectFit: 'contain'}} />;
+      return <Image src={loginSettings.policyLogo} alt={loginSettings.companyName || "Company Logo"} width={100} height={35} style={{objectFit: 'contain'}} />
     }
     return <Logo />;
 };
@@ -209,9 +209,9 @@ export const PrintablePolicy = React.forwardRef<HTMLDivElement, { orders: Order[
     return (
         <div ref={ref} id="printable-area" className="bg-muted p-4 sm:p-8 flex items-start justify-center flex-wrap gap-4">
             {displayOrders.map((order, index) => (
-                <div key={order.id} className={index > 0 ? "page-break" : ""}>
+                <React.Fragment key={order.id}>
                    <Policy order={order} settings={settings} loginSettings={loginSettings}/>
-                </div>
+                </React.Fragment>
             ))}
         </div>
     );
