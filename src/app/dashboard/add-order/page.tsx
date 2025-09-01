@@ -3,6 +3,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore, Order } from '@/store/orders-store';
@@ -53,7 +54,7 @@ const AddOrderPage = () => {
   const { addOrder, deleteOrders, updateOrderField } = useOrdersStore();
   const { cities } = useAreasStore();
   const { statuses } = useStatusesStore();
-  const { settings: orderSettings } = useSettings();
+  const { settings: orderSettings, isHydrated: settingsHydrated } = useSettings();
 
   const [selectedMerchantId, setSelectedMerchantId] = useState<string>('');
   
@@ -219,6 +220,11 @@ const AddOrderPage = () => {
     
     const [regionName] = data.region.split('_');
     
+    if (!settingsHydrated) {
+        toast({ variant: 'destructive', title: 'خطأ', description: 'الإعدادات لم تحمل بعد، يرجى المحاولة بعد لحظات.' });
+        return;
+    }
+
     const newOrder: Omit<Order, 'id' | 'orderNumber'> = {
       source: 'Manual',
       referenceNumber: data.referenceNumber || '',
@@ -590,5 +596,3 @@ const AddOrderPage = () => {
 };
 
 export default AddOrderPage;
-
-    
