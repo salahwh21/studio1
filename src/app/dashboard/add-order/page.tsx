@@ -1,13 +1,13 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useRef, useContext } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useUsersStore, User } from '@/store/user-store';
+import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore, Order } from '@/store/orders-store';
-import { useAreasStore, City, Area } from '@/store/areas-store';
+import { useAreasStore } from '@/store/areas-store';
 import { useToast } from '@/hooks/use-toast';
 import { Check, ChevronsUpDown, Printer, Trash2 } from 'lucide-react';
 import { useActionState } from 'react';
@@ -31,7 +31,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useStatusesStore } from '@/store/statuses-store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useSettings } from '@/contexts/SettingsContext';
-import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 
@@ -76,7 +75,7 @@ const AddOrderPage = () => {
   
   const componentToPrintRef = useRef<HTMLDivElement>(null);
   
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const input = componentToPrintRef.current;
     if (!input) {
         toast({
@@ -97,6 +96,7 @@ const AddOrderPage = () => {
         return;
     }
 
+    const jsPDF = (await import('jspdf')).default;
     const pdf = new jsPDF({
         orientation: 'p',
         unit: 'mm',
@@ -132,7 +132,7 @@ const AddOrderPage = () => {
     defaultValues: { recipientName: '', phone: '', whatsapp: '', city: '', region: '', address: '', cod: 0, notes: '', referenceNumber: '' },
   });
 
-  const { watch, setValue, getValues, reset, trigger } = form;
+  const { watch, setValue, getValues, reset } = form;
   const selectedRegionValue = watch('region');
   const codValue = watch('cod');
   const selectedCity = watch('city');
