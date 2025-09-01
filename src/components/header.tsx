@@ -48,6 +48,26 @@ export function AppHeader() {
   const pathname = usePathname();
   const context = useSettings();
   
+  // --- RBAC Logic ---
+  const { roles } = useRolesStore();
+  // Simulate a logged-in user. In a real app, this would come from an auth context.
+  const currentUserRole = 'admin'; 
+  const userRole = roles.find(r => r.id === currentUserRole);
+  const userPermissions = userRole?.permissions || [];
+
+  const hasPermission = (permissionId: string) => {
+      if (!userPermissions) return false;
+      if (userPermissions.includes('all')) return true;
+      // Check for specific permission or wildcard group permission (e.g., 'orders:*')
+      const [group] = permissionId.split(':');
+      if (userPermissions.includes(`${group}:*`)) return true;
+      return userPermissions.includes(permissionId);
+  };
+
+  const navItems = allNavItems.filter(item => hasPermission(item.permissionId));
+  // --- End RBAC Logic ---
+
+
   if (!context || !context.isHydrated) {
     return (
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 sm:px-6">
@@ -63,24 +83,6 @@ export function AppHeader() {
   const { settings } = context;
   const headerLogo = settings.login.headerLogo;
 
-  // --- RBAC Logic ---
-  const { roles } = useRolesStore();
-  // Simulate a logged-in user. In a real app, this would come from an auth context.
-  const currentUserRole = 'supervisor'; 
-  const userRole = roles.find(r => r.id === currentUserRole);
-  const userPermissions = userRole?.permissions || [];
-
-  const hasPermission = (permissionId: string) => {
-      if (!userPermissions) return false;
-      if (userPermissions.includes('all')) return true;
-      // Check for specific permission or wildcard group permission (e.g., 'orders:*')
-      const [group] = permissionId.split(':');
-      if (userPermissions.includes(`${group}:*`)) return true;
-      return userPermissions.includes(permissionId);
-  };
-
-  const navItems = allNavItems.filter(item => hasPermission(item.permissionId));
-  // --- End RBAC Logic ---
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === href;

@@ -1,28 +1,16 @@
-
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  LayoutDashboard,
-  ShoppingCart,
-  PackagePlus,
-  Undo2,
-  Calculator,
-  Settings,
-  Wand2,
-  Map,
-  MoreHorizontal,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { useEffect, useState, useContext } from 'react';
 import { AppHeader } from '@/components/header';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from './ui/button';
-import { useEffect, useState } from 'react';
 import Icon from '@/components/icon';
 import { useRolesStore } from '@/store/roles-store';
-
+import { useSettings } from '@/contexts/SettingsContext';
 
 type NavItem = {
   href: string;
@@ -52,12 +40,13 @@ const mobileMainItems: NavItem[] = [
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const settingsContext = useSettings();
     const [isMounted, setIsMounted] = useState(false);
     
     // --- RBAC Logic ---
     const { roles } = useRolesStore();
     // Simulate a logged-in user. In a real app, this would come from an auth context.
-    const currentUserRole = 'supervisor'; 
+    const currentUserRole = 'admin'; 
     const userRole = roles.find(r => r.id === currentUserRole);
     const userPermissions = userRole?.permissions || [];
 
@@ -76,40 +65,30 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     );
     // --- End RBAC Logic ---
 
-
     useEffect(() => {
         setIsMounted(true);
-        
-        const applySettings = () => {
-            const density = localStorage.getItem('ui-density') || 'comfortable';
-            const radius = localStorage.getItem('ui-border-radius') || '0.5';
-            const stroke = localStorage.getItem('ui-icon-stroke') || '2';
-            const library = localStorage.getItem('ui-icon-library') || 'lucide';
-            
-            document.body.dataset.density = density;
-            document.documentElement.style.setProperty('--radius', `${radius}rem`);
-            document.body.dataset.iconStroke = stroke;
-            document.body.dataset.iconLibrary = library;
-        }
-        applySettings();
-        
-        window.addEventListener('storage', applySettings);
-
-        return () => {
-            window.removeEventListener('storage', applySettings);
-        }
-
     }, []);
+
+    // Apply UI settings from context to the body
+    useEffect(() => {
+        if (settingsContext?.isHydrated) {
+            const { density, borderRadius, iconStrokeWidth, iconLibrary } = settingsContext.settings.ui;
+            document.body.dataset.density = density;
+            document.documentElement.style.setProperty('--radius', `${borderRadius}rem`);
+            document.body.dataset.iconStroke = iconStrokeWidth.toString();
+            document.body.dataset.iconLibrary = iconLibrary;
+        }
+    }, [settingsContext?.isHydrated, settingsContext?.settings.ui]);
 
     const isActive = (href: string) => {
         if (href === '/dashboard') return pathname === href;
         return pathname.startsWith(href);
     };
 
-    if (!isMounted) {
+    if (!isMounted || !settingsContext?.isHydrated) {
         return (
             <div className="flex min-h-screen w-full flex-col bg-muted/40">
-                {/* Basic skeleton or loader */}
+                {/* You can put a more sophisticated loader here */}
             </div>
         );
     }

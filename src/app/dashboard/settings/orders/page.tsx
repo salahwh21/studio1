@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useContext } from 'react';
@@ -29,6 +28,7 @@ export default function OrderSettingsPage() {
     const context = useSettings();
 
     const handleSave = () => {
+        // Settings are saved to localStorage automatically by the context provider
         toast({
             title: "تم الحفظ بنجاح!",
             description: "تم تحديث إعدادات الطلبات والأرشفة.",
@@ -55,7 +55,7 @@ export default function OrderSettingsPage() {
                         <CardDescription className="mt-1">التحكم في دورة حياة الطلبات وقواعد الأرشفة التلقائية.</CardDescription>
                     </div>
                     <Button variant="outline" size="icon" asChild>
-                        <Link href="/dashboard/settings/general">
+                        <Link href="/dashboard/settings">
                             <Icon name="ArrowLeft" className="h-4 w-4" />
                         </Link>
                     </Button>
@@ -73,7 +73,7 @@ export default function OrderSettingsPage() {
                             />
                         </SettingInput>
 
-                        <SettingInput id="default-status" label="الحالة الافتراضية للطلب الجديد" description="">
+                        <SettingInput id="default-status" label="الحالة الافتراضية للطلب الجديد" description="الحالة التي يتم تعيينها تلقائيا للطلبات الجديدة.">
                              <Select
                                 value={settings.orders.defaultStatus}
                                 onValueChange={(value) => updateOrderSetting('defaultStatus', value)}
@@ -116,7 +116,7 @@ export default function OrderSettingsPage() {
                             </Select>
                         </SettingInput>
 
-                        <SettingInput id="archive-after" label="أرشفة الطلبات بعد (يوم)" description="">
+                        <SettingInput id="archive-after" label="أرشفة الطلبات بعد (يوم)" description="المدة بالأيام التي يبقى فيها الطلب قبل أرشفته.">
                             <Input
                                 id="archive-after"
                                 type="number"
