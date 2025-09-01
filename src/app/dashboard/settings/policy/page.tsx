@@ -1,244 +1,310 @@
 
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import Link from 'next/link';
+import {
+  DndContext,
+  useDraggable,
+  useDroppable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  Active,
+} from '@dnd-kit/core';
+import { restrictToWindowEdges } from '@dnd-kit/modifiers';
+import { nanoid } from 'nanoid';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/icon';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import Link from 'next/link';
-import { Input } from '@/components/ui/input';
-import { Trash2 } from 'lucide-react';
-import { produce } from 'immer';
-import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
-import { Skeleton } from '@/components/ui/skeleton';
-import { PrintablePolicy } from '@/components/printable-policy';
+import { cn } from '@/lib/utils';
 
-// --------------------- قسم الحقول المخصصة ---------------------
-interface CustomField {
-  label: string;
-  value: string;
-}
 
-const CustomFieldsSection = ({ fields, onChange, maxFields = 3 }: { fields: CustomField[], onChange: (fields: CustomField[]) => void, maxFields?: number }) => {
-  const [error, setError] = useState('');
+// Types for Editor Elements
+type ElementType = 'text' | 'image' | 'barcode' | 'rect';
+type PolicyElement = {
+  id: string;
+  type: ElementType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  content: string;
+  fontSize?: number;
+  fontWeight?: 'normal' | 'bold';
+};
 
-  const handleUpdate = (index: number, key: 'label'|'value', value: string) => {
-    const newFields = produce(fields, draft => { draft[index][key] = value });
-    onChange(newFields);
-  };
+// --------------- Canvas Components ---------------
 
-  const handleAdd = () => {
-    if (fields.length >= maxFields) {
-      setError(`لا يمكن إضافة أكثر من ${maxFields} حقول`);
-      return;
+const DraggableItem = React.forwardRef<HTMLDivElement, { element: PolicyElement, isSelected: boolean, onSelect: (id: string) => void }>(
+  ({ element, isSelected, onSelect, ...props }, ref) => {
+    const {attributes, listeners, setNodeToDrag} = useDraggable({
+      id: element.id,
+      data: { element },
+    });
+
+    const style = {
+      transform: `translate3d(${element.x}px, ${element.y}px, 0)`,
+      width: element.width,
+      height: element.height,
+    };
+    
+    const renderContent = () => {
+        switch(element.type) {
+            case 'text':
+                return <div style={{fontSize: element.fontSize, fontWeight: element.fontWeight}} className="w-full h-full overflow-hidden">{element.content || 'نص تجريبي'}</div>
+            case 'barcode':
+                return <Icon name="Barcode" className="w-full h-full" />
+            case 'image':
+                return <Icon name="Image" className="w-full h-full text-muted-foreground" />
+            case 'rect':
+                return <div className="w-full h-full border-2 border-dashed border-gray-400"></div>
+            default:
+                return null;
+        }
     }
-    setError('');
-    onChange([...fields, {label: '', value: ''}]);
-  };
 
-  const handleRemove = (index: number) => {
-    const newFields = fields.filter((_, i) => i !== index);
-    onChange(newFields);
-    setError('');
-  };
+    return (
+      <div
+        ref={setNodeToDrag}
+        style={style}
+        className={cn(
+            "absolute p-1 cursor-move bg-transparent hover:border-blue-500",
+            isSelected ? "border-2 border-blue-600 z-10" : "border border-transparent"
+        )}
+        {...listeners}
+        {...attributes}
+        onClick={(e) => {e.stopPropagation(); onSelect(element.id)}}
+      >
+        <div className="w-full h-full pointer-events-none">
+            {renderContent()}
+        </div>
+      </div>
+    );
+  }
+);
+DraggableItem.displayName = 'DraggableItem';
+
+
+const PolicyCanvas = ({ elements, onElementsChange, selectedElement, onSelectElement }: {
+    elements: PolicyElement[],
+    onElementsChange: React.Dispatch<React.SetStateAction<PolicyElement[]>>,
+    selectedElement: string | null,
+    onSelectElement: (id: string | null) => void,
+}) => {
+  const { setNodeRef, isOver } = useDroppable({ id: 'canvas' });
 
   return (
-    <div className="space-y-3">
-      {fields.map((field, index) => (
-        <div key={index} className="flex items-center gap-2 flex-wrap">
-          <Input
-            placeholder="عنوان الحقل"
-            value={field.label}
-            onChange={(e) => handleUpdate(index, 'label', e.target.value)}
-            className="h-9 flex-1 min-w-[120px]"
-            aria-label="عنوان الحقل"
-          />
-          <Input
-            placeholder="قيمة افتراضية"
-            value={field.value}
-            onChange={(e) => handleUpdate(index, 'value', e.target.value)}
-            className="h-9 flex-1 min-w-[120px]"
-            aria-label="القيمة الافتراضية"
-          />
-          <Button variant="ghost" size="icon" onClick={() => handleRemove(index)} className="h-9 w-9">
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
-        </div>
-      ))}
-
-      {error && <p className="text-sm text-destructive">{error}</p>}
-
-      {fields.length < maxFields && (
-        <Button variant="outline" size="sm" onClick={handleAdd} className="w-full flex items-center justify-center">
-          <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة حقل مخصص
-        </Button>
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'relative w-full h-[80vh] bg-white rounded-lg shadow-inner overflow-hidden',
+        isOver ? 'bg-green-50' : 'bg-gray-50'
       )}
+      onClick={() => onSelectElement(null)}
+    >
+      {elements.map(el => (
+        <DraggableItem key={el.id} element={el} isSelected={selectedElement === el.id} onSelect={onSelectElement} />
+      ))}
     </div>
   );
 };
 
 
-// --------------------- صفحة إعدادات البوليصة الكاملة مع زر PDF ---------------------
-export default function PolicySettingsPage() {
-  const { toast } = useToast();
-  const context = useSettings();
+// --------------- Toolbar Components ---------------
 
-  if (!context || !context.isHydrated) {
+const ToolboxItem = ({ type, icon, label }: { type: ElementType, icon: any, label: string }) => {
+    const {attributes, listeners, setNodeToDrag} = useDraggable({
+        id: `toolbox-${type}`,
+        data: { type }
+    });
+
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-28 w-full" />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 space-y-6">
-            <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-48 w-full" />
-          </div>
-          <div className="lg:col-span-2">
-            <Skeleton className="h-96 w-full" />
-          </div>
+        <div 
+            ref={setNodeToDrag}
+            {...listeners}
+            {...attributes}
+            className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card hover:bg-accent hover:shadow-md cursor-grab transition-all"
+        >
+            <Icon name={icon} className="h-6 w-6" />
+            <span className="text-xs font-medium">{label}</span>
         </div>
-      </div>
+    )
+}
+
+const Toolbox = () => {
+    return (
+        <Card className="shadow-lg">
+            <CardHeader><CardTitle className="text-base">الأدوات</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-2 gap-3">
+                <ToolboxItem type="text" icon="Type" label="نص" />
+                <ToolboxItem type="image" icon="Image" label="صورة/شعار" />
+                <ToolboxItem type="barcode" icon="Barcode" label="باركود" />
+                <ToolboxItem type="rect" icon="Square" label="مربع" />
+            </CardContent>
+        </Card>
     );
+};
+
+
+// --------------- Properties Panel Components ---------------
+const PropertiesPanel = ({ selectedElement, onElementUpdate }: { selectedElement: PolicyElement | null, onElementUpdate: (id: string, updates: Partial<PolicyElement>) => void }) => {
+    if (!selectedElement) {
+        return (
+            <Card className="shadow-lg h-full">
+                <CardHeader><CardTitle className="text-base">الخصائص</CardTitle></CardHeader>
+                <CardContent className="text-center text-muted-foreground pt-10">
+                    <p>حدد عنصراً لتعديل خصائصه.</p>
+                </CardContent>
+            </Card>
+        )
+    }
+
+    const handleChange = (field: keyof PolicyElement, value: any) => {
+        onElementUpdate(selectedElement.id, { [field]: value });
+    }
+
+    return (
+        <Card className="shadow-lg h-full">
+            <CardHeader><CardTitle className="text-base">خصائص العنصر</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+                {selectedElement.type === 'text' && (
+                    <>
+                        <div className="space-y-1">
+                            <Label htmlFor="content">المحتوى</Label>
+                            <Textarea id="content" value={selectedElement.content} onChange={(e) => handleChange('content', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="fontSize">حجم الخط (px)</Label>
+                            <Input id="fontSize" type="number" value={selectedElement.fontSize} onChange={(e) => handleChange('fontSize', parseInt(e.target.value, 10))} />
+                        </div>
+                    </>
+                )}
+                 <div className="space-y-1">
+                    <Label htmlFor="width">العرض (px)</Label>
+                    <Input id="width" type="number" value={selectedElement.width} onChange={(e) => handleChange('width', parseInt(e.target.value, 10))} />
+                </div>
+                 <div className="space-y-1">
+                    <Label htmlFor="height">الارتفاع (px)</Label>
+                    <Input id="height" type="number" value={selectedElement.height} onChange={(e) => handleChange('height', parseInt(e.target.value, 10))} />
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
+
+// --------------- Main Page Component ---------------
+export default function PolicyEditorPage() {
+  const { toast } = useToast();
+  const [elements, setElements] = useState<PolicyElement[]>([]);
+  const [activeDragItem, setActiveDragItem] = useState<Active | null>(null);
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  
+  const sensors = useSensors(useSensor(PointerSensor));
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragItem(event.active);
   }
 
-  const { settings, updatePolicySetting } = context;
-  const policySettings = settings.policy;
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over, delta } = event;
+    setActiveDragItem(null);
 
-  const handleSettingChange = <K extends keyof PolicySettings>(key: K, value: any) => {
-    updatePolicySetting(key, value);
-  };
+    if (!over || over.id !== 'canvas') {
+      return; // Dropped outside the canvas
+    }
+    
+    // If it's a new item from the toolbox
+    if (String(active.id).startsWith('toolbox-')) {
+        const type = active.data.current?.type as ElementType;
+        const newElement: PolicyElement = {
+            id: nanoid(),
+            type,
+            x: 100, // Position should be calculated based on drop point
+            y: 100,
+            width: type === 'text' ? 150 : 100,
+            height: type === 'text' ? 20 : 100,
+            content: type === 'text' ? 'نص جديد' : '',
+            fontSize: 14,
+            fontWeight: 'normal',
+        };
+        setElements(prev => [...prev, newElement]);
+        return;
+    }
 
-  const handleSave = () => {
-    toast({
-      title: 'تم الحفظ بنجاح!',
-      description: 'تم تحديث إعدادات بوليصة الشحن.',
-    });
-  };
+    // If it's an existing item being moved
+    setElements(prev =>
+      prev.map(el =>
+        el.id === active.id
+          ? { ...el, x: el.x + delta.x, y: el.y + delta.y }
+          : el
+      )
+    );
+  }, []);
 
-  const SwitchControl = ({ id, label, checked }: { id: keyof PolicySettings; label: string; checked: boolean; }) => (
-    <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-      <Label htmlFor={id}>{label}</Label>
-      <Switch id={id} checked={checked} onCheckedChange={(val) => handleSettingChange(id, val)} />
-    </div>
-  );
+  const handleElementUpdate = (id: string, updates: Partial<PolicyElement>) => {
+      setElements(prev => prev.map(el => el.id === id ? {...el, ...updates} : el));
+  }
+  
+  const selectedElement = elements.find(el => el.id === selectedElementId) || null;
 
   return (
     <div className="space-y-6" dir="rtl">
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between">
-          <div>
-            <CardTitle className="text-2xl font-bold flex items-center gap-2">
-              <Icon name="ReceiptText" /> إعدادات البوليصة
-            </CardTitle>
-            <CardDescription>تخصيص شكل ومحتوى بوليصة الشحن التي يتم طباعتها.</CardDescription>
-          </div>
-          <Button variant="outline" size="icon" asChild>
-            <Link href="/dashboard/settings/general"><Icon name="ArrowLeft" /></Link>
-          </Button>
-        </CardHeader>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-1 space-y-6">
-
-          {/* حجم الورق */}
-          <Card>
-            <CardHeader><CardTitle className="text-lg">حجم الورق</CardTitle></CardHeader>
-            <CardContent>
-              <RadioGroup value={policySettings.paperSize} onValueChange={(val) => handleSettingChange('paperSize', val)}>
-                {['a4','a5','label_4x6','label_4x4'].map(size => (
-                  <div key={size} className="flex items-center space-x-2 space-x-reverse">
-                    <RadioGroupItem value={size} id={size} />
-                    <Label htmlFor={size}>{size.replace('_','x').toUpperCase()}</Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </CardContent>
-          </Card>
-
-          {/* تصميم البوليصة */}
-          <Card>
-            <CardHeader><CardTitle className="text-lg">تصميم البوليصة</CardTitle></CardHeader>
-            <CardContent>
-              <RadioGroup value={policySettings.layout} onValueChange={(val) => handleSettingChange('layout', val)}>
-                {['default','compact','detailed'].map(layout => (
-                  <div key={layout} className="flex items-center space-x-2 space-x-reverse">
-                    <RadioGroupItem value={layout} id={`layout-${layout}`} />
-                    <Label htmlFor={`layout-${layout}`}>
-                      {layout==='default' ? 'التصميم الافتراضي' : layout==='compact' ? 'التصميم المدمج (للملصقات)' : 'التصميم المفصّل'}
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </CardContent>
-          </Card>
-
-          {/* محتوى البوليصة */}
-          <Card>
-            <CardHeader><CardTitle className="text-lg">محتوى البوليصة</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <SwitchControl id="showCompanyLogo" label="إظهار شعار الشركة" checked={policySettings.showCompanyLogo} />
-              <SwitchControl id="showCompanyName" label="إظهار اسم الشركة" checked={policySettings.showCompanyName} />
-              <SwitchControl id="showCompanyAddress" label="إظهار عنوان الشركة" checked={policySettings.showCompanyAddress} />
-              <Separator />
-              <SwitchControl id="showRefNumber" label="إظهار الرقم المرجعي" checked={policySettings.showRefNumber} />
-              <SwitchControl id="showItems" label="إظهار تفاصيل المنتجات" checked={policySettings.showItems} />
-              <SwitchControl id="showPrice" label="إظهار السعر الإجمالي" checked={policySettings.showPrice} />
-              <SwitchControl id="showBarcode" label="إظهار الباركود" checked={policySettings.showBarcode} />
-            </CardContent>
-          </Card>
-
-          {/* الحقول المخصصة */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">الحقول المخصصة</CardTitle>
-              <CardDescription>أضف معلومات إضافية للبوليصة.</CardDescription>
+        <Card>
+            <CardHeader className="flex flex-row items-start justify-between">
+                <div>
+                    <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                    <Icon name="Brush" /> محرر البوليصة المرئي
+                    </CardTitle>
+                    <CardDescription>قم بتصميم بوليصة الشحن الخاصة بك عبر سحب وإفلات العناصر.</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="outline">حفظ كقالب</Button>
+                    <Button><Icon name="Printer" className="ml-2"/> طباعة</Button>
+                    <Button variant="outline" size="icon" asChild>
+                        <Link href="/dashboard/settings/general"><Icon name="ArrowLeft" /></Link>
+                    </Button>
+                </div>
             </CardHeader>
-            <CardContent>
-              <CustomFieldsSection 
-                fields={policySettings.customFields}
-                onChange={(newFields) => handleSettingChange('customFields', newFields)}
-              />
-            </CardContent>
-          </Card>
+        </Card>
 
-          {/* ملاحظات التذييل */}
-          <Card>
-            <CardHeader><CardTitle className="text-lg">ملاحظات التذييل</CardTitle></CardHeader>
-            <CardContent>
-              <Textarea 
-                value={policySettings.footerNotes} 
-                onChange={(e) => handleSettingChange('footerNotes', e.target.value)} 
-                placeholder="اكتب ملاحظاتك هنا..." 
-                rows={4}
-              />
-            </CardContent>
-          </Card>
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[restrictToWindowEdges]}>
+            <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr_300px] gap-6 items-start">
+                {/* Toolbox */}
+                <div className="lg:sticky lg:top-24">
+                    <Toolbox />
+                </div>
 
-        </div>
+                {/* Canvas */}
+                <div className="w-full">
+                   <PolicyCanvas elements={elements} onElementsChange={setElements} selectedElement={selectedElementId} onSelectElement={setSelectedElementId} />
+                </div>
 
-        {/* المعاينة الحية */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader><CardTitle className="text-lg">معاينة حية</CardTitle></CardHeader>
-            <CardContent className="bg-muted p-4 sm:p-8 flex flex-col items-center justify-center overflow-auto">
-              <PrintablePolicy orders={[]} previewSettings={policySettings} />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                {/* Properties Panel */}
+                <div className="lg:sticky lg:top-24">
+                   <PropertiesPanel selectedElement={selectedElement} onElementUpdate={handleElementUpdate} />
+                </div>
+            </div>
 
-      {/* زر الحفظ */}
-      <div className="flex justify-start pt-6 mt-6 border-t">
-        <Button size="lg" onClick={handleSave}>
-          <Icon name="Save" className="ml-2 h-4 w-4" /> حفظ التغييرات
-        </Button>
-      </div>
+            <DragOverlay>
+                {activeDragItem && activeDragItem.id.toString().startsWith('toolbox-') ? (
+                    <div className="p-3 rounded-lg border bg-card shadow-lg flex flex-col items-center gap-2">
+                         <Icon name="Type" className="h-6 w-6" />
+                         <span className="text-xs font-medium">نص</span>
+                    </div>
+                ) : null}
+            </DragOverlay>
+
+        </DndContext>
     </div>
   );
 }
