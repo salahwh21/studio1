@@ -195,17 +195,18 @@ const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: 
 };
 
 export const PrintablePolicy = forwardRef<
-    { handleExportPDF: () => void },
+    { handleExportPDF: (overrideSettings?: Partial<PolicySettings>) => void },
     { orders: Order[], previewSettings?: PolicySettings }
 >(({ orders, previewSettings }, ref) => {
     const context = useSettings();
     const { toast } = useToast();
     const printAreaRef = useRef<HTMLDivElement>(null);
 
-    const settings = previewSettings || context?.settings.policy;
+    const activeSettings = previewSettings || context?.settings.policy;
     const loginSettings = context?.settings.login;
     
-    const handleExportPDF = async () => {
+    const handleExportPDF = async (overrideSettings?: Partial<PolicySettings>) => {
+        const settingsToUse = { ...activeSettings, ...overrideSettings };
         const printArea = printAreaRef.current;
         if (!printArea) {
             toast({ variant: 'destructive', title: 'خطأ في الطباعة', description: 'لا يمكن العثور على المحتوى للطباعة.' });
@@ -233,10 +234,11 @@ export const PrintablePolicy = forwardRef<
 
                 const pdfPageWidth = pdf.internal.pageSize.getWidth();
                 const pdfPageHeight = pdf.internal.pageSize.getHeight();
-                const imgWidth = canvas.width;
-                const imgHeight = canvas.height;
+                
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const ratio = canvasWidth / canvasHeight;
 
-                const ratio = imgWidth / imgHeight;
                 let finalWidth = pdfPageWidth;
                 let finalHeight = finalWidth / ratio;
 
@@ -248,11 +250,11 @@ export const PrintablePolicy = forwardRef<
                 const x = (pdfPageWidth - finalWidth) / 2;
                 const y = (pdfPageHeight - finalHeight) / 2;
                 
-                if (!isNaN(x) && !isNaN(y) && !isNaN(finalWidth) && !isNaN(finalHeight)) {
-                    pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
-                } else {
-                     throw new Error("فشلت عملية حساب أبعاد الصورة للـ PDF.");
+                 if (isNaN(finalWidth) || isNaN(finalHeight) || isNaN(x) || isNaN(y)) {
+                    throw new Error("فشلت عملية حساب أبعاد الصورة للـ PDF. قد تكون البيانات غير صالحة.");
                 }
+                
+                pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
             }
 
             pdf.autoPrint();
@@ -271,7 +273,7 @@ export const PrintablePolicy = forwardRef<
         handleExportPDF,
     }));
     
-    if (!context?.isHydrated || !settings || !loginSettings) {
+    if (!context?.isHydrated || !activeSettings || !loginSettings) {
         return <div><Skeleton className="h-[297mm] w-[210mm]" /></div>;
     }
     
@@ -286,15 +288,12 @@ export const PrintablePolicy = forwardRef<
     return (
         <div>
              <div ref={printAreaRef} id="printable-area" className="bg-muted p-4 sm:p-8 flex items-start justify-center flex-wrap gap-4">
-                {displayOrders.map((order, index) => (
+                {displayOrders.map((order) => (
                     <React.Fragment key={order.id}>
-                       <Policy order={order} settings={settings} loginSettings={loginSettings}/>
+                       <Policy order={order} settings={activeSettings} loginSettings={loginSettings}/>
                     </React.Fragment>
                 ))}
             </div>
-             <Button onClick={handleExportPDF} className="mt-4 w-full sm:w-auto flex items-center justify-center">
-                <Icon name="Printer" className="ml-2 h-4 w-4" /> تصدير PDF / طباعة
-            </Button>
         </div>
     );
 });

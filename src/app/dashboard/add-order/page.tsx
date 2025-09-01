@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -31,7 +30,9 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStatusesStore } from '@/store/statuses-store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettings, PolicySettings } from '@/contexts/SettingsContext';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 
 const orderSchema = z.object({
@@ -62,7 +63,17 @@ const AddOrderPage = () => {
   const [merchantPopoverOpen, setMerchantPopoverOpen] = useState(false);
   const [regionPopoverOpen, setRegionPopoverOpen] = useState(false);
   const [popoverStates, setPopoverStates] = useState<Record<string, boolean>>({});
-  const printablePolicyRef = useRef<{ handleExportPDF: () => void }>(null);
+  const printablePolicyRef = useRef<{ handleExportPDF: (overrideSettings?: Partial<PolicySettings>) => void }>(null);
+
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [printSettings, setPrintSettings] = useState<PolicySettings | null>(null);
+
+  useEffect(() => {
+    if (context.isHydrated) {
+        setPrintSettings(context.settings.policy);
+    }
+  }, [context.isHydrated, context.settings.policy]);
+
 
   const togglePopover = (id: string) => {
     setPopoverStates(prev => ({ ...prev, [id]: !prev[id] }));
@@ -217,19 +228,59 @@ const AddOrderPage = () => {
     return recentlyAdded.filter(o => selectedRecent.includes(o.id));
   }, [recentlyAdded, selectedRecent]);
   
-  const handlePrintClick = () => {
-    if (printablePolicyRef.current) {
-      printablePolicyRef.current.handleExportPDF();
+  const handleConfirmPrint = () => {
+    if (printablePolicyRef.current && printSettings) {
+      printablePolicyRef.current.handleExportPDF(printSettings);
+      setIsPrintDialogOpen(false);
     }
   };
 
   return (
     <div className="space-y-6">
+      <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>إعدادات الطباعة</DialogTitle>
+            <DialogDescription>اختر حجم وتصميم البوليصة قبل الطباعة.</DialogDescription>
+          </DialogHeader>
+          {printSettings && (
+            <div className="py-4 grid grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label>حجم الورق</Label>
+                <RadioGroup value={printSettings.paperSize} onValueChange={(val) => setPrintSettings(prev => prev ? {...prev, paperSize: val as PolicySettings['paperSize']} : null)}>
+                    {['a4','a5','label_4x6','label_4x4'].map(size => (
+                      <div key={size} className="flex items-center space-x-2 space-x-reverse">
+                        <RadioGroupItem value={size} id={`ps-${size}`} />
+                        <Label htmlFor={`ps-${size}`}>{size.replace('_','x').toUpperCase()}</Label>
+                      </div>
+                    ))}
+                </RadioGroup>
+              </div>
+              <div className="space-y-3">
+                 <Label>تصميم البوليصة</Label>
+                 <RadioGroup value={printSettings.layout} onValueChange={(val) => setPrintSettings(prev => prev ? {...prev, layout: val as PolicySettings['layout']} : null)}>
+                    {['default','compact','detailed'].map(layout => (
+                        <div key={layout} className="flex items-center space-x-2 space-x-reverse">
+                            <RadioGroupItem value={layout} id={`ly-${layout}`} />
+                            <Label htmlFor={`ly-${layout}`}>{layout==='default' ? 'افتراضي' : layout==='compact' ? 'مدمج' : 'مفصّل'}</Label>
+                        </div>
+                    ))}
+                 </RadioGroup>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+            <Button onClick={handleConfirmPrint}>تأكيد الطباعة</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {ordersToPrint.length > 0 && (
          <Card>
-           <CardHeader><CardTitle>طباعة البوليصات</CardTitle></CardHeader>
+           <CardHeader><CardTitle>معاينة البوليصة</CardTitle></CardHeader>
            <CardContent>
-             <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} />
+             <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} previewSettings={printSettings || undefined}/>
            </CardContent>
          </Card>
       )}
@@ -406,7 +457,7 @@ const AddOrderPage = () => {
                 <div className="flex items-center justify-between">
                     <CardTitle>طلبات مضافة حديثاً ({recentlyAdded.length})</CardTitle>
                     <div className="flex items-center gap-2">
-                         <Button variant="outline" size="sm" disabled={selectedRecent.length === 0} onClick={handlePrintClick}><Printer className="h-4 w-4 ml-2"/>طباعة بوليصة</Button>
+                         <Button variant="outline" size="sm" disabled={selectedRecent.length === 0} onClick={() => setIsPrintDialogOpen(true)}><Printer className="h-4 w-4 ml-2"/>طباعة بوليصة</Button>
                          <Button variant="destructive" size="sm" disabled={selectedRecent.length === 0} onClick={handleDeleteSelected}><Trash2 className="h-4 w-4 ml-2"/>حذف المحدد</Button>
                     </div>
                 </div>
