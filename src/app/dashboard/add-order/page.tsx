@@ -44,7 +44,7 @@ type OrderFormValues = z.infer<typeof orderSchema>;
 const AddOrderPage = () => {
   const { toast } = useToast();
   const { users } = useUsersStore();
-  const { orders, addOrder, deleteOrders } = useOrdersStore();
+  const { addOrder, deleteOrders, updateOrderField } = useOrdersStore();
   const { cities } = useAreasStore();
   const [isPending, startTransition] = useTransition();
 
@@ -89,6 +89,12 @@ const AddOrderPage = () => {
     const itemPrice = codValue - deliveryFee;
     return { deliveryFee, itemPrice };
   }, [codValue, selectedCity]);
+
+  const handleUpdateRecentlyAdded = (orderId: string, field: keyof Order, value: any) => {
+    setRecentlyAdded(prev => prev.map(o => o.id === orderId ? {...o, [field]: value} : o));
+    // Also update the global store
+    updateOrderField(orderId, field, value);
+  };
   
   const handleAddOrder = (data: OrderFormValues) => {
     const merchant = users.find(u => u.id === selectedMerchantId);
@@ -321,31 +327,50 @@ const AddOrderPage = () => {
                  <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-12"><Checkbox onCheckedChange={handleSelectAllRecent} /></TableHead>
-                            <TableHead>#</TableHead>
-                            <TableHead>رقم الطلب</TableHead>
-                            <TableHead>المتجر</TableHead>
-                            <TableHead>المستلم</TableHead>
-                            <TableHead>الهاتف</TableHead>
-                            <TableHead>المنطقة</TableHead>
-                            <TableHead>المدينة</TableHead>
-                            <TableHead>قيمة التحصيل</TableHead>
-                            <TableHead>الحالة</TableHead>
+                            <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAllRecent} /></TableHead>
+                            <TableHead className="text-center border-l">#</TableHead>
+                            <TableHead className="text-center border-l">رقم الطلب</TableHead>
+                            <TableHead className="text-center border-l">المتجر</TableHead>
+                            <TableHead className="text-center border-l w-48">المستلم</TableHead>
+                            <TableHead className="text-center border-l w-40">الهاتف</TableHead>
+                            <TableHead className="text-center border-l">المنطقة</TableHead>
+                            <TableHead className="text-center border-l">المدينة</TableHead>
+                            <TableHead className="text-center border-l w-32">قيمة التحصيل</TableHead>
+                            <TableHead className="text-center">الحالة</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {recentlyAdded.map((order, index) => (
                              <TableRow key={order.id}>
-                                <TableCell><Checkbox checked={selectedRecent.includes(order.id)} onCheckedChange={() => handleSelectRecent(order.id)} /></TableCell>
-                                <TableCell>{index+1}</TableCell>
-                                <TableCell>{order.id}</TableCell>
-                                <TableCell>{order.merchant}</TableCell>
-                                <TableCell>{order.recipient}</TableCell>
-                                <TableCell>{order.phone}</TableCell>
-                                <TableCell>{order.region}</TableCell>
-                                <TableCell>{order.city}</TableCell>
-                                <TableCell>{order.cod.toFixed(2)}</TableCell>
-                                <TableCell>{order.status}</TableCell>
+                                <TableCell className="text-center border-l"><Checkbox checked={selectedRecent.includes(order.id)} onCheckedChange={() => handleSelectRecent(order.id)} /></TableCell>
+                                <TableCell className="text-center border-l">{index+1}</TableCell>
+                                <TableCell className="text-center border-l">{order.id}</TableCell>
+                                <TableCell className="text-center border-l">{order.merchant}</TableCell>
+                                <TableCell className="text-center border-l">
+                                    <Input
+                                        value={order.recipient}
+                                        onChange={(e) => handleUpdateRecentlyAdded(order.id, 'recipient', e.target.value)}
+                                        className="h-8 text-center"
+                                    />
+                                </TableCell>
+                                <TableCell className="text-center border-l">
+                                     <Input
+                                        value={order.phone}
+                                        onChange={(e) => handleUpdateRecentlyAdded(order.id, 'phone', e.target.value)}
+                                        className="h-8 text-center"
+                                    />
+                                </TableCell>
+                                <TableCell className="text-center border-l">{order.region}</TableCell>
+                                <TableCell className="text-center border-l">{order.city}</TableCell>
+                                <TableCell className="text-center border-l">
+                                    <Input
+                                        type="number"
+                                        value={order.cod}
+                                        onChange={(e) => handleUpdateRecentlyAdded(order.id, 'cod', parseFloat(e.target.value) || 0)}
+                                        className="h-8 text-center"
+                                    />
+                                </TableCell>
+                                <TableCell className="text-center">{order.status}</TableCell>
                              </TableRow>
                         ))}
                     </TableBody>
@@ -359,5 +384,3 @@ const AddOrderPage = () => {
 };
 
 export default AddOrderPage;
-
-    

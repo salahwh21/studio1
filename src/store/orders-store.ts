@@ -1,5 +1,7 @@
 
 import { create } from 'zustand';
+import { immer } from 'zustand/middleware/immer';
+
 
 // Mock Data - This will be the initial state of our store
 const initialOrders = Array.from({ length: 85 }, (_, i) => ({
@@ -29,23 +31,38 @@ type OrdersState = {
   orders: Order[];
   setOrders: (orders: Order[]) => void;
   updateOrderStatus: (orderId: string, newStatus: Order['status']) => void;
+  updateOrderField: (orderId: string, field: keyof Order, value: any) => void;
   deleteOrders: (orderIds: string[]) => void;
   addOrder: (order: Order) => void;
   refreshOrders: () => void;
 };
 
 // Create the store
-export const useOrdersStore = create<OrdersState>((set) => ({
+export const useOrdersStore = create<OrdersState>()(immer((set) => ({
   orders: initialOrders,
   
   setOrders: (orders) => set({ orders }),
 
   updateOrderStatus: (orderId, newStatus) =>
-    set((state) => ({
-      orders: state.orders.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      ),
-    })),
+    set((state) => {
+      const order = state.orders.find(o => o.id === orderId);
+      if (order) {
+        order.status = newStatus;
+      }
+    }),
+
+  updateOrderField: (orderId, field, value) => 
+    set((state) => {
+        const order = state.orders.find(o => o.id === orderId);
+        if(order) {
+            (order as any)[field] = value;
+            if(field === 'cod') {
+                const deliveryFee = order.city === 'عمان' ? 2.5 : 3.5;
+                order.itemPrice = value - deliveryFee;
+                order.deliveryFee = deliveryFee;
+            }
+        }
+    }),
 
   deleteOrders: (orderIds) =>
     set((state) => ({
@@ -58,4 +75,4 @@ export const useOrdersStore = create<OrdersState>((set) => ({
     })),
     
   refreshOrders: () => set({ orders: initialOrders }),
-}));
+})));
