@@ -276,14 +276,9 @@ const AddOrderPage = () => {
         </DialogContent>
       </Dialog>
       
-      {ordersToPrint.length > 0 && (
-         <Card>
-           <CardHeader><CardTitle>معاينة البوليصة</CardTitle></CardHeader>
-           <CardContent>
-             <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} previewSettings={printSettings || undefined}/>
-           </CardContent>
-         </Card>
-      )}
+      <div className="hidden">
+        {ordersToPrint.length > 0 && <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} />}
+      </div>
 
       <Card>
         <CardHeader>
