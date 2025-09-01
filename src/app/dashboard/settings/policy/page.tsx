@@ -43,6 +43,7 @@ import {
     ChevronUp,
     ChevronDown,
     Minus,
+    CheckSquare,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -175,14 +176,14 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: 
       {...listeners}
     >
       <button
-        className="no-print absolute -top-2 -right-2 z-20 h-5 w-5 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center hover:bg-primary/80 transition-colors"
+        className="no-print absolute -top-2 -right-2 z-20 h-6 w-6 rounded-md bg-background text-primary shadow-md flex items-center justify-center hover:bg-primary/10 transition-colors"
         onClick={(e) => {
           e.stopPropagation();
           onSelect(element.id);
         }}
         aria-label="Select element"
       >
-        <Icon name="Settings" className="h-3 w-3" />
+        {selected ? <Icon name="CheckSquare" className="h-4 w-4" /> : <Icon name="Square" className="h-4 w-4" />}
       </button>
       <Resizable
           size={{ width: element.width, height: element.height }}
@@ -388,13 +389,15 @@ export default function PolicyEditorPage() {
     );
   }, []);
   
-  const handleSelect = (id: string | null) => {
+  const handleSelect = useCallback((id: string | null) => {
     if (id) {
-        setSelectedIds([id]);
+        // Toggle selection for the clicked element, deselecting others
+        setSelectedIds(prev => prev.includes(id) ? [] : [id]);
     } else {
+        // Deselect all if clicking on the canvas
         setSelectedIds([]);
     }
-  };
+  }, []);
 
   const handleResizeStop = useCallback((id: string, w: number, h: number) => {
     setElements((p) => p.map((el) => (el.id === id ? { ...el, width: snapToGrid(w), height: snapToGrid(h) } : el)));
@@ -778,4 +781,3 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
-
