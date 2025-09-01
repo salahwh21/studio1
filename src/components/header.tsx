@@ -47,7 +47,14 @@ export function AppHeader() {
   const { setTheme, theme } = useTheme();
   const pathname = usePathname();
   const context = useSettings();
-  const headerLogo = context?.settings.login.headerLogo;
+  
+  if (!context || !context.isHydrated) {
+    // Render a skeleton or a placeholder while settings are loading
+    return <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 sm:px-6"></header>;
+  }
+
+  const { settings } = context;
+  const headerLogo = settings.login.headerLogo;
 
   // --- RBAC Logic ---
   const { roles } = useRolesStore();

@@ -43,6 +43,17 @@ type OrdersState = {
   refreshOrders: () => void;
 };
 
+const getOrderPrefix = () => {
+    if (typeof window !== 'undefined') {
+        const settings = localStorage.getItem('comprehensiveAppSettings');
+        if (settings) {
+            return JSON.parse(settings).orders.orderPrefix || 'ORD-';
+        }
+    }
+    return 'ORD-';
+};
+
+
 export const useOrdersStore = create<OrdersState>()(immer((set, get) => ({
   orders: initialOrdersWithNumbers,
   nextOrderNumber: initialOrderNumber + 1,
@@ -84,10 +95,7 @@ export const useOrdersStore = create<OrdersState>()(immer((set, get) => ({
   addOrder: (orderData) => {
     let newOrder: Order | null = null;
     set((state) => {
-        const orderPrefix = localStorage.getItem('comprehensiveAppSettings') 
-            ? JSON.parse(localStorage.getItem('comprehensiveAppSettings')!).orders.orderPrefix 
-            : 'ORD-';
-        
+        const orderPrefix = getOrderPrefix();
         const newOrderNumber = state.nextOrderNumber;
         newOrder = {
             ...orderData,

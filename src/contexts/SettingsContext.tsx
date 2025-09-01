@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
@@ -77,6 +76,22 @@ interface UiSettings {
   iconLibrary: string;
 }
 
+// Policy
+export interface PolicySettings {
+    paperSize: 'a4' | 'a5' | 'label_4x6' | 'label_4x4' | 'label_4x2' | 'label_3x2' | 'label_2x3';
+    layout: 'default' | 'compact' | 'detailed';
+    showCompanyLogo: boolean;
+    showCompanyName: boolean;
+    showCompanyAddress: boolean;
+    showRefNumber: boolean;
+    showItems: boolean;
+    showPrice: boolean;
+    showBarcode: boolean;
+    footerNotes: string;
+    customFields: {label: string, value: string}[];
+}
+
+
 // Main settings structure
 interface ComprehensiveSettings {
   notifications: NotificationsSettings;
@@ -84,6 +99,7 @@ interface ComprehensiveSettings {
   login: LoginSettings;
   regional: RegionalSettings;
   ui: UiSettings;
+  policy: PolicySettings;
 }
 
 // 2. Define the context shape
@@ -95,6 +111,8 @@ interface SettingsContextType {
   updateSocialLink: <K extends keyof SocialLinks>(key: K, value: SocialLinks[K]) => void;
   updateRegionalSetting: <K extends keyof RegionalSettings>(key: K, value: RegionalSettings[K]) => void;
   updateUiSetting: <K extends keyof UiSettings>(key: K, value: UiSettings[K]) => void;
+  updatePolicySetting: <K extends keyof PolicySettings>(key: K, value: PolicySettings[K]) => void;
+  setPolicySettings: (newPolicySettings: PolicySettings) => void;
   isHydrated: boolean;
 }
 
@@ -155,6 +173,19 @@ const defaultSettingsData: ComprehensiveSettings = {
     borderRadius: '0.5',
     iconStrokeWidth: 2,
     iconLibrary: 'lucide',
+  },
+  policy: {
+      paperSize: 'a4',
+      layout: 'default',
+      showCompanyLogo: true,
+      showCompanyName: true,
+      showCompanyAddress: true,
+      showRefNumber: true,
+      showItems: true,
+      showPrice: true,
+      showBarcode: true,
+      footerNotes: 'شكراً لثقتكم بخدماتنا. يمكنكم التواصل معنا على 079xxxxxxx لأي استفسار.',
+      customFields: [],
   }
 };
 
@@ -192,6 +223,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           ui: {
             ...defaultSettingsData.ui,
             ...(savedSettings.ui || {}),
+          },
+           policy: {
+            ...defaultSettingsData.policy,
+            ...(savedSettings.policy || {}),
           }
         };
         setSettings(mergedSettings);
@@ -240,7 +275,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const updateLoginSetting = (key: keyof LoginSettings, value: any) => updateNestedSetting('login', key, value);
   const updateRegionalSetting = (key: keyof RegionalSettings, value: any) => updateNestedSetting('regional', key, value);
   const updateUiSetting = (key: keyof UiSettings, value: any) => updateNestedSetting('ui', key, value);
+  const updatePolicySetting = (key: keyof PolicySettings, value: any) => updateNestedSetting('policy', key, value);
   
+  const setPolicySettings = (newPolicySettings: PolicySettings) => setSetting('policy', newPolicySettings);
+
   const updateSocialLink = (key: keyof SocialLinks, value: string) => {
       setSettings(prev => ({
           ...prev,
@@ -254,7 +292,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       }))
   }
 
-  const value = { settings, setSetting, updateOrderSetting, updateLoginSetting, updateSocialLink, updateRegionalSetting, updateUiSetting, isHydrated };
+  const value = { settings, setSetting, updateOrderSetting, updateLoginSetting, updateSocialLink, updateRegionalSetting, updateUiSetting, updatePolicySetting, setPolicySettings, isHydrated };
 
   return (
     <SettingsContext.Provider value={value}>

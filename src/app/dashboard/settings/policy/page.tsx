@@ -16,18 +16,9 @@ import { cn } from '@/lib/utils';
 import { Logo } from '@/components/logo';
 import { Input } from '@/components/ui/input';
 import { Trash2 } from 'lucide-react';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
 import { PrintablePolicy } from '@/components/printable-policy';
-
-const paperSizeClasses = {
-  a4: 'w-[210mm] h-[297mm] p-8',
-  a5: 'w-[148mm] h-[210mm] p-6',
-  label_4x6: 'w-[101.6mm] h-[152.4mm] p-4 text-sm',
-  label_4x4: 'w-[101.6mm] h-[101.6mm] p-3 text-[10px] leading-tight',
-  label_4x2: 'w-[101.6mm] h-[50.8mm] p-2 text-[9px] leading-tight',
-  label_3x2: 'w-[76.2mm] h-[50.8mm] p-2 text-[8px] leading-tight',
-  label_2x3: 'w-[50.8mm] h-[76.2mm] p-2 text-[8px] leading-tight',
-};
+import { Skeleton } from '@/components/ui/skeleton';
 
 const CustomFieldsSection = ({ fields, onUpdate, onAdd, onRemove }: { fields: {label: string, value: string}[], onUpdate: (index: number, field: 'label'|'value', value: string) => void, onAdd: () => void, onRemove: (index: number) => void }) => (
     <div className="space-y-2">
@@ -63,14 +54,27 @@ export default function PolicySettingsPage() {
   const { toast } = useToast();
   const context = useSettings();
   
-  if (!context) {
-      return <div>Loading...</div>; // Or a skeleton loader
+  if (!context || !context.isHydrated) {
+      return (
+        <div className="space-y-6">
+            <Skeleton className="h-28 w-full" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-1 space-y-6">
+                    <Skeleton className="h-48 w-full" />
+                    <Skeleton className="h-48 w-full" />
+                </div>
+                <div className="lg:col-span-2">
+                     <Skeleton className="h-96 w-full" />
+                </div>
+            </div>
+        </div>
+      );
   }
   
-  const { settings, updatePolicySetting, setPolicySettings } = context;
+  const { settings, updatePolicySetting } = context;
   const policySettings = settings.policy;
 
-  const handleSettingChange = <K extends keyof typeof policySettings>(key: K, value: any) => {
+  const handleSettingChange = <K extends keyof PolicySettings>(key: K, value: any) => {
     updatePolicySetting(key, value);
   };
   
@@ -93,13 +97,15 @@ export default function PolicySettingsPage() {
 
 
   const handleSave = () => {
+    // The settings are saved automatically by the context,
+    // so this button is for user feedback and confirmation.
     toast({
       title: 'تم الحفظ بنجاح!',
       description: 'تم تحديث إعدادات بوليصة الشحن.',
     });
   };
 
-  const SwitchControl = ({ id, label, checked }: { id: keyof typeof policySettings; label: string; checked: boolean; }) => (
+  const SwitchControl = ({ id, label, checked }: { id: keyof PolicySettings; label: string; checked: boolean; }) => (
     <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
       <Label htmlFor={id}>{label}</Label>
       <Switch id={id} checked={checked} onCheckedChange={(val) => handleSettingChange(id, val)} />

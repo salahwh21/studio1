@@ -3,6 +3,7 @@
 
 import { useState, useMemo, useEffect, useRef, useContext } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useUsersStore, User } from '@/store/user-store';
 import { useOrdersStore, Order } from '@/store/orders-store';
@@ -12,9 +13,6 @@ import { Check, ChevronsUpDown, Printer, Trash2 } from 'lucide-react';
 import { useActionState } from 'react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
 import { PrintablePolicy } from '@/components/printable-policy';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -77,43 +75,7 @@ const AddOrderPage = () => {
   const componentToPrintRef = useRef(null);
   
   const handlePrint = () => {
-    const input = componentToPrintRef.current;
-    if (!input) return;
-
-    html2canvas(input, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: null,
-    }).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        });
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const ratio = canvasWidth / canvasHeight;
-        const widthInPdf = pdfWidth;
-        const heightInPdf = widthInPdf / ratio;
-
-        const ordersToPrint = recentlyAdded.filter(o => selectedRecent.includes(o.id));
-        let y = 0;
-
-        for (let i = 0; i < ordersToPrint.length; i++) {
-             if (i > 0) {
-                 pdf.addPage();
-            }
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, heightInPdf);
-        }
-
-        const pdfBlob = pdf.output('blob');
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        window.open(pdfUrl);
-        URL.revokeObjectURL(pdfUrl);
-    });
+    window.print();
   }
 
   const form = useForm<OrderFormValues>({
@@ -208,7 +170,6 @@ const AddOrderPage = () => {
     }
     
     const [regionName] = data.region.split('_');
-    const orderNumber = nextOrderNumber;
     
     const newOrder: Omit<Order, 'id' | 'orderNumber'> = {
       source: 'Manual',
@@ -256,10 +217,8 @@ const AddOrderPage = () => {
 
   return (
     <div className="space-y-6">
-       <div className="hidden">
-            <div ref={componentToPrintRef}>
-                <PrintablePolicy orders={ordersToPrint} />
-            </div>
+       <div className="hidden print:block">
+            <PrintablePolicy ref={componentToPrintRef} orders={ordersToPrint} />
        </div>
 
       <Card>

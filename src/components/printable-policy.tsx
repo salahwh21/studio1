@@ -1,11 +1,12 @@
 
 'use client';
 
-import React, { useContext } from 'react';
+import React from 'react';
 import type { Order } from '@/store/orders-store';
 import { Logo } from '@/components/logo';
 import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
 import { cn } from '@/lib/utils';
+import { Skeleton } from './ui/skeleton';
 
 const BarcodeIcon = () => (
   <svg viewBox="0 0 120 30" className="h-10 w-24">
@@ -196,8 +197,8 @@ export const PrintablePolicy = React.forwardRef<HTMLDivElement, { orders: Order[
     const context = useSettings();
     const settings = previewSettings || context?.settings.policy;
 
-    if (!settings) {
-        return <div ref={ref}>Loading settings...</div>;
+    if (!context?.isHydrated || !settings) {
+        return <div ref={ref}><Skeleton className="h-[297mm] w-[210mm]" /></div>;
     }
     
     // Create a dummy order for preview if no orders are passed
@@ -209,9 +210,9 @@ export const PrintablePolicy = React.forwardRef<HTMLDivElement, { orders: Order[
     }];
 
     return (
-        <div ref={ref} className="bg-muted p-4 sm:p-8 flex items-start justify-center flex-wrap gap-4">
-            {displayOrders.map((order) => (
-                <div key={order.id} className="page-break">
+        <div ref={ref} id="printable-area" className="bg-muted p-4 sm:p-8 flex items-start justify-center flex-wrap gap-4">
+            {displayOrders.map((order, index) => (
+                <div key={order.id} className={index > 0 ? "page-break" : ""}>
                    <Policy order={order} settings={settings} />
                 </div>
             ))}
