@@ -14,7 +14,7 @@ import {
   PointerSensor,
   Active,
 } from '@dnd-kit/core';
-import { restrictToWindowEdges, createSnapModifier } from '@dnd-kit/modifiers';
+import { createSnapModifier } from '@dnd-kit/modifiers';
 import { nanoid } from 'nanoid';
 import { Resizable } from 're-resizable';
 
@@ -35,11 +35,14 @@ import {
     AlignVerticalJustifyCenter,
     AlignVerticalJustifyEnd,
     AlignHorizontalDistributeCenter,
-    AlignVerticalDistributeCenter
+    AlignVerticalDistributeCenter,
+    Circle,
+    Minus,
+    Triangle
 } from 'lucide-react';
 
 // ---------- Types ----------
-type ElementType = 'text' | 'image' | 'barcode' | 'rect';
+type ElementType = 'text' | 'image' | 'barcode' | 'rect' | 'circle' | 'line' | 'triangle';
 type FontWeight = 'normal' | 'bold';
 
 type PolicyElement = {
@@ -105,6 +108,45 @@ function ElementContent({ el }: { el: PolicyElement }) {
         borderWidth: el.borderWidth ?? 2,
         opacity: el.opacity ?? 1,
       }}
+    />
+  );
+  if (el.type === 'circle') return (
+    <div
+        style={{
+        width: '100%',
+        height: '100%',
+        backgroundColor: el.color ?? '#6b7280',
+        borderRadius: '50%',
+        opacity: el.opacity ?? 1,
+        }}
+    />
+  );
+  if (el.type === 'line') return (
+    <div
+        style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        }}
+    >
+        <div style={{
+            width: '100%',
+            height: el.borderWidth ?? 2,
+            backgroundColor: el.borderColor ?? '#6b7280',
+            opacity: el.opacity ?? 1,
+        }}/>
+    </div>
+  );
+  if (el.type === 'triangle') return (
+    <div
+        style={{
+            width: '100%',
+            height: '100%',
+            backgroundColor: el.color ?? '#6b7280',
+            clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
+            opacity: el.opacity ?? 1,
+        }}
     />
   );
   return null;
@@ -234,14 +276,27 @@ export default function PolicyEditorPage() {
   const sensors = useSensors(useSensor(PointerSensor));
 
   const addElementAt = useCallback((type: ElementType, x: number, y: number) => {
-    const el: PolicyElement = {
-      id: nanoid(), type, x: snapToGrid(x), y: snapToGrid(y),
-      width: type === 'text' ? 160 : 100, height: type === 'text' ? 32 : 100,
-      content: type === 'text' ? 'نص جديد' : '', fontSize: 14, fontWeight: 'normal',
-      color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1,
-    };
-    setElements((p) => [...p, el]);
-    setSelectedIds([el.id]);
+    let newElement: PolicyElement;
+    switch(type) {
+        case 'circle':
+            newElement = { id: nanoid(), type, x: snapToGrid(x), y: snapToGrid(y), width: 50, height: 50, content: '', color: '#000000', opacity: 1 };
+            break;
+        case 'line':
+            newElement = { id: nanoid(), type, x: snapToGrid(x), y: snapToGrid(y), width: 200, height: 2, content: '', borderColor: '#000000', borderWidth: 2, opacity: 1 };
+            break;
+        case 'triangle':
+            newElement = { id: nanoid(), type, x: snapToGrid(x), y: snapToGrid(y), width: 50, height: 50, content: '', color: '#000000', opacity: 1 };
+            break;
+        default:
+            newElement = {
+                id: nanoid(), type, x: snapToGrid(x), y: snapToGrid(y),
+                width: type === 'text' ? 160 : 100, height: type === 'text' ? 32 : 100,
+                content: type === 'text' ? 'نص جديد' : '', fontSize: 14, fontWeight: 'normal',
+                color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1,
+            };
+    }
+    setElements((p) => [...p, newElement]);
+    setSelectedIds([newElement.id]);
   }, []);
 
   const handleDragStart = useCallback((e: DragStartEvent) => setActiveDrag(e.active), []);
@@ -407,35 +462,8 @@ export default function PolicyEditorPage() {
         </Card>
 
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[createSnapModifier(GRID_SIZE)]}>
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
-                <div className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>لوحة التصميم</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex-grow w-full bg-muted p-8 rounded-lg overflow-auto flex items-center justify-center min-h-[70vh]">
-                            <div data-droppable-id="canvas" className="relative bg-white rounded-md shadow-inner" style={{ ...paperDimensions }} onClick={() => setSelectedIds([])}>
-                                <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
-                                    backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
-                                    backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)`,
-                                    backgroundRepeat: 'repeat',
-                                }} />
-                                <div className="absolute border-2 border-dashed border-red-400/50 pointer-events-none" style={{
-                                    top: `${mmToPx(margins.top)}px`, right: `${mmToPx(margins.right)}px`,
-                                    bottom: `${mmToPx(margins.bottom)}px`, left: `${mmToPx(margins.left)}px`,
-                                }}/>
-                                {elements.map((el) => (
-                                    <DraggableItem key={el.id} element={el} selected={selectedIds.includes(el.id)} onSelect={handleSelect}
-                                        onResizeStop={handleResizeStop}
-                                        onResize={(id, w, h) => handleUpdateElement(id, { width: w, height: h })}
-                                    />
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                 <div className="space-y-6 lg:sticky lg:top-24">
+            <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
+                <div className="space-y-6 lg:sticky lg:top-24">
                      <Card>
                         <CardHeader><CardTitle>إعدادات البوليصة</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
@@ -470,12 +498,41 @@ export default function PolicyEditorPage() {
                             <ToolboxItem type="image" label="صورة" icon="Image" />
                             <ToolboxItem type="barcode" label="باركود" icon="Barcode" />
                             <ToolboxItem type="rect" label="مربع" icon="Square" />
+                            <ToolboxItem type="circle" label="دائرة" icon="Circle" />
+                            <ToolboxItem type="line" label="خط" icon="Minus" />
+                            <ToolboxItem type="triangle" label="مثلث" icon="Triangle" />
                         </CardContent>
                     </Card>
                     <Card>
                         <CardHeader><CardTitle>الخصائص</CardTitle></CardHeader>
                         <CardContent>
                             <PropertiesPanel selectedElement={selectedElement} onUpdate={handleUpdateElement} onDelete={handleDeleteElement} />
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>لوحة التصميم</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-grow w-full bg-muted p-8 rounded-lg overflow-auto flex items-center justify-center min-h-[70vh]">
+                            <div data-droppable-id="canvas" className="relative bg-white rounded-md shadow-inner" style={{ ...paperDimensions }} onClick={() => setSelectedIds([])}>
+                                <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
+                                    backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
+                                    backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)`,
+                                    backgroundRepeat: 'repeat',
+                                }} />
+                                <div className="absolute border-2 border-dashed border-red-400/50 pointer-events-none" style={{
+                                    top: `${mmToPx(margins.top)}px`, right: `${mmToPx(margins.right)}px`,
+                                    bottom: `${mmToPx(margins.bottom)}px`, left: `${mmToPx(margins.left)}px`,
+                                }}/>
+                                {elements.map((el) => (
+                                    <DraggableItem key={el.id} element={el} selected={selectedIds.includes(el.id)} onSelect={handleSelect}
+                                        onResizeStop={handleResizeStop}
+                                        onResize={(id, w, h) => handleUpdateElement(id, { width: w, height: h })}
+                                    />
+                                ))}
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
