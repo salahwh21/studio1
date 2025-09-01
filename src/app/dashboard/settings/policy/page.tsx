@@ -35,7 +35,11 @@ import {
     AlignVerticalDistributeCenter,
     Save,
     RectangleHorizontal,
-    Square
+    Square,
+    BringToFront,
+    SendToBack,
+    ChevronUp,
+    ChevronDown,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -53,6 +57,7 @@ type PolicyElement = {
   width: number;
   height: number;
   content: string;
+  zIndex: number;
   fontSize?: number;
   fontWeight?: FontWeight;
   color?: string;
@@ -154,7 +159,7 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: 
     width: element.width,
     height: element.height,
     cursor: 'grab',
-    zIndex: selected ? 50 : 20,
+    zIndex: element.zIndex,
     outline: selected ? '2px solid hsl(var(--primary))' : 'none',
     outlineOffset: '2px',
     visibility: isDragging ? 'hidden' : 'visible',
@@ -193,11 +198,12 @@ const ToolboxItem = ({ tool, onClick }: { tool: typeof toolboxItems[0]; onClick:
 };
 
 // ---------- Properties Panel ----------
-const PropertiesPanel = ({ selectedElementId, elements, onUpdate, onDelete }: { 
+const PropertiesPanel = ({ selectedElementId, elements, onUpdate, onDelete, onArrange }: { 
     selectedElementId: string | null;
     elements: PolicyElement[];
     onUpdate: (id: string, updates: Partial<PolicyElement>) => void; 
     onDelete: (id: string) => void;
+    onArrange: (id: string, direction: 'front' | 'back' | 'forward' | 'backward') => void;
 }) => {
   const selectedElement = useMemo(() => {
     return elements.find(el => el.id === selectedElementId) ?? null;
@@ -276,6 +282,16 @@ const PropertiesPanel = ({ selectedElementId, elements, onUpdate, onDelete }: {
       
       <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={selectedElement.opacity ?? 1} onChange={(e) => handleChange('opacity', parseFloat(e.target.value))} /></div>
 
+      <div className="space-y-2">
+        <Label>الترتيب</Label>
+        <div className="grid grid-cols-4 gap-1">
+            <Button variant="outline" size="icon" onClick={() => onArrange(selectedElement.id, 'back')}><SendToBack/></Button>
+            <Button variant="outline" size="icon" onClick={() => onArrange(selectedElement.id, 'backward')}><ChevronDown/></Button>
+            <Button variant="outline" size="icon" onClick={() => onArrange(selectedElement.id, 'forward')}><ChevronUp/></Button>
+            <Button variant="outline" size="icon" onClick={() => onArrange(selectedElement.id, 'front')}><BringToFront/></Button>
+        </div>
+      </div>
+
       <Button variant="destructive" onClick={() => onDelete(selectedElement.id)} className="w-full"><Icon name="Trash2" className="ml-2" /> حذف العنصر</Button>
     </div>
   );
@@ -320,6 +336,7 @@ export default function PolicyEditorPage() {
         width: tool.defaultWidth,
         height: tool.defaultHeight,
         content: tool.content,
+        zIndex: elements.length,
         fontSize: 14,
         fontWeight: 'normal',
         color: '#000000',
@@ -330,7 +347,7 @@ export default function PolicyEditorPage() {
     };
     setElements((prev) => [...prev, newElement]);
     setSelectedIds([newElement.id]);
-  }, []);
+  }, [elements]);
 
   const handleDragEnd = useCallback((e: DragEndEvent) => {
     const { active, delta } = e;
@@ -439,6 +456,47 @@ export default function PolicyEditorPage() {
           }
           return newElements;
       });
+  };
+
+  const handleArrange = (id: string, direction: 'front' | 'back' | 'forward' | 'backward') => {
+    setElements(prevElements => {
+        const sorted = [...prevElements].sort((a, b) => a.zIndex - b.zIndex);
+        const currentIndex = sorted.findIndex(el => el.id === id);
+        if (currentIndex === -1) return prevElements;
+
+        let newElements = [...prevElements];
+        
+        switch (direction) {
+            case 'front':
+                const maxZ = Math.max(...newElements.map(el => el.zIndex));
+                newElements.find(el => el.id === id)!.zIndex = maxZ + 1;
+                break;
+            case 'back':
+                 const minZ = Math.min(...newElements.map(el => el.zIndex));
+                newElements.find(el => el.id === id)!.zIndex = minZ - 1;
+                break;
+            case 'forward':
+                if (currentIndex < sorted.length - 1) {
+                    const currentZ = sorted[currentIndex].zIndex;
+                    const nextZ = sorted[currentIndex + 1].zIndex;
+                    newElements.find(el => el.id === id)!.zIndex = nextZ;
+                    newElements.find(el => el.id === sorted[currentIndex + 1].id)!.zIndex = currentZ;
+                }
+                break;
+            case 'backward':
+                if (currentIndex > 0) {
+                     const currentZ = sorted[currentIndex].zIndex;
+                     const prevZ = sorted[currentIndex - 1].zIndex;
+                     newElements.find(el => el.id === id)!.zIndex = prevZ;
+                     newElements.find(el => el.id === sorted[currentIndex - 1].id)!.zIndex = currentZ;
+                }
+                break;
+        }
+
+        // Re-normalize z-indices to prevent them from growing indefinitely
+        const finalSorted = newElements.sort((a, b) => a.zIndex - b.zIndex);
+        return finalSorted.map((el, index) => ({ ...el, zIndex: index }));
+    });
   };
 
   const handleConfirmSave = () => {
@@ -562,6 +620,7 @@ export default function PolicyEditorPage() {
                                 elements={elements}
                                 onUpdate={handleUpdateElement} 
                                 onDelete={handleDeleteElement}
+                                onArrange={handleArrange}
                             />
                         </CardContent>
                     </Card>
@@ -630,7 +689,7 @@ export default function PolicyEditorPage() {
                                     top: `${mmToPx(margins.top)}px`, right: `${mmToPx(margins.right)}px`,
                                     bottom: `${mmToPx(margins.bottom)}px`, left: `${mmToPx(margins.left)}px`,
                                 }}/>
-                                {elements.map((el) => (
+                                {elements.sort((a,b) => a.zIndex - b.zIndex).map((el) => (
                                     <DraggableItem key={el.id} element={el} selected={selectedIds.includes(el.id)} onSelect={handleSelect}
                                         onResizeStop={handleResizeStop}
                                         onResize={(id, w, h) => handleUpdateElement(id, { width: w, height: h })}
