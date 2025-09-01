@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
@@ -45,9 +44,13 @@ type OrdersState = {
 
 const getOrderPrefix = () => {
     if (typeof window !== 'undefined') {
-        const settings = localStorage.getItem('comprehensiveAppSettings');
-        if (settings) {
-            return JSON.parse(settings).orders.orderPrefix || 'ORD-';
+        try {
+            const settings = localStorage.getItem('comprehensiveAppSettings');
+            if (settings) {
+                return JSON.parse(settings).orders.orderPrefix || 'ORD-';
+            }
+        } catch (e) {
+            console.error("Failed to parse settings from localStorage for order prefix", e);
         }
     }
     return 'ORD-';
