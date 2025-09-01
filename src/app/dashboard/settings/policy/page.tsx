@@ -245,15 +245,16 @@ export default function PolicyEditorPage() {
     if (!over) return;
   
     const isTool = String(active.id).startsWith('toolbox-');
-    const canvasEl = document.querySelector('[data-droppable-id="canvas"]') as HTMLElement | null;
-    if (!canvasEl) return;
-    const canvasRect = canvasEl.getBoundingClientRect();
-  
+    
     if (isTool) {
       const toolType = active.data.current?.type as ElementType;
-      // This uses a fixed drop position for simplicity, can be refined with pointer position
-      const dropX = snapToGrid((e.activatorEvent as MouseEvent).clientX - canvasRect.left);
-      const dropY = snapToGrid((e.activatorEvent as MouseEvent).clientY - canvasRect.top);
+      const canvasEl = document.querySelector('[data-droppable-id="canvas"]') as HTMLElement | null;
+      if (!canvasEl) return;
+      
+      const canvasRect = canvasEl.getBoundingClientRect();
+      const dropX = (e.activatorEvent as MouseEvent).clientX - canvasRect.left;
+      const dropY = (e.activatorEvent as MouseEvent).clientY - canvasRect.top;
+      
       addElementAt(toolType, dropX, dropY);
     } else {
       const id = String(active.id);
@@ -300,14 +301,6 @@ export default function PolicyEditorPage() {
     return { width: mmToPx(size.width), height: mmToPx(size.height) };
   }, [paperSizeKey, customDimensions]);
 
-  const snapToGridModifier: Modifier = ({transform}) => {
-    return {
-      ...transform,
-      x: Math.round(transform.x / GRID_SIZE) * GRID_SIZE,
-      y: Math.round(transform.y / GRID_SIZE) * GRID_SIZE,
-    };
-  };
-
   return (
     <div className="space-y-6">
         <Card>
@@ -327,7 +320,7 @@ export default function PolicyEditorPage() {
                 </Button>
             </CardHeader>
         </Card>
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[restrictToWindowEdges, snapToGridModifier]}>
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[restrictToWindowEdges]}>
             <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
                  <div className="space-y-6 lg:sticky lg:top-24">
                      <Card>
@@ -419,3 +412,4 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
