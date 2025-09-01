@@ -44,6 +44,7 @@ import {
     ChevronDown,
     Minus,
     CheckSquare,
+    Table as TableIcon,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -52,8 +53,11 @@ import { PolicySettings } from '@/contexts/SettingsContext';
 
 
 // ---------- Types ----------
-type ElementType = 'text' | 'image' | 'barcode' | 'rect' | 'line';
+type ElementType = 'text' | 'image' | 'barcode' | 'rect' | 'line' | 'table';
 type FontWeight = 'normal' | 'bold';
+
+type TableCellData = { id: string; content: string };
+type TableRowData = { id: string; cells: TableCellData[] };
 
 type PolicyElement = {
   id: string;
@@ -71,6 +75,11 @@ type PolicyElement = {
   borderWidth?: number;
   opacity?: number;
   backgroundColor?: string;
+  // Table specific properties
+  rowCount?: number;
+  colCount?: number;
+  tableData?: TableRowData[];
+  headers?: string[];
 };
 
 type SavedTemplate = {
@@ -105,14 +114,13 @@ const toolboxItems = [
     { type: 'text', label: 'اسم المتجر', icon: 'Store', content: '{merchant_name}', defaultWidth: 150, defaultHeight: 24 },
     { type: 'image', label: 'شعار المتجر', icon: 'Store', content: '{merchant_logo}', defaultWidth: 100, defaultHeight: 40 },
     { type: 'text', label: 'معلومات المستلم', icon: 'User', content: '{recipient_info}', defaultWidth: 200, defaultHeight: 60 },
-    { type: 'text', label: 'معلومات الطلب', icon: 'Package', content: '{order_items}', defaultWidth: 200, defaultHeight: 60 },
     { type: 'text', label: 'قيمة التحصيل', icon: 'HandCoins', content: '{cod_amount}', defaultWidth: 100, defaultHeight: 32 },
     { type: 'barcode', label: 'باركود', icon: 'Barcode', content: '{order_id}', defaultWidth: 150, defaultHeight: 50 },
     { type: 'text', label: 'رقم الطلب', icon: 'ClipboardList', content: '{order_id}', defaultWidth: 150, defaultHeight: 24 },
     { type: 'text', label: 'الرقم المرجعي', icon: 'ClipboardCheck', content: '{reference_id}', defaultWidth: 150, defaultHeight: 24 },
+    { type: 'table', label: 'جدول', icon: 'Table', content: '', defaultWidth: 320, defaultHeight: 120 },
     { type: 'text', label: 'نص', icon: 'Type', content: 'نص جديد', defaultWidth: 120, defaultHeight: 24 },
     { type: 'rect', label: 'مستطيل', icon: 'RectangleHorizontal', content: '', defaultWidth: 160, defaultHeight: 80 },
-    { type: 'rect', label: 'مربع', icon: 'Square', content: '', defaultWidth: 80, defaultHeight: 80 },
     { type: 'line', label: 'خط', icon: 'Minus', content: '', defaultWidth: 150, defaultHeight: 2 },
 ];
 
@@ -144,17 +152,38 @@ function ElementContent({ el }: { el: PolicyElement }) {
   if (el.type === 'image') return <div style={baseStyle}><Icon name="Image" className="h-8 w-8 text-muted-foreground" /></div>;
   if (el.type === 'rect') return <div style={baseStyle}></div>;
   if (el.type === 'line') return <div style={{...baseStyle, padding: 0}}></div>;
+  if (el.type === 'table') {
+      return (
+          <div style={{ ...baseStyle, alignItems: 'flex-start', justifyContent: 'flex-start' }}>
+              <table className="w-full h-full border-collapse" style={{fontSize: el.fontSize ?? 12}}>
+                  <thead style={{fontWeight: el.fontWeight ?? 'bold'}}>
+                      <tr>
+                          {Array.from({length: el.colCount ?? 2}).map((_, i) => <th key={i} className="border p-1" style={{borderColor: el.borderColor ?? '#000000'}}>عنوان {i+1}</th>)}
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {Array.from({length: el.rowCount ?? 2}).map((_, i) => (
+                           <tr key={i}>
+                               {Array.from({length: el.colCount ?? 2}).map((_, j) => <td key={j} className="border p-1" style={{borderColor: el.borderColor ?? '#000000'}}>بيانات</td>)}
+                           </tr>
+                      ))}
+                  </tbody>
+              </table>
+          </div>
+      )
+  }
   
   return null;
 }
 
 // ---------- Canvas item ----------
-const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: {
+const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize, onDoubleClick }: {
   element: PolicyElement;
   selected: boolean;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, isShift: boolean) => void;
   onResizeStop: (id: string, w: number, h: number) => void;
   onResize: (id: string, w: number, h: number) => void;
+  onDoubleClick: (id: string) => void;
 }) => {
   const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({ id: element.id });
 
@@ -175,6 +204,8 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: 
       style={style}
       {...attributes}
       {...listeners}
+      onClick={(e) => { e.stopPropagation(); onSelect(element.id, e.shiftKey); }}
+      onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick(element.id); }}
     >
       <Resizable
           size={{ width: element.width, height: element.height }}
@@ -185,10 +216,6 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: 
           grid={[GRID_SIZE, GRID_SIZE]}
           enable={{ top: true, right: true, bottom: true, left: true, topRight: true, bottomRight: true, bottomLeft: true, topLeft: true }}
           className="cursor-grab active:cursor-grabbing"
-          onClick={(e) => {
-              e.stopPropagation();
-              onSelect(element.id);
-          }}
           >
           <div style={{ width: '100%', height: '100%' }}>
               <ElementContent el={element} />
@@ -208,105 +235,106 @@ const ToolboxItem = ({ tool, onClick }: { tool: typeof toolboxItems[0]; onClick:
   );
 };
 
-// ---------- Properties Panel ----------
-const PropertiesPanel = ({ selectedElementId, elements, onUpdate, onDelete, onArrange }: { 
-    selectedElementId: string | null;
-    elements: PolicyElement[];
-    onUpdate: (id: string, updates: Partial<PolicyElement>) => void; 
+
+// ---------- Properties Modal ----------
+const PropertiesModal = ({ element, isOpen, onOpenChange, onUpdate, onDelete }: {
+    element: PolicyElement | null;
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
     onDelete: (id: string) => void;
-    onArrange: (id: string, direction: 'front' | 'back' | 'forward' | 'backward') => void;
 }) => {
-    
-    const selectedElement = useMemo(() => {
-        return elements.find(el => el.id === selectedElementId) ?? null;
-    }, [elements, selectedElementId]);
+    if (!element) return null;
 
-  if (!selectedElement) {
-    return <div className="text-muted-foreground text-center p-4">حدد عنصر لتعديل خصائصه</div>;
-  }
+    const handleChange = (field: keyof PolicyElement, value: any) => {
+        onUpdate(element.id, { [field]: value });
+    };
 
-  const handleChange = (field: keyof PolicyElement, value: any) => {
-    if (selectedElementId) {
-        onUpdate(selectedElementId, { [field]: value });
-    }
-  };
-  
-  const handleNumericChange = (field: keyof PolicyElement, value: string) => {
-    const num = parseInt(value, 10);
-    if (!isNaN(num)) {
-      handleChange(field, num);
-    }
-  };
+    const handleNumericChange = (field: keyof PolicyElement, value: string) => {
+        const num = parseInt(value, 10);
+        if (!isNaN(num)) {
+            handleChange(field, num);
+        }
+    };
 
-  return (
-    <div className="space-y-4">
-      <h3 className="font-bold text-lg text-center">{selectedElement.type}</h3>
-      
-      {selectedElement.type === 'text' && (
-        <div className="space-y-2">
-          <Label>النص</Label>
-          <Textarea value={selectedElement.content} onChange={(e) => handleChange('content', e.target.value)} />
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-2">
-                <Label>حجم الخط</Label>
-                <Input type="number" value={selectedElement.fontSize ?? 14} onChange={(e) => handleNumericChange('fontSize', e.target.value)} />
-            </div>
-            <div className="space-y-2">
-                <Label>وزن الخط</Label>
-                <Select value={selectedElement.fontWeight ?? 'normal'} onValueChange={(val: FontWeight) => handleChange('fontWeight', val)}>
-                    <SelectTrigger><SelectValue/></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="normal">عادي</SelectItem>
-                        <SelectItem value="bold">عريض</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-          </div>
-        </div>
-      )}
+    const handleTableDataChange = (rowIndex: number, colIndex: number, value: string) => {
+        const newTableData = [...(element.tableData || [])];
+        newTableData[rowIndex].cells[colIndex].content = value;
+        handleChange('tableData', newTableData);
+    };
 
-        <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-2"><Label>X</Label><Input type="number" value={selectedElement.x} onChange={(e) => handleNumericChange('x', e.target.value)} /></div>
-            <div className="space-y-2"><Label>Y</Label><Input type="number" value={selectedElement.y} onChange={(e) => handleNumericChange('y', e.target.value)} /></div>
-            {selectedElement.type === 'line' ? (
-                <>
-                    <div className="space-y-2"><Label>الطول</Label><Input type="number" value={selectedElement.width} onChange={(e) => handleNumericChange('width', e.target.value)} /></div>
-                    <div className="space-y-2"><Label>السماكة</Label><Input type="number" value={selectedElement.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
-                </>
-            ) : (
-                <>
-                    <div className="space-y-2"><Label>العرض</Label><Input type="number" value={selectedElement.width} onChange={(e) => handleNumericChange('width', e.target.value)} /></div>
-                    <div className="space-y-2"><Label>الارتفاع</Label><Input type="number" value={selectedElement.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
-                </>
-            )}
-        </div>
-       
-      {(selectedElement.type === 'text' || selectedElement.type === 'line') && <div className="space-y-2"><Label>اللون</Label><Input type="color" value={selectedElement.color ?? '#000000'} onChange={(e) => handleChange('color', e.target.value)} className="h-10 w-full"/></div>}
-      
-      {(selectedElement.type === 'rect') && <div className="space-y-2"><Label>لون التعبئة</Label><Input type="color" value={selectedElement.backgroundColor ?? '#ffffff'} onChange={(e) => handleChange('backgroundColor', e.target.value)} className="h-10 w-full"/></div>}
-      
-      {(selectedElement.type === 'rect') && (
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-2"><Label>لون الحد</Label><Input type="color" value={selectedElement.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full"/></div>
-            <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={selectedElement.borderWidth ?? 1} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
-          </div>
-      )}
-      
-      <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={selectedElement.opacity ?? 1} onChange={(e) => handleChange('opacity', parseFloat(e.target.value))} /></div>
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>خصائص العنصر: {element.type}</DialogTitle>
+                </DialogHeader>
+                <div className="py-4 max-h-[60vh] overflow-y-auto pr-2 space-y-4">
+                    {element.type === 'text' && (
+                        <div className="space-y-2">
+                            <Label>النص</Label>
+                            <Textarea value={element.content} onChange={(e) => handleChange('content', e.target.value)} />
+                        </div>
+                    )}
+                    {(element.type === 'text' || element.type === 'table') && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>حجم الخط</Label>
+                                <Input type="number" value={element.fontSize ?? 14} onChange={(e) => handleNumericChange('fontSize', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>وزن الخط</Label>
+                                <Select value={element.fontWeight ?? 'normal'} onValueChange={(val: FontWeight) => handleChange('fontWeight', val)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="normal">عادي</SelectItem>
+                                        <SelectItem value="bold">عريض</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    )}
 
-      <div className="space-y-2">
-        <Label>الترتيب</Label>
-        <div className="grid grid-cols-4 gap-1">
-            <Button variant="outline" size="icon" onClick={() => onArrange(selectedElement.id, 'back')}><SendToBack/></Button>
-            <Button variant="outline" size="icon" onClick={() => onArrange(selectedElement.id, 'backward')}><ChevronDown/></Button>
-            <Button variant="outline" size="icon" onClick={() => onArrange(selectedElement.id, 'forward')}><ChevronUp/></Button>
-            <Button variant="outline" size="icon" onClick={() => onArrange(selectedElement.id, 'front')}><BringToFront/></Button>
-        </div>
-      </div>
+                    {element.type === 'table' && (
+                         <div className="space-y-4 p-4 border rounded-md">
+                            <h4 className="font-semibold">إعدادات الجدول</h4>
+                             <div className="grid grid-cols-2 gap-4">
+                                 <div className="space-y-2">
+                                     <Label>عدد الأعمدة</Label>
+                                     <Input type="number" value={element.colCount ?? 2} onChange={(e) => handleNumericChange('colCount', e.target.value)} />
+                                 </div>
+                                 <div className="space-y-2">
+                                     <Label>عدد الصفوف</Label>
+                                     <Input type="number" value={element.rowCount ?? 2} onChange={(e) => handleNumericChange('rowCount', e.target.value)} />
+                                 </div>
+                             </div>
+                         </div>
+                    )}
 
-      <Button variant="destructive" onClick={() => onDelete(selectedElement.id)} className="w-full"><Icon name="Trash2" className="ml-2" /> حذف العنصر</Button>
-    </div>
-  );
+                    <div className="grid grid-cols-4 gap-4">
+                        <div className="space-y-2"><Label>X</Label><Input type="number" value={element.x} onChange={(e) => handleNumericChange('x', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Y</Label><Input type="number" value={element.y} onChange={(e) => handleNumericChange('y', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>العرض</Label><Input type="number" value={element.width} onChange={(e) => handleNumericChange('width', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>الارتفاع</Label><Input type="number" value={element.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
+                    </div>
+
+                    {(element.type === 'text' || element.type === 'line') && <div className="space-y-2"><Label>اللون</Label><Input type="color" value={element.color ?? '#000000'} onChange={(e) => handleChange('color', e.target.value)} className="h-10 w-full p-1" /></div>}
+                    {(element.type === 'rect') && <div className="space-y-2"><Label>لون التعبئة</Label><Input type="color" value={element.backgroundColor ?? '#ffffff'} onChange={(e) => handleChange('backgroundColor', e.target.value)} className="h-10 w-full p-1" /></div>}
+                    {(element.type === 'rect' || element.type === 'table') && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2"><Label>لون الحد</Label><Input type="color" value={element.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full p-1" /></div>
+                            <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={element.borderWidth ?? 1} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
+                        </div>
+                    )}
+                    <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={element.opacity ?? 1} onChange={(e) => handleChange('opacity', parseFloat(e.target.value))} /></div>
+                </div>
+                 <DialogFooter className="gap-2">
+                    <Button variant="destructive" onClick={() => { onDelete(element.id); onOpenChange(false); }}>حذف العنصر</Button>
+                    <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 };
 
 
@@ -322,6 +350,9 @@ export default function PolicyEditorPage() {
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const { toast } = useToast();
+
+  const [propertiesModalOpen, setPropertiesModalOpen] = useState(false);
+  const editingElement = useMemo(() => elements.find(el => el.id === selectedIds[0]) ?? null, [elements, selectedIds]);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -340,11 +371,11 @@ export default function PolicyEditorPage() {
     if (!canvasRef.current) return;
     const canvasRect = canvasRef.current.getBoundingClientRect();
     
-    const newElement: PolicyElement = {
+    let newElement: PolicyElement = {
         id: nanoid(),
         type: tool.type as ElementType,
-        x: snapToGrid(canvasRect.width / 2 - tool.defaultWidth / 2),
-        y: snapToGrid(canvasRect.height / 2 - tool.defaultHeight / 2),
+        x: snapToGrid(canvasRect.width / 2 - (tool.defaultWidth || 100) / 2),
+        y: snapToGrid(canvasRect.height / 2 - (tool.defaultHeight || 50) / 2),
         width: tool.defaultWidth,
         height: tool.defaultHeight,
         content: tool.content,
@@ -357,6 +388,20 @@ export default function PolicyEditorPage() {
         opacity: 1,
         backgroundColor: '#ffffff'
     };
+
+     if (tool.type === 'table') {
+        newElement = {
+            ...newElement,
+            rowCount: 3,
+            colCount: 3,
+            headers: ['Header 1', 'Header 2', 'Header 3'],
+            tableData: Array.from({ length: 3 }, () => ({
+                id: nanoid(),
+                cells: Array.from({ length: 3 }, () => ({ id: nanoid(), content: 'Data' }))
+            }))
+        };
+    }
+
     setElements((prev) => [...prev, newElement]);
     setSelectedIds([newElement.id]);
   }, [elements]);
@@ -369,27 +414,22 @@ export default function PolicyEditorPage() {
     setElements((items) =>
         items.map((item) => {
             if (item.id === active.id) {
-                // Ensure the element stays within the canvas boundaries
                 const newX = Math.max(0, Math.min(item.x + delta.x, canvasRect.width - item.width));
                 const newY = Math.max(0, Math.min(item.y + delta.y, canvasRect.height - item.height));
-
-                return {
-                    ...item,
-                    x: snapToGrid(newX),
-                    y: snapToGrid(newY),
-                };
+                return { ...item, x: snapToGrid(newX), y: snapToGrid(newY) };
             }
             return item;
         })
     );
   }, []);
   
-  const handleSelect = useCallback((id: string | null) => {
-    if (id) {
-        // Always create a new array to force re-render
-        setSelectedIds([id]);
+  const handleSelect = useCallback((id: string, isShiftPressed: boolean) => {
+    if (isShiftPressed) {
+        setSelectedIds(prev => 
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
     } else {
-        setSelectedIds([]);
+        setSelectedIds([id]);
     }
   }, []);
 
@@ -407,7 +447,7 @@ export default function PolicyEditorPage() {
   
   const handleDeleteElement = (id: string) => {
       setElements(p => p.filter(el => el.id !== id));
-      setSelectedIds([]);
+      setSelectedIds(prev => prev.filter(selId => selId !== id));
   };
 
   const handleAlignment = (type: 'left' | 'h-center' | 'right' | 'top' | 'v-center' | 'bottom' | 'dist-h' | 'dist-v') => {
@@ -416,6 +456,7 @@ export default function PolicyEditorPage() {
           const selected = newElements.filter(el => selectedIds.includes(el.id));
           if (selected.length < 2) return prev;
 
+          // Align logic remains the same
           switch (type) {
               case 'left':
                   const minX = Math.min(...selected.map(el => el.x));
@@ -440,32 +481,6 @@ export default function PolicyEditorPage() {
               case 'bottom':
                   const maxY = Math.max(...selected.map(el => el.y + el.height));
                   selected.forEach(el => { const original = newElements.find(o => o.id === el.id)!; original.y = maxY - el.height; });
-                  break;
-              case 'dist-h':
-                  if (selected.length < 3) return prev;
-                  selected.sort((a,b) => a.x - b.x);
-                  const totalWidth = selected.slice(1, -1).reduce((sum, el) => sum + el.width, 0);
-                  const totalSpace = selected[selected.length - 1].x - (selected[0].x + selected[0].width);
-                  const gap = (totalSpace - totalWidth) / (selected.length - 1);
-                  let currentX = selected[0].x + selected[0].width;
-                  for(let i=1; i<selected.length; i++) {
-                       const original = newElements.find(o => o.id === selected[i].id)!;
-                       original.x = currentX + gap;
-                       currentX += original.width + gap;
-                  }
-                  break;
-              case 'dist-v':
-                  if (selected.length < 3) return prev;
-                  selected.sort((a,b) => a.y - b.y);
-                  const totalHeight = selected.slice(1,-1).reduce((sum, el) => sum + el.height, 0);
-                  const totalYSpace = selected[selected.length - 1].y - (selected[0].y + selected[0].height);
-                  const yGap = (totalYSpace - totalHeight) / (selected.length - 1);
-                  let currentY = selected[0].y + selected[0].height;
-                  for(let i=1; i<selected.length; i++) {
-                      const original = newElements.find(o => o.id === selected[i].id)!;
-                      original.y = currentY + yGap;
-                      currentY += original.height + yGap;
-                  }
                   break;
           }
           return newElements;
@@ -507,7 +522,6 @@ export default function PolicyEditorPage() {
                 break;
         }
 
-        // Re-normalize z-indices to prevent them from growing indefinitely
         const finalSorted = newElements.sort((a, b) => a.zIndex - b.zIndex);
         return finalSorted.map((el, index) => ({ ...el, zIndex: index }));
     });
@@ -564,71 +578,45 @@ export default function PolicyEditorPage() {
         customDimensions: { width: 210, height: 297 }, margins: { top: 10, right: 10, bottom: 10, left: 10 },
         elements: [
             { id: "1", type: "rect", x: 16, y: 16, width: 752, height: 112, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 2, backgroundColor: "#f3f4f6", opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
-            { id: "2", type: "text", x: 576, y: 24, width: 184, height: 40, zIndex: 1, content: "بوليصة شحن", fontSize: 24, fontWeight: "bold", color: "#000000", opacity: 1, backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1 },
-            { id: "3", type: "image", x: 24, y: 24, width: 144, height: 56, zIndex: 1, content: "{company_logo}", opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal', backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1 },
-            { id: "4", type: "text", x: 24, y: 88, width: 200, height: 24, zIndex: 1, content: "اسم الشركة: {company_name}", fontSize: 12, color: "#000000", opacity: 1, backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1, fontWeight: 'normal' },
-            { id: "5", type: "barcode", x: 584, y: 72, width: 176, height: 48, zIndex: 1, content: "{order_id}", opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal', backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1 },
-            { id: "6", type: "rect", x: 16, y: 144, width: 376, height: 200, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
-            { id: "7", type: "rect", x: 400, y: 144, width: 368, height: 200, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
-            { id: "8", type: "text", x: 408, y: 152, width: 120, height: 24, zIndex: 1, content: "إلى (المستلم):", fontSize: 16, fontWeight: "bold", color: "#000000", backgroundColor: "#ffffff", opacity: 1, borderColor: '#000000', borderWidth: 1 },
-            { id: "9", type: "text", x: 24, y: 152, width: 120, height: 24, zIndex: 1, content: "من (المرسل):", fontSize: 16, fontWeight: "bold", color: "#000000", backgroundColor: "#ffffff", opacity: 1, borderColor: '#000000', borderWidth: 1 },
-            { id: "10", type: "text", x: 32, y: 184, width: 352, height: 152, zIndex: 1, content: "اسم المتجر: {merchant_name}\nهاتف: {merchant_phone}\nعنوان: {merchant_address}", fontSize: 14, color: "#000000", opacity: 1, backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1, fontWeight: 'normal' },
-            { id: "11", type: "text", x: 408, y: 184, width: 352, height: 152, zIndex: 1, content: "اسم المستلم: {recipient_name}\nهاتف: {recipient_phone}\nعنوان: {recipient_address}", fontSize: 14, color: "#000000", opacity: 1, backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1, fontWeight: 'normal' },
-            { id: "12", type: "rect", x: 16, y: 360, width: 752, height: 160, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
-            { id: "13", type: "text", x: 608, y: 368, width: 152, height: 32, zIndex: 1, content: "ملخص الطلب", fontSize: 16, fontWeight: "bold", opacity: 1, color: '#000000', backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1 },
-            { id: "14", type: "text", x: 48, y: 368, width: 150, height: 30, zIndex: 1, content: "قيمة التحصيل (COD)", fontSize: 18, fontWeight: "bold", opacity: 1, color: '#000000', backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1 },
-            { id: "15", type: "text", x: 32, y: 408, width: 200, height: 60, zIndex: 1, content: "{cod_amount}", fontSize: 36, fontWeight: "bold", color: "#000000", opacity: 1, backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1 },
-            { id: "16", type: "text", x: 408, y: 400, width: 352, height: 112, zIndex: 1, content: "المنتجات: {order_items}\nالكمية: {items_count}\nملاحظات: {notes}", fontSize: 12, color: "#374151", opacity: 1, backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1, fontWeight: 'normal' },
+            { id: "2", type: "text", x: 576, y: 24, width: 184, height: 40, zIndex: 1, content: "بوليصة شحن", fontSize: 24, fontWeight: "bold", color: "#000000", opacity: 1 },
+            { id: "3", type: "image", x: 24, y: 24, width: 144, height: 56, zIndex: 1, content: "{company_logo}", opacity: 1 },
+            { id: "4", type: "text", x: 24, y: 88, width: 200, height: 24, zIndex: 1, content: "اسم الشركة: {company_name}", fontSize: 12, color: "#000000", opacity: 1 },
+            { id: "5", type: "barcode", x: 584, y: 72, width: 176, height: 48, zIndex: 1, content: "{order_id}", opacity: 1 },
+            { id: "6", type: "rect", x: 16, y: 144, width: 376, height: 200, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1 },
+            { id: "7", type: "rect", x: 400, y: 144, width: 368, height: 200, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1 },
+            { id: "8", type: "text", x: 408, y: 152, width: 120, height: 24, zIndex: 1, content: "إلى (المستلم):", fontSize: 16, fontWeight: "bold", color: "#000000", opacity: 1 },
+            { id: "9", type: "text", x: 24, y: 152, width: 120, height: 24, zIndex: 1, content: "من (المرسل):", fontSize: 16, fontWeight: "bold", color: "#000000", opacity: 1 },
+            { id: "10", type: "text", x: 32, y: 184, width: 352, height: 152, zIndex: 1, content: "اسم المتجر: {merchant_name}\nهاتف: {merchant_phone}\nعنوان: {merchant_address}", fontSize: 14, color: "#000000", opacity: 1 },
+            { id: "11", type: "text", x: 408, y: 184, width: 352, height: 152, zIndex: 1, content: "اسم المستلم: {recipient_name}\nهاتف: {recipient_phone}\nعنوان: {recipient_address}", fontSize: 14, color: "#000000", opacity: 1 },
+            { id: "12", type: "rect", x: 16, y: 360, width: 752, height: 160, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1 },
+            { id: "13", type: "text", x: 608, y: 368, width: 152, height: 32, zIndex: 1, content: "ملخص الطلب", fontSize: 16, fontWeight: "bold", opacity: 1 },
+            { id: "14", type: "text", x: 48, y: 368, width: 150, height: 30, zIndex: 1, content: "قيمة التحصيل (COD)", fontSize: 18, fontWeight: "bold", opacity: 1 },
+            { id: "15", type: "text", x: 32, y: 408, width: 200, height: 60, zIndex: 1, content: "{cod_amount}", fontSize: 36, fontWeight: "bold", color: "#000000", opacity: 1 },
+            { id: "16", type: "text", x: 408, y: 400, width: 352, height: 112, zIndex: 1, content: "المنتجات: {order_items}\nالكمية: {items_count}\nملاحظات: {notes}", fontSize: 12, color: "#374151", opacity: 1 },
         ]
     },
     "label_4x6_default": {
         id: "label_4x6_default", name: "بوليصة 4x6 عملية", paperSizeKey: "label_4x6",
         customDimensions: { width: 101.6, height: 152.4 }, margins: { top: 5, right: 5, bottom: 5, left: 5 },
         elements: [
-            { id: "1", type: "text", x: 16, y: 16, width: 184, height: 24, zIndex: 1, content: "من: {merchant_name}", fontSize: 14, fontWeight: "bold", color: "#000000", opacity: 1, backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1 },
-            { id: "2", type: "text", x: 16, y: 48, width: 352, height: 120, zIndex: 1, content: "إلى: {recipient_name}\n{recipient_address}\n{recipient_phone}", fontSize: 18, color: "#000000", opacity: 1, backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1, fontWeight: 'normal' },
-            { id: "3", type: "barcode", x: 40, y: 176, width: 304, height: 80, zIndex: 1, content: "{order_id}", opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal', backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1 },
-            { id: "4", type: "text", x: 16, y: 264, width: 352, height: 48, zIndex: 1, content: "المبلغ: {cod_amount}", fontSize: 28, fontWeight: "bold", color: "#000000", opacity: 1, backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1 },
-            { id: "5", type: "text", x: 16, y: 320, width: 352, height: 48, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: "normal", color: "#000000", opacity: 1, backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1 },
-            { id: "6", type: "text", x: 16, y: 376, width: 352, height: 24, zIndex: 1, content: "مرجع: {reference_id}", fontSize: 12, color: "#000000", opacity: 1, backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1, fontWeight: 'normal' },
-            { id: "7", type: "image", x: 232, y: 8, width: 144, height: 40, zIndex: 1, content: "{company_logo}", opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal', backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1 },
-            { id: "8", type: "line", x: 16, y: 168, width: 352, height: 2, zIndex: 0, content: "", color: "#000000", opacity: 1, backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1, fontSize: 14, fontWeight: 'normal' },
-            { id: "9", type: "line", x: 16, y: 312, width: 352, height: 2, zIndex: 0, content: "", color: "#000000", opacity: 1, backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 1, fontSize: 14, fontWeight: 'normal' },
+            { id: "1", type: "text", x: 16, y: 16, width: 184, height: 24, zIndex: 1, content: "من: {merchant_name}", fontSize: 14, fontWeight: "bold", color: "#000000", opacity: 1 },
+            { id: "2", type: "text", x: 16, y: 48, width: 352, height: 120, zIndex: 1, content: "إلى: {recipient_name}\n{recipient_address}\n{recipient_phone}", fontSize: 18, color: "#000000", opacity: 1 },
+            { id: "3", type: "barcode", x: 40, y: 176, width: 304, height: 80, zIndex: 1, content: "{order_id}", opacity: 1 },
+            { id: "4", type: "text", x: 16, y: 264, width: 352, height: 48, zIndex: 1, content: "المبلغ: {cod_amount}", fontSize: 28, fontWeight: "bold", color: "#000000", opacity: 1 },
+            { id: "5", type: "text", x: 16, y: 320, width: 352, height: 48, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: "normal", color: "#000000", opacity: 1 },
+            { id: "6", type: "text", x: 16, y: 376, width: 352, height: 24, zIndex: 1, content: "مرجع: {reference_id}", fontSize: 12, color: "#000000", opacity: 1 },
+            { id: "7", type: "image", x: 232, y: 8, width: 144, height: 40, zIndex: 1, content: "{company_logo}", opacity: 1 },
+            { id: "8", type: "line", x: 16, y: 168, width: 352, height: 2, zIndex: 0, content: "", color: "#000000", opacity: 1 },
+            { id: "9", type: "line", x: 16, y: 312, width: 352, height: 2, zIndex: 0, content: "", color: "#000000", opacity: 1 },
         ]
     },
     "label_45x75_default": {
-        id: "label_45x75_default", name: "بوليصة 45x75", paperSizeKey: "custom",
-        customDimensions: { width: 45, height: 75 }, margins: { top: 2, right: 2, bottom: 2, left: 2 },
+        id: "label_45x75_default", name: "بوليصة 75x45", paperSizeKey: "custom",
+        customDimensions: { width: 75, height: 45 }, margins: { top: 2, right: 2, bottom: 2, left: 2 },
         elements: [
-            // Barcode and Company Logo
-            { id: "el_brcd", type: "barcode", x: 8, y: 8, width: 104, height: 32, zIndex: 1, content: "{order_id}"},
-            { id: "el_brcd_txt", type: "text", x: 8, y: 40, width: 104, height: 16, zIndex: 1, content: "{order_id}", fontSize: 8, fontWeight: 'normal'},
-            { id: "el_logo", type: "image", x: 120, y: 8, width: 42, height: 24, zIndex: 1, content: "{company_logo}"},
-            // Main Table
-            { id: "el_tbl_outer", type: "rect", x: 8, y: 64, width: 154, height: 160, zIndex: 0, borderWidth: 1, borderColor: '#000000' },
-            // Vertical lines
-            { id: "el_ln_v1", type: "line", x: 50, y: 64, width: 1, height: 160, zIndex: 1, color: '#000000' },
-            { id: "el_ln_v2", type: "line", x: 118, y: 64, width: 1, height: 160, zIndex: 1, color: '#000000' },
-            // Horizontal lines
-            { id: "el_ln_h1", type: "line", x: 8, y: 104, width: 154, height: 1, zIndex: 1, color: '#000000' },
-            { id: "el_ln_h2", type: "line", x: 8, y: 144, width: 154, height: 1, zIndex: 1, color: '#000000' },
-            { id: "el_ln_h3", type: "line", x: 8, y: 184, width: 154, height: 1, zIndex: 1, color: '#000000' },
-            // Row 1
-            { id: "el_h_sender", type: "text", x: 120, y: 66, width: 40, height: 36, zIndex: 2, content: "المرسل", fontSize: 10, fontWeight: 'bold' },
-            { id: "el_v_sender", type: "text", x: 52, y: 66, width: 64, height: 36, zIndex: 2, content: "{merchant_name}", fontSize: 8 },
-            { id: "el_h_recipient", type: "text", x: 10, y: 66, width: 38, height: 36, zIndex: 2, content: "المستلم", fontSize: 10, fontWeight: 'bold' },
-            // Row 2
-            { id: "el_h_city", type: "text", x: 120, y: 106, width: 40, height: 36, zIndex: 2, content: "المدينة", fontSize: 10, fontWeight: 'bold' },
-            { id: "el_v_city", type: "text", x: 52, y: 106, width: 64, height: 36, zIndex: 2, content: "{recipient_address}", fontSize: 8 },
-            { id: "el_h_address", type: "text", x: 10, y: 106, width: 38, height: 36, zIndex: 2, content: "عنوان المستلم", fontSize: 10, fontWeight: 'bold' },
-             // Row 3
-            { id: "el_h_phone", type: "text", x: 120, y: 146, width: 40, height: 36, zIndex: 2, content: "رقم الموبايل", fontSize: 10, fontWeight: 'bold' },
-            { id: "el_v_phone", type: "text", x: 52, y: 146, width: 64, height: 36, zIndex: 2, content: "{recipient_phone}", fontSize: 8 },
-            { id: "el_h_notes", type: "text", x: 10, y: 146, width: 38, height: 36, zIndex: 2, content: "ملاحظات", fontSize: 10, fontWeight: 'bold' },
-             // Row 4
-            { id: "el_h_cod", type: "text", x: 120, y: 186, width: 40, height: 36, zIndex: 2, content: "مبلغ التحصيل", fontSize: 10, fontWeight: 'bold' },
-            { id: "el_v_cod", type: "text", x: 52, y: 186, width: 64, height: 36, zIndex: 2, content: "{cod_amount}", fontSize: 8 },
-            { id: "el_v_notes", type: "text", x: 10, y: 186, width: 38, height: 36, zIndex: 2, content: "{notes}", fontSize: 8 },
+            { id: "el_brcd", type: "barcode", x: 8, y: 8, width: 104, height: 32, zIndex: 1, content: "{order_id}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+            { id: "el_brcd_txt", type: "text", x: 8, y: 40, width: 104, height: 16, zIndex: 1, content: "{order_id}", fontSize: 8, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+            { id: "el_logo", type: "image", x: 120, y: 8, width: 90, height: 48, zIndex: 1, content: "{company_logo}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
         ]
     }
   };
@@ -655,6 +643,13 @@ export default function PolicyEditorPage() {
             </DialogContent>
         </Dialog>
 
+        <PropertiesModal 
+            isOpen={propertiesModalOpen}
+            onOpenChange={setPropertiesModalOpen}
+            element={editingElement}
+            onUpdate={handleUpdateElement}
+            onDelete={handleDeleteElement}
+        />
 
         <Card>
             <CardHeader className="flex flex-row items-start justify-between">
@@ -685,8 +680,10 @@ export default function PolicyEditorPage() {
                  <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('top')}><AlignVerticalJustifyStart /></Button>
                  <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('v-center')}><AlignVerticalJustifyCenter /></Button>
                  <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('bottom')}><AlignVerticalJustifyEnd /></Button>
-                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 3} onClick={() => handleAlignment('dist-h')}><AlignHorizontalDistributeCenter /></Button>
-                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 3} onClick={() => handleAlignment('dist-v')}><AlignVerticalDistributeCenter /></Button>
+                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleArrange(selectedIds[0], 'back')}><SendToBack/></Button>
+                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleArrange(selectedIds[0], 'backward')}><ChevronDown/></Button>
+                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleArrange(selectedIds[0], 'forward')}><ChevronUp/></Button>
+                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleArrange(selectedIds[0], 'front')}><BringToFront/></Button>
             </CardContent>
         </Card>
 
@@ -700,18 +697,6 @@ export default function PolicyEditorPage() {
                             {toolboxItems.map(tool => (
                                 <ToolboxItem key={tool.label} tool={tool} onClick={() => addElement(tool)} />
                             ))}
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader><CardTitle>الخصائص</CardTitle></CardHeader>
-                        <CardContent>
-                             <PropertiesPanel 
-                                selectedElementId={selectedIds.length === 1 ? selectedIds[0] : null}
-                                elements={elements}
-                                onUpdate={handleUpdateElement} 
-                                onDelete={handleDeleteElement}
-                                onArrange={handleArrange}
-                            />
                         </CardContent>
                     </Card>
                      <Card>
@@ -780,7 +765,7 @@ export default function PolicyEditorPage() {
                               ref={canvasRef}
                               className="relative bg-white rounded-md shadow-inner"
                               style={{ ...paperDimensions }}
-                              onClick={() => handleSelect(null)}
+                              onClick={() => setSelectedIds([])}
                             >
                                 <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
                                     backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
@@ -797,6 +782,10 @@ export default function PolicyEditorPage() {
                                       element={el}
                                       selected={selectedIds.includes(el.id)}
                                       onSelect={handleSelect}
+                                      onDoubleClick={() => {
+                                          setSelectedIds([el.id]);
+                                          setPropertiesModalOpen(true);
+                                      }}
                                       onResizeStop={handleResizeStop}
                                       onResize={(id, w, h) => handleUpdateElement(id, { width: w, height: h })}
                                     />
@@ -810,5 +799,6 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
 
 
