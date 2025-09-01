@@ -12,6 +12,7 @@ import { Check, ChevronsUpDown, Printer, Trash2 } from 'lucide-react';
 import { useActionState } from 'react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
 import { PrintablePolicy } from '@/components/printable-policy';
+import html2canvas from 'html2canvas';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useStatusesStore } from '@/store/statuses-store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useSettings } from '@/contexts/SettingsContext';
-import html2canvas from 'html2canvas';
 
 
 const orderSchema = z.object({
