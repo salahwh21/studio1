@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useContext } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,6 +32,7 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStatusesStore } from '@/store/statuses-store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useSettings } from '@/contexts/SettingsContext';
 
 
 const orderSchema = z.object({
@@ -54,6 +55,7 @@ const AddOrderPage = () => {
   const { addOrder, deleteOrders, updateOrderField } = useOrdersStore();
   const { cities } = useAreasStore();
   const { statuses } = useStatusesStore();
+  const { settings: orderSettings } = useSettings();
 
   const [selectedMerchantId, setSelectedMerchantId] = useState<string>('');
   
@@ -175,7 +177,7 @@ const AddOrderPage = () => {
     const [regionName] = data.region.split('_');
     
     const newOrder: Order = {
-      id: nanoid(10),
+      id: `${orderSettings.orders.orderPrefix}${nanoid(8)}`,
       source: 'Manual',
       referenceNumber: data.referenceNumber || '',
       recipient: data.recipientName || 'زبون غير مسمى',
@@ -184,7 +186,7 @@ const AddOrderPage = () => {
       address: `${data.address ? `${data.address}, ` : ''}${regionName}, ${data.city}`,
       city: data.city,
       region: regionName,
-      status: 'بالانتظار',
+      status: orderSettings.orders.defaultStatus,
       driver: 'غير معين',
       merchant: merchant.name,
       cod: data.cod,

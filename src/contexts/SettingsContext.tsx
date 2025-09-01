@@ -27,15 +27,26 @@ interface NotificationsSettings {
   };
 }
 
+interface OrderSettings {
+    orderPrefix: string;
+    defaultStatus: string;
+    refPrefix: string;
+    archiveStartStatus: string;
+    archiveAfterDays: number;
+    archiveWarningDays: number;
+}
+
+
 interface ComprehensiveSettings {
   notifications: NotificationsSettings;
-  // ... other settings can be added here later
+  orders: OrderSettings;
 }
 
 // 2. Define the context shape
 interface SettingsContextType {
   settings: ComprehensiveSettings;
   setSetting: <K extends keyof ComprehensiveSettings, V extends ComprehensiveSettings[K]>(key: K, value: V) => void;
+  updateOrderSetting: <K extends keyof OrderSettings>(key: K, value: OrderSettings[K]) => void;
   isHydrated: boolean;
 }
 
@@ -58,6 +69,14 @@ const defaultSettingsData: ComprehensiveSettings = {
         rules: []
     }
   },
+  orders: {
+    orderPrefix: 'ORD-',
+    defaultStatus: 'PENDING',
+    refPrefix: 'REF-',
+    archiveStartStatus: 'COMPLETED',
+    archiveAfterDays: 90,
+    archiveWarningDays: 7,
+  }
 };
 
 // 5. Create the provider component
@@ -85,6 +104,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
               rules: savedSettings.notifications?.aiSettings?.rules || defaultSettingsData.notifications.aiSettings.rules,
             }
           },
+          orders: {
+              ...defaultSettingsData.orders,
+              ...(savedSettings.orders || {}),
+          }
         };
         setSettings(mergedSettings);
       }
@@ -113,8 +136,18 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       [key]: value,
     }));
   };
+  
+  const updateOrderSetting = <K extends keyof OrderSettings>(key: K, value: OrderSettings[K]) => {
+      setSettings(prev => ({
+          ...prev,
+          orders: {
+              ...prev.orders,
+              [key]: value,
+          }
+      }));
+  }
 
-  const value = { settings, setSetting, isHydrated };
+  const value = { settings, setSetting, updateOrderSetting, isHydrated };
 
   return (
     <SettingsContext.Provider value={value}>
