@@ -98,7 +98,8 @@ const toolboxItems = [
     { type: 'text', label: 'رقم الطلب', icon: 'ClipboardList', content: '{order_id}', defaultWidth: 150, defaultHeight: 24 },
     { type: 'text', label: 'الرقم المرجعي', icon: 'ClipboardCheck', content: '{reference_id}', defaultWidth: 150, defaultHeight: 24 },
     { type: 'text', label: 'نص', icon: 'Type', content: 'نص جديد', defaultWidth: 120, defaultHeight: 24 },
-    { type: 'rect', label: 'مستطيل', icon: 'Square', content: '', defaultWidth: 160, defaultHeight: 80 },
+    { type: 'rect', label: 'مستطيل', icon: 'RectangleHorizontal', content: '', defaultWidth: 160, defaultHeight: 80 },
+    { type: 'rect', label: 'مربع', icon: 'Square', content: '', defaultWidth: 80, defaultHeight: 80 },
     { type: 'line', label: 'خط', icon: 'Minus', content: '', defaultWidth: 150, defaultHeight: 2 },
 ];
 
