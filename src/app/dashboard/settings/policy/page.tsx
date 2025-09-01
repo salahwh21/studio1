@@ -1,4 +1,3 @@
-
 // PolicyEditorPage.tsx
 'use client';
 
@@ -309,54 +308,86 @@ export default function PolicyEditorPage() {
   };
 
   return (
-    <div className="space-y-6 flex flex-col h-[calc(100vh-10rem)]" dir="rtl">
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[restrictToWindowEdges, snapToGridModifier]}>
-            <div className="flex-none space-y-4">
-                 <div className="flex flex-wrap items-center gap-4 bg-card border p-3 rounded-lg shadow-md">
-                    <Select value={paperSizeKey} onValueChange={(val) => setPaperSizeKey(val as PaperSizeKey)}>
-                        <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-                        <SelectContent>{Object.entries(paperSizes).map(([key, { label }]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}</SelectContent>
-                    </Select>
-                    {paperSizeKey === 'custom' && (
-                        <>
-                            <div className="flex items-center gap-1"><Input type="number" value={customDimensions.width} onChange={e => setCustomDimensions(p => ({...p, width: parseInt(e.target.value, 10)}))} className="w-20 h-9"/><Label>مم عرض</Label></div>
-                            <div className="flex items-center gap-1"><Input type="number" value={customDimensions.height} onChange={e => setCustomDimensions(p => ({...p, height: parseInt(e.target.value, 10)}))} className="w-20 h-9"/><Label>مم ارتفاع</Label></div>
-                        </>
-                    )}
-                     <div className="flex items-center gap-1"><Label>الهوامش (مم):</Label>
-                        <Input type="number" placeholder="أعلى" value={margins.top} onChange={e => setMargins(p => ({...p, top: parseInt(e.target.value, 10)}))} className="w-20 h-9"/>
-                        <Input type="number" placeholder="يمين" value={margins.right} onChange={e => setMargins(p => ({...p, right: parseInt(e.target.value, 10)}))} className="w-20 h-9"/>
-                        <Input type="number" placeholder="أسفل" value={margins.bottom} onChange={e => setMargins(p => ({...p, bottom: parseInt(e.target.value, 10)}))} className="w-20 h-9"/>
-                        <Input type="number" placeholder="يسار" value={margins.left} onChange={e => setMargins(p => ({...p, left: parseInt(e.target.value, 10)}))} className="w-20 h-9"/>
-                    </div>
+    <div className="space-y-6">
+        <Card>
+            <CardHeader className="flex flex-row items-start justify-between">
+                <div>
+                    <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                        <Icon name="ReceiptText" /> إعدادات البوليصة
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                        تخصيص محتوى وتصميم بوليصة الشحن.
+                    </CardDescription>
                 </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-6">
+                <Button variant="outline" size="icon" asChild>
+                    <Link href="/dashboard/settings/general">
+                        <Icon name="ArrowLeft" className="h-4 w-4" />
+                    </Link>
+                </Button>
+            </CardHeader>
+        </Card>
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[restrictToWindowEdges, snapToGridModifier]}>
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
+                <div className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>لوحة التصميم</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-grow w-full bg-muted p-8 rounded-lg overflow-auto flex items-center justify-center min-h-[70vh]">
+                            <div data-droppable-id="canvas" className="relative bg-white rounded-md shadow-inner" style={{ ...paperDimensions }} onClick={() => setSelectedIds([])}>
+                                <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
+                                    backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
+                                    backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)`,
+                                    backgroundRepeat: 'repeat',
+                                }} />
+                                <div className="absolute border-2 border-dashed border-red-400/50 pointer-events-none" style={{
+                                    top: `${mmToPx(margins.top)}px`, right: `${mmToPx(margins.right)}px`,
+                                    bottom: `${mmToPx(margins.bottom)}px`, left: `${mmToPx(margins.left)}px`,
+                                }}/>
+                                {elements.map((el) => (
+                                    <DraggableItem key={el.id} element={el} selected={selectedIds.includes(el.id)} onSelect={handleSelect}
+                                        onResizeStop={handleResizeStop}
+                                        onResize={(id, w, h) => handleUpdateElement(id, { width: w, height: h })}
+                                        multiSelect={false}
+                                    />
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="space-y-6 lg:sticky lg:top-24">
+                     <Card>
+                        <CardHeader><CardTitle>إعدادات البوليصة</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>حجم الورق</Label>
+                                <Select value={paperSizeKey} onValueChange={(val) => setPaperSizeKey(val as PaperSizeKey)}>
+                                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                                    <SelectContent>{Object.entries(paperSizes).map(([key, { label }]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
+                             {paperSizeKey === 'custom' && (
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-2"><Label>العرض (مم)</Label><Input type="number" value={customDimensions.width} onChange={e => setCustomDimensions(p => ({...p, width: parseInt(e.target.value, 10) || 0}))} /></div>
+                                    <div className="space-y-2"><Label>الارتفاع (مم)</Label><Input type="number" value={customDimensions.height} onChange={e => setCustomDimensions(p => ({...p, height: parseInt(e.target.value, 10) || 0}))} /></div>
+                                </div>
+                            )}
+                             <div className="space-y-2">
+                                <Label>الهوامش (مم)</Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                     <div className="space-y-2"><Label className="text-xs">الأعلى</Label><Input type="number" placeholder="أعلى" value={margins.top} onChange={e => setMargins(p => ({...p, top: parseInt(e.target.value, 10) || 0}))}/></div>
+                                     <div className="space-y-2"><Label className="text-xs">الأسفل</Label><Input type="number" placeholder="أسفل" value={margins.bottom} onChange={e => setMargins(p => ({...p, bottom: parseInt(e.target.value, 10) || 0}))}/></div>
+                                     <div className="space-y-2"><Label className="text-xs">اليمين</Label><Input type="number" placeholder="يمين" value={margins.right} onChange={e => setMargins(p => ({...p, right: parseInt(e.target.value, 10) || 0}))}/></div>
+                                     <div className="space-y-2"><Label className="text-xs">اليسار</Label><Input type="number" placeholder="يسار" value={margins.left} onChange={e => setMargins(p => ({...p, left: parseInt(e.target.value, 10) || 0}))}/></div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                     <Card><CardHeader><CardTitle>الأدوات</CardTitle></CardHeader><CardContent className="grid grid-cols-2 gap-3"><ToolboxItem type="text" label="نص" icon="Type" /><ToolboxItem type="image" label="صورة" icon="Image" /><ToolboxItem type="barcode" label="باركود" icon="Barcode" /><ToolboxItem type="rect" label="مربع" icon="Square" /></CardContent></Card>
                     <Card><CardHeader><CardTitle>الخصائص</CardTitle></CardHeader><CardContent><PropertiesPanel selectedElement={selectedElement} onUpdate={handleUpdateElement} onDelete={handleDeleteElement} /></CardContent></Card>
                 </div>
             </div>
-
-            <div className="flex-grow w-full bg-muted p-8 rounded-lg overflow-auto flex items-center justify-center">
-                <div data-droppable-id="canvas" className="relative bg-white rounded-md shadow-inner" style={{ ...paperDimensions }} onClick={() => setSelectedIds([])}>
-                     <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
-                        backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
-                        backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)`,
-                        backgroundRepeat: 'repeat',
-                    }} />
-                    <div className="absolute border-2 border-dashed border-red-400/50 pointer-events-none" style={{
-                        top: `${mmToPx(margins.top)}px`, right: `${mmToPx(margins.right)}px`,
-                        bottom: `${mmToPx(margins.bottom)}px`, left: `${mmToPx(margins.left)}px`,
-                    }}/>
-                    {elements.map((el) => (
-                        <DraggableItem key={el.id} element={el} selected={selectedIds.includes(el.id)} onSelect={handleSelect}
-                            onResizeStop={handleResizeStop}
-                            onResize={(id, w, h) => handleUpdateElement(id, { width: w, height: h })}
-                            multiSelect={false}
-                        />
-                    ))}
-                </div>
-            </div>
+            
             <DragOverlay>
             {activeDrag && String(activeDrag.id).startsWith('toolbox-') && (
                 <div className="p-3 rounded-lg border bg-card opacity-70 flex flex-col items-center gap-2" style={{width: 100, height: 100}}>
@@ -364,7 +395,7 @@ export default function PolicyEditorPage() {
                     <span className="text-xs">{activeDrag.data.current?.type}</span>
                 </div>
             )}
-            {activeDrag && !String(activeDrag.id).startsWith('toolbox-') && (
+            {activeDrag && !String(activeDrag.id).startsWith('toolbox-') && activeDrag.data.current?.element && (
                 <div style={{ width: activeDrag.rect.current.initial?.width, height: activeDrag.rect.current.initial?.height }}>
                     <ElementContent el={activeDrag.data.current?.element} />
                 </div>
@@ -374,4 +405,3 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
-
