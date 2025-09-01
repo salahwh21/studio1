@@ -3,11 +3,13 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/icon';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Textarea } from '@/components/ui/textarea';
 
 const integrationsList = [
     { id: 'shopify', name: 'Shopify', iconName: 'ShoppingCart' as const },
@@ -30,6 +32,14 @@ const integrationsList = [
     { id: 'zapier', name: 'Zapier', iconName: 'Zap' as const },
     { id: 'generic-webhook', name: 'Generic Webhook', iconName: 'Webhook' as const },
     { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const }
+];
+
+const mockConversation = [
+    { from: 'ai', text: "مرحبًا! أنا هنا لمساعدتك في ربط متجرك على Shopify. للبدء، أحتاج منك إنشاء تطبيق مخصص (Custom App) داخل لوحة تحكم Shopify الخاصة بك. هل تريدني أن أرشدك للوصول إلى تلك الصفحة؟" },
+    { from: 'user', text: "نعم، أرشدني." },
+    { from: 'ai', text: "ممتاز. افتح لوحة تحكم Shopify، ثم اذهب إلى `Apps and sales channels` > `Develop apps` > `Create an app`. عندما تصل إلى هناك، أخبرني." },
+    { from: 'user', text: "لقد وصلت إلى الصفحة." },
+    { from: 'ai', text: "رائع. الآن، عند إعداد صلاحيات التطبيق، تأكد من منح الأذونات التالية: `read_orders`, `write_orders`, و `read_products`. هذه الصلاحيات ضرورية لجلب الطلبات وتحديث حالتها. بعد حفظ الأذونات، ستمنحك Shopify مفتاح وصول (API Access Token). يرجى لصق المفتاح هنا." },
 ];
 
 export default function ConnectIntegrationPage() {
@@ -81,15 +91,34 @@ export default function ConnectIntegrationPage() {
                         وكيل إعداد التكاملات
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="flex-1 flex items-center justify-center text-center">
-                    <div className="space-y-4">
-                        <Icon name="Wand2" className="h-16 w-16 text-muted-foreground mx-auto animate-pulse" />
-                        <h3 className="text-xl font-semibold">واجهة المحادثة قيد الإنشاء</h3>
-                        <p className="text-muted-foreground">
-                            قريباً، ستتمكن من التحدث مع وكيل الذكاء الاصطناعي لإعداد تكاملاتك خطوة بخطوة.
-                        </p>
-                    </div>
+                <CardContent className="flex-1 space-y-6 overflow-y-auto p-4">
+                   {mockConversation.map((msg, index) => (
+                       <div key={index} className={`flex items-start gap-3 ${msg.from === 'user' ? 'justify-end' : ''}`}>
+                            {msg.from === 'ai' && (
+                                 <Avatar className="h-8 w-8 border-2 border-primary">
+                                    <AvatarFallback><Icon name="Bot" className="h-4 w-4"/></AvatarFallback>
+                                </Avatar>
+                            )}
+                             <div className={`max-w-md rounded-lg p-3 ${msg.from === 'ai' ? 'bg-muted' : 'bg-primary text-primary-foreground'}`}>
+                                <p className="text-sm" style={{whiteSpace: 'pre-wrap'}}>{msg.text}</p>
+                            </div>
+                             {msg.from === 'user' && (
+                                <Avatar className="h-8 w-8">
+                                    <AvatarFallback>أ</AvatarFallback>
+                                </Avatar>
+                            )}
+                       </div>
+                   ))}
                 </CardContent>
+                <CardFooter className="p-4 border-t">
+                    <div className="relative w-full">
+                        <Textarea placeholder="اكتب ردك أو الصق مفتاح الربط هنا..." className="pr-20"/>
+                        <div className="absolute left-2 top-1/2 -translate-y-1/2 flex gap-2">
+                            <Button size="sm"><Icon name="Send" className="h-4 w-4"/></Button>
+                             <Button size="sm" variant="outline"><Icon name="Paperclip" className="h-4 w-4"/></Button>
+                        </div>
+                    </div>
+                </CardFooter>
             </Card>
         </div>
     );
