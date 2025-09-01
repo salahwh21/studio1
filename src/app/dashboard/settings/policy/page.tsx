@@ -33,7 +33,9 @@ import {
     AlignVerticalJustifyEnd,
     AlignHorizontalDistributeCenter,
     AlignVerticalDistributeCenter,
-    Save
+    Save,
+    RectangleHorizontal,
+    Square
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -120,7 +122,7 @@ function ElementContent({ el }: { el: PolicyElement }) {
     borderColor: el.borderColor ?? 'transparent',
     borderStyle: 'solid',
     opacity: el.opacity ?? 1,
-    backgroundColor: el.backgroundColor,
+    backgroundColor: el.type === 'line' ? 'transparent' : el.backgroundColor,
     textAlign: 'center',
     padding: 4,
     wordBreak: 'break-word',
@@ -130,7 +132,7 @@ function ElementContent({ el }: { el: PolicyElement }) {
   if (el.type === 'barcode') return <div style={baseStyle}><Icon name="Barcode" className="h-8 w-8" /></div>;
   if (el.type === 'image') return <div style={baseStyle}><Icon name="Image" className="h-8 w-8 text-muted-foreground" /></div>;
   if (el.type === 'rect') return <div style={baseStyle}></div>;
-  if (el.type === 'line') return <div style={{ ...baseStyle, backgroundColor: el.color ?? '#000000' }}></div>;
+  if (el.type === 'line') return <div style={{ ...baseStyle, backgroundColor: el.color ?? '#000000', padding: 0 }}></div>;
   
   return null;
 }
@@ -163,8 +165,8 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: 
       size={{ width: element.width, height: element.height }}
       onResize={(_e, _dir, ref) => onResize(element.id, ref.offsetWidth, ref.offsetHeight)}
       onResizeStop={(_e, _dir, ref) => onResizeStop(element.id, snapToGrid(ref.offsetWidth), snapToGrid(ref.offsetHeight))}
-      minWidth={GRID_SIZE * 2}
-      minHeight={GRID_SIZE * 2}
+      minWidth={element.type === 'line' ? GRID_SIZE : GRID_SIZE * 2}
+      minHeight={element.type === 'line' ? 1 : GRID_SIZE * 2}
       grid={[GRID_SIZE, GRID_SIZE]}
       enable={{ top: true, right: true, bottom: true, left: true, topRight: true, bottomRight: true, bottomLeft: true, topLeft: true }}
       style={style}
@@ -224,7 +226,7 @@ const PropertiesPanel = ({ selectedElementId, elements, onUpdate, onDelete, onFo
   const isShape = ['rect', 'line'].includes(selectedElement.type);
 
   return (
-    <div className="space-y-4" onFocus={handleFocus}>
+    <div className="space-y-4" onFocus={handleFocus} key={selectedElementId}>
       <h3 className="font-bold text-lg text-center">{selectedElement.type}</h3>
       
       {selectedElement.type === 'text' && (
@@ -250,18 +252,27 @@ const PropertiesPanel = ({ selectedElementId, elements, onUpdate, onDelete, onFo
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
-         <div className="space-y-2"><Label>X</Label><Input type="number" value={selectedElement.x} onChange={(e) => handleNumericChange('x', e.target.value)} /></div>
-        <div className="space-y-2"><Label>Y</Label><Input type="number" value={selectedElement.y} onChange={(e) => handleNumericChange('y', e.target.value)} /></div>
-        <div className="space-y-2"><Label>العرض</Label><Input type="number" value={selectedElement.width} onChange={(e) => handleNumericChange('width', e.target.value)} /></div>
-        <div className="space-y-2"><Label>الارتفاع</Label><Input type="number" value={selectedElement.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
-      </div>
+        <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2"><Label>X</Label><Input type="number" value={selectedElement.x} onChange={(e) => handleNumericChange('x', e.target.value)} /></div>
+            <div className="space-y-2"><Label>Y</Label><Input type="number" value={selectedElement.y} onChange={(e) => handleNumericChange('y', e.target.value)} /></div>
+            {selectedElement.type === 'line' ? (
+                <>
+                    <div className="space-y-2"><Label>الطول</Label><Input type="number" value={selectedElement.width} onChange={(e) => handleNumericChange('width', e.target.value)} /></div>
+                    <div className="space-y-2"><Label>السماكة</Label><Input type="number" value={selectedElement.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
+                </>
+            ) : (
+                <>
+                    <div className="space-y-2"><Label>العرض</Label><Input type="number" value={selectedElement.width} onChange={(e) => handleNumericChange('width', e.target.value)} /></div>
+                    <div className="space-y-2"><Label>الارتفاع</Label><Input type="number" value={selectedElement.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
+                </>
+            )}
+        </div>
        
       {(selectedElement.type === 'text' || selectedElement.type === 'line') && <div className="space-y-2"><Label>اللون</Label><Input type="color" value={selectedElement.color ?? '#000000'} onChange={(e) => handleChange('color', e.target.value)} className="h-10 w-full"/></div>}
       
       {(selectedElement.type === 'rect') && <div className="space-y-2"><Label>لون التعبئة</Label><Input type="color" value={selectedElement.backgroundColor ?? '#ffffff'} onChange={(e) => handleChange('backgroundColor', e.target.value)} className="h-10 w-full"/></div>}
       
-      {(isShape) && (
+      {(selectedElement.type === 'rect') && (
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-2"><Label>لون الحد</Label><Input type="color" value={selectedElement.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full"/></div>
             <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={selectedElement.borderWidth ?? 1} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
