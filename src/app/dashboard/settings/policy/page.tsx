@@ -117,12 +117,12 @@ function ElementContent({ el }: { el: PolicyElement }) {
     overflow: 'hidden',
     fontSize: el.fontSize ?? 14,
     fontWeight: el.fontWeight ?? 'normal',
-    color: el.color ?? '#111827',
-    borderWidth: el.borderWidth ?? 0,
+    color: el.type === 'line' ? 'transparent' : (el.color ?? '#111827'),
+    borderWidth: el.type === 'rect' ? el.borderWidth ?? 1 : 0,
     borderColor: el.borderColor ?? 'transparent',
     borderStyle: 'solid',
     opacity: el.opacity ?? 1,
-    backgroundColor: el.type === 'line' ? 'transparent' : el.backgroundColor,
+    backgroundColor: el.type === 'line' ? (el.color ?? '#000000') : el.backgroundColor,
     textAlign: 'center',
     padding: 4,
     wordBreak: 'break-word',
@@ -132,7 +132,7 @@ function ElementContent({ el }: { el: PolicyElement }) {
   if (el.type === 'barcode') return <div style={baseStyle}><Icon name="Barcode" className="h-8 w-8" /></div>;
   if (el.type === 'image') return <div style={baseStyle}><Icon name="Image" className="h-8 w-8 text-muted-foreground" /></div>;
   if (el.type === 'rect') return <div style={baseStyle}></div>;
-  if (el.type === 'line') return <div style={{ ...baseStyle, backgroundColor: el.color ?? '#000000', padding: 0 }}></div>;
+  if (el.type === 'line') return <div style={{...baseStyle, padding: 0}}></div>;
   
   return null;
 }
@@ -173,7 +173,7 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: 
       ref={(node) => setNodeRef(node?.resizable as HTMLElement | null)}
       {...attributes}
       {...listeners}
-      onClick={(e) => { e.stopPropagation(); onSelect(e, element.id); }}
+      onClick={(e) => onSelect(e, element.id)}
     >
       <div style={{ width: '100%', height: '100%' }}>
         <ElementContent el={element} />
@@ -193,12 +193,11 @@ const ToolboxItem = ({ tool, onClick }: { tool: typeof toolboxItems[0]; onClick:
 };
 
 // ---------- Properties Panel ----------
-const PropertiesPanel = ({ selectedElementId, elements, onUpdate, onDelete, onFocus }: { 
+const PropertiesPanel = ({ selectedElementId, elements, onUpdate, onDelete }: { 
     selectedElementId: string | null;
     elements: PolicyElement[];
     onUpdate: (id: string, updates: Partial<PolicyElement>) => void; 
     onDelete: (id: string) => void;
-    onFocus: (id: string) => void;
 }) => {
   const selectedElement = useMemo(() => {
     return elements.find(el => el.id === selectedElementId) ?? null;
@@ -206,10 +205,6 @@ const PropertiesPanel = ({ selectedElementId, elements, onUpdate, onDelete, onFo
 
   if (!selectedElement) {
     return <div className="text-muted-foreground text-center p-4">حدد عنصر لتعديل خصائصه</div>;
-  }
-
-  const handleFocus = () => {
-      onFocus(selectedElement.id);
   }
 
   const handleChange = (field: keyof PolicyElement, value: any) => {
@@ -226,7 +221,7 @@ const PropertiesPanel = ({ selectedElementId, elements, onUpdate, onDelete, onFo
   const isShape = ['rect', 'line'].includes(selectedElement.type);
 
   return (
-    <div className="space-y-4" onFocus={handleFocus}>
+    <div className="space-y-4">
       <h3 className="font-bold text-lg text-center">{selectedElement.type}</h3>
       
       {selectedElement.type === 'text' && (
@@ -567,7 +562,6 @@ export default function PolicyEditorPage() {
                                 elements={elements}
                                 onUpdate={handleUpdateElement} 
                                 onDelete={handleDeleteElement}
-                                onFocus={(id) => setSelectedIds([id])}
                             />
                         </CardContent>
                     </Card>
