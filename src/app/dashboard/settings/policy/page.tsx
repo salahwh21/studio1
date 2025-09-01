@@ -377,7 +377,6 @@ export default function PolicyEditorPage() {
     }
   };
 
-
   const handleResizeStop = useCallback((id: string, w: number, h: number) => {
     setElements((p) => p.map((el) => (el.id === id ? { ...el, width: snapToGrid(w), height: snapToGrid(h) } : el)));
   }, []);
