@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 const orderSchema = z.object({
   recipientName: z.string().optional(),
   phone: z.string().regex(/^07[789]\d{7}$/, "رقم هاتف أردني غير صالح."),
+  whatsapp: z.string().optional(),
   region: z.string({ required_error: "الرجاء اختيار المنطقة." }),
   city: z.string({ required_error: "الرجاء اختيار مدينة." }),
   address: z.string().optional(),
@@ -53,7 +54,7 @@ const AddOrderPage = () => {
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
-    defaultValues: { recipientName: '', phone: '', city: '', region: '', address: '', cod: 0, notes: '', referenceNumber: '' },
+    defaultValues: { recipientName: '', phone: '', whatsapp: '', city: '', region: '', address: '', cod: 0, notes: '', referenceNumber: '' },
   });
 
   const { watch, setValue, getValues, reset, trigger } = form;
@@ -102,6 +103,7 @@ const AddOrderPage = () => {
       referenceNumber: data.referenceNumber || '',
       recipient: data.recipientName || 'زبون غير مسمى',
       phone: data.phone,
+      whatsapp: data.whatsapp || '',
       address: `${data.address ? `${data.address}, ` : ''}${regionName}, ${data.city}`,
       city: data.city,
       region: regionName,
@@ -117,7 +119,7 @@ const AddOrderPage = () => {
     
     addOrder(newOrder);
     toast({ title: 'تمت الإضافة', description: `تمت إضافة طلب "${data.recipientName}" بنجاح.` });
-    reset({ ...getValues(), recipientName: '', phone: '', cod: 0, notes: '', referenceNumber: '', address: '' });
+    reset({ ...getValues(), recipientName: '', phone: '', whatsapp: '', cod: 0, notes: '', referenceNumber: '', address: '' });
   };
   
   const handleParseWithAI = () => {
@@ -206,6 +208,9 @@ const AddOrderPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField control={form.control} name="recipientName" render={({ field }) => ( <FormItem><FormLabel>المستلم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                     <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>الهاتف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="whatsapp" render={({ field }) => ( <FormItem><FormLabel>رقم واتساب (اختياري)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
+                </div>
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField control={form.control} name="referenceNumber" render={({ field }) => ( <FormItem><FormLabel>رقم مرجعي (اختياري)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
