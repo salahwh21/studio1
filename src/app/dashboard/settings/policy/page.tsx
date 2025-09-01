@@ -85,6 +85,21 @@ type PaperSizeKey = keyof typeof paperSizes;
 const mmToPx = (mm: number) => (mm / 25.4) * DPI;
 const snapToGrid = (v: number) => Math.round(v / GRID_SIZE) * GRID_SIZE;
 
+const toolboxItems = [
+    { type: 'image', label: 'شعار الشركة', icon: 'Building', content: '{company_logo}', defaultWidth: 120, defaultHeight: 40 },
+    { type: 'text', label: 'اسم الشركة', icon: 'Building', content: '{company_name}', defaultWidth: 150, defaultHeight: 24 },
+    { type: 'text', label: 'اسم المتجر', icon: 'Store', content: '{merchant_name}', defaultWidth: 150, defaultHeight: 24 },
+    { type: 'image', label: 'شعار المتجر', icon: 'Store', content: '{merchant_logo}', defaultWidth: 100, defaultHeight: 40 },
+    { type: 'text', label: 'معلومات المستلم', icon: 'User', content: '{recipient_info}', defaultWidth: 200, defaultHeight: 60 },
+    { type: 'text', label: 'معلومات الطلب', icon: 'Package', content: '{order_items}', defaultWidth: 200, defaultHeight: 60 },
+    { type: 'text', label: 'قيمة التحصيل', icon: 'HandCoins', content: '{cod_amount}', defaultWidth: 100, defaultHeight: 32 },
+    { type: 'barcode', label: 'باركود', icon: 'Barcode', content: '{order_id}', defaultWidth: 150, defaultHeight: 50 },
+    { type: 'text', label: 'رقم الطلب', icon: 'ClipboardList', content: '{order_id}', defaultWidth: 150, defaultHeight: 24 },
+    { type: 'text', label: 'الرقم المرجعي', icon: 'ClipboardCheck', content: '{reference_id}', defaultWidth: 150, defaultHeight: 24 },
+    { type: 'text', label: 'نص', icon: 'Type', content: 'نص جديد', defaultWidth: 120, defaultHeight: 24 },
+];
+
+
 // ---------- Element content ----------
 function ElementContent({ el }: { el: PolicyElement }) {
   const baseStyle: React.CSSProperties = {
@@ -156,13 +171,12 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: 
 };
 
 // ---------- Toolbox item ----------
-const ToolboxItem = ({ type, label, icon, onClick }: { type: ElementType; label: string; icon: any; onClick: () => void; }) => {
+const ToolboxItem = ({ tool, onClick }: { tool: typeof toolboxItems[0]; onClick: () => void; }) => {
   return (
-    <div onClick={onClick}
-      className="flex flex-col items-center justify-center gap-2 p-3 rounded-lg border bg-card cursor-pointer hover:shadow-lg hover:border-primary transition-all text-center h-24">
-      <Icon name={icon} className="w-6 h-6 text-primary" />
-      <span className="text-xs font-semibold">{label}</span>
-    </div>
+    <Button variant="outline" size="sm" onClick={onClick} className="h-auto flex items-center justify-start gap-2 p-2 w-full text-right">
+      <Icon name={tool.icon as any} className="w-4 h-4 text-primary" />
+      <span className="text-xs font-semibold">{tool.label}</span>
+    </Button>
   );
 };
 
@@ -249,23 +263,24 @@ export default function PolicyEditorPage() {
     }
   }, []);
 
-  const addElement = useCallback((type: ElementType) => {
+  const addElement = useCallback((tool: typeof toolboxItems[0]) => {
     if (!canvasRef.current) return;
     const canvasRect = canvasRef.current.getBoundingClientRect();
     
-    let newElement: PolicyElement;
-    const commonProps = { id: nanoid() };
-    const defaultWidth = 120;
-    const defaultHeight = 40;
-    
-    const centerX = canvasRect.width / 2 - defaultWidth / 2;
-    const centerY = canvasRect.height / 2 - defaultHeight / 2;
-
-    newElement = {
-        ...commonProps, type, x: snapToGrid(centerX), y: snapToGrid(centerY),
-        width: type === 'text' ? 160 : defaultWidth, height: type === 'text' ? 32 : defaultHeight,
-        content: type === 'text' ? 'نص جديد' : '', fontSize: 14, fontWeight: 'normal',
-        color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1,
+    const newElement: PolicyElement = {
+        id: nanoid(),
+        type: tool.type,
+        x: snapToGrid(canvasRect.width / 2 - tool.defaultWidth / 2),
+        y: snapToGrid(canvasRect.height / 2 - tool.defaultHeight / 2),
+        width: tool.defaultWidth,
+        height: tool.defaultHeight,
+        content: tool.content,
+        fontSize: 14,
+        fontWeight: 'normal',
+        color: '#000000',
+        borderColor: '#000000',
+        borderWidth: 2,
+        opacity: 1,
     };
     setElements((prev) => [...prev, newElement]);
     setSelectedIds([newElement.id]);
@@ -490,9 +505,9 @@ export default function PolicyEditorPage() {
                      <Card>
                         <CardHeader><CardTitle>الأدوات</CardTitle></CardHeader>
                         <CardContent className="grid grid-cols-2 gap-3">
-                            <ToolboxItem type="text" label="نص" icon="Type" onClick={() => addElement('text')} />
-                            <ToolboxItem type="image" label="صورة" icon="Image" onClick={() => addElement('image')} />
-                            <ToolboxItem type="barcode" label="باركود" icon="Barcode" onClick={() => addElement('barcode')} />
+                            {toolboxItems.map(tool => (
+                                <ToolboxItem key={tool.label} tool={tool} onClick={() => addElement(tool)} />
+                            ))}
                         </CardContent>
                     </Card>
                     <Card>
