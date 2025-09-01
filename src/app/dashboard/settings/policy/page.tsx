@@ -191,12 +191,17 @@ const ToolboxItem = ({ tool, onClick }: { tool: typeof toolboxItems[0]; onClick:
 };
 
 // ---------- Properties Panel ----------
-const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onFocus }: { 
-    selectedElement: PolicyElement | null; 
+const PropertiesPanel = ({ selectedElementId, elements, onUpdate, onDelete, onFocus }: { 
+    selectedElementId: string | null;
+    elements: PolicyElement[];
     onUpdate: (id: string, updates: Partial<PolicyElement>) => void; 
     onDelete: (id: string) => void;
     onFocus: (id: string) => void;
 }) => {
+  const selectedElement = useMemo(() => {
+    return elements.find(el => el.id === selectedElementId) ?? null;
+  }, [elements, selectedElementId]);
+
   if (!selectedElement) {
     return <div className="text-muted-foreground text-center p-4">حدد عنصر لتعديل خصائصه</div>;
   }
@@ -465,9 +470,6 @@ export default function PolicyEditorPage() {
     localStorage.setItem('policyTemplates', JSON.stringify(updatedTemplates));
     toast({ title: 'تم الحذف', description: 'تم حذف القالب بنجاح.' });
   };
-
-
-  const selectedElement = useMemo(() => elements.find((el) => el.id === selectedIds[0]) ?? null, [elements, selectedIds]);
   
   const paperDimensions = useMemo(() => {
     if (paperSizeKey === 'custom') {
@@ -549,7 +551,8 @@ export default function PolicyEditorPage() {
                         <CardHeader><CardTitle>الخصائص</CardTitle></CardHeader>
                         <CardContent>
                             <PropertiesPanel 
-                                selectedElement={selectedElement} 
+                                selectedElementId={selectedIds.length === 1 ? selectedIds[0] : null}
+                                elements={elements}
                                 onUpdate={handleUpdateElement} 
                                 onDelete={handleDeleteElement}
                                 onFocus={(id) => setSelectedIds([id])}
