@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useUsersStore, User } from '@/store/user-store';
 import { useOrdersStore, Order } from '@/store/orders-store';
-import { useAreasStore, City } from '@/store/areas-store';
+import { useAreasStore, City, Area } from '@/store/areas-store';
 import { useToast } from '@/hooks/use-toast';
 import { nanoid } from 'nanoid';
 
@@ -19,14 +19,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/icon';
+import { Separator } from '@/components/ui/separator';
 
 const orderSchema = z.object({
   recipientName: z.string().min(1, "الاسم مطلوب"),
   phone: z.string().regex(/^07[789]\d{7}$/, "رقم الهاتف غير صالح."),
-  city: z.string({ required_error: "الرجاء اختيار المدينة." }),
   region: z.string({ required_error: "الرجاء اختيار المنطقة." }),
-  itemPrice: z.coerce.number().min(0, "المبلغ يجب أن يكون موجبًا."),
-  deliveryFee: z.coerce.number().min(0, "الأجور يجب أن تكون موجبة."),
+  city: z.string({ required_error: "الرجاء اختيار مدينة." }),
+  cod: z.coerce.number().min(0, "المبلغ يجب أن يكون موجبًا."),
   notes: z.string().optional(),
   referenceNumber: z.string().optional(),
 });
@@ -45,18 +45,38 @@ const AddOrderPage = () => {
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
-    defaultValues: { recipientName: '', phone: '', city: '', region: '', itemPrice: 0, deliveryFee: 0, notes: '', referenceNumber: '' },
+    defaultValues: { recipientName: '', phone: '', city: '', region: '', cod: 0, notes: '', referenceNumber: '' },
   });
 
-  const { watch, setValue, getValues, reset } = form;
+  const { watch, setValue, getValues, reset, trigger } = form;
+  const selectedRegion = watch('region');
+  const codValue = watch('cod');
   const selectedCity = watch('city');
-  const itemPrice = watch('itemPrice');
-  const deliveryFee = watch('deliveryFee');
 
   const merchantOptions = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
-  const regionOptions = useMemo(() => cities.find(c => c.name === selectedCity)?.areas || [], [cities, selectedCity]);
+  const allRegions = useMemo(() => cities.flatMap(c => c.areas.map(a => ({ ...a, cityName: c.name }))), [cities]);
+  
+  // Auto-select city when region changes
+  useEffect(() => {
+    if (selectedRegion) {
+        const regionData = allRegions.find(r => r.name === selectedRegion);
+        if (regionData) {
+            setValue('city', regionData.cityName, { shouldValidate: true });
+        }
+    }
+  }, [selectedRegion, allRegions, setValue]);
 
-  const totalCod = useMemo(() => (Number(itemPrice) || 0) + (Number(deliveryFee) || 0), [itemPrice, deliveryFee]);
+
+  // Mock pricing logic - in a real app this would be more complex
+  const calculatedFees = useMemo(() => {
+    if (!selectedCity || codValue <= 0) {
+      return { deliveryFee: 0, itemPrice: 0 };
+    }
+    // Simple mock logic: fee is 2.5 for Amman, 3.5 for others
+    const deliveryFee = selectedCity === 'عمان' ? 2.5 : 3.5;
+    const itemPrice = codValue - deliveryFee;
+    return { deliveryFee, itemPrice };
+  }, [codValue, selectedCity]);
   
   const handleAddOrder = (data: OrderFormValues) => {
     const merchant = users.find(u => u.id === selectedMerchantId);
@@ -77,16 +97,16 @@ const AddOrderPage = () => {
       status: 'بالانتظار',
       driver: 'غير معين',
       merchant: merchant.name,
-      cod: data.itemPrice + data.deliveryFee,
-      itemPrice: data.itemPrice,
-      deliveryFee: data.deliveryFee,
+      cod: data.cod,
+      itemPrice: calculatedFees.itemPrice,
+      deliveryFee: calculatedFees.deliveryFee,
       date: new Date().toISOString().split('T')[0],
       notes: data.notes || '',
     };
     
     addOrder(newOrder);
     toast({ title: 'تمت الإضافة', description: `تمت إضافة طلب "${data.recipientName}" بنجاح.` });
-    reset({ ...getValues(), recipientName: '', phone: '', itemPrice: 0, notes: '', referenceNumber: '' });
+    reset({ ...getValues(), recipientName: '', phone: '', cod: 0, notes: '', referenceNumber: '' });
   };
   
   const handleParseWithAI = () => {
@@ -142,18 +162,27 @@ const AddOrderPage = () => {
              <CardHeader><CardTitle>الإدخال اليدوي</CardTitle></CardHeader>
              <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField control={form.control} name="itemPrice" render={({ field }) => ( <FormItem><FormLabel>المستحق للتاجر</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem> )} />
-                    <FormField control={form.control} name="deliveryFee" render={({ field }) => ( <FormItem><FormLabel>أجور التوصيل</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem> )} />
-                    <FormItem><FormLabel>قيمة التحصيل</FormLabel><Input value={totalCod.toFixed(2)} readOnly className="font-bold text-lg bg-muted" /></FormItem>
-                </div>
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField control={form.control} name="recipientName" render={({ field }) => ( <FormItem><FormLabel>اسم المستلم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                     <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>الهاتف</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
-                    <FormField control={form.control} name="recipientName" render={({ field }) => ( <FormItem><FormLabel>الاسم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                     <FormField control={form.control} name="referenceNumber" render={({ field }) => ( <FormItem><FormLabel>رقم مرجعي</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <FormField control={form.control} name="city" render={({ field }) => ( <FormItem><FormLabel>المدينة</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر مدينة" /></SelectTrigger></FormControl><SelectContent>{cities.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )} />
-                     <FormField control={form.control} name="region" render={({ field }) => ( <FormItem><FormLabel>المنطقة</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!selectedCity}><FormControl><SelectTrigger><SelectValue placeholder={selectedCity ? "اختر منطقة" : "اختر مدينة أولاً"} /></SelectTrigger></FormControl><SelectContent>{regionOptions.map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )} />
+                     <FormField control={form.control} name="region" render={({ field }) => ( <FormItem><FormLabel>المنطقة</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر منطقة..." /></SelectTrigger></FormControl><SelectContent>{allRegions.map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )} />
+                     <FormField control={form.control} name="city" render={({ field }) => ( <FormItem><FormLabel>المدينة</FormLabel><FormControl><Input {...field} readOnly className="bg-muted" placeholder="سيتم تحديدها تلقائياً" /></FormControl><FormMessage /></FormItem> )} />
+                </div>
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <FormField control={form.control} name="cod" render={({ field }) => ( <FormItem className="md:col-span-1"><FormLabel>قيمة التحصيل (COD)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <div className="md:col-span-2 grid grid-cols-2 gap-4 rounded-lg border p-3 bg-muted h-fit">
+                        <div>
+                            <p className="text-xs text-muted-foreground">المستحق للتاجر</p>
+                            <p className="font-bold text-primary">{calculatedFees.itemPrice.toFixed(2)} د.أ</p>
+                        </div>
+                        <Separator orientation="vertical" className="h-auto"/>
+                        <div>
+                            <p className="text-xs text-muted-foreground">أجور التوصيل</p>
+                            <p className="font-bold text-primary">{calculatedFees.deliveryFee.toFixed(2)} د.أ</p>
+                        </div>
+                    </div>
                 </div>
                  <FormField control={form.control} name="notes" render={({ field }) => ( <FormItem><FormLabel>ملاحظات</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )} />
              </CardContent>
