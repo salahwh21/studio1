@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useTransition } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,6 +13,8 @@ import { nanoid } from 'nanoid';
 import { Check, ChevronsUpDown, Printer, Trash2 } from 'lucide-react';
 import { useActionState } from 'react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
+import { useReactToPrint } from 'react-to-print';
+import { PrintablePolicy } from '@/components/printable-policy';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,6 +71,11 @@ const AddOrderPage = () => {
   
   const [aiState, formAction, isAiPending] = useActionState(parseOrderFromRequest, {
       data: null, error: null, message: ''
+  });
+  
+  const componentToPrintRef = useRef(null);
+  const handlePrint = useReactToPrint({
+      content: () => componentToPrintRef.current,
   });
 
   const form = useForm<OrderFormValues>({
@@ -208,9 +215,19 @@ const AddOrderPage = () => {
     toast({ title: "تم الحذف", description: `تم حذف ${selectedRecent.length} طلبات.` });
     setSelectedRecent([]);
   }
+  
+  const ordersToPrint = useMemo(() => {
+    return recentlyAdded.filter(o => selectedRecent.includes(o.id));
+  }, [recentlyAdded, selectedRecent]);
 
   return (
     <div className="space-y-6">
+       <div style={{ display: 'none' }}>
+            <div ref={componentToPrintRef}>
+                <PrintablePolicy orders={ordersToPrint} />
+            </div>
+       </div>
+
       <Card>
         <CardHeader>
           <CardTitle>إضافة طلبات جديدة</CardTitle>
@@ -383,7 +400,7 @@ const AddOrderPage = () => {
                 <div className="flex items-center justify-between">
                     <CardTitle>طلبات مضافة حديثاً ({recentlyAdded.length})</CardTitle>
                     <div className="flex items-center gap-2">
-                         <Button variant="outline" size="sm" disabled={selectedRecent.length === 0}><Printer className="h-4 w-4 ml-2"/>طباعة بوليصة</Button>
+                         <Button variant="outline" size="sm" disabled={selectedRecent.length === 0} onClick={handlePrint}><Printer className="h-4 w-4 ml-2"/>طباعة بوليصة</Button>
                          <Button variant="destructive" size="sm" disabled={selectedRecent.length === 0} onClick={handleDeleteSelected}><Trash2 className="h-4 w-4 ml-2"/>حذف المحدد</Button>
                     </div>
                 </div>
