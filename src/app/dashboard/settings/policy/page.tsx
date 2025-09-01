@@ -226,7 +226,7 @@ const PropertiesPanel = ({ selectedElementId, elements, onUpdate, onDelete, onFo
   const isShape = ['rect', 'line'].includes(selectedElement.type);
 
   return (
-    <div className="space-y-4" onFocus={handleFocus} key={selectedElementId}>
+    <div className="space-y-4" onFocus={handleFocus}>
       <h3 className="font-bold text-lg text-center">{selectedElement.type}</h3>
       
       {selectedElement.type === 'text' && (
@@ -561,7 +561,8 @@ export default function PolicyEditorPage() {
                     <Card>
                         <CardHeader><CardTitle>الخصائص</CardTitle></CardHeader>
                         <CardContent>
-                            <PropertiesPanel 
+                             <PropertiesPanel 
+                                key={selectedIds.length === 1 ? selectedIds[0] : 'none'}
                                 selectedElementId={selectedIds.length === 1 ? selectedIds[0] : null}
                                 elements={elements}
                                 onUpdate={handleUpdateElement} 
