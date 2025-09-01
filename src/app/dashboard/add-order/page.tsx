@@ -38,7 +38,7 @@ const orderSchema = z.object({
   recipientName: z.string().optional(),
   phone: z.string().regex(/^07[789]\d{7}$/, "رقم هاتف أردني غير صالح."),
   whatsapp: z.string().optional(),
-  region: z.string({ required_error: "الرجاء اختيار المنطقة." }),
+  region: z.string({ required_error: "الرجاء اختيار المنطقة." }).min(1, "الرجاء اختيار المنطقة."),
   city: z.string({ required_error: "الرجاء اختيار مدينة." }),
   address: z.string().optional(),
   cod: z.coerce.number().min(0, "المبلغ يجب أن يكون موجبًا."),
