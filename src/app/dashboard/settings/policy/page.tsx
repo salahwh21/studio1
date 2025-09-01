@@ -1,18 +1,20 @@
 
+// PolicyEditorPage.tsx
 'use client';
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   DndContext,
-  useDraggable,
-  useDroppable,
-  PointerSensor,
-  useSensor,
-  useSensors,
   DragEndEvent,
   DragOverlay,
-  Active,
   DragStartEvent,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  PointerSensor,
+  Active,
+  Modifier,
 } from '@dnd-kit/core';
 import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { nanoid } from 'nanoid';
@@ -21,14 +23,18 @@ import { Resizable } from 're-resizable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import Icon from '@/components/icon';
 import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import Link from 'next/link';
 
-// Types for Editor Elements
+// ---------- Types ----------
 type ElementType = 'text' | 'image' | 'barcode' | 'rect';
-export type PolicyElement = {
+type FontWeight = 'normal' | 'bold';
+
+type PolicyElement = {
   id: string;
   type: ElementType;
   x: number;
@@ -37,329 +43,335 @@ export type PolicyElement = {
   height: number;
   content: string;
   fontSize?: number;
-  fontWeight?: 'normal' | 'bold';
+  fontWeight?: FontWeight;
+  color?: string;
   borderColor?: string;
   borderWidth?: number;
   opacity?: number;
 };
 
-const MM_TO_PX = 3.7795;
+const GRID_SIZE = 8;
+const DPI = 96; // 96 pixels per inch
 
-const paperSizes = {
-  a4: { width: 210 * MM_TO_PX, height: 297 * MM_TO_PX, label: 'A4 (210x297mm)' },
-  a5: { width: 148 * MM_TO_PX, height: 210 * MM_TO_PX, label: 'A5 (148x210mm)' },
-  label_4x6: { width: 101.6 * MM_TO_PX, height: 152.4 * MM_TO_PX, label: 'Label (4x6 inch)' },
-  label_4x4: { width: 101.6 * MM_TO_PX, height: 101.6 * MM_TO_PX, label: 'Label (4x4 inch)' },
-  custom: { width: 210 * MM_TO_PX, height: 297 * MM_TO_PX, label: 'حجم مخصص' },
+type PaperSize = { width: number; height: number; label: string };
+const paperSizes: Record<string, PaperSize> = {
+  a4: { width: 210, height: 297, label: 'A4 (210×297mm)' },
+  a5: { width: 148, height: 210, label: 'A5 (148×210mm)' },
+  label_4x6: { width: 4 * 25.4, height: 6 * 25.4, label: 'Label 4×6 in' },
+  label_4x4: { width: 4 * 25.4, height: 4 * 25.4, label: 'Label 4×4 in' },
+  custom: { width: 100, height: 100, label: 'حجم مخصص' },
 };
-
 type PaperSizeKey = keyof typeof paperSizes;
-const GRID_SIZE = 1;
 
-// ----------------- Draggable & Resizable Item -----------------
-const DraggableItem = React.forwardRef<HTMLElement, { element: PolicyElement; isSelected: boolean; onSelect: (id: string) => void; onResizeStop: (id: string, width: number, height: number) => void; isDragging: boolean }>(
-  ({ element, isSelected, onSelect, onResizeStop, isDragging }, ref) => {
-    const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: element.id, data: { element } });
+const mmToPx = (mm: number) => (mm / 25.4) * DPI;
+const snapToGrid = (v: number) => Math.round(v / GRID_SIZE) * GRID_SIZE;
 
-    const style = {
-        left: element.x,
-        top: element.y,
-        width: element.width,
-        height: element.height,
-        transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-        visibility: isDragging ? 'hidden' : 'visible' as React.CSSProperties['visibility'],
-    };
-    
-    const renderContent = () => {
-      switch (element.type) {
-        case 'text':
-          return <div style={{ fontSize: element.fontSize, fontWeight: element.fontWeight }} className="w-full h-full overflow-hidden">{element.content || 'نص تجريبي'}</div>;
-        case 'barcode':
-          return <Icon name="Barcode" className="w-full h-full opacity-75" />;
-        case 'image':
-          return <Icon name="Image" className="w-full h-full opacity-75 text-muted-foreground" />;
-        case 'rect':
-          return <div className="w-full h-full border" style={{ borderColor: element.borderColor, borderWidth: element.borderWidth }} />;
-      }
-    };
+// ---------- Element content ----------
+function ElementContent({ el }: { el: PolicyElement }) {
+  const baseStyle: React.CSSProperties = {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    fontSize: el.fontSize ?? 14,
+    fontWeight: el.fontWeight ?? 'normal',
+    color: el.color ?? '#111827',
+    opacity: el.opacity ?? 1,
+    textAlign: 'center',
+    padding: 4,
+    wordBreak: 'break-word',
+  };
 
-    return (
-        <Resizable
-            size={{ width: element.width, height: element.height }}
-            onResizeStop={(e, direction, ref, d) => onResizeStop(element.id, element.width + d.width, element.height + d.height)}
-            grid={[GRID_SIZE, GRID_SIZE]}
-            className={cn('absolute p-1 bg-transparent group/item', isSelected ? 'border-2 border-blue-500 z-20' : 'border border-transparent hover:border-blue-300 z-10')}
-            style={style}
-            ref={setNodeRef as any}
-            {...listeners}
-            {...attributes}
-            onClick={(e) => { e.stopPropagation(); onSelect(element.id); }}
-        >
-            {renderContent()}
-        </Resizable>
-    );
-  }
-);
-DraggableItem.displayName = 'DraggableItem';
+  if (el.type === 'text') return <div style={baseStyle}>{el.content || 'نص جديد'}</div>;
+  if (el.type === 'barcode') return <div style={baseStyle}><Icon name="Barcode" className="h-8 w-8" /></div>;
+  if (el.type === 'image') return <div style={baseStyle}><Icon name="Image" className="h-8 w-8 text-muted-foreground" /></div>;
+  if (el.type === 'rect') return (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        borderStyle: 'solid',
+        borderColor: el.borderColor ?? '#6b7280',
+        borderWidth: el.borderWidth ?? 2,
+        opacity: el.opacity ?? 1,
+      }}
+    />
+  );
+  return null;
+}
 
+// ---------- Canvas item ----------
+const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize, multiSelect }: {
+  element: PolicyElement;
+  selected: boolean;
+  onSelect: (id: string, multi?: boolean) => void;
+  onResizeStop: (id: string, w: number, h: number) => void;
+  onResize: (id: string, w: number, h: number) => void;
+  multiSelect: boolean;
+}) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: element.id, data: { element } });
 
-// ----------------- Canvas -----------------
-const PolicyCanvas = ({ width, height, margins, elements, selectedElementId, onSelectElement, onElementResize, activeDragId }: { width: number, height: number, margins: {top: number, right: number, bottom: number, left: number}, elements: PolicyElement[]; selectedElementId: string | null; onSelectElement: (id: string | null) => void; onElementResize: (id: string, width: number, height: number) => void; activeDragId: string | null; }) => {
-  const { setNodeRef, isOver } = useDroppable({ id: 'canvas' });
+  const style: React.CSSProperties = {
+    position: 'absolute',
+    left: element.x,
+    top: element.y,
+    width: element.width,
+    height: element.height,
+    cursor: 'grab',
+    zIndex: selected ? 50 : 20,
+    outline: selected ? '2px solid hsl(var(--primary))' : 'none',
+    outlineOffset: '2px',
+    visibility: isDragging ? 'hidden' : 'visible',
+  };
 
   return (
-    <div
-      ref={setNodeRef}
-      data-droppable-id="canvas"
-      className={cn('relative bg-white rounded-lg shadow-inner overflow-hidden mx-auto transition-all', isOver ? 'outline outline-2 outline-offset-2 outline-primary' : '')}
-      style={{ width, height }}
-      onClick={() => onSelectElement(null)}
+    <Resizable
+      size={{ width: element.width, height: element.height }}
+      onResize={(_e, _dir, ref) => onResize(element.id, ref.offsetWidth, ref.offsetHeight)}
+      onResizeStop={(_e, _dir, ref) => onResizeStop(element.id, snapToGrid(ref.offsetWidth), snapToGrid(ref.offsetHeight))}
+      minWidth={GRID_SIZE * 2}
+      minHeight={GRID_SIZE * 2}
+      grid={[GRID_SIZE, GRID_SIZE]}
+      enable={{ top: false, right: true, bottom: true, left: false, bottomRight: true }}
+      style={style}
+      ref={(node) => setNodeRef(node?.resizable as HTMLElement | null)}
+      {...attributes}
+      {...listeners}
+      onClick={(e) => { e.stopPropagation(); onSelect(element.id, multiSelect); }}
     >
-      <div 
-        className="absolute inset-0 pointer-events-none border-2 border-dashed border-gray-300" 
-        style={{
-            top: margins.top,
-            right: margins.right,
-            bottom: margins.bottom,
-            left: margins.left
-        }}
-      />
-      {elements.map(el => (
-        <DraggableItem 
-          key={el.id} 
-          element={el} 
-          isSelected={selectedElementId === el.id} 
-          onSelect={onSelectElement} 
-          onResizeStop={onElementResize}
-          isDragging={activeDragId === el.id}
-        />
-      ))}
-    </div>
+      <div style={{ width: '100%', height: '100%' }}>
+        <ElementContent el={element} />
+      </div>
+    </Resizable>
   );
 };
 
-
-// ----------------- Toolbox & Properties -----------------
-const ToolboxItem = ({ type, icon, label }: { type: ElementType; icon: any; label: string }) => {
+// ---------- Toolbox item ----------
+const ToolboxItem = ({ type, label, icon }: { type: ElementType; label: string; icon: any; }) => {
   const { attributes, listeners, setNodeRef } = useDraggable({ id: `toolbox-${type}`, data: { type } });
   return (
-    <div ref={setNodeRef} {...listeners} {...attributes} className="flex flex-col items-center gap-2 p-3 rounded-lg border bg-card hover:bg-accent hover:shadow-md cursor-grab transition-all">
-      <Icon name={icon} className="h-6 w-6" />
-      <span className="text-xs font-medium">{label}</span>
+    <div ref={setNodeRef} {...attributes} {...listeners}
+      className="flex flex-col items-center justify-center gap-2 p-3 rounded-lg border bg-card cursor-grab hover:shadow-lg hover:border-primary transition-all text-center h-24">
+      <Icon name={icon} className="w-6 h-6 text-primary" />
+      <span className="text-xs font-semibold">{label}</span>
     </div>
   );
 };
 
-const EditorControls = ({ selectedElement, onElementUpdate, onElementDelete }: { selectedElement: PolicyElement | null; onElementUpdate: (id: string, updates: Partial<PolicyElement>) => void; onElementDelete: (id: string) => void; }) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="shadow-lg lg:col-span-1">
-            <CardHeader><CardTitle className="text-base">الأدوات</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-4 gap-3">
-                <ToolboxItem type="text" icon="Type" label="نص" />
-                <ToolboxItem type="image" icon="Image" label="صورة/شعار" />
-                <ToolboxItem type="barcode" icon="Barcode" label="باركود" />
-                <ToolboxItem type="rect" icon="Square" label="مربع" />
-            </CardContent>
-        </Card>
-        <Card className="shadow-lg lg:col-span-2">
-            <CardHeader><CardTitle className="text-base">خصائص العنصر</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-                {!selectedElement ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">حدد عنصراً لتعديل خصائصه</p>
-                ) : (
-                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end'>
-                         {selectedElement.type === 'text' && (
-                            <>
-                                <div className="space-y-2 md:col-span-2">
-                                    <Label htmlFor="text-content">المحتوى</Label>
-                                    <Input id="text-content" value={selectedElement.content} onChange={(e) => onElementUpdate(selectedElement.id, { content: e.target.value })} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="font-size">حجم الخط</Label>
-                                    <Input id="font-size" type="number" value={selectedElement.fontSize} onChange={(e) => onElementUpdate(selectedElement.id, { fontSize: parseInt(e.target.value) })} />
-                                </div>
-                            </>
-                         )}
-                        <div className="space-y-2">
-                            <Label htmlFor="pos-x">X</Label>
-                            <Input id="pos-x" type="number" value={Math.round(selectedElement.x)} onChange={(e) => onElementUpdate(selectedElement.id, { x: parseInt(e.target.value) })} />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="pos-y">Y</Label>
-                            <Input id="pos-y" type="number" value={Math.round(selectedElement.y)} onChange={(e) => onElementUpdate(selectedElement.id, { y: parseInt(e.target.value) })} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="width">العرض</Label>
-                            <Input id="width" type="number" value={selectedElement.width} onChange={(e) => onElementUpdate(selectedElement.id, { width: parseInt(e.target.value) })} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="height">الارتفاع</Label>
-                            <Input id="height" type="number" value={selectedElement.height} onChange={(e) => onElementUpdate(selectedElement.id, { height: parseInt(e.target.value) })} />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => {}}>تكرار</Button>
-                            <Button variant="destructive" size="sm" onClick={() => onElementDelete(selectedElement.id)}>حذف</Button>
-                        </div>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    </div>
-);
+// ---------- Properties Panel ----------
+const PropertiesPanel = ({ selectedElement, onUpdate, onDelete }: { selectedElement: PolicyElement | null; onUpdate: (id: string, updates: Partial<PolicyElement>) => void; onDelete: (id: string) => void; }) => {
+  if (!selectedElement) {
+    return <div className="text-muted-foreground text-center p-4">حدد عنصر لتعديل خصائصه</div>;
+  }
 
-// ----------------- Main Page -----------------
-export default function PolicyEditorPage() {
-  const [elements, setElements] = useState<PolicyElement[]>([]);
-  const [activeDragItem, setActiveDragItem] = useState<Active | null>(null);
-  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
-  const [paperSizeKey, setPaperSizeKey] = useState<PaperSizeKey>('a4');
+  const handleChange = (field: keyof PolicyElement, value: any) => {
+    onUpdate(selectedElement.id, { [field]: value });
+  };
   
-  const [customDimensions, setCustomDimensions] = useState({
-      width: 210, height: 297, marginTop: 10, marginRight: 10, marginBottom: 10, marginLeft: 10
-  });
+  const handleNumericChange = (field: keyof PolicyElement, value: string) => {
+    const num = parseInt(value, 10);
+    if (!isNaN(num)) {
+      handleChange(field, num);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <h3 className="font-bold text-lg text-center">{selectedElement.type}</h3>
+      {selectedElement.type === 'text' && (
+        <div className="space-y-2">
+          <Label>النص</Label>
+          <Textarea value={selectedElement.content} onChange={(e) => handleChange('content', e.target.value)} />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2">
+                <Label>حجم الخط</Label>
+                <Input type="number" value={selectedElement.fontSize} onChange={(e) => handleNumericChange('fontSize', e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label>وزن الخط</Label>
+                <Select value={selectedElement.fontWeight} onValueChange={(val: FontWeight) => handleChange('fontWeight', val)}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="normal">عادي</SelectItem>
+                        <SelectItem value="bold">عريض</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+         <div className="space-y-2"><Label>X</Label><Input type="number" value={selectedElement.x} onChange={(e) => handleNumericChange('x', e.target.value)} /></div>
+        <div className="space-y-2"><Label>Y</Label><Input type="number" value={selectedElement.y} onChange={(e) => handleNumericChange('y', e.target.value)} /></div>
+        <div className="space-y-2"><Label>العرض</Label><Input type="number" value={selectedElement.width} onChange={(e) => handleNumericChange('width', e.target.value)} /></div>
+        <div className="space-y-2"><Label>الارتفاع</Label><Input type="number" value={selectedElement.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
+        <div className="space-y-2"><Label>لون الخط</Label><Input type="color" value={selectedElement.color} onChange={(e) => handleChange('color', e.target.value)} className="h-10"/></div>
+      </div>
+      <Button variant="destructive" onClick={() => onDelete(selectedElement.id)} className="w-full"><Icon name="Trash2" className="ml-2" /> حذف العنصر</Button>
+    </div>
+  );
+};
+
+
+// ---------- Main component ----------
+export default function PolicyEditorPage() {
+  const [paperSizeKey, setPaperSizeKey] = useState<PaperSizeKey>('a4');
+  const [customDimensions, setCustomDimensions] = useState({ width: 100, height: 150 });
+  const [margins, setMargins] = useState({ top: 10, right: 10, bottom: 10, left: 10 });
+  const [elements, setElements] = useState<PolicyElement[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [activeDrag, setActiveDrag] = useState<Active | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
-  const snapToGrid = (value: number) => Math.round(value / GRID_SIZE) * GRID_SIZE;
+
+  const addElementAt = useCallback((type: ElementType, x: number, y: number) => {
+    const el: PolicyElement = {
+      id: nanoid(), type, x: snapToGrid(x), y: snapToGrid(y),
+      width: type === 'text' ? 160 : 100, height: type === 'text' ? 32 : 100,
+      content: type === 'text' ? 'نص جديد' : '', fontSize: 14, fontWeight: 'normal',
+      color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1,
+    };
+    setElements((p) => [...p, el]);
+    setSelectedIds([el.id]);
+  }, []);
+
+  const handleDragStart = useCallback((e: DragStartEvent) => setActiveDrag(e.active), []);
+
+  const handleDragEnd = useCallback((e: DragEndEvent) => {
+    const { active, over, delta } = e;
+    setActiveDrag(null);
+    if (!over) return;
+  
+    const isTool = String(active.id).startsWith('toolbox-');
+    const canvasEl = document.querySelector('[data-droppable-id="canvas"]') as HTMLElement | null;
+    if (!canvasEl) return;
+    const canvasRect = canvasEl.getBoundingClientRect();
+  
+    if (isTool) {
+      const toolType = active.data.current?.type as ElementType;
+      // This uses a fixed drop position for simplicity, can be refined with pointer position
+      const dropX = snapToGrid((e.activatorEvent as MouseEvent).clientX - canvasRect.left);
+      const dropY = snapToGrid((e.activatorEvent as MouseEvent).clientY - canvasRect.top);
+      addElementAt(toolType, dropX, dropY);
+    } else {
+      const id = String(active.id);
+      setElements((prev) =>
+        prev.map((el) => {
+          if (el.id === id) {
+            return {
+              ...el,
+              x: snapToGrid(el.x + delta.x),
+              y: snapToGrid(el.y + delta.y),
+            };
+          }
+          return el;
+        })
+      );
+    }
+  }, [addElementAt]);
+
+  const handleSelect = useCallback((id: string, multi?: boolean) => {
+    if (multi) setSelectedIds((p) => (p.includes(id) ? p.filter(i => i !== id) : [...p, id]));
+    else setSelectedIds([id]);
+  }, []);
+
+  const handleResizeStop = useCallback((id: string, w: number, h: number) => {
+    setElements((p) => p.map((el) => (el.id === id ? { ...el, width: snapToGrid(w), height: snapToGrid(h) } : el)));
+  }, []);
+
+  const handleUpdateElement = (id: string, updates: Partial<PolicyElement>) => {
+    setElements(p => p.map(el => el.id === id ? {...el, ...updates} : el));
+  };
+  
+  const handleDeleteElement = (id: string) => {
+      setElements(p => p.filter(el => el.id !== id));
+      setSelectedIds([]);
+  };
+
+  const selectedElement = useMemo(() => elements.find((el) => el.id === selectedIds[0]) ?? null, [elements, selectedIds]);
   
   const paperDimensions = useMemo(() => {
     if (paperSizeKey === 'custom') {
-        return {
-            width: customDimensions.width * MM_TO_PX,
-            height: customDimensions.height * MM_TO_PX,
-        }
+      return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
     }
-    return paperSizes[paperSizeKey];
+    const size = paperSizes[paperSizeKey];
+    return { width: mmToPx(size.width), height: mmToPx(size.height) };
   }, [paperSizeKey, customDimensions]);
 
-  const paperMargins = useMemo(() => ({
-    top: customDimensions.marginTop * MM_TO_PX,
-    right: customDimensions.marginRight * MM_TO_PX,
-    bottom: customDimensions.marginBottom * MM_TO_PX,
-    left: customDimensions.marginLeft * MM_TO_PX,
-  }), [customDimensions]);
-
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveDragItem(event.active);
-    const isToolboxItem = String(event.active.id).startsWith('toolbox-');
-    if (!isToolboxItem) {
-        setSelectedElementId(event.active.id as string);
-    }
-  }, []);
-
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over, delta } = event;
-    setActiveDragItem(null);
-    if (!over) return;
-    
-    // Dropping a toolbox item onto the canvas
-    if (String(active.id).startsWith('toolbox-') && over.id === 'canvas') {
-        const type = active.data.current?.type as ElementType;
-        const canvasRect = document.querySelector('[data-droppable-id="canvas"]')?.getBoundingClientRect();
-        if (!canvasRect || !active.rect.current.translated) return;
-        
-        const dropX = snapToGrid(active.rect.current.translated.left - canvasRect.left);
-        const dropY = snapToGrid(active.rect.current.translated.top - canvasRect.top);
-
-        const newElement: PolicyElement = {
-            id: nanoid(),
-            type,
-            x: dropX,
-            y: dropY,
-            width: type === 'text' ? 150 : 100,
-            height: type === 'text' ? 20 : 100,
-            content: type === 'text' ? 'نص جديد' : '',
-            fontSize: 14,
-            fontWeight: 'normal',
-            borderColor: type === 'rect' ? '#000000' : undefined,
-            borderWidth: type === 'rect' ? 1 : undefined,
-            opacity: 1
-        };
-        setElements(prev => [...prev, newElement]);
-        setSelectedElementId(newElement.id);
-    } 
-    // Moving an existing item on the canvas
-    else if (!String(active.id).startsWith('toolbox-')) {
-         setElements(prev => prev.map(el => {
-            if (el.id === active.id) {
-                return { ...el, x: snapToGrid(el.x + delta.x), y: snapToGrid(el.y + delta.y) };
-            }
-            return el;
-        }));
-    }
-  }, []);
-
-  const handleElementUpdate = (id: string, updates: Partial<PolicyElement>) => {
-      setElements(prev => prev.map(el => el.id === id ? { ...el, ...updates } : el));
+  const snapToGridModifier: Modifier = ({transform}) => {
+    return {
+      ...transform,
+      x: Math.round(transform.x / GRID_SIZE) * GRID_SIZE,
+      y: Math.round(transform.y / GRID_SIZE) * GRID_SIZE,
+    };
   };
-  
-  const handleElementDelete = (id: string) => {
-      setElements(prev => prev.filter(el => el.id !== id));
-      setSelectedElementId(null);
-  }
-
-  const handleElementResize = (id: string, width: number, height: number) => {
-    setElements(prev => prev.map(el => el.id === id ? { ...el, width: snapToGrid(width), height: snapToGrid(height) } : el));
-  };
-
-  const selectedElement = useMemo(() => elements.find(el => el.id === selectedElementId) || null, [elements, selectedElementId]);
 
   return (
     <div className="space-y-6 flex flex-col h-[calc(100vh-10rem)]" dir="rtl">
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[restrictToWindowEdges]}>
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[restrictToWindowEdges, snapToGridModifier]}>
             <div className="flex-none space-y-4">
                  <div className="flex flex-wrap items-center gap-4 bg-card border p-3 rounded-lg shadow-md">
                     <Select value={paperSizeKey} onValueChange={(val) => setPaperSizeKey(val as PaperSizeKey)}>
                         <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                        {Object.entries(paperSizes).map(([key, val]) => (
-                            <SelectItem key={key} value={key}>{val.label}</SelectItem>
-                        ))}
-                        </SelectContent>
+                        <SelectContent>{Object.entries(paperSizes).map(([key, { label }]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}</SelectContent>
                     </Select>
-
-                     {paperSizeKey === 'custom' && (
-                        <div className="flex flex-wrap items-center gap-2 border-l pl-4">
-                            <h4 className="font-bold text-sm ml-2">الأبعاد (mm):</h4>
-                            <Input type="number" value={customDimensions.width} onChange={e => setCustomDimensions(d => ({...d, width: Number(e.target.value)}))} className="w-20 h-9" placeholder="العرض" />
-                            <Input type="number" value={customDimensions.height} onChange={e => setCustomDimensions(d => ({...d, height: Number(e.target.value)}))} className="w-20 h-9" placeholder="الارتفاع" />
-                             <h4 className="font-bold text-sm ml-2 mr-4">الهوامش (mm):</h4>
-                            <Input type="number" value={customDimensions.marginTop} onChange={e => setCustomDimensions(d => ({...d, marginTop: Number(e.target.value)}))} className="w-20 h-9" placeholder="أعلى" />
-                            <Input type="number" value={customDimensions.marginLeft} onChange={e => setCustomDimensions(d => ({...d, marginLeft: Number(e.target.value)}))} className="w-20 h-9" placeholder="يسار" />
-                        </div>
+                    {paperSizeKey === 'custom' && (
+                        <>
+                            <div className="flex items-center gap-1"><Input type="number" value={customDimensions.width} onChange={e => setCustomDimensions(p => ({...p, width: parseInt(e.target.value, 10)}))} className="w-20 h-9"/><Label>مم عرض</Label></div>
+                            <div className="flex items-center gap-1"><Input type="number" value={customDimensions.height} onChange={e => setCustomDimensions(p => ({...p, height: parseInt(e.target.value, 10)}))} className="w-20 h-9"/><Label>مم ارتفاع</Label></div>
+                        </>
                     )}
-
-                    <div className="flex-grow"></div>
-                    <Button variant="outline" onClick={() => setElements([])}>مسح الكل</Button>
-                    <Button>حفظ</Button>
-                    <Button variant="secondary">معاينة</Button>
-                </div>
-                <EditorControls selectedElement={selectedElement} onElementUpdate={handleElementUpdate} onElementDelete={handleElementDelete} />
-            </div>
-            <main className="flex-grow bg-muted p-4 rounded-lg overflow-auto">
-                 <PolicyCanvas 
-                    width={paperDimensions.width} 
-                    height={paperDimensions.height} 
-                    margins={paperMargins}
-                    elements={elements} 
-                    selectedElementId={selectedElementId} 
-                    onSelectElement={setSelectedElementId} 
-                    onElementResize={handleElementResize} 
-                    activeDragId={activeDragItem?.id as string | null}
-                />
-            </main>
-            <DragOverlay>
-                {activeDragItem && activeDragItem.data.current?.element && (
-                    <div className="p-1 text-xs rounded-sm border bg-card shadow-lg opacity-75">
-                       {activeDragItem.data.current.element.content || `أداة: ${activeDragItem.data.current.element.type}` || '...'}
+                     <div className="flex items-center gap-1"><Label>الهوامش (مم):</Label>
+                        <Input type="number" placeholder="أعلى" value={margins.top} onChange={e => setMargins(p => ({...p, top: parseInt(e.target.value, 10)}))} className="w-20 h-9"/>
+                        <Input type="number" placeholder="يمين" value={margins.right} onChange={e => setMargins(p => ({...p, right: parseInt(e.target.value, 10)}))} className="w-20 h-9"/>
+                        <Input type="number" placeholder="أسفل" value={margins.bottom} onChange={e => setMargins(p => ({...p, bottom: parseInt(e.target.value, 10)}))} className="w-20 h-9"/>
+                        <Input type="number" placeholder="يسار" value={margins.left} onChange={e => setMargins(p => ({...p, left: parseInt(e.target.value, 10)}))} className="w-20 h-9"/>
                     </div>
-                )}
-                 {activeDragItem && activeDragItem.data.current?.type && (
-                     <div className="p-2 text-xs rounded-lg border bg-card shadow-lg opacity-75">
-                         أداة: {activeDragItem.data.current?.type}
-                     </div>
-                 )}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-6">
+                    <Card><CardHeader><CardTitle>الأدوات</CardTitle></CardHeader><CardContent className="grid grid-cols-2 gap-3"><ToolboxItem type="text" label="نص" icon="Type" /><ToolboxItem type="image" label="صورة" icon="Image" /><ToolboxItem type="barcode" label="باركود" icon="Barcode" /><ToolboxItem type="rect" label="مربع" icon="Square" /></CardContent></Card>
+                    <Card><CardHeader><CardTitle>الخصائص</CardTitle></CardHeader><CardContent><PropertiesPanel selectedElement={selectedElement} onUpdate={handleUpdateElement} onDelete={handleDeleteElement} /></CardContent></Card>
+                </div>
+            </div>
+
+            <div className="flex-grow w-full bg-muted p-8 rounded-lg overflow-auto flex items-center justify-center">
+                <div data-droppable-id="canvas" className="relative bg-white rounded-md shadow-inner" style={{ ...paperDimensions }} onClick={() => setSelectedIds([])}>
+                     <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
+                        backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
+                        backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)`,
+                        backgroundRepeat: 'repeat',
+                    }} />
+                    <div className="absolute border-2 border-dashed border-red-400/50 pointer-events-none" style={{
+                        top: `${mmToPx(margins.top)}px`, right: `${mmToPx(margins.right)}px`,
+                        bottom: `${mmToPx(margins.bottom)}px`, left: `${mmToPx(margins.left)}px`,
+                    }}/>
+                    {elements.map((el) => (
+                        <DraggableItem key={el.id} element={el} selected={selectedIds.includes(el.id)} onSelect={handleSelect}
+                            onResizeStop={handleResizeStop}
+                            onResize={(id, w, h) => handleUpdateElement(id, { width: w, height: h })}
+                            multiSelect={false}
+                        />
+                    ))}
+                </div>
+            </div>
+            <DragOverlay>
+            {activeDrag && String(activeDrag.id).startsWith('toolbox-') && (
+                <div className="p-3 rounded-lg border bg-card opacity-70 flex flex-col items-center gap-2" style={{width: 100, height: 100}}>
+                    <Icon name={activeDrag.data.current?.type === 'text' ? 'Type' : activeDrag.data.current?.type === 'image' ? 'Image' : activeDrag.data.current?.type === 'barcode' ? 'Barcode' : 'Square'} className="w-6 h-6" />
+                    <span className="text-xs">{activeDrag.data.current?.type}</span>
+                </div>
+            )}
+            {activeDrag && !String(activeDrag.id).startsWith('toolbox-') && (
+                <div style={{ width: activeDrag.rect.current.initial?.width, height: activeDrag.rect.current.initial?.height }}>
+                    <ElementContent el={activeDrag.data.current?.element} />
+                </div>
+            )}
             </DragOverlay>
         </DndContext>
     </div>
   );
 }
+
