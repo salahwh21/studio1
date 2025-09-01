@@ -156,9 +156,9 @@ const ToolboxItem = ({ type, icon, label }: { type: ElementType, icon: any, labe
 
 const Toolbox = () => {
     return (
-        <Card className="shadow-lg">
+        <Card className="shadow-lg h-full">
             <CardHeader><CardTitle className="text-base">الأدوات</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3">
+            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <ToolboxItem type="text" icon="Type" label="نص" />
                 <ToolboxItem type="image" icon="Image" label="صورة/شعار" />
                 <ToolboxItem type="barcode" icon="Barcode" label="باركود" />
@@ -249,6 +249,10 @@ export default function PolicyEditorPage() {
     setActiveDragItem(null);
 
     if (!over || over.id !== 'canvas') {
+        if (active.data.current?.element) {
+            const el = active.data.current.element;
+            setElements(prev => prev.map(e => e.id === el.id ? {...el, x: Math.round(el.x + delta.x), y: Math.round(el.y + delta.y)} : e));
+        }
         return; 
     }
     
@@ -337,28 +341,25 @@ export default function PolicyEditorPage() {
         </Card>
 
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[restrictToWindowEdges]}>
-            <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr_300px] gap-6 items-start">
-                {/* Toolbox */}
-                <div className="lg:sticky lg:top-24">
+            <div className="flex flex-col gap-6">
+
+                {/* Top section for tools and properties */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Toolbox />
+                    <PropertiesPanel 
+                        selectedElement={selectedElement} 
+                        onElementUpdate={handleElementUpdate} 
+                        onElementDelete={handleElementDelete}
+                    />
                 </div>
 
-                {/* Canvas */}
+                {/* Bottom section for the canvas */}
                 <div className="w-full bg-muted p-8 rounded-lg overflow-auto">
                    <PolicyCanvas 
                      paperSize={paperSize}
                      elements={elements} 
                      selectedElementId={selectedElementId} 
                      onSelectElement={setSelectedElementId} 
-                    />
-                </div>
-
-                {/* Properties Panel */}
-                <div className="lg:sticky lg:top-24">
-                   <PropertiesPanel 
-                        selectedElement={selectedElement} 
-                        onElementUpdate={handleElementUpdate} 
-                        onElementDelete={handleElementDelete}
                     />
                 </div>
             </div>
@@ -381,4 +382,3 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
-
