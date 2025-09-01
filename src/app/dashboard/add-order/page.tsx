@@ -12,8 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Check, ChevronsUpDown, Printer, Trash2 } from 'lucide-react';
 import { useActionState } from 'react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
-import { useReactToPrint } from 'react-to-print';
-import { PrintablePolicy } from '@/components/printable-policy';
+// import { useReactToPrint } from 'react-to-print';
+// import { PrintablePolicy } from '@/components/printable-policy';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -74,9 +74,12 @@ const AddOrderPage = () => {
   });
   
   const componentToPrintRef = useRef(null);
-  const handlePrint = useReactToPrint({
-      content: () => componentToPrintRef.current,
-  });
+  // const handlePrint = useReactToPrint({
+  //     content: () => componentToPrintRef.current,
+  // });
+  const handlePrint = () => {
+    toast({ variant: 'destructive', title: 'ميزة الطباعة معطلة مؤقتاً', description: 'يتم العمل على إصلاح مشكلة توافق في مكتبة الطباعة.'});
+  }
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
@@ -124,14 +127,15 @@ const AddOrderPage = () => {
             cod: cod || 0,
           });
 
-          if (region && (window as any).fuzzysort) {
-             const searchResults = (window as any).fuzzysort.go(region, allRegions, { key: 'name' });
-             if (searchResults.length > 0) {
-                 const bestMatch = searchResults[0].obj;
-                 setValue('region', `${bestMatch.name}_${bestMatch.cityName}`, { shouldValidate: true });
-                 setValue('city', bestMatch.cityName, { shouldValidate: true });
-             }
-          } else if(city) {
+          // Fuzzy search for region is removed for now to avoid dependency issues.
+          // A simpler search can be implemented if needed.
+           if (region) {
+              const bestMatch = allRegions.find(r => r.name.includes(region) || region.includes(r.name));
+               if (bestMatch) {
+                   setValue('region', `${bestMatch.name}_${bestMatch.cityName}`, { shouldValidate: true });
+                   setValue('city', bestMatch.cityName, { shouldValidate: true });
+               }
+           } else if(city) {
               const cityMatch = cities.find(c => c.name.includes(city));
               if(cityMatch && cityMatch.areas.length > 0) {
                   setValue('region', `${cityMatch.areas[0].name}_${cityMatch.name}`, { shouldValidate: true });
@@ -223,7 +227,7 @@ const AddOrderPage = () => {
     <div className="space-y-6">
        <div style={{ display: 'none' }}>
             <div ref={componentToPrintRef}>
-                <PrintablePolicy orders={ordersToPrint} />
+                {/* <PrintablePolicy orders={ordersToPrint} /> */}
             </div>
        </div>
 
