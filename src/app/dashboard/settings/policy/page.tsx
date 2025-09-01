@@ -391,11 +391,14 @@ export default function PolicyEditorPage() {
   
   const handleSelect = useCallback((id: string | null) => {
     if (id) {
-        // Toggle selection for the clicked element, deselecting others
-        setSelectedIds(prev => prev.includes(id) ? [] : [id]);
+        setSelectedIds(prev => {
+            if (prev.includes(id)) {
+                return []; // Deselect if clicking the same selected item's button
+            }
+            return [id]; // Select the new item
+        });
     } else {
-        // Deselect all if clicking on the canvas
-        setSelectedIds([]);
+        setSelectedIds([]); // Deselect all if clicking on the canvas
     }
   }, []);
 
@@ -781,3 +784,4 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
