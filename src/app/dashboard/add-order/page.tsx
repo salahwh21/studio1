@@ -53,7 +53,8 @@ const AddOrderPage = () => {
   const { addOrder, deleteOrders, updateOrderField } = useOrdersStore();
   const { cities } = useAreasStore();
   const { statuses } = useStatusesStore();
-  const { settings: orderSettings, isHydrated: settingsHydrated } = useSettings();
+  const context = useSettings();
+  const { settings: orderSettings, isHydrated: settingsHydrated } = context;
 
   const [selectedMerchantId, setSelectedMerchantId] = useState<string>('');
   
@@ -106,7 +107,7 @@ const AddOrderPage = () => {
                 await Promise.all(imagePromises);
 
                 // Now generate canvas
-                const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+                const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: true });
                 const imgData = canvas.toDataURL('image/png');
 
                 if (i > 0) {
@@ -605,5 +606,3 @@ const AddOrderPage = () => {
 };
 
 export default AddOrderPage;
-
-    
