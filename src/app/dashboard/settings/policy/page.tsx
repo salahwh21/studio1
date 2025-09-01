@@ -370,11 +370,11 @@ export default function PolicyEditorPage() {
   }, []);
 
   const handleSelect = (id: string | null) => {
-      if (id) {
+    if (id) {
         setSelectedIds([id]);
-      } else {
+    } else {
         setSelectedIds([]);
-      }
+    }
   };
 
 
@@ -615,7 +615,6 @@ export default function PolicyEditorPage() {
                         <CardHeader><CardTitle>الخصائص</CardTitle></CardHeader>
                         <CardContent>
                              <PropertiesPanel 
-                                key={selectedIds.length === 1 ? selectedIds[0] : 'none'}
                                 selectedElement={selectedElement}
                                 onUpdate={handleUpdateElement} 
                                 onDelete={handleDeleteElement}
