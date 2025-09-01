@@ -10,16 +10,20 @@ import { useOrdersStore, Order } from '@/store/orders-store';
 import { useAreasStore, City, Area } from '@/store/areas-store';
 import { useToast } from '@/hooks/use-toast';
 import { nanoid } from 'nanoid';
+import { Check, ChevronsUpDown } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/icon';
 import { Separator } from '@/components/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+
 
 const orderSchema = z.object({
   recipientName: z.string().min(1, "الاسم مطلوب"),
@@ -42,6 +46,9 @@ const AddOrderPage = () => {
 
   const [selectedMerchantId, setSelectedMerchantId] = useState<string>('');
   const [aiText, setAiText] = useState('');
+  
+  const [merchantPopoverOpen, setMerchantPopoverOpen] = useState(false);
+  const [regionPopoverOpen, setRegionPopoverOpen] = useState(false);
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
@@ -54,7 +61,7 @@ const AddOrderPage = () => {
   const selectedCity = watch('city');
 
   const merchantOptions = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
-  const allRegions = useMemo(() => cities.flatMap(c => c.areas.map(a => ({ ...a, cityName: c.name }))), [cities]);
+  const allRegions = useMemo(() => cities.flatMap(c => c.areas.map(a => ({ ...a, cityName: c.name }))).sort((a,b) => a.name.localeCompare(b.name)), [cities]);
   
   // Auto-select city when region changes
   useEffect(() => {
@@ -132,12 +139,43 @@ const AddOrderPage = () => {
         <CardContent>
           <div className="max-w-sm">
              <Label htmlFor="merchant-select">اختر المتجر</Label>
-              <Select value={selectedMerchantId} onValueChange={setSelectedMerchantId}>
-                <SelectTrigger id="merchant-select"><SelectValue placeholder="اختر متجرًا من القائمة..." /></SelectTrigger>
-                <SelectContent>
-                  {merchantOptions.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Popover open={merchantPopoverOpen} onOpenChange={setMerchantPopoverOpen}>
+                  <PopoverTrigger asChild>
+                      <Button
+                          id="merchant-select"
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={merchantPopoverOpen}
+                          className="w-full justify-between"
+                      >
+                          {selectedMerchantId ? merchantOptions.find(m => m.id === selectedMerchantId)?.name : "اختر متجرًا..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                      <Command>
+                          <CommandInput placeholder="بحث عن متجر..." />
+                          <CommandList>
+                            <CommandEmpty>لم يتم العثور على متجر.</CommandEmpty>
+                            <CommandGroup>
+                                {merchantOptions.map(m => (
+                                    <CommandItem
+                                        key={m.id}
+                                        value={m.name}
+                                        onSelect={() => {
+                                            setSelectedMerchantId(m.id);
+                                            setMerchantPopoverOpen(false);
+                                        }}
+                                    >
+                                        <Check className={cn("mr-2 h-4 w-4", selectedMerchantId === m.id ? "opacity-100" : "opacity-0")} />
+                                        {m.name}
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                          </CommandList>
+                      </Command>
+                  </PopoverContent>
+              </Popover>
           </div>
         </CardContent>
       </Card>
@@ -170,7 +208,51 @@ const AddOrderPage = () => {
                     <FormField control={form.control} name="referenceNumber" render={({ field }) => ( <FormItem><FormLabel>رقم مرجعي</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <FormField control={form.control} name="region" render={({ field }) => ( <FormItem><FormLabel>المنطقة</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر منطقة..." /></SelectTrigger></FormControl><SelectContent>{allRegions.map(r => <SelectItem key={`${r.id}-${r.cityName}`} value={`${r.name}_${r.cityName}`}>{r.name} ({r.cityName})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )} />
+                     <FormField control={form.control} name="region" render={({ field }) => ( 
+                        <FormItem className="flex flex-col">
+                            <FormLabel>المنطقة</FormLabel>
+                            <Popover open={regionPopoverOpen} onOpenChange={setRegionPopoverOpen}>
+                                <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            className={cn("w-full justify-between", !field.value && "text-muted-foreground")}
+                                        >
+                                            {field.value
+                                                ? allRegions.find(r => `${r.name}_${r.cityName}` === field.value)?.name
+                                                : "اختر منطقة..."}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                    <Command>
+                                        <CommandInput placeholder="بحث عن منطقة..." />
+                                        <CommandList>
+                                            <CommandEmpty>لم يتم العثور على المنطقة.</CommandEmpty>
+                                            <CommandGroup>
+                                                {allRegions.map(r => (
+                                                    <CommandItem
+                                                        value={r.name}
+                                                        key={`${r.id}-${r.cityName}`}
+                                                        onSelect={() => {
+                                                            field.onChange(`${r.name}_${r.cityName}`);
+                                                            setRegionPopoverOpen(false);
+                                                        }}
+                                                    >
+                                                        <Check className={cn("mr-2 h-4 w-4", `${r.name}_${r.cityName}` === field.value ? "opacity-100" : "opacity-0")}/>
+                                                        {r.name} ({r.cityName})
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                        </FormItem> 
+                    )} />
                      <FormField control={form.control} name="city" render={({ field }) => ( <FormItem><FormLabel>المدينة</FormLabel><FormControl><Input {...field} readOnly className="bg-muted" placeholder="سيتم تحديدها تلقائياً" /></FormControl><FormMessage /></FormItem> )} />
                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -203,3 +285,4 @@ const AddOrderPage = () => {
 };
 
 export default AddOrderPage;
+
