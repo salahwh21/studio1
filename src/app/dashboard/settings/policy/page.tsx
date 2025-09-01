@@ -151,7 +151,7 @@ function ElementContent({ el }: { el: PolicyElement }) {
 const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: {
   element: PolicyElement;
   selected: boolean;
-  onSelect: (e: React.MouseEvent, id: string) => void;
+  onSelect: (id: string) => void;
   onResizeStop: (id: string, w: number, h: number) => void;
   onResize: (id: string, w: number, h: number) => void;
 }) => {
@@ -173,22 +173,31 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize }: 
       style={style}
       {...attributes}
       {...listeners}
-      onClick={(e) => onSelect(e, element.id)}
     >
-        <Resizable
-            size={{ width: element.width, height: element.height }}
-            onResize={(_e, _dir, ref) => onResize(element.id, ref.offsetWidth, ref.offsetHeight)}
-            onResizeStop={(_e, _dir, ref) => onResizeStop(element.id, snapToGrid(ref.offsetWidth), snapToGrid(ref.offsetHeight))}
-            minWidth={element.type === 'line' ? GRID_SIZE : GRID_SIZE * 2}
-            minHeight={element.type === 'line' ? 1 : GRID_SIZE * 2}
-            grid={[GRID_SIZE, GRID_SIZE]}
-            enable={{ top: true, right: true, bottom: true, left: true, topRight: true, bottomRight: true, bottomLeft: true, topLeft: true }}
-            className="cursor-grab active:cursor-grabbing"
-            >
-            <div style={{ width: '100%', height: '100%' }}>
-                <ElementContent el={element} />
-            </div>
-        </Resizable>
+      <button
+        className="no-print absolute -top-2 -right-2 z-20 h-5 w-5 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center hover:bg-primary/80 transition-colors"
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect(element.id);
+        }}
+        aria-label="Select element"
+      >
+        <Icon name="Settings" className="h-3 w-3" />
+      </button>
+      <Resizable
+          size={{ width: element.width, height: element.height }}
+          onResize={(_e, _dir, ref) => onResize(element.id, ref.offsetWidth, ref.offsetHeight)}
+          onResizeStop={(_e, _dir, ref) => onResizeStop(element.id, snapToGrid(ref.offsetWidth), snapToGrid(ref.offsetHeight))}
+          minWidth={element.type === 'line' ? GRID_SIZE : GRID_SIZE * 2}
+          minHeight={element.type === 'line' ? 1 : GRID_SIZE * 2}
+          grid={[GRID_SIZE, GRID_SIZE]}
+          enable={{ top: true, right: true, bottom: true, left: true, topRight: true, bottomRight: true, bottomLeft: true, topLeft: true }}
+          className="cursor-grab active:cursor-grabbing"
+          >
+          <div style={{ width: '100%', height: '100%' }}>
+              <ElementContent el={element} />
+          </div>
+      </Resizable>
     </div>
   );
 };
@@ -381,9 +390,9 @@ export default function PolicyEditorPage() {
   
   const handleSelect = (id: string | null) => {
     if (id) {
-      setSelectedIds([id]);
+        setSelectedIds([id]);
     } else {
-      setSelectedIds([]);
+        setSelectedIds([]);
     }
   };
 
@@ -755,10 +764,7 @@ export default function PolicyEditorPage() {
                                       key={el.id}
                                       element={el}
                                       selected={selectedIds.includes(el.id)}
-                                      onSelect={(e, id) => {
-                                        e.stopPropagation();
-                                        handleSelect(id);
-                                      }}
+                                      onSelect={handleSelect}
                                       onResizeStop={handleResizeStop}
                                       onResize={(id, w, h) => handleUpdateElement(id, { width: w, height: h })}
                                     />
@@ -772,3 +778,4 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
