@@ -101,7 +101,7 @@ const paperSizes: Record<string, PaperSize> = {
   a5: { width: 148, height: 210, label: 'A5 (148×210mm)' },
   label_4x6: { width: 4 * 25.4, height: 6 * 25.4, label: 'Label 4×6 in' },
   label_4x4: { width: 4 * 25.4, height: 4 * 25.4, label: 'Label 4×4 in' },
-  custom: { width: 100, height: 100, label: 'حجم مخصص' },
+  custom: { width: 75, height: 45, label: 'حجم مخصص' },
 };
 type PaperSizeKey = keyof typeof paperSizes;
 
@@ -177,12 +177,11 @@ function ElementContent({ el }: { el: PolicyElement }) {
 }
 
 // ---------- Canvas item ----------
-const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize, onDoubleClick }: {
+const DraggableItem = ({ element, selected, onSelect, onResizeStop, onDoubleClick }: {
   element: PolicyElement;
   selected: boolean;
   onSelect: (id: string, isShift: boolean) => void;
   onResizeStop: (id: string, w: number, h: number) => void;
-  onResize: (id: string, w: number, h: number) => void;
   onDoubleClick: (id: string) => void;
 }) => {
   const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({ id: element.id });
@@ -192,7 +191,7 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize, on
     left: element.x,
     top: element.y,
     zIndex: element.zIndex,
-    outline: selected ? '2px solid hsl(var(--primary))' : 'none',
+    outline: selected && !isDragging ? '2px solid hsl(var(--primary))' : 'none',
     outlineOffset: '2px',
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     visibility: isDragging ? 'hidden' : 'visible',
@@ -209,14 +208,13 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize, on
     >
       <Resizable
           size={{ width: element.width, height: element.height }}
-          onResize={(_e, _dir, ref) => onResize(element.id, ref.offsetWidth, ref.offsetHeight)}
           onResizeStop={(_e, _dir, ref) => onResizeStop(element.id, snapToGrid(ref.offsetWidth), snapToGrid(ref.offsetHeight))}
           minWidth={element.type === 'line' ? GRID_SIZE : GRID_SIZE * 2}
           minHeight={element.type === 'line' ? 1 : GRID_SIZE * 2}
           grid={[GRID_SIZE, GRID_SIZE]}
           enable={{ top: true, right: true, bottom: true, left: true, topRight: true, bottomRight: true, bottomLeft: true, topLeft: true }}
           className="cursor-grab active:cursor-grabbing"
-          >
+      >
           <div style={{ width: '100%', height: '100%' }}>
               <ElementContent el={element} />
           </div>
@@ -224,6 +222,7 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onResize, on
     </div>
   );
 };
+
 
 // ---------- Toolbox item ----------
 const ToolboxItem = ({ tool, onClick }: { tool: typeof toolboxItems[0]; onClick: () => void; }) => {
@@ -340,9 +339,9 @@ const PropertiesModal = ({ element, isOpen, onOpenChange, onUpdate, onDelete }: 
 
 // ---------- Main component ----------
 export default function PolicyEditorPage() {
-  const [paperSizeKey, setPaperSizeKey] = useState<PaperSizeKey>('a4');
-  const [customDimensions, setCustomDimensions] = useState({ width: 100, height: 150 });
-  const [margins, setMargins] = useState({ top: 10, right: 10, bottom: 10, left: 10 });
+  const [paperSizeKey, setPaperSizeKey] = useState<PaperSizeKey>('custom');
+  const [customDimensions, setCustomDimensions] = useState({ width: 75, height: 45 });
+  const [margins, setMargins] = useState({ top: 2, right: 2, bottom: 2, left: 2 });
   const [elements, setElements] = useState<PolicyElement[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -352,7 +351,8 @@ export default function PolicyEditorPage() {
   const { toast } = useToast();
 
   const [propertiesModalOpen, setPropertiesModalOpen] = useState(false);
-  const editingElement = useMemo(() => elements.find(el => el.id === selectedIds[0]) ?? null, [elements, selectedIds]);
+  const [editingElementId, setEditingElementId] = useState<string | null>(null);
+  const editingElement = useMemo(() => elements.find(el => el.id === editingElementId) ?? null, [elements, editingElementId]);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -432,6 +432,11 @@ export default function PolicyEditorPage() {
         setSelectedIds([id]);
     }
   }, []);
+  
+  const handleDoubleClick = (id: string) => {
+      setEditingElementId(id);
+      setPropertiesModalOpen(true);
+  };
 
   const handleResizeStop = useCallback((id: string, w: number, h: number) => {
     setElements((p) => p.map((el) => (el.id === id ? { ...el, width: snapToGrid(w), height: snapToGrid(h) } : el)));
@@ -782,12 +787,8 @@ export default function PolicyEditorPage() {
                                       element={el}
                                       selected={selectedIds.includes(el.id)}
                                       onSelect={handleSelect}
-                                      onDoubleClick={() => {
-                                          setSelectedIds([el.id]);
-                                          setPropertiesModalOpen(true);
-                                      }}
+                                      onDoubleClick={handleDoubleClick}
                                       onResizeStop={handleResizeStop}
-                                      onResize={(id, w, h) => handleUpdateElement(id, { width: w, height: h })}
                                     />
                                 ))}
                             </div>
@@ -799,6 +800,7 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
 
 
 
