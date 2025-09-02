@@ -190,11 +190,12 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onDoubleClic
     position: 'absolute',
     left: element.x,
     top: element.y,
+    width: element.width,
+    height: element.height,
     zIndex: element.zIndex,
     outline: selected && !isDragging ? '2px solid hsl(var(--primary))' : 'none',
     outlineOffset: '2px',
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    visibility: isDragging ? 'hidden' : 'visible',
   };
 
   return (
@@ -800,6 +801,7 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
 
 
 
