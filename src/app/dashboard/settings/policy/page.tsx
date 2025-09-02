@@ -400,14 +400,16 @@ export default function PolicyEditorPage() {
   
   const handleSelect = useCallback((id: string, isShiftPressed: boolean) => {
     if (isShiftPressed) {
-        setSelectedIds(prev => 
-            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-        );
+      setSelectedIds(prev =>
+        prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+      );
     } else {
-        // This always creates a new array, ensuring re-render for dependent components
+      // Only set state if the selected item is different
+      if (selectedIds.length !== 1 || selectedIds[0] !== id) {
         setSelectedIds([id]);
+      }
     }
-  }, []);
+  }, [selectedIds]);
   
 
   const handleResizeStop = useCallback((id: string, w: number, h: number) => {
@@ -770,3 +772,4 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
