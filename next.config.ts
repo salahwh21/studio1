@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https',
+        protocol: 'https_val',
         hostname: 'images.unsplash.com',
         port: '',
         pathname: '/**',
@@ -37,15 +37,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  devIndicators: {
-    buildActivity: false
-  },
-  experimental: {
-    // This is the setting that needs to be added.
-    allowedDevOrigins: [
-      "https://*.cloudworkstations.dev"
-    ]
-  }
 };
 
 export default nextConfig;
