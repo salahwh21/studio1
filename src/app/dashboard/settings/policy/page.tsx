@@ -38,7 +38,9 @@ import {
     Edit,
     BringToFront,
     SendToBack,
-    Copy
+    Copy,
+    AlertTriangle,
+    Wand2,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -84,6 +86,11 @@ type SavedTemplate = {
   customDimensions: { width: number; height: number };
   margins: { top: number; right: number; bottom: number; left: number };
 };
+
+type DesignError = {
+    elementId: string;
+    message: string;
+}
 
 
 const GRID_SIZE = 8;
@@ -171,12 +178,13 @@ function ElementContent({ el }: { el: PolicyElement }) {
 }
 
 // ---------- Canvas item ----------
-const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMenu }: {
+const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMenu, onDoubleClick }: {
   element: PolicyElement;
   selected: boolean;
   onSelect: (id: string) => void;
   onResizeStop: (id: string, w: number, h: number) => void;
   onContextMenu: (event: React.MouseEvent, element: PolicyElement) => void;
+  onDoubleClick: (element: PolicyElement) => void;
 }) => {
   const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({ id: element.id });
 
@@ -199,6 +207,7 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMen
       {...attributes}
       {...listeners}
       onClick={(e) => { e.stopPropagation(); onSelect(element.id); }}
+      onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick(element); }}
       onContextMenu={(e) => onContextMenu(e, element)}
     >
       <Resizable
@@ -230,27 +239,28 @@ const ToolboxItem = ({ tool, onClick }: { tool: typeof toolboxItems[0]; onClick:
 };
 
 
-// ---------- Properties Panel ----------
-const PropertiesPanel = ({ selectedElement, onUpdate, onDelete }: {
-    selectedElement: PolicyElement | null;
+// ---------- Properties Modal ----------
+const PropertiesModal = ({ element, onUpdate, onDelete, open, onOpenChange }: {
+    element: PolicyElement | null;
     onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
     onDelete: (id: string) => void;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
 }) => {
-    if (!selectedElement) {
-        return (
-            <Card className="lg:col-span-1 lg:sticky lg:top-24">
-                <CardHeader>
-                    <CardTitle>الخصائص</CardTitle>
-                    <CardDescription>انقر بالزر الأيمن على عنصر واختر "تعديل" لعرض خصائصه.</CardDescription>
-                </CardHeader>
-            </Card>
-        );
-    }
+    const [currentElement, setCurrentElement] = useState<PolicyElement | null>(null);
+
+    useEffect(() => {
+        if(element){
+            setCurrentElement({...element});
+        }
+    }, [element]);
     
-    const element = selectedElement;
+    if (!open || !currentElement) {
+        return null;
+    }
 
     const handleChange = (field: keyof PolicyElement, value: any) => {
-        onUpdate(element.id, { [field]: value });
+        setCurrentElement(prev => prev ? { ...prev, [field]: value } : null);
     };
 
     const handleNumericChange = (field: keyof PolicyElement, value: string) => {
@@ -259,44 +269,72 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete }: {
             handleChange(field, num);
         }
     };
+    
+    const handleFloatChange = (field: keyof PolicyElement, value: string) => {
+        const num = parseFloat(value);
+        if (!isNaN(num)) {
+            handleChange(field, num);
+        }
+    };
+
+    const handleSave = () => {
+        if(currentElement) {
+            onUpdate(currentElement.id, currentElement);
+        }
+        onOpenChange(false);
+    }
+    
+    const handleDeleteAndClose = () => {
+        if(currentElement) {
+            onDelete(currentElement.id);
+        }
+        onOpenChange(false);
+    }
 
     return (
-        <Card className="lg:col-span-1 lg:sticky lg:top-24">
-            <CardHeader>
-                <CardTitle>خصائص: {element.type}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 max-h-[calc(100vh-16rem)] overflow-y-auto">
-                {element.type === 'text' && (
-                    <div className="space-y-2"><Label>النص</Label><Textarea value={element.content} onChange={(e) => handleChange('content', e.target.value)} /></div>
-                )}
-                {(element.type === 'text' || element.type === 'table') && (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>خصائص: {currentElement.type}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    {currentElement.type === 'text' && (
+                        <div className="space-y-2"><Label>النص</Label><Textarea value={currentElement.content} onChange={(e) => handleChange('content', e.target.value)} /></div>
+                    )}
+                    {(currentElement.type === 'text' || currentElement.type === 'table') && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2"><Label>حجم الخط</Label><Input type="number" value={currentElement.fontSize ?? 14} onChange={(e) => handleNumericChange('fontSize', e.target.value)} /></div>
+                            <div className="space-y-2"><Label>وزن الخط</Label><Select value={currentElement.fontWeight ?? 'normal'} onValueChange={(val: FontWeight) => handleChange('fontWeight', val)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="normal">عادي</SelectItem><SelectItem value="bold">عريض</SelectItem></SelectContent></Select></div>
+                        </div>
+                    )}
+                    {currentElement.type === 'table' && (
+                        <div className="space-y-4 p-4 border rounded-md"><h4 className="font-semibold">إعدادات الجدول</h4><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>عدد الأعمدة</Label><Input type="number" value={currentElement.colCount ?? 2} onChange={(e) => handleNumericChange('colCount', e.target.value)} /></div><div className="space-y-2"><Label>عدد الصفوف</Label><Input type="number" value={currentElement.rowCount ?? 2} onChange={(e) => handleNumericChange('rowCount', e.target.value)} /></div></div></div>
+                    )}
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label>حجم الخط</Label><Input type="number" value={element.fontSize ?? 14} onChange={(e) => handleNumericChange('fontSize', e.target.value)} /></div>
-                        <div className="space-y-2"><Label>وزن الخط</Label><Select value={element.fontWeight ?? 'normal'} onValueChange={(val: FontWeight) => handleChange('fontWeight', val)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="normal">عادي</SelectItem><SelectItem value="bold">عريض</SelectItem></SelectContent></Select></div>
+                        <div className="space-y-2"><Label>X</Label><Input type="number" value={currentElement.x} onChange={(e) => handleNumericChange('x', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Y</Label><Input type="number" value={currentElement.y} onChange={(e) => handleNumericChange('y', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>العرض</Label><Input type="number" value={currentElement.width} onChange={(e) => handleNumericChange('width', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>الارتفاع</Label><Input type="number" value={currentElement.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
                     </div>
-                )}
-                {element.type === 'table' && (
-                     <div className="space-y-4 p-4 border rounded-md"><h4 className="font-semibold">إعدادات الجدول</h4><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>عدد الأعمدة</Label><Input type="number" value={element.colCount ?? 2} onChange={(e) => handleNumericChange('colCount', e.target.value)} /></div><div className="space-y-2"><Label>عدد الصفوف</Label><Input type="number" value={element.rowCount ?? 2} onChange={(e) => handleNumericChange('rowCount', e.target.value)} /></div></div></div>
-                )}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label>X</Label><Input type="number" value={element.x} onChange={(e) => handleNumericChange('x', e.target.value)} /></div>
-                    <div className="space-y-2"><Label>Y</Label><Input type="number" value={element.y} onChange={(e) => handleNumericChange('y', e.target.value)} /></div>
-                    <div className="space-y-2"><Label>العرض</Label><Input type="number" value={element.width} onChange={(e) => handleNumericChange('width', e.target.value)} /></div>
-                    <div className="space-y-2"><Label>الارتفاع</Label><Input type="number" value={element.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
+                    {(currentElement.type === 'text' || currentElement.type === 'line') && <div className="space-y-2"><Label>اللون</Label><Input type="color" value={currentElement.color ?? '#000000'} onChange={(e) => handleChange('color', e.target.value)} className="h-10 w-full p-1" /></div>}
+                    {(currentElement.type === 'rect') && <div className="space-y-2"><Label>لون التعبئة</Label><Input type="color" value={currentElement.backgroundColor ?? '#ffffff'} onChange={(e) => handleChange('backgroundColor', e.target.value)} className="h-10 w-full p-1" /></div>}
+                    {(currentElement.type === 'rect' || currentElement.type === 'table') && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2"><Label>لون الحد</Label><Input type="color" value={currentElement.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full p-1" /></div>
+                            <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={currentElement.borderWidth ?? 1} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
+                        </div>
+                    )}
+                    <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={currentElement.opacity ?? 1} onChange={(e) => handleFloatChange('opacity', e.target.value)} /></div>
                 </div>
-                {(element.type === 'text' || element.type === 'line') && <div className="space-y-2"><Label>اللون</Label><Input type="color" value={element.color ?? '#000000'} onChange={(e) => handleChange('color', e.target.value)} className="h-10 w-full p-1" /></div>}
-                {(element.type === 'rect') && <div className="space-y-2"><Label>لون التعبئة</Label><Input type="color" value={element.backgroundColor ?? '#ffffff'} onChange={(e) => handleChange('backgroundColor', e.target.value)} className="h-10 w-full p-1" /></div>}
-                {(element.type === 'rect' || element.type === 'table') && (
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label>لون الحد</Label><Input type="color" value={element.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full p-1" /></div>
-                        <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={element.borderWidth ?? 1} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
+                <DialogFooter className="justify-between">
+                    <Button variant="destructive" onClick={handleDeleteAndClose}><Trash2 className="ml-2 h-4 w-4" /> حذف</Button>
+                    <div className="flex gap-2">
+                        <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                        <Button onClick={handleSave}>حفظ التغييرات</Button>
                     </div>
-                )}
-                <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={element.opacity ?? 1} onChange={(e) => handleChange('opacity', parseFloat(e.target.value))} /></div>
-                
-                 <Button variant="destructive" className="w-full" onClick={() => onDelete(element.id)}><Trash2 className="ml-2 h-4 w-4" /> حذف العنصر</Button>
-            </CardContent>
-        </Card>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 };
 
@@ -307,8 +345,7 @@ export default function PolicyEditorPage() {
   const [customDimensions, setCustomDimensions] = useState({ width: 75, height: 45 });
   const [margins, setMargins] = useState({ top: 2, right: 2, bottom: 2, left: 2 });
   const [elements, setElements] = useState<PolicyElement[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [elementForProperties, setElementForProperties] = useState<PolicyElement | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
@@ -317,7 +354,12 @@ export default function PolicyEditorPage() {
   const sensors = useSensors(useSensor(PointerSensor));
 
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, element: PolicyElement } | null>(null);
+  const [modalElement, setModalElement] = useState<PolicyElement | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
+  const [designErrors, setDesignErrors] = useState<DesignError[]>([]);
+
+
   const paperDimensions = useMemo(() => {
     if (paperSizeKey === 'custom') {
       return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
@@ -325,6 +367,40 @@ export default function PolicyEditorPage() {
     const size = paperSizes[paperSizeKey];
     return { width: mmToPx(size.width), height: mmToPx(size.height) };
   }, [paperSizeKey, customDimensions]);
+  
+  const marginPx = useMemo(() => ({
+    top: mmToPx(margins.top),
+    right: mmToPx(margins.right),
+    bottom: mmToPx(margins.bottom),
+    left: mmToPx(margins.left),
+  }), [margins]);
+
+  // --- Smart Features ---
+  useEffect(() => {
+    const errors: DesignError[] = [];
+    elements.forEach(el => {
+        // Boundary check
+        if (el.x < marginPx.left || 
+            el.y < marginPx.top || 
+            (el.x + el.width) > (paperDimensions.width - marginPx.right) ||
+            (el.y + el.height) > (paperDimensions.height - marginPx.bottom)) {
+            errors.push({ elementId: el.id, message: `عنصر (${el.type}) خارج حدود الطباعة.` });
+        }
+        
+        // Text overflow check (heuristic)
+        if(el.type === 'text' && el.content) {
+            const charCount = el.content.length;
+            const area = el.width * el.height;
+            const fontSize = el.fontSize || 14;
+            // This is a very rough estimation. A better way would be to render to a hidden canvas.
+            const estimatedAreaNeeded = charCount * (fontSize * 0.5) * fontSize;
+            if(estimatedAreaNeeded > area * 1.5) {
+                errors.push({ elementId: el.id, message: `النص قد يكون أكبر من المربع المخصص له.` });
+            }
+        }
+    });
+    setDesignErrors(errors);
+  }, [elements, paperDimensions, marginPx]);
 
   useEffect(() => {
     try {
@@ -339,18 +415,17 @@ export default function PolicyEditorPage() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!selectedId) return;
+      if (selectedIds.length === 0) return;
 
       const isArrowKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
       if (!isArrowKey) return;
 
       e.preventDefault();
-
       const step = e.shiftKey ? GRID_SIZE * 5 : GRID_SIZE;
 
       setElements(prevElements =>
         prevElements.map(el => {
-          if (el.id === selectedId) {
+          if (selectedIds.includes(el.id)) {
             const newEl = { ...el };
             switch (e.key) {
               case 'ArrowUp':
@@ -377,7 +452,7 @@ export default function PolicyEditorPage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedId, elements, paperDimensions]);
+  }, [selectedIds, elements, paperDimensions]);
 
   const addElement = useCallback((tool: typeof toolboxItems[0]) => {
     if (!canvasRef.current) return;
@@ -435,10 +510,8 @@ export default function PolicyEditorPage() {
   }, []);
   
   const handleSelect = useCallback((id: string) => {
-    if (selectedId !== id) {
-        setSelectedId(id);
-    }
-  }, [selectedId]);
+    setSelectedIds([id]);
+  }, []);
   
   const handleResizeStop = useCallback((id: string, w: number, h: number) => {
     setElements((p) => p.map((el) => (el.id === id ? { ...el, width: snapToGrid(w), height: snapToGrid(h) } : el)));
@@ -450,58 +523,44 @@ export default function PolicyEditorPage() {
             el.id === id ? { ...el, ...updates } : el
         )
     );
-    // Also update the element in the properties panel if it's the same one
-    if (elementForProperties?.id === id) {
-        setElementForProperties(prev => prev ? {...prev, ...updates} : null);
-    }
   };
   
   const handleDeleteElement = (id: string) => {
       setElements(p => p.filter(el => el.id !== id));
-      if (selectedId === id) {
-        setSelectedId(null);
-      }
-      if (elementForProperties?.id === id) {
-          setElementForProperties(null);
-      }
+      setSelectedIds(p => p.filter(selId => selId !== id));
+  };
+  
+  const handleDoubleClickElement = (element: PolicyElement) => {
+      setModalElement(element);
+      setIsModalOpen(true);
   };
 
   const handleAlignment = (type: 'left' | 'h-center' | 'right' | 'top' | 'v-center' | 'bottom') => {
-      if (!selectedId) return;
+      if (selectedIds.length === 0) return;
       setElements(prev => {
-          const newElements = [...prev];
-          const selected = newElements.find(el => el.id === selectedId);
-          if (!selected) return prev;
-          
-          const canvasWidth = paperDimensions.width;
-          const canvasHeight = paperDimensions.height;
+          return prev.map(el => {
+              if(!selectedIds.includes(el.id)) return el;
+              
+              const newEl = {...el};
+              const canvasWidth = paperDimensions.width;
+              const canvasHeight = paperDimensions.height;
 
-          switch (type) {
-              case 'left':
-                  selected.x = 0;
-                  break;
-              case 'h-center':
-                  selected.x = (canvasWidth / 2) - (selected.width / 2);
-                  break;
-              case 'right':
-                  selected.x = canvasWidth - selected.width;
-                  break;
-              case 'top':
-                  selected.y = 0;
-                  break;
-              case 'v-center':
-                  selected.y = (canvasHeight / 2) - (selected.height / 2);
-                  break;
-              case 'bottom':
-                  selected.y = canvasHeight - selected.height;
-                  break;
-          }
-          return newElements.map(el => el.id === selectedId ? {...el, x: snapToGrid(selected.x), y: snapToGrid(selected.y) } : el);
+              switch (type) {
+                  case 'left': newEl.x = 0; break;
+                  case 'h-center': newEl.x = (canvasWidth / 2) - (newEl.width / 2); break;
+                  case 'right': newEl.x = canvasWidth - newEl.width; break;
+                  case 'top': newEl.y = 0; break;
+                  case 'v-center': newEl.y = (canvasHeight / 2) - (newEl.height / 2); break;
+                  case 'bottom': newEl.y = canvasHeight - newEl.height; break;
+              }
+              return {...newEl, x: snapToGrid(newEl.x), y: snapToGrid(newEl.y)};
+          });
       });
   };
   
   const handleLayering = (type: 'front' | 'back' | 'forward' | 'backward') => {
-    if (!selectedId) return;
+    if (selectedIds.length !== 1) return;
+    const selectedId = selectedIds[0];
 
     setElements(prev => {
         const sorted = [...prev].sort((a, b) => a.zIndex - b.zIndex);
@@ -509,30 +568,13 @@ export default function PolicyEditorPage() {
         if (currentIndex === -1) return prev;
 
         let newElements = [...sorted];
+        const [item] = newElements.splice(currentIndex, 1);
 
         switch (type) {
-            case 'front':
-                const [itemToFront] = newElements.splice(currentIndex, 1);
-                newElements.push(itemToFront);
-                break;
-            case 'back':
-                 const [itemToBack] = newElements.splice(currentIndex, 1);
-                 newElements.unshift(itemToBack);
-                break;
-            case 'forward':
-                if (currentIndex < newElements.length - 1) {
-                    const temp = newElements[currentIndex];
-                    newElements[currentIndex] = newElements[currentIndex + 1];
-                    newElements[currentIndex + 1] = temp;
-                }
-                break;
-            case 'backward':
-                 if (currentIndex > 0) {
-                    const temp = newElements[currentIndex];
-                    newElements[currentIndex] = newElements[currentIndex - 1];
-                    newElements[currentIndex - 1] = temp;
-                }
-                break;
+            case 'front': newElements.push(item); break;
+            case 'back': newElements.unshift(item); break;
+            case 'forward': newElements.splice(Math.min(currentIndex + 1, newElements.length), 0, item); break;
+            case 'backward': newElements.splice(Math.max(currentIndex - 1, 0), 0, item); break;
         }
 
         return newElements.map((el, index) => ({ ...el, zIndex: index }));
@@ -540,19 +582,26 @@ export default function PolicyEditorPage() {
 };
 
 const handleDuplicate = () => {
-    if (!selectedId) return;
-    const elementToDuplicate = elements.find(el => el.id === selectedId);
-    if (elementToDuplicate) {
-        const newElement: PolicyElement = {
-            ...elementToDuplicate,
-            id: nanoid(),
-            x: snapToGrid(elementToDuplicate.x + 20),
-            y: snapToGrid(elementToDuplicate.y + 20),
-            zIndex: elements.length,
-        };
-        setElements(prev => [...prev, newElement]);
-        setSelectedId(newElement.id);
-    }
+    if (selectedIds.length === 0) return;
+    const newElements: PolicyElement[] = [];
+    const newSelectedIds: string[] = [];
+    
+    elements.forEach(el => {
+        if(selectedIds.includes(el.id)){
+            const newElement: PolicyElement = {
+                ...el,
+                id: nanoid(),
+                x: snapToGrid(el.x + 20),
+                y: snapToGrid(el.y + 20),
+                zIndex: elements.length + newElements.length,
+            };
+            newElements.push(newElement);
+            newSelectedIds.push(newElement.id);
+        }
+    });
+
+    setElements(prev => [...prev, ...newElements]);
+    setSelectedIds(newSelectedIds);
 };
 
 
@@ -631,12 +680,12 @@ const handleDuplicate = () => {
         ]
     },
     "label_45x75_default": {
-        id: "label_45x75_default", name: "بوليصة 75x45", paperSizeKey: "custom",
+        id: "label_45x75_default", name: "بوليصة 45x75", paperSizeKey: "custom",
         customDimensions: { width: 75, height: 45 }, margins: { top: 2, right: 2, bottom: 2, left: 2 },
         elements: [
-            { id: "el_brcd", type: "barcode", x: 16, y: 8, width: 104, height: 128, zIndex: 1, content: "{order_id}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
-            { id: "el_brcd_txt", type: "text", x: 128, y: 112, width: 136, height: 24, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
-            { id: "el_logo", type: "image", x: 128, y: 8, width: 136, height: 88, zIndex: 1, content: "{company_logo}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+            { id: "el_brcd", type: "barcode", x: 128, y: 8, width: 136, height: 88, zIndex: 1, content: "{order_id}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+            { id: "el_brcd_txt", type: "text", x: 128, y: 104, width: 136, height: 24, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+            { id: "el_logo", type: "image", x: 16, y: 8, width: 104, height: 120, zIndex: 1, content: "{company_logo}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
         ]
     }
   };
@@ -648,7 +697,7 @@ const handleDuplicate = () => {
   
   const handleEditFromContextMenu = () => {
       if (contextMenu) {
-          setElementForProperties(contextMenu.element);
+          handleDoubleClickElement(contextMenu.element);
           setContextMenu(null);
       }
   }
@@ -666,6 +715,13 @@ const handleDuplicate = () => {
                 </Button>
             </div>
         )}
+        <PropertiesModal
+            element={modalElement}
+            onUpdate={handleUpdateElement}
+            onDelete={handleDeleteElement}
+            open={isModalOpen}
+            onOpenChange={setIsModalOpen}
+        />
         <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
             <DialogContent>
                 <DialogHeader>
@@ -696,6 +752,9 @@ const handleDuplicate = () => {
                     </CardDescription>
                 </div>
                  <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={() => loadTemplate(readyTemplates.a4_default)}>
+                        <Wand2 className="ml-2 h-4 w-4" /> المساعدة الذكية
+                    </Button>
                     <Button onClick={() => setIsSaveDialogOpen(true)}><Save className="ml-2 h-4 w-4" />حفظ القالب</Button>
                     <Button variant="outline" size="icon" asChild>
                         <Link href="/dashboard/settings/general">
@@ -708,26 +767,26 @@ const handleDuplicate = () => {
         
         <Card>
             <CardContent className="p-2 flex flex-wrap items-center gap-2">
-                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleAlignment('left')}><AlignHorizontalJustifyStart className="h-4 w-4 mr-1" /> محاذاة لليسار</Button>
-                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleAlignment('h-center')}><AlignHorizontalJustifyCenter className="h-4 w-4 mr-1" /> توسيط أفقي</Button>
-                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleAlignment('right')}><AlignHorizontalJustifyEnd className="h-4 w-4 mr-1" /> محاذاة لليمين</Button>
+                 <Button variant="ghost" size="sm" disabled={selectedIds.length === 0} onClick={() => handleAlignment('left')}><AlignHorizontalJustifyStart className="h-4 w-4 mr-1" /> محاذاة لليسار</Button>
+                 <Button variant="ghost" size="sm" disabled={selectedIds.length === 0} onClick={() => handleAlignment('h-center')}><AlignHorizontalJustifyCenter className="h-4 w-4 mr-1" /> توسيط أفقي</Button>
+                 <Button variant="ghost" size="sm" disabled={selectedIds.length === 0} onClick={() => handleAlignment('right')}><AlignHorizontalJustifyEnd className="h-4 w-4 mr-1" /> محاذاة لليمين</Button>
                  <Separator orientation="vertical" className="h-6" />
-                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleAlignment('top')}><AlignVerticalJustifyStart className="h-4 w-4 mr-1" /> محاذاة للأعلى</Button>
-                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleAlignment('v-center')}><AlignVerticalJustifyCenter className="h-4 w-4 mr-1" /> توسيط عمودي</Button>
-                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleAlignment('bottom')}><AlignVerticalJustifyEnd className="h-4 w-4 mr-1" /> محاذاة للأسفل</Button>
+                 <Button variant="ghost" size="sm" disabled={selectedIds.length === 0} onClick={() => handleAlignment('top')}><AlignVerticalJustifyStart className="h-4 w-4 mr-1" /> محاذاة للأعلى</Button>
+                 <Button variant="ghost" size="sm" disabled={selectedIds.length === 0} onClick={() => handleAlignment('v-center')}><AlignVerticalJustifyCenter className="h-4 w-4 mr-1" /> توسيط عمودي</Button>
+                 <Button variant="ghost" size="sm" disabled={selectedIds.length === 0} onClick={() => handleAlignment('bottom')}><AlignVerticalJustifyEnd className="h-4 w-4 mr-1" /> محاذاة للأسفل</Button>
                  <Separator orientation="vertical" className="h-6" />
-                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleLayering('forward')}><BringToFront className="h-4 w-4 mr-1" /> تقديم</Button>
-                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleLayering('backward')}><SendToBack className="h-4 w-4 mr-1" /> تأخير</Button>
+                 <Button variant="ghost" size="sm" disabled={selectedIds.length !== 1} onClick={() => handleLayering('forward')}><BringToFront className="h-4 w-4 mr-1" /> تقديم</Button>
+                 <Button variant="ghost" size="sm" disabled={selectedIds.length !== 1} onClick={() => handleLayering('backward')}><SendToBack className="h-4 w-4 mr-1" /> تأخير</Button>
                  <Separator orientation="vertical" className="h-6" />
-                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={handleDuplicate}><Copy className="h-4 w-4 mr-1" /> نسخ</Button>
-                 <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" disabled={!selectedId} onClick={() => handleDeleteElement(selectedId)}><Trash2 className="h-4 w-4 mr-1" /> حذف</Button>
+                 <Button variant="ghost" size="sm" disabled={selectedIds.length === 0} onClick={handleDuplicate}><Copy className="h-4 w-4 mr-1" /> نسخ</Button>
+                 <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" disabled={selectedIds.length === 0} onClick={() => handleDeleteElement(selectedIds[0])}><Trash2 className="h-4 w-4 mr-1" /> حذف</Button>
             </CardContent>
         </Card>
 
         <DndContext sensors={sensors} onDragEnd={handleDragEnd} modifiers={[createSnapModifier(GRID_SIZE)]}>
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
                 
-                <div className="space-y-6 lg:col-span-1">
+                <div className="space-y-6 lg:col-span-1 lg:sticky lg:top-24">
                      <Card>
                         <CardHeader><CardTitle>الأدوات</CardTitle></CardHeader>
                         <CardContent className="grid grid-cols-2 gap-3">
@@ -763,6 +822,18 @@ const handleDuplicate = () => {
                             </div>
                         </CardContent>
                     </Card>
+                     {designErrors.length > 0 && (
+                        <Card className="border-yellow-400">
+                             <CardHeader><CardTitle className="flex items-center gap-2 text-yellow-600"><AlertTriangle /> تنبيهات التصميم</CardTitle></CardHeader>
+                             <CardContent className="space-y-2">
+                                {designErrors.map(error => (
+                                    <Button key={error.elementId} variant="ghost" className="text-xs h-auto p-1 justify-start w-full" onClick={() => setSelectedIds([error.elementId])}>
+                                        - {error.message}
+                                    </Button>
+                                ))}
+                             </CardContent>
+                        </Card>
+                    )}
                      <Card>
                         <CardHeader><CardTitle>القوالب</CardTitle></CardHeader>
                         <CardContent className="space-y-2">
@@ -792,7 +863,7 @@ const handleDuplicate = () => {
                         </CardContent>
                     </Card>
                 </div>
-                <div className="space-y-6 lg:col-span-2">
+                <div className="space-y-6 lg:col-span-3">
                     <Card>
                         <CardHeader>
                             <CardTitle>لوحة التصميم</CardTitle>
@@ -802,7 +873,7 @@ const handleDuplicate = () => {
                               ref={canvasRef}
                               className="relative bg-white rounded-md shadow-inner"
                               style={{ ...paperDimensions }}
-                              onClick={() => {setSelectedId(null); setElementForProperties(null);}}
+                              onClick={() => {setSelectedIds([]);}}
                             >
                                 <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
                                     backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
@@ -810,34 +881,26 @@ const handleDuplicate = () => {
                                     backgroundRepeat: 'repeat',
                                 }} />
                                 <div className="absolute border-2 border-dashed border-red-400/50 pointer-events-none" style={{
-                                    top: `${mmToPx(margins.top)}px`, right: `${mmToPx(margins.right)}px`,
-                                    bottom: `${mmToPx(margins.bottom)}px`, left: `${mmToPx(margins.left)}px`,
+                                    top: `${marginPx.top}px`, right: `${marginPx.right}px`,
+                                    bottom: `${marginPx.bottom}px`, left: `${marginPx.left}px`,
                                 }}/>
                                 {elements.sort((a,b) => a.zIndex - b.zIndex).map((el) => (
                                     <DraggableItem
                                       key={el.id}
                                       element={el}
-                                      selected={selectedId === el.id}
+                                      selected={selectedIds.includes(el.id)}
                                       onSelect={handleSelect}
                                       onResizeStop={handleResizeStop}
                                       onContextMenu={handleContextMenu}
+                                      onDoubleClick={handleDoubleClickElement}
                                     />
                                 ))}
                             </div>
                         </CardContent>
                     </Card>
                 </div>
-                <PropertiesPanel
-                    selectedElement={elementForProperties}
-                    onUpdate={handleUpdateElement}
-                    onDelete={handleDeleteElement}
-                />
             </div>
         </DndContext>
     </div>
   );
 }
-
-
-
-
