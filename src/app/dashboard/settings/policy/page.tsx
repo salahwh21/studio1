@@ -33,24 +33,13 @@ import {
     AlignVerticalJustifyStart,
     AlignVerticalJustifyCenter,
     AlignVerticalJustifyEnd,
-    AlignHorizontalDistributeCenter,
-    AlignVerticalDistributeCenter,
     Save,
-    RectangleHorizontal,
-    Square,
-    BringToFront,
-    SendToBack,
-    ChevronUp,
-    ChevronDown,
-    Minus,
-    CheckSquare,
-    Table as TableIcon,
-    Trash2
+    Trash2,
+    Edit
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { PrintablePolicy } from '@/components/printable-policy';
-import { PolicySettings } from '@/contexts/SettingsContext';
+import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
 
 
 // ---------- Types ----------
@@ -178,11 +167,13 @@ function ElementContent({ el }: { el: PolicyElement }) {
 }
 
 // ---------- Canvas item ----------
-const DraggableItem = ({ element, selected, onSelect, onResizeStop }: {
+const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMenu, onDoubleClick }: {
   element: PolicyElement;
   selected: boolean;
   onSelect: (id: string, isShift: boolean) => void;
   onResizeStop: (id: string, w: number, h: number) => void;
+  onContextMenu: (event: React.MouseEvent, element: PolicyElement) => void;
+  onDoubleClick: (element: PolicyElement) => void;
 }) => {
   const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({ id: element.id });
 
@@ -205,6 +196,7 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop }: {
       {...attributes}
       {...listeners}
       onClick={(e) => { e.stopPropagation(); onSelect(element.id, e.shiftKey); }}
+      onContextMenu={(e) => onContextMenu(e, element)}
     >
       <Resizable
           size={{ width: element.width, height: element.height }}
@@ -236,18 +228,17 @@ const ToolboxItem = ({ tool, onClick }: { tool: typeof toolboxItems[0]; onClick:
 
 
 // ---------- Properties Panel ----------
-const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onArrange }: {
+const PropertiesPanel = ({ selectedElement, onUpdate, onDelete }: {
     selectedElement: PolicyElement | null;
     onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
     onDelete: (id: string) => void;
-    onArrange: (id: string, direction: 'front' | 'back' | 'forward' | 'backward') => void;
 }) => {
     if (!selectedElement) {
         return (
             <Card className="lg:col-span-1 lg:sticky lg:top-24">
                 <CardHeader>
                     <CardTitle>الخصائص</CardTitle>
-                    <CardDescription>حدد عنصرًا لتعديل خصائصه.</CardDescription>
+                    <CardDescription>انقر بالزر الأيمن على عنصر واختر "تعديل" لعرض خصائصه.</CardDescription>
                 </CardHeader>
             </Card>
         );
@@ -300,15 +291,6 @@ const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onArrange }: {
                 )}
                 <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={element.opacity ?? 1} onChange={(e) => handleChange('opacity', parseFloat(e.target.value))} /></div>
                 
-                 <div className="space-y-2 pt-4 border-t">
-                    <Label>الترتيب</Label>
-                     <div className="flex justify-between gap-1">
-                        <Button variant="outline" size="icon" onClick={() => onArrange(element.id, 'back')}><SendToBack/></Button>
-                        <Button variant="outline" size="icon" onClick={() => onArrange(element.id, 'backward')}><ChevronDown/></Button>
-                        <Button variant="outline" size="icon" onClick={() => onArrange(element.id, 'forward')}><ChevronUp/></Button>
-                        <Button variant="outline" size="icon" onClick={() => onArrange(element.id, 'front')}><BringToFront/></Button>
-                     </div>
-                </div>
                  <Button variant="destructive" className="w-full" onClick={() => onDelete(element.id)}><Trash2 className="ml-2 h-4 w-4" /> حذف العنصر</Button>
             </CardContent>
         </Card>
@@ -323,13 +305,15 @@ export default function PolicyEditorPage() {
   const [margins, setMargins] = useState({ top: 2, right: 2, bottom: 2, left: 2 });
   const [elements, setElements] = useState<PolicyElement[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [elementForProperties, setElementForProperties] = useState<PolicyElement | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const { toast } = useToast();
-
   const sensors = useSensors(useSensor(PointerSensor));
+
+  const [contextMenu, setContextMenu] = useState<{ x: number, y: number, element: PolicyElement } | null>(null);
 
   useEffect(() => {
     try {
@@ -378,7 +362,6 @@ export default function PolicyEditorPage() {
     }
 
     setElements((prev) => [...prev, newElement]);
-    setSelectedIds([newElement.id]);
   }, [elements]);
 
   const handleDragEnd = useCallback((e: DragEndEvent) => {
@@ -398,19 +381,19 @@ export default function PolicyEditorPage() {
     );
   }, []);
   
-  const handleSelect = useCallback((id: string, isShiftPressed: boolean) => {
+   const handleSelect = useCallback((id: string, isShiftPressed: boolean) => {
     if (isShiftPressed) {
       setSelectedIds(prev =>
         prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
       );
     } else {
-      // Only set state if the selected item is different
-      if (selectedIds.length !== 1 || selectedIds[0] !== id) {
-        setSelectedIds([id]);
-      }
+      setSelectedIds([id]);
     }
-  }, [selectedIds]);
+  }, []);
   
+  const handleDoubleClick = (element: PolicyElement) => {
+    // This logic is now handled by the context menu
+  };
 
   const handleResizeStop = useCallback((id: string, w: number, h: number) => {
     setElements((p) => p.map((el) => (el.id === id ? { ...el, width: snapToGrid(w), height: snapToGrid(h) } : el)));
@@ -422,14 +405,23 @@ export default function PolicyEditorPage() {
             el.id === id ? { ...el, ...updates } : el
         )
     );
+    // Also update the element in the properties panel if it's the same one
+    if (elementForProperties?.id === id) {
+        setElementForProperties(prev => prev ? {...prev, ...updates} : null);
+    }
   };
   
   const handleDeleteElement = (id: string) => {
       setElements(p => p.filter(el => el.id !== id));
-      setSelectedIds(prev => prev.filter(selId => selId !== id));
+      if (selectedIds.includes(id)) {
+        setSelectedIds(prev => prev.filter(selId => selId !== id));
+      }
+      if (elementForProperties?.id === id) {
+          setElementForProperties(null);
+      }
   };
 
-  const handleAlignment = (type: 'left' | 'h-center' | 'right' | 'top' | 'v-center' | 'bottom' | 'dist-h' | 'dist-v') => {
+  const handleAlignment = (type: 'left' | 'h-center' | 'right' | 'top' | 'v-center' | 'bottom') => {
       setElements(prev => {
           const newElements = [...prev];
           const selected = newElements.filter(el => selectedIds.includes(el.id));
@@ -464,46 +456,6 @@ export default function PolicyEditorPage() {
           }
           return newElements;
       });
-  };
-
-  const handleArrange = (id: string, direction: 'front' | 'back' | 'forward' | 'backward') => {
-    setElements(prevElements => {
-        const sorted = [...prevElements].sort((a, b) => a.zIndex - b.zIndex);
-        const currentIndex = sorted.findIndex(el => el.id === id);
-        if (currentIndex === -1) return prevElements;
-
-        let newElements = [...prevElements];
-        
-        switch (direction) {
-            case 'front':
-                const maxZ = Math.max(...newElements.map(el => el.zIndex));
-                newElements.find(el => el.id === id)!.zIndex = maxZ + 1;
-                break;
-            case 'back':
-                 const minZ = Math.min(...newElements.map(el => el.zIndex));
-                newElements.find(el => el.id === id)!.zIndex = minZ - 1;
-                break;
-            case 'forward':
-                if (currentIndex < sorted.length - 1) {
-                    const currentZ = sorted[currentIndex].zIndex;
-                    const nextZ = sorted[currentIndex + 1].zIndex;
-                    newElements.find(el => el.id === id)!.zIndex = nextZ;
-                    newElements.find(el => el.id === sorted[currentIndex + 1].id)!.zIndex = currentZ;
-                }
-                break;
-            case 'backward':
-                if (currentIndex > 0) {
-                     const currentZ = sorted[currentIndex].zIndex;
-                     const prevZ = sorted[currentIndex - 1].zIndex;
-                     newElements.find(el => el.id === id)!.zIndex = prevZ;
-                     newElements.find(el => el.id === sorted[currentIndex - 1].id)!.zIndex = currentZ;
-                }
-                break;
-        }
-
-        const finalSorted = newElements.sort((a, b) => a.zIndex - b.zIndex);
-        return finalSorted.map((el, index) => ({ ...el, zIndex: index }));
-    });
   };
 
   const handleConfirmSave = () => {
@@ -600,14 +552,31 @@ export default function PolicyEditorPage() {
     }
   };
 
-  const selectedElement = useMemo(() => {
-    if (selectedIds.length !== 1) return null;
-    return elements.find(el => el.id === selectedIds[0]) ?? null;
-  }, [elements, selectedIds]);
+  const handleContextMenu = (event: React.MouseEvent, element: PolicyElement) => {
+    event.preventDefault();
+    setContextMenu({ x: event.clientX, y: event.clientY, element });
+  };
+  
+  const handleEditFromContextMenu = () => {
+      if (contextMenu) {
+          setElementForProperties(contextMenu.element);
+          setContextMenu(null);
+      }
+  }
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onClick={() => setContextMenu(null)}>
+        {contextMenu && (
+            <div
+                style={{ top: contextMenu.y, left: contextMenu.x }}
+                className="fixed z-50 bg-popover border rounded-md shadow-lg"
+            >
+                <Button variant="ghost" onClick={handleEditFromContextMenu} className="w-full justify-start p-2 text-sm">
+                    <Edit className="h-4 w-4 ml-2"/> تعديل
+                </Button>
+            </div>
+        )}
         <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
             <DialogContent>
                 <DialogHeader>
@@ -737,7 +706,7 @@ export default function PolicyEditorPage() {
                               ref={canvasRef}
                               className="relative bg-white rounded-md shadow-inner"
                               style={{ ...paperDimensions }}
-                              onClick={() => setSelectedIds([])}
+                              onClick={() => {setSelectedIds([]); setElementForProperties(null);}}
                             >
                                 <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
                                     backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
@@ -755,6 +724,8 @@ export default function PolicyEditorPage() {
                                       selected={selectedIds.includes(el.id)}
                                       onSelect={handleSelect}
                                       onResizeStop={handleResizeStop}
+                                      onContextMenu={handleContextMenu}
+                                      onDoubleClick={handleDoubleClick}
                                     />
                                 ))}
                             </div>
@@ -762,14 +733,14 @@ export default function PolicyEditorPage() {
                     </Card>
                 </div>
                 <PropertiesPanel
-                    selectedElement={selectedElement}
+                    selectedElement={elementForProperties}
                     onUpdate={handleUpdateElement}
                     onDelete={handleDeleteElement}
-                    onArrange={handleArrange}
                 />
             </div>
         </DndContext>
     </div>
   );
 }
+
 
