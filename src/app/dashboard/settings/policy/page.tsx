@@ -314,6 +314,14 @@ export default function PolicyEditorPage() {
   const sensors = useSensors(useSensor(PointerSensor));
 
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, element: PolicyElement } | null>(null);
+  
+  const paperDimensions = useMemo(() => {
+    if (paperSizeKey === 'custom') {
+      return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
+    }
+    const size = paperSizes[paperSizeKey];
+    return { width: mmToPx(size.width), height: mmToPx(size.height) };
+  }, [paperSizeKey, customDimensions]);
 
   useEffect(() => {
     try {
@@ -325,6 +333,48 @@ export default function PolicyEditorPage() {
       console.error("Failed to load templates from localStorage", error);
     }
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedIds.length === 0) return;
+
+      const isArrowKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
+      if (!isArrowKey) return;
+
+      e.preventDefault();
+
+      const step = e.shiftKey ? GRID_SIZE * 5 : GRID_SIZE;
+
+      setElements(prevElements =>
+        prevElements.map(el => {
+          if (selectedIds.includes(el.id)) {
+            const newEl = { ...el };
+            switch (e.key) {
+              case 'ArrowUp':
+                newEl.y = Math.max(0, newEl.y - step);
+                break;
+              case 'ArrowDown':
+                newEl.y = Math.min(paperDimensions.height - newEl.height, newEl.y + step);
+                break;
+              case 'ArrowLeft':
+                newEl.x = Math.max(0, newEl.x - step);
+                break;
+              case 'ArrowRight':
+                newEl.x = Math.min(paperDimensions.width - newEl.width, newEl.x + step);
+                break;
+            }
+            return newEl;
+          }
+          return el;
+        })
+      );
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedIds, elements, paperDimensions]);
 
   const addElement = useCallback((tool: typeof toolboxItems[0]) => {
     if (!canvasRef.current) return;
@@ -382,14 +432,17 @@ export default function PolicyEditorPage() {
   }, []);
   
    const handleSelect = useCallback((id: string, isShiftPressed: boolean) => {
+    const currentSelected = selectedIds.includes(id);
     if (isShiftPressed) {
       setSelectedIds(prev =>
         prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
       );
     } else {
-      setSelectedIds([id]);
+        if (!currentSelected) {
+            setSelectedIds([id]);
+        }
     }
-  }, []);
+  }, [selectedIds]);
   
   const handleDoubleClick = (element: PolicyElement) => {
     // This logic is now handled by the context menu
@@ -494,15 +547,6 @@ export default function PolicyEditorPage() {
     toast({ title: 'تم الحذف', description: 'تم حذف القالب بنجاح.' });
   };
   
-  const paperDimensions = useMemo(() => {
-    if (paperSizeKey === 'custom') {
-      return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
-    }
-    const size = paperSizes[paperSizeKey];
-    return { width: mmToPx(size.width), height: mmToPx(size.height) };
-  }, [paperSizeKey, customDimensions]);
-
-
   const readyTemplates: Record<string, SavedTemplate> = {
     "a4_default": {
         id: "a4_default", name: "A4 احترافي", paperSizeKey: "a4",
@@ -742,5 +786,6 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
 
 
