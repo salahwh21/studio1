@@ -35,11 +35,15 @@ import {
     AlignVerticalJustifyEnd,
     Save,
     Trash2,
-    Edit
+    Edit,
+    BringToFront,
+    SendToBack,
+    Copy
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
+import { Separator } from '@/components/ui/separator';
 
 
 // ---------- Types ----------
@@ -167,13 +171,12 @@ function ElementContent({ el }: { el: PolicyElement }) {
 }
 
 // ---------- Canvas item ----------
-const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMenu, onDoubleClick }: {
+const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMenu }: {
   element: PolicyElement;
   selected: boolean;
-  onSelect: (id: string, isShift: boolean) => void;
+  onSelect: (id: string) => void;
   onResizeStop: (id: string, w: number, h: number) => void;
   onContextMenu: (event: React.MouseEvent, element: PolicyElement) => void;
-  onDoubleClick: (element: PolicyElement) => void;
 }) => {
   const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({ id: element.id });
 
@@ -195,7 +198,7 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMen
       style={style}
       {...attributes}
       {...listeners}
-      onClick={(e) => { e.stopPropagation(); onSelect(element.id, e.shiftKey); }}
+      onClick={(e) => { e.stopPropagation(); onSelect(element.id); }}
       onContextMenu={(e) => onContextMenu(e, element)}
     >
       <Resizable
@@ -304,7 +307,7 @@ export default function PolicyEditorPage() {
   const [customDimensions, setCustomDimensions] = useState({ width: 75, height: 45 });
   const [margins, setMargins] = useState({ top: 2, right: 2, bottom: 2, left: 2 });
   const [elements, setElements] = useState<PolicyElement[]>([]);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [elementForProperties, setElementForProperties] = useState<PolicyElement | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
@@ -336,7 +339,7 @@ export default function PolicyEditorPage() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (selectedIds.length === 0) return;
+      if (!selectedId) return;
 
       const isArrowKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
       if (!isArrowKey) return;
@@ -347,7 +350,7 @@ export default function PolicyEditorPage() {
 
       setElements(prevElements =>
         prevElements.map(el => {
-          if (selectedIds.includes(el.id)) {
+          if (el.id === selectedId) {
             const newEl = { ...el };
             switch (e.key) {
               case 'ArrowUp':
@@ -374,7 +377,7 @@ export default function PolicyEditorPage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedIds, elements, paperDimensions]);
+  }, [selectedId, elements, paperDimensions]);
 
   const addElement = useCallback((tool: typeof toolboxItems[0]) => {
     if (!canvasRef.current) return;
@@ -431,23 +434,12 @@ export default function PolicyEditorPage() {
     );
   }, []);
   
-   const handleSelect = useCallback((id: string, isShiftPressed: boolean) => {
-    const currentSelected = selectedIds.includes(id);
-    if (isShiftPressed) {
-      setSelectedIds(prev =>
-        prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-      );
-    } else {
-        if (!currentSelected) {
-            setSelectedIds([id]);
-        }
+  const handleSelect = useCallback((id: string) => {
+    if (selectedId !== id) {
+        setSelectedId(id);
     }
-  }, [selectedIds]);
+  }, [selectedId]);
   
-  const handleDoubleClick = (element: PolicyElement) => {
-    // This logic is now handled by the context menu
-  };
-
   const handleResizeStop = useCallback((id: string, w: number, h: number) => {
     setElements((p) => p.map((el) => (el.id === id ? { ...el, width: snapToGrid(w), height: snapToGrid(h) } : el)));
   }, []);
@@ -466,8 +458,8 @@ export default function PolicyEditorPage() {
   
   const handleDeleteElement = (id: string) => {
       setElements(p => p.filter(el => el.id !== id));
-      if (selectedIds.includes(id)) {
-        setSelectedIds(prev => prev.filter(selId => selId !== id));
+      if (selectedId === id) {
+        setSelectedId(null);
       }
       if (elementForProperties?.id === id) {
           setElementForProperties(null);
@@ -475,41 +467,94 @@ export default function PolicyEditorPage() {
   };
 
   const handleAlignment = (type: 'left' | 'h-center' | 'right' | 'top' | 'v-center' | 'bottom') => {
+      if (!selectedId) return;
       setElements(prev => {
           const newElements = [...prev];
-          const selected = newElements.filter(el => selectedIds.includes(el.id));
-          if (selected.length < 2) return prev;
+          const selected = newElements.find(el => el.id === selectedId);
+          if (!selected) return prev;
+          
+          const canvasWidth = paperDimensions.width;
+          const canvasHeight = paperDimensions.height;
 
-          // Align logic remains the same
           switch (type) {
               case 'left':
-                  const minX = Math.min(...selected.map(el => el.x));
-                  selected.forEach(el => { const original = newElements.find(o => o.id === el.id)!; original.x = minX; });
+                  selected.x = 0;
                   break;
               case 'h-center':
-                  const centerX = selected[0].x + selected[0].width / 2;
-                  selected.forEach(el => { const original = newElements.find(o => o.id === el.id)!; original.x = centerX - el.width / 2; });
+                  selected.x = (canvasWidth / 2) - (selected.width / 2);
                   break;
               case 'right':
-                  const maxX = Math.max(...selected.map(el => el.x + el.width));
-                  selected.forEach(el => { const original = newElements.find(o => o.id === el.id)!; original.x = maxX - el.width; });
+                  selected.x = canvasWidth - selected.width;
                   break;
               case 'top':
-                  const minY = Math.min(...selected.map(el => el.y));
-                  selected.forEach(el => { const original = newElements.find(o => o.id === el.id)!; original.y = minY; });
+                  selected.y = 0;
                   break;
               case 'v-center':
-                  const centerY = selected[0].y + selected[0].height / 2;
-                  selected.forEach(el => { const original = newElements.find(o => o.id === el.id)!; original.y = centerY - el.height / 2; });
+                  selected.y = (canvasHeight / 2) - (selected.height / 2);
                   break;
               case 'bottom':
-                  const maxY = Math.max(...selected.map(el => el.y + el.height));
-                  selected.forEach(el => { const original = newElements.find(o => o.id === el.id)!; original.y = maxY - el.height; });
+                  selected.y = canvasHeight - selected.height;
                   break;
           }
-          return newElements;
+          return newElements.map(el => el.id === selectedId ? {...el, x: snapToGrid(selected.x), y: snapToGrid(selected.y) } : el);
       });
   };
+  
+  const handleLayering = (type: 'front' | 'back' | 'forward' | 'backward') => {
+    if (!selectedId) return;
+
+    setElements(prev => {
+        const sorted = [...prev].sort((a, b) => a.zIndex - b.zIndex);
+        const currentIndex = sorted.findIndex(el => el.id === selectedId);
+        if (currentIndex === -1) return prev;
+
+        let newElements = [...sorted];
+
+        switch (type) {
+            case 'front':
+                const [itemToFront] = newElements.splice(currentIndex, 1);
+                newElements.push(itemToFront);
+                break;
+            case 'back':
+                 const [itemToBack] = newElements.splice(currentIndex, 1);
+                 newElements.unshift(itemToBack);
+                break;
+            case 'forward':
+                if (currentIndex < newElements.length - 1) {
+                    const temp = newElements[currentIndex];
+                    newElements[currentIndex] = newElements[currentIndex + 1];
+                    newElements[currentIndex + 1] = temp;
+                }
+                break;
+            case 'backward':
+                 if (currentIndex > 0) {
+                    const temp = newElements[currentIndex];
+                    newElements[currentIndex] = newElements[currentIndex - 1];
+                    newElements[currentIndex - 1] = temp;
+                }
+                break;
+        }
+
+        return newElements.map((el, index) => ({ ...el, zIndex: index }));
+    });
+};
+
+const handleDuplicate = () => {
+    if (!selectedId) return;
+    const elementToDuplicate = elements.find(el => el.id === selectedId);
+    if (elementToDuplicate) {
+        const newElement: PolicyElement = {
+            ...elementToDuplicate,
+            id: nanoid(),
+            x: snapToGrid(elementToDuplicate.x + 20),
+            y: snapToGrid(elementToDuplicate.y + 20),
+            zIndex: elements.length,
+        };
+        setElements(prev => [...prev, newElement]);
+        setSelectedId(newElement.id);
+    }
+};
+
 
   const handleConfirmSave = () => {
     if (!templateName) {
@@ -663,12 +708,19 @@ export default function PolicyEditorPage() {
         
         <Card>
             <CardContent className="p-2 flex flex-wrap items-center gap-2">
-                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('left')}><AlignHorizontalJustifyStart /></Button>
-                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('h-center')}><AlignHorizontalJustifyCenter /></Button>
-                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('right')}><AlignHorizontalJustifyEnd /></Button>
-                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('top')}><AlignVerticalJustifyStart /></Button>
-                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('v-center')}><AlignVerticalJustifyCenter /></Button>
-                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('bottom')}><AlignVerticalJustifyEnd /></Button>
+                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleAlignment('left')}><AlignHorizontalJustifyStart className="h-4 w-4 mr-1" /> محاذاة لليسار</Button>
+                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleAlignment('h-center')}><AlignHorizontalJustifyCenter className="h-4 w-4 mr-1" /> توسيط أفقي</Button>
+                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleAlignment('right')}><AlignHorizontalJustifyEnd className="h-4 w-4 mr-1" /> محاذاة لليمين</Button>
+                 <Separator orientation="vertical" className="h-6" />
+                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleAlignment('top')}><AlignVerticalJustifyStart className="h-4 w-4 mr-1" /> محاذاة للأعلى</Button>
+                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleAlignment('v-center')}><AlignVerticalJustifyCenter className="h-4 w-4 mr-1" /> توسيط عمودي</Button>
+                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleAlignment('bottom')}><AlignVerticalJustifyEnd className="h-4 w-4 mr-1" /> محاذاة للأسفل</Button>
+                 <Separator orientation="vertical" className="h-6" />
+                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleLayering('forward')}><BringToFront className="h-4 w-4 mr-1" /> تقديم</Button>
+                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={() => handleLayering('backward')}><SendToBack className="h-4 w-4 mr-1" /> تأخير</Button>
+                 <Separator orientation="vertical" className="h-6" />
+                 <Button variant="ghost" size="sm" disabled={!selectedId} onClick={handleDuplicate}><Copy className="h-4 w-4 mr-1" /> نسخ</Button>
+                 <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" disabled={!selectedId} onClick={() => handleDeleteElement(selectedId)}><Trash2 className="h-4 w-4 mr-1" /> حذف</Button>
             </CardContent>
         </Card>
 
@@ -750,7 +802,7 @@ export default function PolicyEditorPage() {
                               ref={canvasRef}
                               className="relative bg-white rounded-md shadow-inner"
                               style={{ ...paperDimensions }}
-                              onClick={() => {setSelectedIds([]); setElementForProperties(null);}}
+                              onClick={() => {setSelectedId(null); setElementForProperties(null);}}
                             >
                                 <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
                                     backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
@@ -765,11 +817,10 @@ export default function PolicyEditorPage() {
                                     <DraggableItem
                                       key={el.id}
                                       element={el}
-                                      selected={selectedIds.includes(el.id)}
+                                      selected={selectedId === el.id}
                                       onSelect={handleSelect}
                                       onResizeStop={handleResizeStop}
                                       onContextMenu={handleContextMenu}
-                                      onDoubleClick={handleDoubleClick}
                                     />
                                 ))}
                             </div>
@@ -786,6 +837,7 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
 
 
 
