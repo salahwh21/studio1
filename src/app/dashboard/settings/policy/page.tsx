@@ -45,6 +45,7 @@ import {
     Minus,
     CheckSquare,
     Table as TableIcon,
+    Trash2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -177,12 +178,11 @@ function ElementContent({ el }: { el: PolicyElement }) {
 }
 
 // ---------- Canvas item ----------
-const DraggableItem = ({ element, selected, onSelect, onResizeStop, onDoubleClick }: {
+const DraggableItem = ({ element, selected, onSelect, onResizeStop }: {
   element: PolicyElement;
   selected: boolean;
   onSelect: (id: string, isShift: boolean) => void;
   onResizeStop: (id: string, w: number, h: number) => void;
-  onDoubleClick: (id: string) => void;
 }) => {
   const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({ id: element.id });
 
@@ -205,7 +205,6 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onDoubleClic
       {...attributes}
       {...listeners}
       onClick={(e) => { e.stopPropagation(); onSelect(element.id, e.shiftKey); }}
-      onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick(element.id); }}
     >
       <Resizable
           size={{ width: element.width, height: element.height }}
@@ -236,15 +235,25 @@ const ToolboxItem = ({ tool, onClick }: { tool: typeof toolboxItems[0]; onClick:
 };
 
 
-// ---------- Properties Modal ----------
-const PropertiesModal = ({ element, isOpen, onOpenChange, onUpdate, onDelete }: {
-    element: PolicyElement | null;
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
+// ---------- Properties Panel ----------
+const PropertiesPanel = ({ selectedElement, onUpdate, onDelete, onArrange }: {
+    selectedElement: PolicyElement | null;
     onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
     onDelete: (id: string) => void;
+    onArrange: (id: string, direction: 'front' | 'back' | 'forward' | 'backward') => void;
 }) => {
-    if (!element) return null;
+    if (!selectedElement) {
+        return (
+            <Card className="lg:col-span-1 lg:sticky lg:top-24">
+                <CardHeader>
+                    <CardTitle>الخصائص</CardTitle>
+                    <CardDescription>حدد عنصرًا لتعديل خصائصه.</CardDescription>
+                </CardHeader>
+            </Card>
+        );
+    }
+    
+    const element = selectedElement;
 
     const handleChange = (field: keyof PolicyElement, value: any) => {
         onUpdate(element.id, { [field]: value });
@@ -257,83 +266,52 @@ const PropertiesModal = ({ element, isOpen, onOpenChange, onUpdate, onDelete }: 
         }
     };
 
-    const handleTableDataChange = (rowIndex: number, colIndex: number, value: string) => {
-        const newTableData = [...(element.tableData || [])];
-        newTableData[rowIndex].cells[colIndex].content = value;
-        handleChange('tableData', newTableData);
-    };
-
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>خصائص العنصر: {element.type}</DialogTitle>
-                </DialogHeader>
-                <div className="py-4 max-h-[60vh] overflow-y-auto pr-2 space-y-4">
-                    {element.type === 'text' && (
-                        <div className="space-y-2">
-                            <Label>النص</Label>
-                            <Textarea value={element.content} onChange={(e) => handleChange('content', e.target.value)} />
-                        </div>
-                    )}
-                    {(element.type === 'text' || element.type === 'table') && (
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>حجم الخط</Label>
-                                <Input type="number" value={element.fontSize ?? 14} onChange={(e) => handleNumericChange('fontSize', e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>وزن الخط</Label>
-                                <Select value={element.fontWeight ?? 'normal'} onValueChange={(val: FontWeight) => handleChange('fontWeight', val)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="normal">عادي</SelectItem>
-                                        <SelectItem value="bold">عريض</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    )}
-
-                    {element.type === 'table' && (
-                         <div className="space-y-4 p-4 border rounded-md">
-                            <h4 className="font-semibold">إعدادات الجدول</h4>
-                             <div className="grid grid-cols-2 gap-4">
-                                 <div className="space-y-2">
-                                     <Label>عدد الأعمدة</Label>
-                                     <Input type="number" value={element.colCount ?? 2} onChange={(e) => handleNumericChange('colCount', e.target.value)} />
-                                 </div>
-                                 <div className="space-y-2">
-                                     <Label>عدد الصفوف</Label>
-                                     <Input type="number" value={element.rowCount ?? 2} onChange={(e) => handleNumericChange('rowCount', e.target.value)} />
-                                 </div>
-                             </div>
-                         </div>
-                    )}
-
-                    <div className="grid grid-cols-4 gap-4">
-                        <div className="space-y-2"><Label>X</Label><Input type="number" value={element.x} onChange={(e) => handleNumericChange('x', e.target.value)} /></div>
-                        <div className="space-y-2"><Label>Y</Label><Input type="number" value={element.y} onChange={(e) => handleNumericChange('y', e.target.value)} /></div>
-                        <div className="space-y-2"><Label>العرض</Label><Input type="number" value={element.width} onChange={(e) => handleNumericChange('width', e.target.value)} /></div>
-                        <div className="space-y-2"><Label>الارتفاع</Label><Input type="number" value={element.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
+        <Card className="lg:col-span-1 lg:sticky lg:top-24">
+            <CardHeader>
+                <CardTitle>خصائص: {element.type}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 max-h-[calc(100vh-16rem)] overflow-y-auto">
+                {element.type === 'text' && (
+                    <div className="space-y-2"><Label>النص</Label><Textarea value={element.content} onChange={(e) => handleChange('content', e.target.value)} /></div>
+                )}
+                {(element.type === 'text' || element.type === 'table') && (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label>حجم الخط</Label><Input type="number" value={element.fontSize ?? 14} onChange={(e) => handleNumericChange('fontSize', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>وزن الخط</Label><Select value={element.fontWeight ?? 'normal'} onValueChange={(val: FontWeight) => handleChange('fontWeight', val)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="normal">عادي</SelectItem><SelectItem value="bold">عريض</SelectItem></SelectContent></Select></div>
                     </div>
-
-                    {(element.type === 'text' || element.type === 'line') && <div className="space-y-2"><Label>اللون</Label><Input type="color" value={element.color ?? '#000000'} onChange={(e) => handleChange('color', e.target.value)} className="h-10 w-full p-1" /></div>}
-                    {(element.type === 'rect') && <div className="space-y-2"><Label>لون التعبئة</Label><Input type="color" value={element.backgroundColor ?? '#ffffff'} onChange={(e) => handleChange('backgroundColor', e.target.value)} className="h-10 w-full p-1" /></div>}
-                    {(element.type === 'rect' || element.type === 'table') && (
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2"><Label>لون الحد</Label><Input type="color" value={element.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full p-1" /></div>
-                            <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={element.borderWidth ?? 1} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
-                        </div>
-                    )}
-                    <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={element.opacity ?? 1} onChange={(e) => handleChange('opacity', parseFloat(e.target.value))} /></div>
+                )}
+                {element.type === 'table' && (
+                     <div className="space-y-4 p-4 border rounded-md"><h4 className="font-semibold">إعدادات الجدول</h4><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>عدد الأعمدة</Label><Input type="number" value={element.colCount ?? 2} onChange={(e) => handleNumericChange('colCount', e.target.value)} /></div><div className="space-y-2"><Label>عدد الصفوف</Label><Input type="number" value={element.rowCount ?? 2} onChange={(e) => handleNumericChange('rowCount', e.target.value)} /></div></div></div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2"><Label>X</Label><Input type="number" value={element.x} onChange={(e) => handleNumericChange('x', e.target.value)} /></div>
+                    <div className="space-y-2"><Label>Y</Label><Input type="number" value={element.y} onChange={(e) => handleNumericChange('y', e.target.value)} /></div>
+                    <div className="space-y-2"><Label>العرض</Label><Input type="number" value={element.width} onChange={(e) => handleNumericChange('width', e.target.value)} /></div>
+                    <div className="space-y-2"><Label>الارتفاع</Label><Input type="number" value={element.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
                 </div>
-                 <DialogFooter className="gap-2">
-                    <Button variant="destructive" onClick={() => { onDelete(element.id); onOpenChange(false); }}>حذف العنصر</Button>
-                    <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                {(element.type === 'text' || element.type === 'line') && <div className="space-y-2"><Label>اللون</Label><Input type="color" value={element.color ?? '#000000'} onChange={(e) => handleChange('color', e.target.value)} className="h-10 w-full p-1" /></div>}
+                {(element.type === 'rect') && <div className="space-y-2"><Label>لون التعبئة</Label><Input type="color" value={element.backgroundColor ?? '#ffffff'} onChange={(e) => handleChange('backgroundColor', e.target.value)} className="h-10 w-full p-1" /></div>}
+                {(element.type === 'rect' || element.type === 'table') && (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label>لون الحد</Label><Input type="color" value={element.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full p-1" /></div>
+                        <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={element.borderWidth ?? 1} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
+                    </div>
+                )}
+                <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={element.opacity ?? 1} onChange={(e) => handleChange('opacity', parseFloat(e.target.value))} /></div>
+                
+                 <div className="space-y-2 pt-4 border-t">
+                    <Label>الترتيب</Label>
+                     <div className="flex justify-between gap-1">
+                        <Button variant="outline" size="icon" onClick={() => onArrange(element.id, 'back')}><SendToBack/></Button>
+                        <Button variant="outline" size="icon" onClick={() => onArrange(element.id, 'backward')}><ChevronDown/></Button>
+                        <Button variant="outline" size="icon" onClick={() => onArrange(element.id, 'forward')}><ChevronUp/></Button>
+                        <Button variant="outline" size="icon" onClick={() => onArrange(element.id, 'front')}><BringToFront/></Button>
+                     </div>
+                </div>
+                 <Button variant="destructive" className="w-full" onClick={() => onDelete(element.id)}><Trash2 className="ml-2 h-4 w-4" /> حذف العنصر</Button>
+            </CardContent>
+        </Card>
     );
 };
 
@@ -350,10 +328,6 @@ export default function PolicyEditorPage() {
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const { toast } = useToast();
-
-  const [propertiesModalOpen, setPropertiesModalOpen] = useState(false);
-  const [editingElementId, setEditingElementId] = useState<string | null>(null);
-  const editingElement = useMemo(() => elements.find(el => el.id === editingElementId) ?? null, [elements, editingElementId]);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -430,14 +404,11 @@ export default function PolicyEditorPage() {
             prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
     } else {
+        // This always creates a new array, ensuring re-render for dependent components
         setSelectedIds([id]);
     }
   }, []);
   
-  const handleDoubleClick = (id: string) => {
-      setEditingElementId(id);
-      setPropertiesModalOpen(true);
-  };
 
   const handleResizeStop = useCallback((id: string, w: number, h: number) => {
     setElements((p) => p.map((el) => (el.id === id ? { ...el, width: snapToGrid(w), height: snapToGrid(h) } : el)));
@@ -620,12 +591,17 @@ export default function PolicyEditorPage() {
         id: "label_45x75_default", name: "بوليصة 75x45", paperSizeKey: "custom",
         customDimensions: { width: 75, height: 45 }, margins: { top: 2, right: 2, bottom: 2, left: 2 },
         elements: [
-            { id: "el_brcd", type: "barcode", x: 8, y: 8, width: 104, height: 32, zIndex: 1, content: "{order_id}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
-            { id: "el_brcd_txt", type: "text", x: 8, y: 40, width: 104, height: 16, zIndex: 1, content: "{order_id}", fontSize: 8, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
-            { id: "el_logo", type: "image", x: 120, y: 8, width: 90, height: 48, zIndex: 1, content: "{company_logo}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+            { id: "el_brcd", type: "barcode", x: 16, y: 8, width: 104, height: 128, zIndex: 1, content: "{order_id}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+            { id: "el_brcd_txt", type: "text", x: 128, y: 112, width: 136, height: 24, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+            { id: "el_logo", type: "image", x: 128, y: 8, width: 136, height: 88, zIndex: 1, content: "{company_logo}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
         ]
     }
   };
+
+  const selectedElement = useMemo(() => {
+    if (selectedIds.length !== 1) return null;
+    return elements.find(el => el.id === selectedIds[0]) ?? null;
+  }, [elements, selectedIds]);
 
 
   return (
@@ -648,15 +624,7 @@ export default function PolicyEditorPage() {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
-
-        <PropertiesModal 
-            isOpen={propertiesModalOpen}
-            onOpenChange={setPropertiesModalOpen}
-            element={editingElement}
-            onUpdate={handleUpdateElement}
-            onDelete={handleDeleteElement}
-        />
-
+        
         <Card>
             <CardHeader className="flex flex-row items-start justify-between">
                 <div>
@@ -686,10 +654,6 @@ export default function PolicyEditorPage() {
                  <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('top')}><AlignVerticalJustifyStart /></Button>
                  <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('v-center')}><AlignVerticalJustifyCenter /></Button>
                  <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleAlignment('bottom')}><AlignVerticalJustifyEnd /></Button>
-                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleArrange(selectedIds[0], 'back')}><SendToBack/></Button>
-                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleArrange(selectedIds[0], 'backward')}><ChevronDown/></Button>
-                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleArrange(selectedIds[0], 'forward')}><ChevronUp/></Button>
-                 <Button variant="ghost" size="icon" disabled={selectedIds.length < 2} onClick={() => handleArrange(selectedIds[0], 'front')}><BringToFront/></Button>
             </CardContent>
         </Card>
 
@@ -761,7 +725,7 @@ export default function PolicyEditorPage() {
                         </CardContent>
                     </Card>
                 </div>
-                <div className="space-y-6 lg:col-span-3">
+                <div className="space-y-6 lg:col-span-2">
                     <Card>
                         <CardHeader>
                             <CardTitle>لوحة التصميم</CardTitle>
@@ -788,7 +752,6 @@ export default function PolicyEditorPage() {
                                       element={el}
                                       selected={selectedIds.includes(el.id)}
                                       onSelect={handleSelect}
-                                      onDoubleClick={handleDoubleClick}
                                       onResizeStop={handleResizeStop}
                                     />
                                 ))}
@@ -796,13 +759,14 @@ export default function PolicyEditorPage() {
                         </CardContent>
                     </Card>
                 </div>
+                <PropertiesPanel
+                    selectedElement={selectedElement}
+                    onUpdate={handleUpdateElement}
+                    onDelete={handleDeleteElement}
+                    onArrange={handleArrange}
+                />
             </div>
         </DndContext>
     </div>
   );
 }
-
-
-
-
-
