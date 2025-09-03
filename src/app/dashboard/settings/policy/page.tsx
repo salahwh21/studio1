@@ -268,8 +268,8 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag,
   isSelected: boolean;
   zoomLevel: number;
 }) => {
-  const nodeRef = React.useRef<HTMLDivElement>(null);
-  
+  const nodeRef = useRef<HTMLDivElement>(null);
+
   return (
     <Draggable
         nodeRef={nodeRef}
@@ -280,7 +280,7 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag,
         onDrag={onDrag}
         onStop={onStop}
     >
-        <Resizable
+      <Resizable
           ref={nodeRef}
           size={{ width: element.width, height: element.height }}
           className="absolute"
@@ -291,10 +291,10 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag,
             topRight: isSelected, bottomRight: isSelected, bottomLeft: isSelected, topLeft: isSelected,
           }}
         >
-            <div className={`handle w-full h-full cursor-move ${isSelected ? 'border-2 border-dashed border-primary' : ''}`}>
-                <PolicyElementComponent element={element} />
-            </div>
-        </Resizable>
+        <div className={`handle w-full h-full cursor-move ${isSelected ? 'border-2 border-dashed border-primary' : ''}`}>
+            <PolicyElementComponent element={element} />
+        </div>
+      </Resizable>
     </Draggable>
   );
 };
@@ -446,22 +446,19 @@ export default function PolicyEditorPage() {
     };
 
     const handleDragStart = useCallback((e: DraggableEvent, data: DraggableData) => {
-        const draggableNode = data.node.parentElement;
+        const draggableNode = data.node.parentElement?.parentElement;
         if (!draggableNode) return false;
 
-        // Defer state update to prevent race condition with mount
         setTimeout(() => setIsDragging(true), 0);
 
         const elementId = draggableNode.id || '';
         
-        // If dragging an unselected element, select only that one.
         if (!selectedIds.includes(elementId)) {
             setSelectedIds([elementId]);
             dragStartPositions.current = {
                 [elementId]: { x: data.x, y: data.y },
             };
         } else {
-             // Store initial positions for all selected elements
             dragStartPositions.current = elements
                 .filter(el => selectedIds.includes(el.id))
                 .reduce((acc, el) => {
@@ -472,7 +469,7 @@ export default function PolicyEditorPage() {
     }, [elements, selectedIds]);
 
     const handleDrag = useCallback((e: DraggableEvent, data: DraggableData) => {
-        const draggableNode = data.node.parentElement;
+        const draggableNode = data.node.parentElement?.parentElement;
         if (!draggableNode) return;
         const elementId = draggableNode.id || '';
 
@@ -498,7 +495,6 @@ export default function PolicyEditorPage() {
                 y: [currentY, currentY + activeEl.height / 2, currentY + activeEl.height],
             };
 
-            // Canvas guides
             const canvasSnapPoints = {
                 x: [mmToPx(margins.left), paperDimensions.width / 2, paperDimensions.width - mmToPx(margins.right)],
                 y: [mmToPx(margins.top), paperDimensions.height / 2, paperDimensions.height - mmToPx(margins.bottom)],
@@ -517,7 +513,6 @@ export default function PolicyEditorPage() {
                 }
             }
             
-            // Other elements guides
             otherElements.forEach(otherEl => {
                 const otherPoints = {
                     x: [otherEl.x, otherEl.x + otherEl.width / 2, otherEl.x + otherEl.width],
@@ -545,9 +540,9 @@ export default function PolicyEditorPage() {
     }, [elements, selectedIds, margins, paperDimensions]);
 
     const handleStopDrag = useCallback((e: DraggableEvent, data: DraggableData) => {
-        setIsDragging(false);
+        setTimeout(() => setIsDragging(false), 0);
         setSmartGuides({ x: [], y: [] });
-        const draggableNode = data.node.parentElement;
+        const draggableNode = data.node.parentElement?.parentElement;
         if (!draggableNode) return;
         
         const elementId = draggableNode.id || '';
@@ -640,7 +635,6 @@ export default function PolicyEditorPage() {
                 if (typeof text !== 'string') throw new Error("File could not be read.");
 
                 const importedTemplate: SavedTemplate = JSON.parse(text);
-                // Basic validation
                 if (importedTemplate.elements && importedTemplate.paperSize) {
                     handleLoadTemplate(importedTemplate);
                     toast({ title: 'تم استيراد القالب بنجاح' });
@@ -725,6 +719,16 @@ export default function PolicyEditorPage() {
                     <CardTitle className="text-2xl font-bold tracking-tight">محرر البوليصة</CardTitle>
                     <CardDescription className="mt-1">اسحب وأفلت العناصر لتصميم البوليصة. انقر على عنصر لتعديل خصائصه.</CardDescription>
                 </div>
+                <Button variant="outline" size="icon" asChild>
+                    <Link href="/dashboard/settings/general">
+                        <ArrowLeft className="h-4 w-4" />
+                    </Link>
+                </Button>
+            </CardHeader>
+        </Card>
+
+        <Card>
+            <CardContent className="p-2">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                         <Label className="text-sm font-medium whitespace-nowrap">إضافة:</Label>
@@ -762,15 +766,11 @@ export default function PolicyEditorPage() {
                     
                     <div className="flex items-center gap-2 md:mr-auto">
                         <Button variant="secondary" onClick={() => {setIsPrintSampleDialogOpen(true)}}> <PrinterIcon className="w-4 h-4 ml-1"/> معاينة وطباعة</Button>
-                         <Button variant="outline" size="icon" asChild>
-                            <Link href="/dashboard/settings/general">
-                                <ArrowLeft className="h-4 w-4" />
-                            </Link>
-                        </Button>
                     </div>
                 </div>
-            </CardHeader>
+            </CardContent>
         </Card>
+
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             <div className="lg:col-span-3 space-y-6 lg:sticky lg:top-24">
@@ -902,3 +902,5 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
+    
