@@ -11,7 +11,7 @@ import Barcode from 'react-barcode';
 import Icon from './icon';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 
 type SavedTemplate = {
   id: string;
@@ -56,7 +56,8 @@ const resolveContent = (content: string, order: Order, settings: any): string =>
 
 
 // This component renders a single element on the policy
-const RenderedElement = ({ el, order, settings, loginSettings }: { el: any, order: Order, settings: any, loginSettings: any }) => {
+const RenderedElement = ({ el, order, settings }: { el: any, order: Order, settings: any }) => {
+    const loginSettings = settings.settings.login;
     const baseStyle: React.CSSProperties = {
         position: 'absolute',
         left: `${el.x}px`,
@@ -144,7 +145,6 @@ const Policy: React.FC<{ order: Order; template: SavedTemplate; }> = ({ order, t
     const context = useContext(SettingsContext);
     if (!context) return null;
 
-    const { settings } = context;
     const paperSizeKey = template.paperSize || 'custom';
     const customDimensions = template.customDimensions || { width: 75, height: 45 };
     
@@ -162,7 +162,7 @@ const Policy: React.FC<{ order: Order; template: SavedTemplate; }> = ({ order, t
     return (
         <div className="policy-sheet relative font-sans text-black bg-white shadow-lg mx-auto" style={style}>
             {(template.elements || []).sort((a, b) => a.zIndex - b.zIndex).map(el => (
-                <RenderedElement key={el.id} el={el} order={order} settings={context} loginSettings={settings.login} />
+                <RenderedElement key={el.id} el={el} order={order} settings={context} />
             ))}
         </div>
     );
@@ -176,8 +176,6 @@ export const PrintablePolicy = forwardRef<
     const context = useSettings();
     const { toast } = useToast();
     
-    const loginSettings = context?.settings.login;
-
     const mmToPt = (mm: number) => mm * (72 / 25.4);
 
     const handleExportPDF = async () => {
@@ -246,7 +244,7 @@ export const PrintablePolicy = forwardRef<
         handleExportPDF,
     }));
     
-    if (!context?.isHydrated || !template || !loginSettings) {
+    if (!context?.isHydrated || !template) {
         return <div><Skeleton className="h-[297mm] w-[210mm]" /></div>;
     }
     

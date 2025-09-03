@@ -49,6 +49,7 @@ const orderSchema = z.object({
 });
 
 type OrderFormValues = z.infer<typeof orderSchema>;
+
 type SavedTemplate = {
   id: string;
   name: string;
@@ -103,10 +104,18 @@ const AddOrderPage = () => {
   const allRegions = useMemo(() => cities.flatMap(c => c.areas.map(a => ({ ...a, cityName: c.name }))).sort((a,b) => a.name.localeCompare(b.name)), [cities]);
   
    useEffect(() => {
-        const storedTemplates = localStorage.getItem('policyTemplates');
-        if (storedTemplates) {
-            setSavedTemplates(JSON.parse(storedTemplates));
+        let templates: SavedTemplate[] = [];
+        try {
+            const storedTemplates = localStorage.getItem('policyTemplates');
+            if (storedTemplates) {
+                templates = JSON.parse(storedTemplates);
+            }
+        } catch (e) { console.error("Error parsing templates from localStorage", e); }
+        
+        if (templates.length === 0) {
+            templates = Object.values(readyTemplates);
         }
+        setSavedTemplates(templates);
     }, []);
   
   useEffect(() => {
@@ -244,21 +253,12 @@ const AddOrderPage = () => {
         return;
     }
     
-    let templates: SavedTemplate[] = [];
-    try {
-        const storedTemplates = localStorage.getItem('policyTemplates');
-        if (storedTemplates) {
-            templates = JSON.parse(storedTemplates);
-        }
-    } catch (e) { console.error("Error parsing templates from localStorage", e); }
-
-    // If no templates are stored, use the default ready-made ones
-    if (templates.length === 0) {
-        templates = Object.values(readyTemplates);
+    if (savedTemplates.length === 0) {
+        toast({ variant: "destructive", title: "لا توجد قوالب", description: "الرجاء إنشاء أو حفظ قالب واحد على الأقل في صفحة إعداد البوليصة." });
+        return;
     }
     
-    setSavedTemplates(templates);
-    setSelectedTemplate(templates[0]);
+    setSelectedTemplate(savedTemplates[0]);
     setIsPrintDialogOpen(true);
   };
   

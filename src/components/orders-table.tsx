@@ -90,6 +90,7 @@ import { PrintablePolicy } from '@/components/printable-policy';
 type OrderSource = Order['source'];
 type ColumnConfig = { key: keyof Order | 'id-link' | 'notes'; label: string; type?: 'default' | 'financial'; sortable?: boolean };
 type GroupByOption = keyof Order | null;
+
 type SavedTemplate = {
   id: string;
   name: string;
