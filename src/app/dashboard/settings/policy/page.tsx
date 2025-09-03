@@ -271,29 +271,33 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDrag, onStop, isSe
 }) => {
   const nodeRef = React.useRef(null);
   return (
-    <Draggable
-      nodeRef={nodeRef}
-      position={{ x: element.x, y: element.y }}
-      scale={zoomLevel}
-      onStart={(e) => onSelect(element.id, e as any)}
-      onDrag={(e, data) => onDrag(e, data, element.id)}
-      onStop={onStop}
+    <Resizable
+        ref={nodeRef}
+        size={{ width: element.width, height: element.height }}
+        style={{ position: 'absolute', transform: `translate(${element.x}px, ${element.y}px)`, zIndex: element.zIndex }}
+        onResizeStop={(e, dir, ref, d) => onUpdate(element.id, { width: snapToGrid(element.width + d.width), height: snapToGrid(element.height + d.height) })}
+        onClick={(e) => onSelect(element.id, e)}
+        className={`${isSelected ? 'border-2 border-dashed border-primary' : ''}`}
+        enable={{
+            top: isSelected, right: isSelected, bottom: isSelected, left: isSelected,
+            topRight: isSelected, bottomRight: isSelected, bottomLeft: isSelected, topLeft: isSelected,
+        }}
     >
-        <Resizable
-            ref={nodeRef}
-            size={{ width: element.width, height: element.height }}
-            onResizeStop={(e, dir, ref, d) => onUpdate(element.id, { width: snapToGrid(element.width + d.width), height: snapToGrid(element.height + d.height) })}
-            onClick={(e) => onSelect(element.id, e)}
-            className={`absolute handle cursor-move ${isSelected ? 'border-2 border-dashed border-primary' : ''}`}
-            style={{ zIndex: element.zIndex }}
-            enable={{
-                top: isSelected, right: isSelected, bottom: isSelected, left: isSelected,
-                topRight: isSelected, bottomRight: isSelected, bottomLeft: isSelected, topLeft: isSelected,
-            }}
+        <Draggable
+            handle=".handle"
+            position={{ x: 0, y: 0 }}
+            scale={zoomLevel}
+            onStart={(e) => onSelect(element.id, e as any)}
+            onDrag={(e, data) => onDrag(e, data, element.id)}
+            onStop={onStop}
         >
-            <PolicyElementComponent element={element} />
-        </Resizable>
-    </Draggable>
+          <div className="w-full h-full relative">
+            <div className="handle w-full h-full cursor-move">
+              <PolicyElementComponent element={element} />
+            </div>
+          </div>
+        </Draggable>
+    </Resizable>
   );
 };
 
@@ -436,6 +440,9 @@ export default function PolicyEditorPage() {
         let { x, y } = data;
         const activeElement = elements.find(el => el.id === elementId);
         if (!activeElement) return;
+        
+        let newX = activeElement.x + x;
+        let newY = activeElement.y + y;
 
         const newGuides = { x: [] as number[], y: [] as number[] };
 
@@ -447,8 +454,8 @@ export default function PolicyEditorPage() {
         
         // Define points of interest for the dragged element
         const elementPoints = {
-            x: [x, x + activeElement.width / 2, x + activeElement.width],
-            y: [y, y + activeElement.height / 2, y + activeElement.height],
+            x: [newX, newX + activeElement.width / 2, newX + activeElement.width],
+            y: [newY, newY + activeElement.height / 2, newY + activeElement.height],
         };
 
         // Check against other elements
@@ -463,11 +470,11 @@ export default function PolicyEditorPage() {
             for (let i = 0; i < 3; i++) {
                 for (let j = 0; j < 3; j++) {
                     if (Math.abs(elementPoints.x[i] - otherPoints.x[j]) < SNAP_THRESHOLD) {
-                        x += otherPoints.x[j] - elementPoints.x[i];
+                        newX += otherPoints.x[j] - elementPoints.x[i];
                         newGuides.x.push(otherPoints.x[j]);
                     }
                     if (Math.abs(elementPoints.y[i] - otherPoints.y[j]) < SNAP_THRESHOLD) {
-                        y += otherPoints.y[j] - elementPoints.y[i];
+                        newY += otherPoints.y[j] - elementPoints.y[i];
                         newGuides.y.push(otherPoints.y[j]);
                     }
                 }
@@ -478,18 +485,18 @@ export default function PolicyEditorPage() {
         for(let i=0; i<3; i++) {
             for(let j=0; j<3; j++) {
                 if (Math.abs(elementPoints.x[i] - canvasSnapPoints.x[j]) < SNAP_THRESHOLD) {
-                    x += canvasSnapPoints.x[j] - elementPoints.x[i];
+                    newX += canvasSnapPoints.x[j] - elementPoints.x[i];
                     newGuides.x.push(canvasSnapPoints.x[j]);
                 }
                 if (Math.abs(elementPoints.y[i] - canvasSnapPoints.y[j]) < SNAP_THRESHOLD) {
-                    y += canvasSnapPoints.y[j] - elementPoints.y[i];
+                    newY += canvasSnapPoints.y[j] - elementPoints.y[i];
                     newGuides.y.push(canvasSnapPoints.y[j]);
                 }
             }
         }
         
         setSmartGuides(newGuides);
-        handleUpdateElement(elementId, { x, y });
+        handleUpdateElement(elementId, { x: newX, y: newY });
     }, [elements, margins, paperDimensions]);
 
     const handleStopDrag = useCallback(() => {
@@ -793,29 +800,7 @@ export default function PolicyEditorPage() {
                                     width: paperDimensions.width, 
                                     height: paperDimensions.height,
                                 }}
-                                onMouseDown={(e) => {
-                                    if(e.target === e.currentTarget) {
-                                        const event = e as React.MouseEvent;
-                                        if (event.shiftKey) { // Simple check, could be more robust
-                                            handleNewGuide(e, 'horizontal');
-                                        } else {
-                                            handleNewGuide(e, 'vertical');
-                                        }
-                                    }
-                                }}
                             >
-                                
-                                {horizontalGuides.map((y, i) => (
-                                    <Draggable key={`h-${i}`} axis="y" bounds="parent" onStop={(e, data) => setHorizontalGuides(prev => prev.map((g, gi) => gi === i ? snapToGrid(data.y) : g))} position={{x:0, y}}>
-                                        <div className="absolute w-full h-px bg-cyan-400 opacity-75 cursor-row-resize z-[99]" style={{left: -RULER_WIDTH}}></div>
-                                    </Draggable>
-                                ))}
-                                {verticalGuides.map((x, i) => (
-                                     <Draggable key={`v-${i}`} axis="x" bounds="parent" onStop={(e, data) => setVerticalGuides(prev => prev.map((g, gi) => gi === i ? snapToGrid(data.x) : g))} position={{x, y:0}}>
-                                        <div className="absolute h-full w-px bg-cyan-400 opacity-75 cursor-col-resize z-[99]" style={{top: -RULER_WIDTH}}></div>
-                                    </Draggable>
-                                ))}
-
                                 {isDragging && smartGuides.x.map((x, i) => <div key={`sgx-${i}`} className="absolute top-0 h-full w-px bg-red-500 z-50" style={{ left: x }} />)}
                                 {isDragging && smartGuides.y.map((y, i) => <div key={`sgy-${i}`} className="absolute left-0 w-full h-px bg-red-500 z-50" style={{ top: y }} />)}
 
