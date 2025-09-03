@@ -23,10 +23,16 @@ const replacePlaceholders = (text: string, order: Order, logos: { companyLogo?: 
         .replace(/\{\{phone\}\}/g, order.phone)
         .replace(/\{\{address\}\}/g, order.address)
         .replace(/\{\{city\}\}/g, order.city)
+        .replace(/\{\{region\}\}/g, order.region || '')
         .replace(/\{\{cod\}\}/g, String(order.cod))
         .replace(/\{\{merchant\}\}/g, order.merchant)
         .replace(/\{\{date\}\}/g, order.date)
         .replace(/\{\{orderId\}\}/g, order.id)
+        .replace(/\{\{referenceNumber\}\}/g, order.referenceNumber || '')
+        .replace(/\{\{source\}\}/g, order.source)
+        .replace(/\{\{driver\}\}/g, order.driver)
+        // Assume items is an array in the future; for now, join if it exists
+        .replace(/\{\{items\}\}/g, Array.isArray((order as any).items) ? (order as any).items.join(', ') : '')
         .replace(/\{\{notes\}\}/g, order.notes || '');
 
     if (logos.companyLogo) {
@@ -119,7 +125,6 @@ export const PrintablePolicy = forwardRef(({ orders, template }: PrintablePolicy
     const [isExporting, setIsExporting] = useState(false);
     const printAreaRef = useRef<HTMLDivElement>(null);
     const context = useSettings();
-    const logos = { companyLogo: context.settings.login.loginLogo || context.settings.login.headerLogo };
     
     const displayOrders = orders.length > 0 ? orders : [{
         id: '12345', orderNumber: 12345, recipient: 'اسم المستلم التجريبي', phone: '0790000000',
@@ -179,6 +184,9 @@ export const PrintablePolicy = forwardRef(({ orders, template }: PrintablePolicy
             toast({ variant: 'destructive', title: 'خطأ', description: 'لا يوجد طلب لطباعته' });
             return;
         }
+
+        const companyLogo = context.settings.login.loginLogo || context.settings.login.headerLogo;
+        const logos = { companyLogo };
 
         const printData = `
             ^XA

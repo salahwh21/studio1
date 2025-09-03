@@ -73,7 +73,7 @@ const paperSizes = {
 const toolboxItems = [
   { type: 'text', label: 'نص', icon: Type, content: 'نص', defaultWidth: 150, defaultHeight: 30 },
   { type: 'barcode', label: 'باركود', icon: ScanBarcode, content: '{{orderId}}', defaultWidth: 150, defaultHeight: 50 },
-  { type: 'image', label: 'صورة/شعار', icon: ImageIcon, content: '', defaultWidth: 100, defaultHeight: 50 },
+  { type: 'image', label: 'صورة/شعار', icon: ImageIcon, content: '{{company_logo}}', defaultWidth: 100, defaultHeight: 50 },
   { type: 'shape', label: 'شكل', icon: Shapes, content: 'مربع', defaultWidth: 100, defaultHeight: 100 },
 ];
 
@@ -82,11 +82,17 @@ const dataFields = [
   { value: '{{phone}}', label: 'هاتف المستلم' },
   { value: '{{address}}', label: 'العنوان الكامل' },
   { value: '{{city}}', label: 'المدينة' },
+  { value: '{{region}}', label: 'المنطقة' },
   { value: '{{cod}}', label: 'قيمة التحصيل' },
   { value: '{{merchant}}', label: 'اسم التاجر' },
   { value: '{{date}}', label: 'التاريخ' },
   { value: '{{orderId}}', label: 'رقم الطلب' },
+  { value: '{{referenceNumber}}', label: 'الرقم المرجعي' },
+  { value: '{{driver}}', label: 'اسم السائق' },
+  { value: '{{source}}', label: 'مصدر الطلب' },
   { value: '{{notes}}', label: 'الملاحظات' },
+  { value: '{{items}}', label: 'المنتجات' },
+  { value: '{{company_logo}}', label: 'شعار الشركة' },
 ];
 
 // --- Sub-components ---
@@ -259,7 +265,7 @@ export default function PolicyEditorPage() {
     const { orders } = useOrdersStore();
     const context = useSettings();
     
-    const { settings: policySettings, updatePolicySetting, isHydrated } = context;
+    const { settings: policySettings, isHydrated } = context;
 
     const [elements, setElements] = useState<PolicyElement[]>(policySettings?.policy.elements || []);
     const [paperSize, setPaperSize] = useState<PolicySettings['paperSize']>(policySettings?.policy.paperSize || 'custom');
@@ -722,6 +728,7 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
 
 
 
