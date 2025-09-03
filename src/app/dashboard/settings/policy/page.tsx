@@ -4,7 +4,6 @@
 
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { useActionState } from 'react';
 import {
   AlignCenter,
   AlignLeft,
@@ -34,8 +33,6 @@ import {
   ChevronDown,
   ChevronsDown,
   ArrowLeft,
-  Wand2,
-  Loader2,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { DndContext, PointerSensor, useSensor, useSensors, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
@@ -58,8 +55,6 @@ import { useOrdersStore } from '@/store/orders-store';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import Icon from '@/components/icon';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { generatePolicyAction } from '@/app/actions/generate-policy';
-import { Textarea } from '@/components/ui/textarea';
 
 
 // --- Constants & Helpers ---
@@ -68,7 +63,7 @@ const GRID_SIZE = 5;
 const snapToGrid = (value: number) => Math.round(value / GRID_SIZE) * GRID_SIZE;
 const mmToPx = (mm: number) => (mm / 25.4) * 96;
 
-const paperSizes = {
+const paperSizes: Record<string, { width: number; height: number }> = {
   a4: { width: 210, height: 297 },
   a5: { width: 148, height: 210 },
   a6: { width: 105, height: 148 },
@@ -267,6 +262,46 @@ const PropertiesPanel = ({ element, onUpdate }: {
     );
 };
 
+const PageSettingsPanel = ({ paperSize, customDimensions, margins, onPaperSizeChange, onDimensionChange, onMarginChange }: {
+    paperSize: PolicySettings['paperSize'];
+    customDimensions: PolicySettings['customDimensions'];
+    margins: PolicySettings['margins'];
+    onPaperSizeChange: (size: PolicySettings['paperSize']) => void;
+    onDimensionChange: (dim: 'width' | 'height', value: number) => void;
+    onMarginChange: (margin: 'top' | 'right' | 'bottom' | 'left', value: number) => void;
+}) => (
+    <Card>
+        <CardHeader><CardTitle className='text-base'>إعدادات الصفحة</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+            <div>
+                <Label htmlFor="paper-size">مقاس الورق</Label>
+                <Select value={paperSize} onValueChange={(val) => onPaperSizeChange(val as PolicySettings['paperSize'])}>
+                    <SelectTrigger id="paper-size"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        {Object.keys(paperSizes).map(size => <SelectItem key={size} value={size}>{size.toUpperCase()}</SelectItem>)}
+                        <SelectItem value="custom">مخصص</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            {paperSize === 'custom' && (
+                <div className="grid grid-cols-2 gap-2">
+                    <div><Label>العرض (mm)</Label><Input type="number" value={customDimensions.width} onChange={e => onDimensionChange('width', +e.target.value)} /></div>
+                    <div><Label>الارتفاع (mm)</Label><Input type="number" value={customDimensions.height} onChange={e => onDimensionChange('height', +e.target.value)} /></div>
+                </div>
+            )}
+            <div>
+                <Label>الهوامش (mm)</Label>
+                <div className="grid grid-cols-2 gap-2">
+                    <div><Label className='text-xs'>الأعلى</Label><Input type="number" value={margins.top} onChange={e => onMarginChange('top', +e.target.value)} /></div>
+                    <div><Label className='text-xs'>الأسفل</Label><Input type="number" value={margins.bottom} onChange={e => onMarginChange('bottom', +e.target.value)} /></div>
+                    <div><Label className='text-xs'>اليمين</Label><Input type="number" value={margins.right} onChange={e => onMarginChange('right', +e.target.value)} /></div>
+                    <div><Label className='text-xs'>اليسار</Label><Input type="number" value={margins.left} onChange={e => onMarginChange('left', +e.target.value)} /></div>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
+
 
 // --- Main Page Component ---
 export default function PolicyEditorPage() {
@@ -274,8 +309,7 @@ export default function PolicyEditorPage() {
     const { orders } = useOrdersStore();
     const context = useSettings();
     
-    const { settings: policySettings, isHydrated } = context;
-    const [aiState, formAction, isAiPending] = useActionState(generatePolicyAction, { data: null, error: null, success: false });
+    const { settings: policySettings, isHydrated, updatePolicySetting } = context;
 
     const [elements, setElements] = useState<PolicyElement[]>(policySettings?.policy.elements || []);
     const [paperSize, setPaperSize] = useState<PolicySettings['paperSize']>(policySettings?.policy.paperSize || 'custom');
@@ -315,16 +349,6 @@ export default function PolicyEditorPage() {
             }
         } catch {}
     }, [isHydrated, policySettings]);
-    
-    // Handle AI action state
-    useEffect(() => {
-        if (aiState.success && aiState.data) {
-            setElements(aiState.data.elements);
-            toast({ title: "تم إنشاء التصميم بنجاح!", description: "تم تحديث لوحة التصميم بناءً على وصفك." });
-        } else if (aiState.error) {
-            toast({ variant: 'destructive', title: "خطأ في التصميم", description: aiState.error });
-        }
-    }, [aiState, toast]);
 
     const paperDimensions = useMemo(() => {
         if (!isHydrated || !customDimensions) return { width: mmToPx(100), height: mmToPx(150) };
@@ -650,37 +674,6 @@ export default function PolicyEditorPage() {
                 </CardContent>
             </Card>
 
-             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Wand2 /> مصمم البوالص بالذكاء الاصطناعي</CardTitle>
-                    <CardDescription>صف التصميم الذي تريده باللغة العربية، وسيقوم الذكاء الاصطناعي بإنشائه لك.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form action={formAction}>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <Textarea
-                                name="description"
-                                placeholder="مثال: تصميم بوليصة شحن حرارية مقاس 4x6، ضع شعار الشركة في الأعلى، ثم عنوان المستلم ورقم هاتفه، وفي الأسفل باركود لرقم الطلب."
-                                className="md:col-span-3 min-h-[80px]"
-                                rows={3}
-                            />
-                            <div className="flex flex-col gap-2">
-                                <input type="hidden" name="paperWidth" value={paperDimensions.width / 3.78} />
-                                <input type="hidden" name="paperHeight" value={paperDimensions.height / 3.78} />
-                                <Button type="submit" className="h-full" disabled={isAiPending}>
-                                    {isAiPending ? (
-                                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                                    ) : (
-                                        <Wand2 className="h-4 w-4 ml-2" />
-                                    )}
-                                    {isAiPending ? 'جاري الإنشاء...' : 'إنشاء التصميم'}
-                                </Button>
-                            </div>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
-
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 <div className="lg:col-span-3 space-y-6 lg:sticky lg:top-24">
                     <Card>
@@ -694,6 +687,14 @@ export default function PolicyEditorPage() {
                             ))}
                         </CardContent>
                     </Card>
+                     <PageSettingsPanel 
+                        paperSize={paperSize}
+                        customDimensions={customDimensions}
+                        margins={margins}
+                        onPaperSizeChange={setPaperSize}
+                        onDimensionChange={(dim, val) => setCustomDimensions(prev => ({...prev, [dim]: val}))}
+                        onMarginChange={(margin, val) => setMargins(prev => ({...prev, [margin]: val}))}
+                    />
                     <Card>
                         <CardHeader><CardTitle className='text-base'>القوالب</CardTitle></CardHeader>
                         <CardContent>
@@ -768,11 +769,4 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
 
