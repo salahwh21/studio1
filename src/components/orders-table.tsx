@@ -39,6 +39,8 @@ import {
   Check,
   ArrowUpDown,
   ListTree,
+  Upload,
+  Download,
 } from 'lucide-react';
 import {
   DndContext,
@@ -59,7 +61,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 import { useOrdersStore, type Order } from '@/store/orders-store';
-import { useSettings, PolicySettings } from '@/contexts/SettingsContext';
+import { useSettings, PolicySettings, PolicyElement, SavedTemplate } from '@/contexts/SettingsContext';
 
 
 // ShadCN UI Components
@@ -206,8 +208,7 @@ export function OrdersTable() {
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
     const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
-    const [printSettings, setPrintSettings] = useState<PolicySettings | null>(null);
-    const printablePolicyRef = useRef<{ handleExportPDF: (overrideSettings?: Partial<PolicySettings>) => void }>(null);
+    const printablePolicyRef = useRef<{ handleExportPDF: () => void }>(null);
 
     // State for column management
     const [columns, setColumns] = useState<ColumnConfig[]>(ALL_COLUMNS);
@@ -216,10 +217,7 @@ export function OrdersTable() {
 
     useEffect(() => { 
         setIsClient(true); 
-        if (context.isHydrated) {
-            setPrintSettings(context.settings.policy);
-        }
-    }, [context.isHydrated, context.settings.policy]);
+    }, []);
 
     // Reset open groups when groupBy changes
     useEffect(() => {
@@ -390,10 +388,13 @@ export function OrdersTable() {
         })
     }
     
-    const handleConfirmPrint = () => {
-        if (printablePolicyRef.current && printSettings) {
-          printablePolicyRef.current.handleExportPDF(printSettings);
-          setIsPrintDialogOpen(false);
+    const handlePrint = () => {
+        if (ordersToPrint.length === 0) {
+            toast({ variant: "destructive", title: "لا توجد طلبات محددة", description: "الرجاء تحديد طلب واحد على الأقل للطباعة." });
+            return;
+        }
+        if (printablePolicyRef.current) {
+            printablePolicyRef.current.handleExportPDF();
         }
     };
 
@@ -541,53 +542,10 @@ export function OrdersTable() {
 
     return (
         <>
+             <div className="hidden">
+                <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} onExport={() => setSelectedRows([])} />
+            </div>
             <TooltipProvider>
-                 <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
-                    <DialogContent className="max-w-4xl">
-                      <DialogHeader>
-                        <DialogTitle>إعدادات الطباعة</DialogTitle>
-                        <DialogDescription>اختر حجم وتصميم البوليصة قبل الطباعة.</DialogDescription>
-                      </DialogHeader>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-                        <div className="md:col-span-1 space-y-6">
-                            {printSettings && (
-                                <>
-                                <div className="space-y-3">
-                                    <Label>حجم الورق</Label>
-                                    <RadioGroup value={printSettings.paperSize} onValueChange={(val) => setPrintSettings(prev => prev ? {...prev, paperSize: val as PolicySettings['paperSize']} : null)}>
-                                        {['a4','a5','label_4x6','label_4x4'].map(size => (
-                                        <div key={size} className="flex items-center space-x-2 space-x-reverse">
-                                            <RadioGroupItem value={size} id={`ps-${size}`} />
-                                            <Label htmlFor={`ps-${size}`}>{size.replace('_','x').toUpperCase()}</Label>
-                                        </div>
-                                        ))}
-                                    </RadioGroup>
-                                </div>
-                                <div className="space-y-3">
-                                    <Label>تصميم البوليصة</Label>
-                                    <RadioGroup value={printSettings.layout} onValueChange={(val) => setPrintSettings(prev => prev ? {...prev, layout: val as PolicySettings['layout']} : null)}>
-                                        {['default','compact','detailed'].map(layout => (
-                                            <div key={layout} className="flex items-center space-x-2 space-x-reverse">
-                                                <RadioGroupItem value={layout} id={`ly-${layout}`} />
-                                                <Label htmlFor={`ly-${layout}`}>{layout==='default' ? 'افتراضي' : layout==='compact' ? 'مدمج' : 'مفصّل'}</Label>
-                                            </div>
-                                        ))}
-                                    </RadioGroup>
-                                </div>
-                                </>
-                            )}
-                        </div>
-                        <div className="md:col-span-2 bg-muted rounded-lg p-4 max-h-[60vh] overflow-auto">
-                            <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} previewSettings={printSettings || undefined}/>
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
-                        <Button onClick={handleConfirmPrint}>تأكيد الطباعة</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-
                 <Card className="flex flex-col h-[calc(100vh-8rem)] bg-background p-4 gap-4">
                     {/* Header */}
                     <div className="flex-none flex-row items-center justify-between flex flex-wrap gap-2">
@@ -597,7 +555,7 @@ export function OrdersTable() {
                                 <Separator orientation="vertical" className="h-6 mx-1" />
                                  <Button variant="outline" size="sm" onClick={() => setModalState({ type: 'assignDriver' })}><UserCheck className="ml-2 h-4 w-4" /> تعيين سائق</Button>
                                 <Button variant="outline" size="sm" onClick={() => setModalState({ type: 'changeStatus' })}><RefreshCw className="ml-2 h-4 w-4" /> تغيير الحالة</Button>
-                                <Button variant="outline" size="sm" onClick={() => setIsPrintDialogOpen(true)}><Printer className="ml-2 h-4 w-4" /> طباعة</Button>
+                                <Button variant="outline" size="sm" onClick={handlePrint}><Printer className="ml-2 h-4 w-4" /> طباعة</Button>
                                 <Button variant="destructive" size="sm" onClick={() => setModalState({ type: 'delete' })}><Trash2 className="ml-2 h-4 w-4" /> حذف</Button>
                                 <Button variant="ghost" size="icon" onClick={() => setSelectedRows([])}><X className="h-4 w-4" /></Button>
                             </div>
@@ -678,7 +636,7 @@ export function OrdersTable() {
                                         <DropdownMenuItem>تصدير كـ PDF</DropdownMenuItem>
                                     </DropdownMenuContent>
                                     </DropdownMenu>
-                                    <Button variant="outline" size="sm" onClick={() => setIsPrintDialogOpen(true)}><Printer /></Button>
+                                    <Button variant="outline" size="sm" onClick={handlePrint}><Printer /></Button>
                                     <Button variant="outline" size="sm" onClick={handleRefresh}><RefreshCw className="h-4 w-4"/></Button>
                                 </div>
                             </>
