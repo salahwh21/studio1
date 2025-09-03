@@ -48,6 +48,7 @@ import { useSettings, type PolicySettings, type PolicyElement, type SavedTemplat
 import { Separator } from '@/components/ui/separator';
 import { PrintablePolicy } from '@/components/printable-policy';
 import { useOrdersStore } from '@/store/orders-store';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 
 // --- Constants & Helpers ---
@@ -364,17 +365,17 @@ export default function PolicyEditorPage() {
     };
 
     const handleSmartLayout = () => {
-        if (elements.length === 0) return;
-        const newElements = elements.map((el, index) => {
-            const newY = 10 + (index * 40); // Simple vertical stack
-            return {
-                ...el,
-                x: 10,
-                y: newY
-            };
-        });
-        setElements(newElements);
-        toast({ title: "تم التنسيق", description: "تم ترتيب العناصر تلقائياً." });
+      if (elements.length === 0) return;
+      const newElements = elements.map((el, index) => {
+          const newY = 10 + (index * 40); // Simple vertical stack
+          return {
+              ...el,
+              x: 10,
+              y: newY
+          };
+      });
+      setElements(newElements);
+      toast({ title: "تم التنسيق", description: "تم ترتيب العناصر تلقائياً." });
     };
     
     // DND Handlers
