@@ -99,10 +99,8 @@ export type PolicyElement = {
     zIndex: number;
     opacity: number;
     backgroundColor: string;
-    rowCount?: number;
-    colCount?: number;
-    headers?: string[];
-    tableData?: { id: string; cells: { id: string; content: string }[] }[];
+    textAlign: string;
+    borderRadius: number;
 };
 
 export type PaperSize = 'a4' | 'a5' | 'a6' | '4x6' | 'custom';
@@ -114,6 +112,30 @@ export type PolicySettings = {
 };
 export type SavedTemplate = PolicySettings & { id: string; name: string; isReadyMade?: boolean; };
 
+// Re-defining the ready-made templates
+export const readyTemplates: SavedTemplate[] = [
+    {
+        id: 'ready-1', name: 'قالب حراري أساسي (Zebra)', isReadyMade: true,
+        paperSize: '4x6', customDimensions: { width: 101.6, height: 152.4 }, margins: { top: 2, right: 2, bottom: 2, left: 2 },
+        elements: [
+            { id: 'el-r1-1', type: 'text', x: 20, y: 10, width: 150, height: 20, content: 'شركة الوميض للشحن', fontSize: 18, fontWeight: 'bold', zIndex: 0, color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0 },
+            { id: 'el-r1-2', type: 'text', x: 200, y: 30, width: 150, height: 20, content: 'إلى: {{recipient}}', fontSize: 14, fontWeight: 'normal', zIndex: 1, color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'right', borderRadius: 0 },
+            { id: 'el-r1-3', type: 'text', x: 200, y: 55, width: 150, height: 40, content: '{{address}}', fontSize: 12, fontWeight: 'normal', zIndex: 2, color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'right', borderRadius: 0 },
+            { id: 'el-r1-4', type: 'text', x: 200, y: 100, width: 150, height: 20, content: 'هاتف: {{phone}}', fontSize: 14, fontWeight: 'normal', zIndex: 3, color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'right', borderRadius: 0 },
+            { id: 'el-r1-5', type: 'text', x: 20, y: 100, width: 150, height: 20, content: 'الدفع عند الاستلام: {{cod}}', fontSize: 14, fontWeight: 'bold', zIndex: 4, color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'left', borderRadius: 0 },
+            { id: 'el-r1-6', type: 'barcode', x: 70, y: 130, width: 250, height: 60, content: '{{orderId}}', fontSize: 14, fontWeight: 'normal', zIndex: 5, color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0 },
+        ]
+    },
+    {
+        id: 'ready-2', name: 'قالب A4 (4 بوالص)', isReadyMade: true,
+        paperSize: 'a4', customDimensions: { width: 210, height: 297 }, margins: { top: 5, right: 5, bottom: 5, left: 5 },
+        elements: [
+             { id: 'el-r2-1', type: 'text', x: 10, y: 10, width: 150, height: 20, content: 'من: {{merchant}}', fontSize: 14, fontWeight: 'normal', zIndex: 1, color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'right', borderRadius: 0 },
+             { id: 'el-r2-2', type: 'text', x: 200, y: 10, width: 150, height: 20, content: 'إلى: {{recipient}}', fontSize: 14, fontWeight: 'normal', zIndex: 1, color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'right', borderRadius: 0 },
+             { id: 'el-r2-3', type: 'barcode', x: 120, y: 80, width: 150, height: 40, content: '{{orderId}}', fontSize: 14, fontWeight: 'normal', zIndex: 5, color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0 },
+        ]
+    },
+];
 
 // Main settings structure
 interface ComprehensiveSettings {
@@ -148,7 +170,7 @@ const defaultSettingsData: ComprehensiveSettings = {
     manualTemplates: [
       { id: 'tpl_1', statusId: 'OUT_FOR_DELIVERY', recipients: ['customer'], whatsApp: 'مرحباً {{customerName}}، طلبك رقم *{{orderId}}* في طريقه إليك الآن مع السائق {{driverName}}. نتمنى لك يوماً سعيداً!', sms: 'طلبك {{orderId}} خرج للتوصيل. الوميض.' },
       { id: 'tpl_2', statusId: 'DELIVERED', recipients: ['customer', 'merchant'], whatsApp: 'مرحباً {{customerName}}، تم توصيل طلبك رقم *{{orderId}}* بنجاح. شكراً لثقتكم بخدماتنا!', sms: 'تم توصيل طلبك {{orderId}}. الوميض.' },
-      { id: 'tpl_3', statusId: 'POSTPONED', recipients: ['customer'], whatsApp: 'مرحباً {{customerName}}، تم تأجيل توصيل طلبك رقم *{{orderId}}* حسب طلبكم. سيتم التواصل معكم قريباً لتحديد موعد جديد.', sms: 'تم تأجيل طلبك {{orderId}} بناء على طلبك.' },
+      { id: 'tpl_3', statusId: 'POSTPONED', recipients: ['customer'], whatsApp: 'مرحباً {{customerName}}، تم تأجيل توصيل طلبك رقم *{{orderId}}* حسب طلبكم. سيتم التواصل معكم قريباً لتحديد موعد جديد.', sms: 'تم تأجيل طلبك {{orderId}}.' },
       { id: 'tpl_4', statusId: 'RETURNED', recipients: ['merchant'], whatsApp: 'تنبيه: تم إنشاء طلب مرتجع للشحنة رقم *{{orderId}}*. سبب الإرجاع: {{reason}}.', sms: 'مرتجع جديد للطلب {{orderId}}.' },
       { id: 'tpl_5', statusId: 'CANCELLED', recipients: ['merchant'], whatsApp: 'نأسف لإبلاغكم بأنه تم إلغاء الطلب رقم *{{orderId}}* من قبل العميل.', sms: 'تم إلغاء الطلب {{orderId}}.' },
     ],
