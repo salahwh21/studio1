@@ -49,6 +49,7 @@ import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
 import { Separator } from '@/components/ui/separator';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { PrintablePolicy } from '@/components/printable-policy';
 
 
 // ---------- Types ----------
@@ -186,14 +187,80 @@ function ElementContent({ el }: { el: PolicyElement }) {
   return null;
 }
 
+// ---------- Properties Panel ----------
+const PropertiesPanel = ({ element, onUpdate, onDelete }: { element: PolicyElement | null; onUpdate: (id: string, updates: Partial<PolicyElement>) => void; onDelete: (id: string) => void; }) => {
+    if (!element) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>الخصائص</CardTitle>
+                    <CardDescription>انقر على عنصر لعرض خصائصه وتعديلها هنا.</CardDescription>
+                </CardHeader>
+            </Card>
+        );
+    }
+    
+    const handleChange = (field: keyof PolicyElement, value: any) => {
+        onUpdate(element.id, { [field]: value });
+    };
+
+    const handleNumericChange = (field: keyof PolicyElement, value: string) => {
+        const num = parseInt(value, 10);
+        if (!isNaN(num)) {
+            handleChange(field, num);
+        }
+    };
+    
+    const handleFloatChange = (field: keyof PolicyElement, value: string) => {
+        const num = parseFloat(value);
+        if (!isNaN(num)) {
+            handleChange(field, num);
+        }
+    };
+    
+    return (
+         <Card>
+            <CardHeader>
+                <CardTitle>خصائص: {element.type}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {element.type === 'text' && (
+                    <div className="space-y-2"><Label>النص</Label><Textarea value={element.content} onChange={(e) => handleChange('content', e.target.value)} /></div>
+                )}
+                {(element.type === 'text' || element.type === 'table') && (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label>حجم الخط</Label><Input type="number" value={element.fontSize ?? 14} onChange={(e) => handleNumericChange('fontSize', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>وزن الخط</Label><Select value={element.fontWeight ?? 'normal'} onValueChange={(val: FontWeight) => handleChange('fontWeight', val)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="normal">عادي</SelectItem><SelectItem value="bold">عريض</SelectItem></SelectContent></Select></div>
+                    </div>
+                )}
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2"><Label>X</Label><Input type="number" value={element.x} onChange={(e) => handleNumericChange('x', e.target.value)} /></div>
+                    <div className="space-y-2"><Label>Y</Label><Input type="number" value={element.y} onChange={(e) => handleNumericChange('y', e.target.value)} /></div>
+                    <div className="space-y-2"><Label>العرض</Label><Input type="number" value={element.width} onChange={(e) => handleNumericChange('width', e.target.value)} /></div>
+                    <div className="space-y-2"><Label>الارتفاع</Label><Input type="number" value={element.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
+                </div>
+                 {(element.type === 'text' || element.type === 'line') && <div className="space-y-2"><Label>اللون</Label><Input type="color" value={element.color ?? '#000000'} onChange={(e) => handleChange('color', e.target.value)} className="h-10 w-full p-1" /></div>}
+                {(element.type === 'rect') && <div className="space-y-2"><Label>لون التعبئة</Label><Input type="color" value={element.backgroundColor ?? '#ffffff'} onChange={(e) => handleChange('backgroundColor', e.target.value)} className="h-10 w-full p-1" /></div>}
+                 {(element.type === 'rect' || element.type === 'table') && (
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label>لون الحد</Label><Input type="color" value={element.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full p-1" /></div>
+                        <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={element.borderWidth ?? 1} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
+                    </div>
+                )}
+                <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={element.opacity ?? 1} onChange={(e) => handleFloatChange('opacity', e.target.value)} /></div>
+                <Button variant="destructive" onClick={() => onDelete(element.id)} className="w-full"><Trash2 className="ml-2 h-4 w-4" /> حذف العنصر</Button>
+            </CardContent>
+        </Card>
+    )
+}
+
 // ---------- Canvas item ----------
-const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMenu, onDoubleClick }: {
+const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMenu }: {
   element: PolicyElement;
   selected: boolean;
   onSelect: (id: string, e: React.MouseEvent) => void;
   onResizeStop: (id: string, w: number, h: number) => void;
   onContextMenu: (event: React.MouseEvent, element: PolicyElement) => void;
-  onDoubleClick: (element: PolicyElement) => void;
 }) => {
   const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({ id: element.id });
 
@@ -209,10 +276,6 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMen
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
   };
 
-  if(isDragging) {
-      style.visibility = 'hidden';
-  }
-
   return (
     <div
       ref={setNodeRef}
@@ -220,7 +283,6 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMen
       {...attributes}
       {...listeners}
       onClick={(e) => onSelect(element.id, e)}
-      onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick(element); }}
       onContextMenu={(e) => onContextMenu(e, element)}
     >
       <Resizable
@@ -464,45 +526,41 @@ export default function PolicyEditorPage() {
     left: mmToPx(margins.left),
   }), [margins]);
 
- const handleSmartLayout = () => {
+  const handleSmartLayout = () => {
     const { width: canvasWidth, height: canvasHeight } = paperDimensions;
     const { top, right, left, bottom } = marginPx;
     const printableWidth = canvasWidth - left - right;
     const printableHeight = canvasHeight - top - bottom;
   
-    let newElements: PolicyElement[] = [];
-
-    // Smart layout logic for A4 paper
-    if (paperSize === 'a4' || paperSize === 'a5') {
-        const headerHeight = snapToGrid(printableHeight * 0.15);
-        const halfWidth = snapToGrid(printableWidth / 2 - GRID_SIZE / 2);
-        const bodyY = top + headerHeight + GRID_SIZE;
-        const bodyHeight = snapToGrid(printableHeight * 0.25);
-        
-        newElements = [
-            { id: nanoid(), type: 'image', x: left, y: top, width: snapToGrid(printableWidth * 0.3), height: headerHeight - GRID_SIZE, content: '{company_logo}', zIndex: 1 },
-            { id: nanoid(), type: 'barcode', x: canvasWidth - right - snapToGrid(printableWidth * 0.4), y: top, width: snapToGrid(printableWidth * 0.4), height: headerHeight - GRID_SIZE, content: '{order_id}', zIndex: 1 },
-            { id: nanoid(), type: 'line', x: left, y: top + headerHeight, width: printableWidth, height: 2, zIndex: 0, color: '#000000', backgroundColor: '#000000' },
-            { id: nanoid(), type: 'rect', x: left, y: bodyY, width: halfWidth, height: bodyHeight, content: '', zIndex: 0, borderColor: '#cccccc', borderWidth: 1 },
-            { id: nanoid(), type: 'text', x: left + GRID_SIZE, y: bodyY + GRID_SIZE, width: halfWidth - (GRID_SIZE*2), height: 30, content: 'من (المرسل)', zIndex: 1, fontWeight: 'bold' },
-            { id: nanoid(), type: 'text', x: left + GRID_SIZE, y: bodyY + 40, width: halfWidth - (GRID_SIZE*2), height: bodyHeight - 50, content: '{merchant_name}\n{merchant_phone}', zIndex: 1 },
-            { id: nanoid(), type: 'rect', x: left + halfWidth + GRID_SIZE, y: bodyY, width: halfWidth, height: bodyHeight, content: '', zIndex: 0, borderColor: '#cccccc', borderWidth: 1 },
-            { id: nanoid(), type: 'text', x: left + halfWidth + (GRID_SIZE*2), y: bodyY + GRID_SIZE, width: halfWidth - (GRID_SIZE*2), height: 30, content: 'إلى (المستلم)', zIndex: 1, fontWeight: 'bold' },
-            { id: nanoid(), type: 'text', x: left + halfWidth + (GRID_SIZE*2), y: bodyY + 40, width: halfWidth - (GRID_SIZE*2), height: bodyHeight - 50, content: '{recipient_name}\n{recipient_address}\n{recipient_phone}', zIndex: 1 },
-        ];
-    } else { // Smart layout for labels (e.g., 4x6)
-        const recipientInfoHeight = snapToGrid(printableHeight * 0.4);
-        const barcodeHeight = snapToGrid(printableHeight * 0.25);
-        newElements = [
-            { id: nanoid(), type: 'text', x: left, y: top, width: printableWidth, height: 24, content: 'من: {merchant_name}', zIndex: 1, fontWeight: 'bold' },
-            { id: nanoid(), type: 'text', x: left, y: top + 32, width: printableWidth, height: recipientInfoHeight, content: 'إلى: {recipient_name}\n{recipient_address}\n{recipient_phone}', zIndex: 1, fontSize: 16 },
-            { id: nanoid(), type: 'barcode', x: left, y: top + 40 + recipientInfoHeight, width: printableWidth, height: barcodeHeight, content: '{order_id}', zIndex: 1 },
-            { id: nanoid(), type: 'text', x: left, y: top + 48 + recipientInfoHeight + barcodeHeight, width: printableWidth, height: 32, content: 'المبلغ: {cod_amount}', zIndex: 1, fontSize: 20, fontWeight: 'bold' },
-        ];
+    // Smart layout logic: arrange existing elements instead of creating new ones
+    if (elements.length === 0) {
+      toast({ variant: "destructive", title: "لا توجد عناصر", description: "الرجاء إضافة بعض العناصر أولاً ليقوم الذكاء الاصطناعي بتنسيقها."});
+      return;
     }
-    
+
+    const sortedElements = [...elements].sort((a, b) => a.y - b.y);
+    let currentY = top;
+    const newElements = sortedElements.map(el => {
+        const newEl = {...el};
+        newEl.x = snapToGrid(left + (printableWidth - newEl.width) / 2); // Center horizontally
+        newEl.y = snapToGrid(currentY);
+        
+        // Prevent overflow
+        if (newEl.x < left) newEl.x = left;
+        if ((newEl.x + newEl.width) > (canvasWidth - right)) {
+             newEl.width = snapToGrid(canvasWidth - right - newEl.x);
+        }
+        if (newEl.y < top) newEl.y = top;
+         if ((newEl.y + newEl.height) > (canvasHeight - bottom)) {
+             newEl.height = snapToGrid(canvasHeight - bottom - newEl.y);
+        }
+
+        currentY += newEl.height + GRID_SIZE * 2; // Add spacing
+        return newEl;
+    });
+
     setElements(newElements);
-    toast({ title: 'تم إنشاء التصميم', description: 'تم إنشاء تصميم احترافي بناءً على حجم الصفحة.' });
+    toast({ title: 'تم التنسيق بنجاح', description: 'قام المساعد الذكي بإعادة ترتيب العناصر الموجودة.' });
   };
 
 
@@ -666,11 +724,6 @@ export default function PolicyEditorPage() {
       setElements(p => p.filter(el => el.id !== id));
       setSelectedIds(p => p.filter(selId => selId !== id));
   };
-  
-  const handleDoubleClickElement = (element: PolicyElement) => {
-      setModalElement(element);
-      setIsModalOpen(true);
-  };
 
   const handleAlignment = (type: 'left' | 'h-center' | 'right' | 'top' | 'v-center' | 'bottom') => {
       if (selectedIds.length === 0) return;
@@ -832,16 +885,9 @@ const handleDuplicate = () => {
   const handleContextMenu = (event: React.MouseEvent, element: PolicyElement) => {
     event.preventDefault();
     event.stopPropagation();
-    setContextMenu({ x: event.clientX, y: event.clientY, element });
+    setModalElement(element);
+    setIsModalOpen(true);
   };
-  
-  const handleEditFromContextMenu = () => {
-      if (contextMenu) {
-          setModalElement(contextMenu.element);
-          setIsModalOpen(true);
-          setContextMenu(null);
-      }
-  }
 
   const handlePrint = async () => {
     const canvasElement = canvasRef.current;
@@ -880,17 +926,7 @@ const handleDuplicate = () => {
 
 
   return (
-    <div className="space-y-6" onClick={() => setContextMenu(null)}>
-        {contextMenu && (
-            <div
-                style={{ top: contextMenu.y, left: contextMenu.x }}
-                className="fixed z-50 bg-popover border rounded-md shadow-lg"
-            >
-                <Button variant="ghost" onClick={handleEditFromContextMenu} className="w-full justify-start p-2 text-sm">
-                    <Edit className="h-4 w-4 ml-2"/> تعديل
-                </Button>
-            </div>
-        )}
+    <div className="space-y-6" onClick={() => setSelectedIds([])}>
         <PropertiesModal
             element={modalElement}
             onUpdate={handleUpdateElement}
@@ -928,9 +964,25 @@ const handleDuplicate = () => {
                     </CardDescription>
                 </div>
                  <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={handlePrint}>
-                        <Printer className="ml-2 h-4 w-4" /> طباعة عينة
-                    </Button>
+                    <Button variant="outline" onClick={() => {
+                        const printArea = document.getElementById('printable-policy-preview-area');
+                        if (printArea) {
+                            const firstPolicy = printArea.querySelector('.policy-sheet');
+                            if (firstPolicy) {
+                                html2canvas(firstPolicy as HTMLElement, { scale: 2, useCORS: true }).then(canvas => {
+                                    const imgData = canvas.toDataURL('image/png');
+                                    const pdf = new jsPDF({
+                                        orientation: paperDimensions.width > paperDimensions.height ? 'l' : 'p',
+                                        unit: 'mm',
+                                        format: [paperDimensions.width * (25.4 / DPI), paperDimensions.height * (25.4 / DPI)],
+                                    });
+                                    pdf.addImage(imgData, 'PNG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
+                                    pdf.autoPrint();
+                                    window.open(pdf.output('bloburl'), '_blank');
+                                });
+                            }
+                        }
+                    }}><Printer className="ml-2 h-4 w-4" /> طباعة عينة</Button>
                     <Button variant="outline" onClick={handleSmartLayout}>
                         <Wand2 className="ml-2 h-4 w-4" /> المساعدة الذكية
                     </Button>
@@ -1043,40 +1095,48 @@ const handleDuplicate = () => {
                     </Card>
                 </div>
                 <div className="space-y-6 lg:col-span-3">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>لوحة التصميم</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex-grow w-full bg-muted p-8 rounded-lg overflow-auto flex items-center justify-center min-h-[70vh]">
-                            <div
-                              ref={canvasRef}
-                              className="relative bg-white rounded-md shadow-inner"
-                              style={{ ...paperDimensions }}
-                              onClick={(e) => { e.stopPropagation(); setSelectedIds([]);}}
-                            >
-                                <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
-                                    backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
-                                    backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)`,
-                                    backgroundRepeat: 'repeat',
-                                }} />
-                                <div className="absolute border-2 border-dashed border-red-400/50 pointer-events-none" style={{
-                                    top: `${marginPx.top}px`, right: `${marginPx.right}px`,
-                                    bottom: `${marginPx.bottom}px`, left: `${marginPx.left}px`,
-                                }}/>
-                                {elements.sort((a,b) => a.zIndex - b.zIndex).map((el) => (
-                                    <DraggableItem
-                                      key={el.id}
-                                      element={el}
-                                      selected={selectedIds.includes(el.id)}
-                                      onSelect={handleSelect}
-                                      onResizeStop={handleResizeStop}
-                                      onContextMenu={handleContextMenu}
-                                      onDoubleClick={handleDoubleClickElement}
-                                    />
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
+                     <div id="printable-policy-preview-area">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>لوحة التصميم</CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex-grow w-full bg-muted p-8 rounded-lg overflow-auto flex items-center justify-center min-h-[70vh]">
+                                <div
+                                ref={canvasRef}
+                                className="relative bg-white rounded-md shadow-inner"
+                                style={{ ...paperDimensions }}
+                                onClick={(e) => { e.stopPropagation(); setSelectedIds([]);}}
+                                >
+                                    <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
+                                        backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
+                                        backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)`,
+                                        backgroundRepeat: 'repeat',
+                                    }} />
+                                    <div className="absolute border-2 border-dashed border-red-400/50 pointer-events-none" style={{
+                                        top: `${marginPx.top}px`, right: `${marginPx.right}px`,
+                                        bottom: `${marginPx.bottom}px`, left: `${marginPx.left}px`,
+                                    }}/>
+                                    {elements.sort((a,b) => a.zIndex - b.zIndex).map((el) => (
+                                        <DraggableItem
+                                        key={el.id}
+                                        element={el}
+                                        selected={selectedIds.includes(el.id)}
+                                        onSelect={handleSelect}
+                                        onResizeStop={handleResizeStop}
+                                        onContextMenu={handleContextMenu}
+                                        />
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                     </div>
+                      {selectedIds.length === 1 && (
+                        <PropertiesPanel 
+                            element={elements.find(el => el.id === selectedIds[0]) || null}
+                            onUpdate={handleUpdateElement}
+                            onDelete={handleDeleteElement}
+                        />
+                     )}
                 </div>
             </div>
         </DndContext>

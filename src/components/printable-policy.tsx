@@ -288,7 +288,7 @@ export const PrintablePolicy = forwardRef<
                 ))}
             </div>
              {orders.length === 0 && (
-                <div className="text-center mt-4">
+                <div className="text-center mt-4 no-print">
                      <Button onClick={() => handleExportPDF()}>
                         <Icon name="Printer" className="ml-2 h-4 w-4" />
                         طباعة معاينة
