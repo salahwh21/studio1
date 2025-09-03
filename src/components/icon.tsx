@@ -113,7 +113,9 @@ const faMapping: { [key in IconName]?: import('@fortawesome/fontawesome-svg-core
   CreditCard: 'credit-card',
   Zap: 'bolt',
   Globe: 'globe',
+  Copy: 'copy',
   AlertCircle: 'exclamation-circle',
+  GripVertical: 'grip-vertical',
 };
 
 const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons } } = {
@@ -212,6 +214,7 @@ const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons }
   Globe: { feather: 'Globe' },
   Copy: { feather: 'Copy' },
   AlertCircle: { feather: 'AlertCircle'},
+  GripVertical: { feather: 'MoreVertical' },
 };
 
 
