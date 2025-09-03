@@ -3,11 +3,10 @@
 
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import type { Order } from '@/store/orders-store';
-import { useSettings, type PolicySettings, type PolicyElement } from '@/contexts/SettingsContext';
+import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
-// Removed next/image as it causes issues with html2canvas
-// import Image from 'next/image';
+// Using standard <img> tag for better html2canvas compatibility
 import Barcode from 'react-barcode';
 import Icon from './icon';
 import { useToast } from '@/hooks/use-toast';
@@ -45,7 +44,7 @@ const resolveContent = (content: string, order: Order, settings: any): string =>
 
 
 // This component renders a single element on the policy
-const RenderedElement = ({ el, order, settings, loginSettings }: { el: PolicyElement, order: Order, settings: any, loginSettings: any }) => {
+const RenderedElement = ({ el, order, settings, loginSettings }: { el: any, order: Order, settings: any, loginSettings: any }) => {
     const baseStyle: React.CSSProperties = {
         position: 'absolute',
         left: el.x,
@@ -84,12 +83,11 @@ const RenderedElement = ({ el, order, settings, loginSettings }: { el: PolicyEle
         return (
             <div style={baseStyle}>
                 {imageUrl ? (
-                    // Using a standard <img> tag instead of next/image for better compatibility with html2canvas
                     <img 
                         src={imageUrl} 
                         alt="Logo" 
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                        crossOrigin="anonymous" // Important for html2canvas
+                        crossOrigin="anonymous" // Critical fix for CORS issues with html2canvas
                     />
                 ) : (
                     <Icon name="Image" className="h-8 w-8 text-muted-foreground" isPrinting />
@@ -108,15 +106,15 @@ const RenderedElement = ({ el, order, settings, loginSettings }: { el: PolicyEle
                 <table className="w-full h-full border-collapse" style={{fontSize: `${fontSize}px`}}>
                     <thead>
                         <tr style={{fontWeight: fontWeight}}>
-                            {headers.map((header, i) => (
+                            {headers.map((header: string, i: number) => (
                                 <th key={i} className="border p-1 overflow-hidden" style={{borderColor}}>{resolveContent(header, order, settings)}</th>
                             ))}
                         </tr>
                     </thead>
                     <tbody>
-                        {tableData.map((row) => (
+                        {tableData.map((row: any) => (
                             <tr key={row.id}>
-                                {row.cells.map((cell) => (
+                                {row.cells.map((cell: any) => (
                                     <td key={cell.id} className="border p-1" style={{borderColor}}>{resolveContent(cell.content, order, settings)}</td>
                                 ))}
                             </tr>
@@ -132,14 +130,14 @@ const RenderedElement = ({ el, order, settings, loginSettings }: { el: PolicyEle
 
 const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: any }> = ({ order, settings, loginSettings }) => {
     const policySettings = settings || {};
-    const paperSize = policySettings.paperSize || 'custom';
+    const paperSizeKey = policySettings.paperSize || 'custom';
     const customDimensions = policySettings.customDimensions || { width: 75, height: 45 };
     const margins = policySettings.margins || { top: 2, right: 2, bottom: 2, left: 2 };
     const elements = policySettings.elements || [];
 
     const paperDimensions = {
-        width: paperSize === 'custom' ? customDimensions.width : parseFloat(paperSizeClasses[paperSize].match(/w-\[(\d+\.?\d*)mm\]/)?.[1] || '0'),
-        height: paperSize === 'custom' ? customDimensions.height : parseFloat(paperSizeClasses[paperSize].match(/min-h-\[(\d+\.?\d*)mm\]/)?.[0].match(/(\d+\.?\d*)/)?.[0] || '0'),
+        width: paperSizeKey === 'custom' ? customDimensions.width : parseFloat(paperSizeClasses[paperSizeKey].match(/w-\[(\d+\.?\d*)mm\]/)?.[1] || '0'),
+        height: paperSizeKey === 'custom' ? customDimensions.height : parseFloat(paperSizeClasses[paperSizeKey].match(/min-h-\[(\d+\.?\d*)mm\]/)?.[0].match(/(\d+\.?\d*)/)?.[0] || '0'),
     };
     
     const style = {
@@ -189,9 +187,11 @@ export const PrintablePolicy = forwardRef<
             return;
         }
 
+        const paperSizeKey = finalSettings.paperSize || 'custom';
+        const customDimensions = finalSettings.customDimensions || {width: 0, height: 0};
         const paperDimensions = {
-            width: finalSettings.paperSize === 'custom' ? finalSettings.customDimensions.width : parseFloat(finalSettings.paperSize === 'custom' ? finalSettings.customDimensions.width : parseFloat(paperSizeClasses[finalSettings.paperSize].match(/w-\[(\d+\.?\d*)mm\]/)?.[1] || '0')),
-            height: finalSettings.paperSize === 'custom' ? finalSettings.customDimensions.height : parseFloat(finalSettings.paperSize === 'custom' ? finalSettings.customDimensions.height : parseFloat(paperSizeClasses[finalSettings.paperSize].match(/min-h-\[(\d+\.?\d*)mm\]/)?.[0].match(/(\d+\.?\d*)/)?.[0] || '0')),
+            width: paperSizeKey === 'custom' ? customDimensions.width : parseFloat(paperSizeClasses[paperSizeKey].match(/w-\[(\d+\.?\d*)mm\]/)?.[1] || '0'),
+            height: paperSizeKey === 'custom' ? customDimensions.height : parseFloat(paperSizeClasses[paperSizeKey].match(/min-h-\[(\d+\.?\d*)mm\]/)?.[0].match(/(\d+\.?\d*)/)?.[0] || '0'),
         };
 
         try {
@@ -206,7 +206,7 @@ export const PrintablePolicy = forwardRef<
                 
                 const canvas = await html2canvas(element, { 
                     scale: 3, 
-                    useCORS: true,
+                    useCORS: true, // Use CORS to fetch images from other domains
                     allowTaint: true,
                 });
                 const imgData = canvas.toDataURL('image/png');
