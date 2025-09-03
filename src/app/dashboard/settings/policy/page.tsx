@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import Draggable, { type DraggableEvent, type DraggableData } from 'react-draggable';
-import { Resizable } from 're-resizable';
+import { Resizable, type ResizableProps } from 're-resizable';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -273,7 +273,6 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag,
   return (
     <Draggable
         nodeRef={nodeRef}
-        handle=".handle"
         position={{x: element.x, y: element.y}}
         scale={zoomLevel}
         onStart={onDragStart}
@@ -446,12 +445,12 @@ export default function PolicyEditorPage() {
     };
 
     const handleDragStart = useCallback((e: DraggableEvent, data: DraggableData) => {
-        const draggableNode = data.node.parentElement?.parentElement;
+        const draggableNode = data.node as HTMLElement;
         if (!draggableNode) return false;
 
         setTimeout(() => setIsDragging(true), 0);
 
-        const elementId = draggableNode.id || '';
+        const elementId = draggableNode.parentElement?.id || '';
         
         if (!selectedIds.includes(elementId)) {
             setSelectedIds([elementId]);
@@ -469,9 +468,9 @@ export default function PolicyEditorPage() {
     }, [elements, selectedIds]);
 
     const handleDrag = useCallback((e: DraggableEvent, data: DraggableData) => {
-        const draggableNode = data.node.parentElement?.parentElement;
+        const draggableNode = data.node as HTMLElement;
         if (!draggableNode) return;
-        const elementId = draggableNode.id || '';
+        const elementId = draggableNode.parentElement?.id || '';
 
         const activeElementStartPos = dragStartPositions.current[elementId];
         if (!activeElementStartPos) return;
@@ -542,10 +541,10 @@ export default function PolicyEditorPage() {
     const handleStopDrag = useCallback((e: DraggableEvent, data: DraggableData) => {
         setTimeout(() => setIsDragging(false), 0);
         setSmartGuides({ x: [], y: [] });
-        const draggableNode = data.node.parentElement?.parentElement;
+        const draggableNode = data.node as HTMLElement;
         if (!draggableNode) return;
         
-        const elementId = draggableNode.id || '';
+        const elementId = draggableNode.parentElement?.id || '';
         const startPos = dragStartPositions.current[elementId];
 
         if(startPos) {
@@ -726,7 +725,7 @@ export default function PolicyEditorPage() {
                 </Button>
             </CardHeader>
         </Card>
-
+        
         <Card>
             <CardContent className="p-2">
                 <div className="flex items-center gap-4">
@@ -902,5 +901,3 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
-
-    
