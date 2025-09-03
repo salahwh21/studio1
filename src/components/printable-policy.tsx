@@ -12,6 +12,7 @@ import Icon from './icon';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import { htmlToText } from 'html-to-text';
+import { Button } from './ui/button';
 
 type SavedTemplate = {
   id: string;
