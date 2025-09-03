@@ -532,6 +532,55 @@ export default function PolicyEditorPage() {
     left: mmToPx(margins.left),
   }), [margins]);
 
+  const readyTemplates: Record<string, SavedTemplate> = {
+    "a4_default": {
+        id: "a4_default", name: "A4 احترافي", paperSize: "a4",
+        customDimensions: { width: 210, height: 297 }, margins: { top: 10, right: 10, bottom: 10, left: 10 },
+        elements: [
+            { id: "1", type: "rect", x: 16, y: 16, width: 752, height: 112, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 2, backgroundColor: "#f3f4f6", opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
+            { id: "2", type: "text", x: 576, y: 24, width: 184, height: 40, zIndex: 1, content: "بوليصة شحن", fontSize: 24, fontWeight: "bold", color: "#000000", opacity: 1 },
+            { id: "3", type: "image", x: 24, y: 24, width: 144, height: 56, zIndex: 1, content: "{company_logo}", opacity: 1 },
+            { id: "4", type: "text", x: 24, y: 88, width: 200, height: 24, zIndex: 1, content: "اسم الشركة: {company_name}", fontSize: 12, color: "#000000", opacity: 1 },
+            { id: "5", type: "barcode", x: 584, y: 72, width: 176, height: 48, zIndex: 1, content: "{order_id}", opacity: 1 },
+            { id: "6", type: "rect", x: 16, y: 144, width: 376, height: 200, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1 },
+            { id: "7", type: "rect", x: 400, y: 144, width: 368, height: 200, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1 },
+            { id: "8", type: "text", x: 408, y: 152, width: 120, height: 24, zIndex: 1, content: "إلى (المستلم):", fontSize: 16, fontWeight: "bold", color: "#000000", opacity: 1 },
+            { id: "9", type: "text", x: 24, y: 152, width: 120, height: 24, zIndex: 1, content: "من (المرسل):", fontSize: 16, fontWeight: "bold", color: "#000000", opacity: 1 },
+            { id: "10", type: "text", x: 32, y: 184, width: 352, height: 152, zIndex: 1, content: "اسم المتجر: {merchant_name}\nهاتف: {merchant_phone}\nعنوان: {merchant_address}", fontSize: 14, color: "#000000", opacity: 1 },
+            { id: "11", type: "text", x: 408, y: 184, width: 352, height: 152, zIndex: 1, content: "اسم المستلم: {recipient_name}\nهاتف: {recipient_phone}\nعنوان: {recipient_address}", fontSize: 14, color: "#000000", opacity: 1 },
+            { id: "12", type: "rect", x: 16, y: 360, width: 752, height: 160, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1 },
+            { id: "13", type: "text", x: 608, y: 368, width: 152, height: 32, zIndex: 1, content: "ملخص الطلب", fontSize: 16, fontWeight: "bold", opacity: 1 },
+            { id: "14", type: "text", x: 48, y: 368, width: 150, height: 30, zIndex: 1, content: "قيمة التحصيل (COD)", fontSize: 18, fontWeight: "bold", opacity: 1 },
+            { id: "15", type: "text", x: 32, y: 408, width: 200, height: 60, zIndex: 1, content: "{cod_amount}", fontSize: 36, fontWeight: "bold", color: "#000000", opacity: 1 },
+            { id: "16", type: "text", x: 408, y: 400, width: 352, height: 112, zIndex: 1, content: "المنتجات: {order_items}\nالكمية: {items_count}\nملاحظات: {notes}", fontSize: 12, color: "#374151", opacity: 1 },
+        ]
+    },
+    "label_4x6_default": {
+        id: "label_4x6_default", name: "بوليصة 4x6 عملية", paperSize: "label_4x6",
+        customDimensions: { width: 101.6, height: 152.4 }, margins: { top: 5, right: 5, bottom: 5, left: 5 },
+        elements: [
+            { id: "1", type: "text", x: 16, y: 16, width: 184, height: 24, zIndex: 1, content: "من: {merchant_name}", fontSize: 14, fontWeight: "bold", color: "#000000", opacity: 1 },
+            { id: "2", type: "text", x: 16, y: 48, width: 352, height: 120, zIndex: 1, content: "إلى: {recipient_name}\n{recipient_address}\n{recipient_phone}", fontSize: 18, color: "#000000", opacity: 1 },
+            { id: "3", type: "barcode", x: 40, y: 176, width: 304, height: 80, zIndex: 1, content: "{order_id}", opacity: 1 },
+            { id: "4", type: "text", x: 16, y: 264, width: 352, height: 48, zIndex: 1, content: "المبلغ: {cod_amount}", fontSize: 28, fontWeight: "bold", color: "#000000", opacity: 1 },
+            { id: "5", type: "text", x: 16, y: 320, width: 352, height: 48, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: "normal", color: "#000000", opacity: 1 },
+            { id: "6", type: "text", x: 16, y: 376, width: 352, height: 24, zIndex: 1, content: "مرجع: {reference_id}", fontSize: 12, color: "#000000", opacity: 1 },
+            { id: "7", type: "image", x: 232, y: 8, width: 144, height: 40, zIndex: 1, content: "{company_logo}", opacity: 1 },
+            { id: "8", type: "line", x: 16, y: 168, width: 352, height: 2, zIndex: 0, content: "", color: "#000000", opacity: 1 },
+            { id: "9", type: "line", x: 16, y: 312, width: 352, height: 2, zIndex: 0, content: "", color: "#000000", opacity: 1 },
+        ]
+    },
+    "label_45x75_default": {
+        id: "label_45x75_default", name: "بوليصة 75x45 (عرضية)", paperSize: "custom",
+        customDimensions: { width: 75, height: 45 }, margins: { top: 2, right: 2, bottom: 2, left: 2 },
+        elements: [
+            { id: "el_brcd", type: "barcode", x: 128, y: 8, width: 136, height: 88, zIndex: 1, content: "{order_id}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+            { id: "el_brcd_txt", type: "text", x: 128, y: 104, width: 136, height: 24, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+            { id: "el_logo", type: "image", x: 16, y: 8, width: 104, height: 120, zIndex: 1, content: "{company_logo}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+        ]
+    }
+  };
+
  const handleSmartLayout = () => {
     if (elements.length === 0) {
       toast({ variant: "destructive", title: "لا توجد عناصر", description: "الرجاء إضافة بعض العناصر أولاً ليقوم الذكاء الاصطناعي بتنسيقها."});
@@ -654,14 +703,22 @@ export default function PolicyEditorPage() {
 
   useEffect(() => {
     try {
-      const storedTemplates = localStorage.getItem('policyTemplates');
-      if (storedTemplates) {
-        setSavedTemplates(JSON.parse(storedTemplates));
-      }
+        const storedTemplates = localStorage.getItem('policyTemplates');
+        let parsedTemplates: SavedTemplate[] = storedTemplates ? JSON.parse(storedTemplates) : [];
+
+        // If no templates are stored, initialize with ready-made ones.
+        if (parsedTemplates.length === 0) {
+            parsedTemplates = Object.values(readyTemplates);
+            localStorage.setItem('policyTemplates', JSON.stringify(parsedTemplates));
+            toast({ title: "أهلاً بك!", description: "تم تحميل مجموعة من القوالب الجاهزة لتبدأ بها." });
+        }
+        setSavedTemplates(parsedTemplates);
     } catch (error) {
-      console.error("Failed to load templates from localStorage", error);
+        console.error("Failed to load templates from localStorage", error);
+        // Fallback to ready templates if localStorage is corrupt
+        setSavedTemplates(Object.values(readyTemplates));
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -936,55 +993,6 @@ const handleDuplicate = () => {
     event.target.value = '';
   }
   
-  const readyTemplates: Record<string, SavedTemplate> = {
-    "a4_default": {
-        id: "a4_default", name: "A4 احترافي", paperSize: "a4",
-        customDimensions: { width: 210, height: 297 }, margins: { top: 10, right: 10, bottom: 10, left: 10 },
-        elements: [
-            { id: "1", type: "rect", x: 16, y: 16, width: 752, height: 112, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 2, backgroundColor: "#f3f4f6", opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
-            { id: "2", type: "text", x: 576, y: 24, width: 184, height: 40, zIndex: 1, content: "بوليصة شحن", fontSize: 24, fontWeight: "bold", color: "#000000", opacity: 1 },
-            { id: "3", type: "image", x: 24, y: 24, width: 144, height: 56, zIndex: 1, content: "{company_logo}", opacity: 1 },
-            { id: "4", type: "text", x: 24, y: 88, width: 200, height: 24, zIndex: 1, content: "اسم الشركة: {company_name}", fontSize: 12, color: "#000000", opacity: 1 },
-            { id: "5", type: "barcode", x: 584, y: 72, width: 176, height: 48, zIndex: 1, content: "{order_id}", opacity: 1 },
-            { id: "6", type: "rect", x: 16, y: 144, width: 376, height: 200, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1 },
-            { id: "7", type: "rect", x: 400, y: 144, width: 368, height: 200, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1 },
-            { id: "8", type: "text", x: 408, y: 152, width: 120, height: 24, zIndex: 1, content: "إلى (المستلم):", fontSize: 16, fontWeight: "bold", color: "#000000", opacity: 1 },
-            { id: "9", type: "text", x: 24, y: 152, width: 120, height: 24, zIndex: 1, content: "من (المرسل):", fontSize: 16, fontWeight: "bold", color: "#000000", opacity: 1 },
-            { id: "10", type: "text", x: 32, y: 184, width: 352, height: 152, zIndex: 1, content: "اسم المتجر: {merchant_name}\nهاتف: {merchant_phone}\nعنوان: {merchant_address}", fontSize: 14, color: "#000000", opacity: 1 },
-            { id: "11", type: "text", x: 408, y: 184, width: 352, height: 152, zIndex: 1, content: "اسم المستلم: {recipient_name}\nهاتف: {recipient_phone}\nعنوان: {recipient_address}", fontSize: 14, color: "#000000", opacity: 1 },
-            { id: "12", type: "rect", x: 16, y: 360, width: 752, height: 160, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1 },
-            { id: "13", type: "text", x: 608, y: 368, width: 152, height: 32, zIndex: 1, content: "ملخص الطلب", fontSize: 16, fontWeight: "bold", opacity: 1 },
-            { id: "14", type: "text", x: 48, y: 368, width: 150, height: 30, zIndex: 1, content: "قيمة التحصيل (COD)", fontSize: 18, fontWeight: "bold", opacity: 1 },
-            { id: "15", type: "text", x: 32, y: 408, width: 200, height: 60, zIndex: 1, content: "{cod_amount}", fontSize: 36, fontWeight: "bold", color: "#000000", opacity: 1 },
-            { id: "16", type: "text", x: 408, y: 400, width: 352, height: 112, zIndex: 1, content: "المنتجات: {order_items}\nالكمية: {items_count}\nملاحظات: {notes}", fontSize: 12, color: "#374151", opacity: 1 },
-        ]
-    },
-    "label_4x6_default": {
-        id: "label_4x6_default", name: "بوليصة 4x6 عملية", paperSize: "label_4x6",
-        customDimensions: { width: 101.6, height: 152.4 }, margins: { top: 5, right: 5, bottom: 5, left: 5 },
-        elements: [
-            { id: "1", type: "text", x: 16, y: 16, width: 184, height: 24, zIndex: 1, content: "من: {merchant_name}", fontSize: 14, fontWeight: "bold", color: "#000000", opacity: 1 },
-            { id: "2", type: "text", x: 16, y: 48, width: 352, height: 120, zIndex: 1, content: "إلى: {recipient_name}\n{recipient_address}\n{recipient_phone}", fontSize: 18, color: "#000000", opacity: 1 },
-            { id: "3", type: "barcode", x: 40, y: 176, width: 304, height: 80, zIndex: 1, content: "{order_id}", opacity: 1 },
-            { id: "4", type: "text", x: 16, y: 264, width: 352, height: 48, zIndex: 1, content: "المبلغ: {cod_amount}", fontSize: 28, fontWeight: "bold", color: "#000000", opacity: 1 },
-            { id: "5", type: "text", x: 16, y: 320, width: 352, height: 48, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: "normal", color: "#000000", opacity: 1 },
-            { id: "6", type: "text", x: 16, y: 376, width: 352, height: 24, zIndex: 1, content: "مرجع: {reference_id}", fontSize: 12, color: "#000000", opacity: 1 },
-            { id: "7", type: "image", x: 232, y: 8, width: 144, height: 40, zIndex: 1, content: "{company_logo}", opacity: 1 },
-            { id: "8", type: "line", x: 16, y: 168, width: 352, height: 2, zIndex: 0, content: "", color: "#000000", opacity: 1 },
-            { id: "9", type: "line", x: 16, y: 312, width: 352, height: 2, zIndex: 0, content: "", color: "#000000", opacity: 1 },
-        ]
-    },
-    "label_45x75_default": {
-        id: "label_45x75_default", name: "بوليصة 75x45 (عرضية)", paperSize: "custom",
-        customDimensions: { width: 75, height: 45 }, margins: { top: 2, right: 2, bottom: 2, left: 2 },
-        elements: [
-            { id: "el_brcd", type: "barcode", x: 128, y: 8, width: 136, height: 88, zIndex: 1, content: "{order_id}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
-            { id: "el_brcd_txt", type: "text", x: 128, y: 104, width: 136, height: 24, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
-            { id: "el_logo", type: "image", x: 16, y: 8, width: 104, height: 120, zIndex: 1, content: "{company_logo}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
-        ]
-    }
-  };
-
   const handleDoubleClick = (element: PolicyElement) => {
     setModalElement(element);
     setIsModalOpen(true);
@@ -1045,10 +1053,10 @@ const handleDuplicate = () => {
                         هذه معاينة لكيف ستبدو البوليصة عند الطباعة بالبيانات الفعلية.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="bg-muted p-4 rounded-md my-4">
-                  <div className="absolute top-[-10000px] left-[-10000px]">
-                    <PrintablePolicy ref={printablePolicyRef} orders={[]} template={currentTemplate} onExport={() => setIsPrintSampleDialogOpen(false)} />
-                  </div>
+                 <div className="bg-muted p-4 rounded-md my-4 flex items-center justify-center">
+                   <div id="policy-preview-wrapper" className="max-w-full max-h-full overflow-auto">
+                        <PrintablePolicy ref={printablePolicyRef} orders={[]} template={currentTemplate} onExport={() => setIsPrintSampleDialogOpen(false)} />
+                   </div>
                 </div>
                 <DialogFooter>
                     <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
@@ -1158,43 +1166,47 @@ const handleDuplicate = () => {
                         <CardHeader>
                             <CardTitle>القوالب</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-2">
-                             <h4 className="font-semibold text-sm">قوالب جاهزة</h4>
-                             <div className='flex flex-col items-start'>
-                                {Object.values(readyTemplates).map(template => (
-                                    <Button key={template.id} variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
-                                        {template.name}
-                                    </Button>
-                                ))}
-                             </div>
-                             <Separator />
-                             <h4 className="font-semibold text-sm pt-2">القوالب المحفوظة</h4>
-                             <div className='flex items-center gap-2'>
-                                <Button size="sm" variant="outline" onClick={() => setIsSaveDialogOpen(true)}><Icon name="Save" className="ml-2 h-4 w-4"/> حفظ كقالب جديد</Button>
-                                <Button size="sm" variant="outline" onClick={() => document.getElementById('import-template-input')?.click()}><Icon name="Upload" className="ml-2 h-4 w-4"/> استيراد قالب</Button>
-                                <input id="import-template-input" type="file" accept=".json" className="hidden" onChange={importTemplate} />
-                             </div>
-                            {savedTemplates.length === 0 ? (
-                                <p className="text-sm text-muted-foreground text-center py-4">لا توجد قوالب محفوظة.</p>
-                            ) : (
-                                <div className="space-y-2 pt-2">
-                                {savedTemplates.map(template => (
-                                    <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                                        <Button variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
+                        <CardContent className="space-y-4">
+                             <div>
+                                <h4 className="font-semibold text-sm mb-2">قوالب جاهزة</h4>
+                                <div className='flex flex-col items-start'>
+                                    {Object.values(readyTemplates).map(template => (
+                                        <Button key={template.id} variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
                                             {template.name}
                                         </Button>
-                                        <div className='flex items-center'>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => exportTemplate(template)}>
-                                                <Icon name="Download" className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteTemplate(template.id)}>
-                                                <Icon name="Trash2" className="h-4 w-4 text-destructive" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))}
                                 </div>
-                            )}
+                             </div>
+                             <Separator />
+                             <div>
+                                <h4 className="font-semibold text-sm mb-2">القوالب المحفوظة</h4>
+                                <div className='flex items-center gap-2 mb-2'>
+                                    <Button size="sm" variant="outline" onClick={() => setIsSaveDialogOpen(true)}><Icon name="Save" className="ml-2 h-4 w-4"/> حفظ كقالب جديد</Button>
+                                    <Button size="sm" variant="outline" onClick={() => document.getElementById('import-template-input')?.click()}><Icon name="Upload" className="ml-2 h-4 w-4"/> استيراد</Button>
+                                    <input id="import-template-input" type="file" accept=".json" className="hidden" onChange={importTemplate} />
+                                </div>
+                                {savedTemplates.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground text-center py-4">لا توجد قوالب محفوظة.</p>
+                                ) : (
+                                    <div className="space-y-2 pt-2">
+                                    {savedTemplates.map(template => (
+                                        <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                            <Button variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
+                                                {template.name}
+                                            </Button>
+                                            <div className='flex items-center'>
+                                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => exportTemplate(template)}>
+                                                    <Icon name="Download" className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteTemplate(template.id)}>
+                                                    <Icon name="Trash2" className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    </div>
+                                )}
+                             </div>
                         </CardContent>
                     </Card>
                 </div>
