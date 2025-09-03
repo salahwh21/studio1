@@ -85,6 +85,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { PrintablePolicy } from '@/components/printable-policy';
+import { readyTemplates } from '@/app/dashboard/settings/policy/page';
 
 
 type OrderSource = Order['source'];
@@ -402,16 +403,20 @@ export function OrdersTable() {
             const storedTemplates = localStorage.getItem('policyTemplates');
             if (storedTemplates) {
                 templates = JSON.parse(storedTemplates);
+            } else {
+                templates = Object.values(readyTemplates);
+                localStorage.setItem('policyTemplates', JSON.stringify(templates));
             }
         } catch (e) {
-             console.error("Error parsing templates from localStorage", e);
+            console.error("Error parsing/setting templates from localStorage", e);
+            templates = Object.values(readyTemplates);
         }
 
         if (templates.length === 0) {
-             toast({ variant: "destructive", title: "لا توجد قوالب", description: "الرجاء إنشاء أو حفظ قالب واحد على الأقل في صفحة إعداد البوليصة." });
+            toast({ variant: "destructive", title: "لا توجد قوالب", description: "لم يتم العثور على قوالب جاهزة أو محفوظة. يرجى مراجعة صفحة إعدادات البوليصة." });
             return;
         }
-        
+
         setSavedTemplates(templates);
         setSelectedTemplate(templates[0]);
         setIsPrintDialogOpen(true);

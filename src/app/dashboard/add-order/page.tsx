@@ -31,7 +31,7 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStatusesStore } from '@/store/statuses-store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useSettings, PolicySettings, PolicyElement, readyTemplates } from '@/contexts/SettingsContext';
+import { useSettings, type PolicySettings, type PolicyElement, type SavedTemplate } from '@/contexts/SettingsContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
@@ -49,15 +49,6 @@ const orderSchema = z.object({
 });
 
 type OrderFormValues = z.infer<typeof orderSchema>;
-
-type SavedTemplate = {
-  id: string;
-  name: string;
-  elements: PolicyElement[];
-  paperSize: PolicySettings['paperSize'];
-  customDimensions: { width: number; height: number };
-  margins: { top: number; right: number; bottom: number; left: number };
-};
 
 const AddOrderPage = () => {
   const { toast } = useToast();
@@ -103,20 +94,6 @@ const AddOrderPage = () => {
   const merchantOptions = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
   const allRegions = useMemo(() => cities.flatMap(c => c.areas.map(a => ({ ...a, cityName: c.name }))).sort((a,b) => a.name.localeCompare(b.name)), [cities]);
   
-   useEffect(() => {
-        let templates: SavedTemplate[] = [];
-        try {
-            const storedTemplates = localStorage.getItem('policyTemplates');
-            if (storedTemplates) {
-                templates = JSON.parse(storedTemplates);
-            }
-        } catch (e) { console.error("Error parsing templates from localStorage", e); }
-        
-        if (templates.length === 0) {
-            templates = Object.values(readyTemplates);
-        }
-        setSavedTemplates(templates);
-    }, []);
   
   useEffect(() => {
     if (selectedRegionValue) {
@@ -253,12 +230,24 @@ const AddOrderPage = () => {
         return;
     }
     
-    if (savedTemplates.length === 0) {
+    let templates: SavedTemplate[] = [];
+    try {
+      const storedTemplates = localStorage.getItem('policyTemplates');
+      if (storedTemplates) {
+        templates = JSON.parse(storedTemplates);
+      }
+    } catch (e) {
+      console.error("Error parsing templates from localStorage", e);
+    }
+    
+    setSavedTemplates(templates);
+
+    if (templates.length === 0) {
         toast({ variant: "destructive", title: "لا توجد قوالب", description: "الرجاء إنشاء أو حفظ قالب واحد على الأقل في صفحة إعداد البوليصة." });
         return;
     }
     
-    setSelectedTemplate(savedTemplates[0]);
+    setSelectedTemplate(templates[0]);
     setIsPrintDialogOpen(true);
   };
   

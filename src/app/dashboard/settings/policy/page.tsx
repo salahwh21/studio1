@@ -48,7 +48,7 @@ import {
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useSettings, type PolicySettings, type PolicyElement, type SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
+import { useSettings, type PolicySettings, type PolicyElement, type SavedTemplate } from '@/contexts/SettingsContext';
 import { Separator } from '@/components/ui/separator';
 import jsPDF from 'jspdf';
 import { PrintablePolicy } from '@/components/printable-policy';
@@ -69,6 +69,42 @@ type DesignError = {
     elementId: string;
     message: string;
 }
+
+const defaultPolicyElements: PolicyElement[] = [
+    { id: "el_brcd", type: "barcode", x: 128, y: 8, width: 136, height: 88, zIndex: 1, content: "{order_id}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+    { id: "el_brcd_txt", type: "text", x: 128, y: 104, width: 136, height: 24, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+    { id: "el_logo", type: "image", x: 16, y: 8, width: 104, height: 120, zIndex: 1, content: "{company_logo}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+];
+
+export const readyTemplates: Record<string, SavedTemplate> = {
+  a4: {
+    id: 'ready_a4',
+    name: 'A4 Page (4 per sheet)',
+    elements: defaultPolicyElements, // You can create specific layouts here
+    paperSize: 'a4',
+    customDimensions: { width: 210, height: 297 },
+    margins: { top: 10, right: 10, bottom: 10, left: 10 },
+    isReadyMade: true,
+  },
+  label_4x6: {
+    id: 'ready_4x6',
+    name: 'Label 4x6 inch',
+    elements: defaultPolicyElements,
+    paperSize: 'label_4x6',
+    customDimensions: { width: 101.6, height: 152.4 },
+    margins: { top: 5, right: 5, bottom: 5, left: 5 },
+    isReadyMade: true,
+  },
+  custom_default: {
+    id: 'ready_custom',
+    name: 'Default Custom Size',
+    elements: defaultPolicyElements,
+    paperSize: 'custom',
+    customDimensions: { width: 75, height: 45 },
+    margins: { top: 2, right: 2, bottom: 2, left: 2 },
+    isReadyMade: true,
+  },
+};
 
 
 const GRID_SIZE = 8;
