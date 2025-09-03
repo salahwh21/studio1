@@ -12,6 +12,7 @@ import Icon from './icon';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import { Button } from '@/components/ui/button';
+import html2canvas from 'html2canvas';
 
 
 const paperSizeClasses = {
@@ -96,7 +97,7 @@ const RenderedElement = ({ el, order, settings }: { el: any, order: Order, setti
                 ) : (
                     // Replaced Icon with a simple div to avoid SVG issues with jsPDF
                     <div className="h-full w-full bg-muted flex items-center justify-center text-muted-foreground text-xs">
-                        Image
+                        
                     </div>
                 )}
             </div>
@@ -104,7 +105,7 @@ const RenderedElement = ({ el, order, settings }: { el: any, order: Order, setti
     }
     if (el.type === 'barcode') {
         const barcodeValue = resolveContent(el.content, order, settings);
-        return <div style={{ ...baseStyle, backgroundColor: '#ffffff' }}><Barcode value={barcodeValue} height={el.height - 10} width={1.5} displayValue={false} margin={0} renderer="canvas" /></div>
+        return <div style={{ ...baseStyle, backgroundColor: '#ffffff' }}><Barcode renderer="canvas" value={barcodeValue} height={el.height - 10} width={1.5} displayValue={false} margin={0} /></div>
     }
     if (el.type === 'table') {
         const { headers = [], tableData = [], borderColor = '#000000', fontSize = 12, fontWeight = 'bold' } = el;
@@ -210,13 +211,14 @@ export const PrintablePolicy = forwardRef<
             }
 
             try {
-                await pdf.html(policyHtmlElement, {
-                    callback: (doc) => {},
-                    x: 0,
-                    y: 0,
-                    width: mmToPt(paperDimensions.width),
-                    windowWidth: policyHtmlElement.scrollWidth,
+                const canvas = await html2canvas(policyHtmlElement, {
+                     scale: 2, // Increase resolution
+                     useCORS: true, // For external images
+                     allowTaint: true,
                 });
+                const imgData = canvas.toDataURL('image/png');
+                pdf.addImage(imgData, 'PNG', 0, 0, mmToPt(paperDimensions.width), mmToPt(paperDimensions.height));
+
             } catch(e) {
                 console.error("Error generating PDF page:", e);
                 toast({ variant: 'destructive', title: 'خطأ في الطباعة', description: 'حدث خطأ أثناء توليد ملف PDF.' });
