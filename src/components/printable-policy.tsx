@@ -201,7 +201,7 @@ export const PrintablePolicy = forwardRef<
                 const canvas = await html2canvas(element, { 
                     scale: 3, 
                     useCORS: true,
-                    allowTaint: true // Allow cross-origin images to be rendered
+                    allowTaint: true
                 });
                 const imgData = canvas.toDataURL('image/png');
 
