@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect, forwardRef } from 'react';
 import Link from 'next/link';
 import {
   AlignCenter,
