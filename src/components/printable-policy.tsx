@@ -15,11 +15,10 @@ import jsPDF from 'jspdf';
 import { Button } from './ui/button';
 
 const paperSizeClasses = {
-  a4: 'w-[210mm] min-h-[297mm]',
-  a5: 'w-[148mm] min-h-[210mm]',
-  label_4x6: 'w-[101.6mm] min-h-[152.4mm]',
-  label_4x4: 'w-[101.6mm] min-h-[101.6mm]',
-  custom: 'w-[75mm] h-[45mm]',
+  a4: { width: 210, height: 297 },
+  a5: { width: 148, height: 210 },
+  label_4x6: { width: 101.6, height: 152.4 },
+  label_4x4: { width: 101.6, height: 101.6 },
 };
 
 // This function resolves placeholder values like {order_id} with actual order data.
@@ -136,8 +135,8 @@ const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: 
     const elements = policySettings.elements || [];
 
     const paperDimensions = {
-        width: paperSizeKey === 'custom' ? customDimensions.width : parseFloat(paperSizeClasses[paperSizeKey].match(/w-\[(\d+\.?\d*)mm\]/)?.[1] || '0'),
-        height: paperSizeKey === 'custom' ? customDimensions.height : parseFloat(paperSizeClasses[paperSizeKey].match(/min-h-\[(\d+\.?\d*)mm\]/)?.[0].match(/(\d+\.?\d*)/)?.[0] || '0'),
+        width: paperSizeKey === 'custom' ? customDimensions.width : paperSizeClasses[paperSizeKey].width,
+        height: paperSizeKey === 'custom' ? customDimensions.height : paperSizeClasses[paperSizeKey].height,
     };
     
     const style = {
@@ -190,8 +189,8 @@ export const PrintablePolicy = forwardRef<
         const paperSizeKey = finalSettings.paperSize || 'custom';
         const customDimensions = finalSettings.customDimensions || {width: 0, height: 0};
         const paperDimensions = {
-            width: paperSizeKey === 'custom' ? customDimensions.width : parseFloat(paperSizeClasses[paperSizeKey].match(/w-\[(\d+\.?\d*)mm\]/)?.[1] || '0'),
-            height: paperSizeKey === 'custom' ? customDimensions.height : parseFloat(paperSizeClasses[paperSizeKey].match(/min-h-\[(\d+\.?\d*)mm\]/)?.[0].match(/(\d+\.?\d*)/)?.[0] || '0'),
+            width: paperSizeKey === 'custom' ? customDimensions.width : paperSizeClasses[paperSizeKey].width,
+            height: paperSizeKey === 'custom' ? customDimensions.height : paperSizeClasses[paperSizeKey].height,
         };
 
         try {
@@ -206,7 +205,7 @@ export const PrintablePolicy = forwardRef<
                 
                 const canvas = await html2canvas(element, { 
                     scale: 3, 
-                    useCORS: true, // Use CORS to fetch images from other domains
+                    useCORS: true,
                     allowTaint: true,
                 });
                 const imgData = canvas.toDataURL('image/png');

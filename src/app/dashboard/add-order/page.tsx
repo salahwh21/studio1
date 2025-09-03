@@ -63,7 +63,7 @@ const AddOrderPage = () => {
   const [merchantPopoverOpen, setMerchantPopoverOpen] = useState(false);
   const [regionPopoverOpen, setRegionPopoverOpen] = useState(false);
   const [popoverStates, setPopoverStates] = useState<Record<string, boolean>>({});
-  const printablePolicyRef = useRef<{ handleExportPDF: (overrideSettings?: Partial<PolicySettings>) => void }>(null);
+  const printablePolicyRef = useRef<{ handleExportPDF: () => void }>(null);
 
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [printSettings, setPrintSettings] = useState<PolicySettings | null>(null);
@@ -229,8 +229,8 @@ const AddOrderPage = () => {
   }, [recentlyAdded, selectedRecent]);
   
   const handleConfirmPrint = () => {
-    if (printablePolicyRef.current && printSettings) {
-      printablePolicyRef.current.handleExportPDF(printSettings);
+    if (printablePolicyRef.current) {
+      printablePolicyRef.current.handleExportPDF();
       setIsPrintDialogOpen(false);
     }
   };
@@ -255,17 +255,6 @@ const AddOrderPage = () => {
                                 <RadioGroupItem value={size} id={`ps-${size}`} />
                                 <Label htmlFor={`ps-${size}`}>{size.replace('_','x').toUpperCase()}</Label>
                             </div>
-                            ))}
-                        </RadioGroup>
-                    </div>
-                    <div className="space-y-3">
-                        <Label>تصميم البوليصة</Label>
-                        <RadioGroup value={printSettings.layout} onValueChange={(val) => setPrintSettings(prev => prev ? {...prev, layout: val as PolicySettings['layout']} : null)}>
-                            {['default','compact','detailed'].map(layout => (
-                                <div key={layout} className="flex items-center space-x-2 space-x-reverse">
-                                    <RadioGroupItem value={layout} id={`ly-${layout}`} />
-                                    <Label htmlFor={`ly-${layout}`}>{layout==='default' ? 'افتراضي' : layout==='compact' ? 'مدمج' : 'مفصّل'}</Label>
-                                </div>
                             ))}
                         </RadioGroup>
                     </div>
