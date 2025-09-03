@@ -31,7 +31,7 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStatusesStore } from '@/store/statuses-store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useSettings, PolicySettings } from '@/contexts/SettingsContext';
+import { useSettings, PolicySettings, PolicyElement } from '@/contexts/SettingsContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
@@ -49,6 +49,14 @@ const orderSchema = z.object({
 });
 
 type OrderFormValues = z.infer<typeof orderSchema>;
+type SavedTemplate = {
+  id: string;
+  name: string;
+  elements: PolicyElement[];
+  paperSize: PolicySettings['paperSize'];
+  customDimensions: { width: number; height: number };
+  margins: { top: number; right: number; bottom: number; left: number };
+};
 
 const AddOrderPage = () => {
   const { toast } = useToast();
@@ -67,6 +75,8 @@ const AddOrderPage = () => {
   const printablePolicyRef = useRef<{ handleExportPDF: () => void }>(null);
 
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<SavedTemplate | null>(null);
 
   const togglePopover = (id: string) => {
     setPopoverStates(prev => ({ ...prev, [id]: !prev[id] }));
@@ -91,6 +101,17 @@ const AddOrderPage = () => {
 
   const merchantOptions = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
   const allRegions = useMemo(() => cities.flatMap(c => c.areas.map(a => ({ ...a, cityName: c.name }))).sort((a,b) => a.name.localeCompare(b.name)), [cities]);
+  
+   useEffect(() => {
+        const storedTemplates = localStorage.getItem('policyTemplates');
+        if (storedTemplates) {
+            setSavedTemplates(JSON.parse(storedTemplates));
+        }
+        const activeTemplate = localStorage.getItem('activePolicyTemplate');
+        if (activeTemplate) {
+            setSelectedTemplate(JSON.parse(activeTemplate));
+        }
+    }, []);
   
   useEffect(() => {
     if (selectedRegionValue) {
@@ -221,25 +242,54 @@ const AddOrderPage = () => {
     return recentlyAdded.filter(o => selectedRecent.includes(o.id));
   }, [recentlyAdded, selectedRecent]);
   
-  const handleConfirmPrint = () => {
-    if (printablePolicyRef.current) {
-      printablePolicyRef.current.handleExportPDF();
+  const handlePrintClick = () => {
+    if (ordersToPrint.length === 0) {
+        toast({ variant: "destructive", title: "لا توجد طلبات محددة", description: "الرجاء تحديد طلب واحد على الأقل للطباعة." });
+        return;
     }
+    setIsPrintDialogOpen(true);
   };
-
+  
   return (
     <div className="space-y-6">
-      <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>إعدادات الطباعة</DialogTitle>
-            <DialogDescription>اختر حجم وتصميم البوليصة قبل الطباعة.</DialogDescription>
-          </DialogHeader>
-          <div className="md:col-span-2 bg-muted rounded-lg p-4 max-h-[60vh] overflow-auto">
-             <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} onExport={() => setIsPrintDialogOpen(false)} />
-          </div>
-        </DialogContent>
-      </Dialog>
+       <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+            <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                    <DialogTitle>طباعة البوالص</DialogTitle>
+                    <DialogDescription>
+                        اختر قالب الطباعة المناسب للبوالص المحددة.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4">
+                    <div className="md:col-span-1 space-y-4">
+                        <div className="space-y-2">
+                             <Label htmlFor="template-select">اختر القالب</Label>
+                             <Select
+                                value={selectedTemplate?.id}
+                                onValueChange={(id) => setSelectedTemplate(savedTemplates.find(t => t.id === id) || null)}
+                             >
+                                <SelectTrigger id="template-select">
+                                    <SelectValue placeholder="اختر قالب..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {savedTemplates.map(template => (
+                                        <SelectItem key={template.id} value={template.id}>
+                                            {template.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                             </Select>
+                        </div>
+                        <Button onClick={() => printablePolicyRef.current?.handleExportPDF()} className="w-full" disabled={!selectedTemplate}>
+                            <Printer className="ml-2 h-4 w-4" /> تأكيد الطباعة
+                        </Button>
+                    </div>
+                     <div className="md:col-span-2 bg-muted rounded-lg p-4 max-h-[60vh] overflow-auto">
+                        <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} template={selectedTemplate} onExport={() => setIsPrintDialogOpen(false)} />
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
 
       <Card>
         <CardHeader>
@@ -413,7 +463,7 @@ const AddOrderPage = () => {
                 <div className="flex items-center justify-between">
                     <CardTitle>طلبات مضافة حديثاً ({recentlyAdded.length})</CardTitle>
                     <div className="flex items-center gap-2">
-                         <Button variant="outline" size="sm" disabled={selectedRecent.length === 0} onClick={() => setIsPrintDialogOpen(true)}><Printer className="h-4 w-4 ml-2"/>طباعة بوليصة</Button>
+                         <Button variant="outline" size="sm" disabled={selectedRecent.length === 0} onClick={handlePrintClick}><Printer className="h-4 w-4 ml-2"/>طباعة بوليصة</Button>
                          <Button variant="destructive" size="sm" disabled={selectedRecent.length === 0} onClick={handleDeleteSelected}><Trash2 className="h-4 w-4 ml-2"/>حذف المحدد</Button>
                     </div>
                 </div>

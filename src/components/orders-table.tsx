@@ -61,7 +61,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 import { useOrdersStore, type Order } from '@/store/orders-store';
-import { useSettings, PolicySettings } from '@/contexts/SettingsContext';
+import { useSettings, PolicySettings, PolicyElement } from '@/contexts/SettingsContext';
 
 
 // ShadCN UI Components
@@ -90,6 +90,14 @@ import { PrintablePolicy } from '@/components/printable-policy';
 type OrderSource = Order['source'];
 type ColumnConfig = { key: keyof Order | 'id-link' | 'notes'; label: string; type?: 'default' | 'financial'; sortable?: boolean };
 type GroupByOption = keyof Order | null;
+type SavedTemplate = {
+  id: string;
+  name: string;
+  elements: PolicyElement[];
+  paperSize: PolicySettings['paperSize'];
+  customDimensions: { width: number; height: number };
+  margins: { top: number; right: number; bottom: number; left: number };
+};
 
 // Initial columns configuration
 const ALL_COLUMNS: ColumnConfig[] = [
@@ -208,6 +216,8 @@ export function OrdersTable() {
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
     const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+    const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
+    const [selectedTemplate, setSelectedTemplate] = useState<SavedTemplate | null>(null);
     const printablePolicyRef = useRef<{ handleExportPDF: () => void }>(null);
 
     // State for column management
@@ -217,6 +227,14 @@ export function OrdersTable() {
 
     useEffect(() => { 
         setIsClient(true); 
+        const storedTemplates = localStorage.getItem('policyTemplates');
+        if (storedTemplates) {
+            setSavedTemplates(JSON.parse(storedTemplates));
+        }
+        const activeTemplate = localStorage.getItem('activePolicyTemplate');
+        if (activeTemplate) {
+            setSelectedTemplate(JSON.parse(activeTemplate));
+        }
     }, []);
 
     // Reset open groups when groupBy changes
@@ -530,7 +548,7 @@ export function OrdersTable() {
                         <div className="flex items-center gap-1">
                             <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button>
                             <span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span>
-                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>التالي</Button>
+                            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>التالي</Button>
                         </div>
                     )}
                 </CardFooter>
@@ -545,11 +563,36 @@ export function OrdersTable() {
                 <DialogHeader>
                     <DialogTitle>طباعة البوالص</DialogTitle>
                     <DialogDescription>
-                        معاينة البوالص المحددة قبل الطباعة.
+                        اختر قالب الطباعة المناسب للبوالص المحددة.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="md:col-span-2 bg-muted rounded-lg p-4 max-h-[60vh] overflow-auto">
-                    <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} onExport={() => setIsPrintDialogOpen(false)} />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4">
+                    <div className="md:col-span-1 space-y-4">
+                        <div className="space-y-2">
+                             <Label htmlFor="template-select">اختر القالب</Label>
+                             <Select
+                                value={selectedTemplate?.id}
+                                onValueChange={(id) => setSelectedTemplate(savedTemplates.find(t => t.id === id) || null)}
+                             >
+                                <SelectTrigger id="template-select">
+                                    <SelectValue placeholder="اختر قالب..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {savedTemplates.map(template => (
+                                        <SelectItem key={template.id} value={template.id}>
+                                            {template.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                             </Select>
+                        </div>
+                        <Button onClick={() => printablePolicyRef.current?.handleExportPDF()} className="w-full" disabled={!selectedTemplate}>
+                            <Printer className="ml-2 h-4 w-4" /> تأكيد الطباعة
+                        </Button>
+                    </div>
+                     <div className="md:col-span-2 bg-muted rounded-lg p-4 max-h-[60vh] overflow-auto">
+                        <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} template={selectedTemplate} onExport={() => setIsPrintDialogOpen(false)} />
+                    </div>
                 </div>
                 </DialogContent>
             </Dialog>

@@ -4,7 +4,7 @@
 
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import type { Order } from '@/store/orders-store';
-import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
+import { useSettings, type PolicySettings, type PolicyElement } from '@/contexts/SettingsContext';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 import Barcode from 'react-barcode';
@@ -13,11 +13,22 @@ import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import { htmlToText } from 'html-to-text';
 
+type SavedTemplate = {
+  id: string;
+  name: string;
+  elements: PolicyElement[];
+  paperSize: PolicySettings['paperSize'];
+  customDimensions: { width: number; height: number };
+  margins: { top: number; right: number; bottom: number; left: number };
+};
+
+
 const paperSizeClasses = {
   a4: { width: 210, height: 297 },
   a5: { width: 148, height: 210 },
   label_4x6: { width: 101.6, height: 152.4 },
   label_4x4: { width: 101.6, height: 101.6 },
+  custom: { width: 75, height: 45 },
 };
 
 // This function resolves placeholder values like {order_id} with actual order data.
@@ -126,10 +137,10 @@ const RenderedElement = ({ el, order, settings, loginSettings }: { el: any, orde
     return null;
 }
 
-const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: any }> = ({ order, settings, loginSettings }) => {
-    const policySettings = settings || {};
-    const paperSizeKey = policySettings.paperSize || 'custom';
-    const customDimensions = policySettings.customDimensions || { width: 75, height: 45 };
+const Policy: React.FC<{ order: Order; template: SavedTemplate; loginSettings: any }> = ({ order, template, loginSettings }) => {
+    const context = useSettings();
+    const paperSizeKey = template.paperSize || 'custom';
+    const customDimensions = template.customDimensions || { width: 75, height: 45 };
     
     const paperDimensions = {
         width: paperSizeKey === 'custom' ? customDimensions.width : paperSizeClasses[paperSizeKey].width,
@@ -139,13 +150,13 @@ const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: 
     const style = {
         width: `${paperDimensions.width}mm`,
         height: `${paperDimensions.height}mm`,
-        padding: 0, // Padding is handled by element positions now
+        padding: 0, 
     };
 
     return (
         <div className="policy-sheet relative font-sans text-black bg-white shadow-lg mx-auto" style={style}>
-            {policySettings.elements.sort((a, b) => a.zIndex - b.zIndex).map(el => (
-                <RenderedElement key={el.id} el={el} order={order} settings={useSettings()} loginSettings={loginSettings} />
+            {(template.elements || []).sort((a, b) => a.zIndex - b.zIndex).map(el => (
+                <RenderedElement key={el.id} el={el} order={order} settings={context} loginSettings={loginSettings} />
             ))}
         </div>
     );
@@ -154,20 +165,19 @@ const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: 
 
 export const PrintablePolicy = forwardRef<
     { handleExportPDF: () => void },
-    { orders: Order[], onExport?: () => void }
->(({ orders, onExport }, ref) => {
+    { orders: Order[], template: SavedTemplate | null, onExport?: () => void }
+>(({ orders, template, onExport }, ref) => {
     const context = useSettings();
     const { toast } = useToast();
     
-    const activeSettings = context?.settings.policy;
     const loginSettings = context?.settings.login;
 
     const pxToMm = (px: number) => px * (25.4 / 96);
     const mmToPt = (mm: number) => mm * (72 / 25.4);
 
     const handleExportPDF = async () => {
-        if (!activeSettings) {
-            toast({ variant: 'destructive', title: 'خطأ', description: 'لا يمكن تحميل إعدادات البوليصة.' });
+        if (!template) {
+            toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء اختيار قالب للطباعة أولاً.' });
             return;
         }
 
@@ -178,8 +188,8 @@ export const PrintablePolicy = forwardRef<
             city: 'عمان', driver: 'علي', itemPrice: 33, deliveryFee: 2.5, notes: 'ملاحظة تجريبية للطباعة.', orderNumber: 1, region: 'الصويفية', source: 'Manual', status: 'جاري التوصيل', whatsapp: ''
         }];
         
-        const paperSizeKey = activeSettings.paperSize || 'custom';
-        const customDimensions = activeSettings.customDimensions || { width: 0, height: 0 };
+        const paperSizeKey = template.paperSize || 'custom';
+        const customDimensions = template.customDimensions || { width: 0, height: 0 };
         const paperDimensions = {
             width: paperSizeKey === 'custom' ? customDimensions.width : paperSizeClasses[paperSizeKey].width,
             height: paperSizeKey === 'custom' ? customDimensions.height : paperSizeClasses[paperSizeKey].height,
@@ -191,9 +201,6 @@ export const PrintablePolicy = forwardRef<
             format: [mmToPt(paperDimensions.width), mmToPt(paperDimensions.height)]
         });
         
-        // Add the font. jsPDF requires this for Arabic text.
-        // The font file needs to be publicly available. For this example, I'll assume it is.
-        // This is a simplified approach. A real app would bundle the font.
         try {
             await pdf.addFont('/Tajawal-Regular.ttf', 'Tajawal', 'normal');
             pdf.setFont('Tajawal');
@@ -206,52 +213,26 @@ export const PrintablePolicy = forwardRef<
             if (i > 0) {
                 pdf.addPage([mmToPt(paperDimensions.width), mmToPt(paperDimensions.height)], paperDimensions.width > paperDimensions.height ? 'l' : 'p');
             }
-
-            for (const el of activeSettings.elements.sort((a, b) => a.zIndex - b.zIndex)) {
-                const x_pt = mmToPt(pxToMm(el.x));
-                const y_pt = mmToPt(pxToMm(el.y));
-                const w_pt = mmToPt(pxToMm(el.width));
-                const h_pt = mmToPt(pxToMm(el.height));
-
-                switch (el.type) {
-                    case 'text':
-                        const text = resolveContent(el.content, order, context);
-                        pdf.setFontSize(el.fontSize || 14);
-                        pdf.setTextColor(el.color || '#000000');
-                        pdf.text(text, x_pt, y_pt + (el.fontSize || 14), { align: 'right', lang: 'ar' });
-                        break;
-                    
-                    case 'rect':
-                        pdf.setDrawColor(el.borderColor || '#000000');
-                        pdf.setFillColor(el.backgroundColor || '#FFFFFF');
-                        pdf.rect(x_pt, y_pt, w_pt, h_pt, el.backgroundColor ? 'FD' : 'S');
-                        break;
-                    
-                    case 'line':
-                         pdf.setDrawColor(el.color || '#000000');
-                         pdf.line(x_pt, y_pt, x_pt + w_pt, y_pt + h_pt);
-                         break;
-
-                    case 'image':
-                        let imageUrl: string | null = null;
-                        if (el.content.includes('{company_logo}')) imageUrl = loginSettings.policyLogo;
-                        if (imageUrl) {
-                             try {
-                                // We can't directly use external URLs in jsPDF addImage due to CORS.
-                                // A proper solution would be to fetch via a server-side proxy.
-                                // For now, we will skip if it fails.
-                                pdf.addImage(imageUrl, 'PNG', x_pt, y_pt, w_pt, h_pt);
-                             } catch(e) {
-                                console.error("Could not add image to PDF, likely due to CORS.", e);
-                             }
-                        }
-                        break;
-                }
+            const policyHtmlElement = document.getElementById(`policy-sheet-${order.id}`);
+            if (!policyHtmlElement) {
+                console.error(`Could not find policy sheet for order ${order.id}`);
+                continue;
             }
+
+            await pdf.html(policyHtmlElement, {
+                callback: (doc) => {},
+                x: 0,
+                y: 0,
+                width: mmToPt(paperDimensions.width),
+                windowWidth: policyHtmlElement.scrollWidth,
+            });
+        }
+        
+        if (displayOrders.length > 0) {
+            pdf.autoPrint();
+            window.open(pdf.output('bloburl'), '_blank');
         }
 
-        pdf.autoPrint();
-        window.open(pdf.output('bloburl'), '_blank');
         if (onExport) onExport();
 
     };
@@ -260,7 +241,7 @@ export const PrintablePolicy = forwardRef<
         handleExportPDF,
     }));
     
-    if (!context?.isHydrated || !activeSettings || !loginSettings) {
+    if (!context?.isHydrated || !template || !loginSettings) {
         return <div><Skeleton className="h-[297mm] w-[210mm]" /></div>;
     }
     
@@ -276,17 +257,19 @@ export const PrintablePolicy = forwardRef<
              <div id="printable-area">
                 {displayOrders.map((order, index) => (
                     <React.Fragment key={order.id}>
-                       <Policy order={order} settings={activeSettings} loginSettings={loginSettings}/>
+                        <div id={`policy-sheet-${order.id}`}>
+                           <Policy order={order} template={template} loginSettings={loginSettings}/>
+                        </div>
                        {index < displayOrders.length - 1 && <div className="page-break"></div>}
                     </React.Fragment>
                 ))}
             </div>
             {orders.length === 0 && (
                 <div className="text-center mt-4 no-print">
-                     <button onClick={handleExportPDF} className="bg-primary text-primary-foreground p-2 rounded-md">
+                     <Button onClick={handleExportPDF}>
                         <Icon name="Printer" className="ml-2 h-4 w-4 inline" />
                         طباعة معاينة
-                    </button>
+                    </Button>
                 </div>
             )}
         </div>
@@ -294,4 +277,3 @@ export const PrintablePolicy = forwardRef<
 });
 
 PrintablePolicy.displayName = 'PrintablePolicy';
-
