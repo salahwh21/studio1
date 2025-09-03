@@ -76,10 +76,10 @@ const paperSizes = {
 };
 
 const toolboxItems = [
-  { type: 'text', label: 'نص', icon: Type, content: 'نص', defaultWidth: 150, defaultHeight: 30 },
-  { type: 'barcode', label: 'باركود', icon: ScanBarcode, content: '{{orderId}}', defaultWidth: 150, defaultHeight: 50 },
-  { type: 'image', label: 'صورة/شعار', icon: ImageIcon, content: '{{company_logo}}', defaultWidth: 100, defaultHeight: 50 },
-  { type: 'shape', label: 'شكل', icon: Shapes, content: 'مربع', defaultWidth: 100, defaultHeight: 100 },
+    { type: 'text', label: 'نص', icon: Type, content: 'نص', defaultWidth: 150, defaultHeight: 30 },
+    { type: 'barcode', label: 'باركود', icon: ScanBarcode, content: '{{orderId}}', defaultWidth: 150, defaultHeight: 50 },
+    { type: 'image', label: 'صورة/شعار', icon: ImageIcon, content: '{{company_logo}}', defaultWidth: 100, defaultHeight: 50 },
+    { type: 'shape', label: 'شكل', icon: Shapes, content: 'مربع', defaultWidth: 100, defaultHeight: 100 },
 ];
 
 const dataFields = [
@@ -170,7 +170,7 @@ const SortableItem = ({ element, selected, onSelect, onUpdate }: {
         onClick={(e) => onSelect(element.id, e)}
         onMouseDown={(e) => e.stopPropagation()} // Prevent drag listener from firing on resize handles
       >
-        <PolicyElementComponent element={element} />
+        <PolicyElementComponent element={element} key={element.id} />
       </Resizable>
     </div>
   );
@@ -768,6 +768,7 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
 
 
 
