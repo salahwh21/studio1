@@ -12,7 +12,6 @@ import Icon from './icon';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import { Button } from '@/components/ui/button';
-import { AmiriFont } from '@/lib/amiri-font';
 
 
 const paperSizeClasses = {
@@ -199,15 +198,6 @@ export const PrintablePolicy = forwardRef<
             format: [mmToPt(paperDimensions.width), mmToPt(paperDimensions.height)]
         });
         
-        // Add the font to jsPDF
-        try {
-            pdf.addFileToVFS('Amiri-Regular.ttf', AmiriFont);
-            pdf.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-            pdf.setFont('Amiri');
-        } catch(e) {
-            console.warn("Could not load custom font for PDF. Arabic text might not render correctly.", e);
-        }
-
         for (let i = 0; i < displayOrders.length; i++) {
             const order = displayOrders[i];
             if (i > 0) {
