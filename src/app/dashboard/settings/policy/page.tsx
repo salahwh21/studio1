@@ -624,10 +624,10 @@ export default function PolicyEditorPage() {
 
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <Card>
-                <CardHeader className="flex-row justify-between items-center">
+                <CardHeader className="flex-row justify-between items-start">
                     <div>
-                        <CardTitle>محرر البوليصة</CardTitle>
-                        <CardDescription>اسحب وأفلت العناصر لتصميم البوليصة. انقر على عنصر لتعديل خصائصه.</CardDescription>
+                        <CardTitle className="text-2xl font-bold tracking-tight">محرر البوليصة</CardTitle>
+                        <CardDescription className="mt-1">اسحب وأفلت العناصر لتصميم البوليصة. انقر على عنصر لتعديل خصائصه.</CardDescription>
                     </div>
                     <Button variant="outline" size="icon" asChild>
                         <Link href="/dashboard/settings/general">
@@ -635,47 +635,49 @@ export default function PolicyEditorPage() {
                         </Link>
                     </Button>
                 </CardHeader>
-                <CardContent className="border-t border-b p-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                         <div className="flex items-center gap-2 border-l pl-2">
-                             <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))}><ZoomOut /></Button>
-                             <span className="text-sm font-semibold w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
-                             <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.min(2, z + 0.1))}><ZoomIn /></Button>
-                         </div>
-                        <div className="flex items-center gap-2 border-l pl-2">
-                            <Button variant="ghost" size="icon" onClick={() => handleLayering('front')} disabled={selectedIds.length !== 1}><ChevronsUp /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleLayering('forward')} disabled={selectedIds.length !== 1}><ChevronUp /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleLayering('backward')} disabled={selectedIds.length !== 1}><ChevronDown /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleLayering('back')} disabled={selectedIds.length !== 1}><ChevronsDown /></Button>
-                        </div>
-                        <div className="flex items-center gap-2 border-l pl-2">
-                            <Button variant="ghost" size="icon" onClick={handleDuplicate} disabled={selectedIds.length === 0}><Copy /></Button>
-                            <Button variant="ghost" size="icon" onClick={handleDeleteElement} disabled={selectedIds.length === 0}><Trash /></Button>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="secondary" onClick={() => {setIsPrintSampleDialogOpen(true)}}> <PrinterIcon className="w-4 h-4 ml-1"/> معاينة وطباعة</Button>
-                        </div>
+                <CardContent className="border-t p-2 flex flex-col md:flex-row items-center gap-4 flex-wrap">
+                    <div className="flex items-center gap-2">
+                        <Label className="text-sm font-medium whitespace-nowrap">إضافة:</Label>
+                        {toolboxItems.map(tool => (
+                             <Button key={tool.label} variant="outline" size="sm" className="flex items-center gap-2 h-8" onClick={() => addElement(tool)}>
+                                <tool.icon className="h-4 w-4 text-muted-foreground" />
+                                <span>{tool.label}</span>
+                            </Button>
+                        ))}
+                    </div>
+
+                    <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
+                    
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))}><ZoomOut className="h-5 w-5"/></Button>
+                        <span className="text-sm font-semibold w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
+                        <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.min(2, z + 0.1))}><ZoomIn className="h-5 w-5"/></Button>
+                    </div>
+
+                    <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
+
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleLayering('front')} disabled={selectedIds.length !== 1}><ChevronsUp /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleLayering('forward')} disabled={selectedIds.length !== 1}><ChevronUp /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleLayering('backward')} disabled={selectedIds.length !== 1}><ChevronDown /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleLayering('back')} disabled={selectedIds.length !== 1}><ChevronsDown /></Button>
+                    </div>
+                    
+                    <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
+
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={handleDuplicate} disabled={selectedIds.length === 0}><Copy /></Button>
+                        <Button variant="ghost" size="icon" onClick={handleDeleteElement} disabled={selectedIds.length === 0}><Trash /></Button>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 md:mr-auto">
+                        <Button variant="secondary" onClick={() => {setIsPrintSampleDialogOpen(true)}}> <PrinterIcon className="w-4 h-4 ml-1"/> معاينة وطباعة</Button>
                     </div>
                 </CardContent>
             </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 <div className="lg:col-span-3 space-y-6 lg:sticky lg:top-24">
-                    <Card>
-                        <CardHeader><CardTitle className='text-base'>الأدوات</CardTitle></CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-3">
-                            {toolboxItems.map(tool => (
-                                 <Button key={tool.label} variant="outline" className="flex items-center justify-start gap-2 w-full h-12" onClick={() => addElement(tool)}>
-                                    <tool.icon className="h-5 w-5 text-muted-foreground" />
-                                    <span>{tool.label}</span>
-                                </Button>
-                            ))}
-                        </CardContent>
-                    </Card>
-                    <PropertiesPanel
-                        element={selectedElement || null}
-                        onUpdate={handleUpdateElement}
-                    />
                      <PageSettingsPanel 
                         paperSize={paperSize}
                         customDimensions={customDimensions}
@@ -683,6 +685,10 @@ export default function PolicyEditorPage() {
                         onPaperSizeChange={setPaperSize}
                         onDimensionChange={(dim, val) => setCustomDimensions(prev => ({...prev, [dim]: val}))}
                         onMarginChange={(margin, val) => setMargins(prev => ({...prev, [margin]: val}))}
+                    />
+                    <PropertiesPanel
+                        element={selectedElement || null}
+                        onUpdate={handleUpdateElement}
                     />
                     <Card>
                         <CardHeader><CardTitle className='text-base'>القوالب</CardTitle></CardHeader>
@@ -726,7 +732,30 @@ export default function PolicyEditorPage() {
                 <div className="lg:col-span-9 space-y-6">
                     <Card>
                          <CardContent className="flex justify-center items-center bg-muted p-8 rounded-lg overflow-auto min-h-[70vh]">
-                            <div id="canvas" ref={canvasRef} className="relative bg-white rounded-md shadow-inner" style={{ width: paperDimensions.width, height: paperDimensions.height, transform: `scale(${zoomLevel})`, transformOrigin: 'top center' }}>
+                            <div 
+                                id="canvas" 
+                                ref={canvasRef} 
+                                className="relative bg-white rounded-md shadow-inner" 
+                                style={{ 
+                                    width: paperDimensions.width, 
+                                    height: paperDimensions.height, 
+                                    transform: `scale(${zoomLevel})`, 
+                                    transformOrigin: 'top center' 
+                                }}
+                            >
+                                <div 
+                                    aria-hidden 
+                                    className="absolute inset-0 pointer-events-none" 
+                                    style={{
+                                        borderStyle: 'dashed',
+                                        borderWidth: '1px',
+                                        borderColor: '#cccccc',
+                                        top: `${mmToPx(margins.top)}px`,
+                                        left: `${mmToPx(margins.left)}px`,
+                                        bottom: `${mmToPx(margins.bottom)}px`,
+                                        right: `${mmToPx(margins.right)}px`,
+                                    }} 
+                                />
                                 <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
                                     backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
                                     backgroundImage: `linear-gradient(to right, #e5e5e5 1px, transparent 1px), linear-gradient(to bottom, #e5e5e5 1px, transparent 1px)`
@@ -754,5 +783,6 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
 
 
