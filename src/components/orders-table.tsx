@@ -61,7 +61,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 import { useOrdersStore, type Order } from '@/store/orders-store';
-import { useSettings, PolicySettings, PolicyElement, SavedTemplate } from '@/contexts/SettingsContext';
+import { useSettings, PolicySettings } from '@/contexts/SettingsContext';
 
 
 // ShadCN UI Components
@@ -393,9 +393,7 @@ export function OrdersTable() {
             toast({ variant: "destructive", title: "لا توجد طلبات محددة", description: "الرجاء تحديد طلب واحد على الأقل للطباعة." });
             return;
         }
-        if (printablePolicyRef.current) {
-            printablePolicyRef.current.handleExportPDF();
-        }
+        setIsPrintDialogOpen(true);
     };
 
 
@@ -542,9 +540,20 @@ export function OrdersTable() {
 
     return (
         <>
-             <div className="hidden">
-                <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} onExport={() => setSelectedRows([])} />
-            </div>
+            <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+                <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                    <DialogTitle>طباعة البوالص</DialogTitle>
+                    <DialogDescription>
+                        معاينة البوالص المحددة قبل الطباعة.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="md:col-span-2 bg-muted rounded-lg p-4 max-h-[60vh] overflow-auto">
+                    <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} onExport={() => setIsPrintDialogOpen(false)} />
+                </div>
+                </DialogContent>
+            </Dialog>
+
             <TooltipProvider>
                 <Card className="flex flex-col h-[calc(100vh-8rem)] bg-background p-4 gap-4">
                     {/* Header */}

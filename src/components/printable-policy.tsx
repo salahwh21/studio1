@@ -6,13 +6,10 @@ import type { Order } from '@/store/orders-store';
 import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
-// Using standard <img> tag for better html2canvas compatibility
 import Barcode from 'react-barcode';
 import Icon from './icon';
 import { useToast } from '@/hooks/use-toast';
-import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { Button } from './ui/button';
 
 const paperSizeClasses = {
   a4: { width: 210, height: 297 },
@@ -46,21 +43,21 @@ const resolveContent = (content: string, order: Order, settings: any): string =>
 const RenderedElement = ({ el, order, settings, loginSettings }: { el: any, order: Order, settings: any, loginSettings: any }) => {
     const baseStyle: React.CSSProperties = {
         position: 'absolute',
-        left: el.x,
-        top: el.y,
-        width: el.width,
-        height: el.height,
+        left: `${el.x}px`,
+        top: `${el.y}px`,
+        width: `${el.width}px`,
+        height: `${el.height}px`,
         zIndex: el.zIndex,
-        fontSize: el.fontSize ?? 14,
+        fontSize: `${el.fontSize ?? 14}px`,
         fontWeight: el.fontWeight ?? 'normal',
         color: el.type === 'line' ? 'transparent' : (el.color ?? '#000000'),
-        borderWidth: el.type === 'rect' || el.type === 'table' ? el.borderWidth ?? 1 : 0,
+        borderWidth: el.type === 'rect' || el.type === 'table' ? `${el.borderWidth ?? 1}px` : 0,
         borderColor: el.borderColor ?? 'transparent',
         borderStyle: 'solid',
         opacity: el.opacity ?? 1,
-        backgroundColor: el.type === 'line' ? (el.color ?? '#000000') : el.backgroundColor,
+        backgroundColor: el.type === 'line' ? (el.color ?? '#000000') : (el.backgroundColor ?? 'transparent'),
         textAlign: 'center',
-        padding: 4,
+        padding: '4px',
         wordBreak: 'break-word',
         display: 'flex',
         alignItems: 'center',
@@ -85,8 +82,8 @@ const RenderedElement = ({ el, order, settings, loginSettings }: { el: any, orde
                     <img 
                         src={imageUrl} 
                         alt="Logo" 
-                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                        crossOrigin="anonymous" // Critical fix for CORS issues with html2canvas
+                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                        crossOrigin="anonymous"
                     />
                 ) : (
                     <Icon name="Image" className="h-8 w-8 text-muted-foreground" isPrinting />
@@ -141,7 +138,7 @@ const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: 
     
     const style = {
         width: `${paperDimensions.width}mm`,
-        minHeight: `${paperDimensions.height}mm`,
+        height: `${paperDimensions.height}mm`,
         padding: `${margins.top}mm ${margins.right}mm ${margins.bottom}mm ${margins.left}mm`,
     };
 
@@ -168,67 +165,55 @@ export const PrintablePolicy = forwardRef<
 
     const handleExportPDF = async () => {
         const finalSettings = activeSettings;
-
         const printArea = printAreaRef.current;
+
         if (!printArea) {
             toast({ variant: 'destructive', title: 'خطأ في الطباعة', description: 'لا يمكن العثور على المحتوى للطباعة.' });
             return;
         }
 
-        const policyElements = Array.from(printArea.querySelectorAll('.policy-sheet'));
+        const policyElements = Array.from(printArea.querySelectorAll('.policy-sheet')) as HTMLElement[];
         if (policyElements.length === 0) {
             toast({ variant: 'destructive', title: 'لا طلبات محددة', description: 'الرجاء تحديد طلب واحد على الأقل لطباعة البوليصة.' });
             return;
         }
-        
+
         if (!finalSettings) {
             toast({ variant: 'destructive', title: 'خطأ في الإعدادات', description: 'لا يمكن تحميل إعدادات البوليصة.' });
             return;
         }
 
         const paperSizeKey = finalSettings.paperSize || 'custom';
-        const customDimensions = finalSettings.customDimensions || {width: 0, height: 0};
+        const customDimensions = finalSettings.customDimensions || { width: 0, height: 0 };
         const paperDimensions = {
             width: paperSizeKey === 'custom' ? customDimensions.width : paperSizeClasses[paperSizeKey].width,
             height: paperSizeKey === 'custom' ? customDimensions.height : paperSizeClasses[paperSizeKey].height,
         };
 
-        try {
-            const pdf = new jsPDF({ 
-                orientation: paperDimensions.width > paperDimensions.height ? 'l' : 'p', 
-                unit: 'mm', 
-                format: [paperDimensions.width, paperDimensions.height] 
-            });
+        const pdf = new jsPDF({
+            orientation: paperDimensions.width > paperDimensions.height ? 'l' : 'p',
+            unit: 'mm',
+            format: [paperDimensions.width, paperDimensions.height]
+        });
 
-            for (let i = 0; i < policyElements.length; i++) {
-                const element = policyElements[i] as HTMLElement;
-                
-                const canvas = await html2canvas(element, { 
-                    scale: 3, 
-                    useCORS: true,
-                    allowTaint: true,
-                });
-                const imgData = canvas.toDataURL('image/png');
-
-                if (!imgData || imgData === 'data:,') {
-                    throw new Error("Failed to generate image data from the policy element.");
-                }
-                
-                if (i > 0) {
-                    pdf.addPage([paperDimensions.width, paperDimensions.height], paperDimensions.width > paperDimensions.height ? 'l' : 'p');
-                }
-                
-                pdf.addImage(imgData, 'PNG', 0, 0, paperDimensions.width, paperDimensions.height);
+        for (let i = 0; i < policyElements.length; i++) {
+            const element = policyElements[i];
+            if (i > 0) {
+                pdf.addPage([paperDimensions.width, paperDimensions.height], paperDimensions.width > paperDimensions.height ? 'l' : 'p');
             }
-            pdf.autoPrint();
-            window.open(pdf.output('bloburl'), '_blank');
-            if (onExport) onExport();
-        } catch (err: any) {
-            console.error("Error generating PDF: ", err);
-            toast({
-                variant: 'destructive',
-                title: 'خطأ أثناء توليد الـ PDF',
-                description: err.message || 'حدث خطأ غير متوقع أثناء تحويل البوليصة إلى صورة.'
+            await pdf.html(element, {
+                callback: (doc) => {
+                    // This callback is called for each page. We only save at the end.
+                    if (i === policyElements.length - 1) {
+                        doc.autoPrint();
+                        window.open(doc.output('bloburl'), '_blank');
+                        if (onExport) onExport();
+                    }
+                },
+                x: 0,
+                y: 0,
+                width: paperDimensions.width,
+                windowWidth: element.offsetWidth,
             });
         }
     };
@@ -250,20 +235,20 @@ export const PrintablePolicy = forwardRef<
 
     return (
         <div>
-             <div ref={printAreaRef} id="printable-area" className="bg-muted p-4 sm:p-8 flex items-start justify-center flex-wrap gap-4">
-                {displayOrders.map((order) => (
+             <div ref={printAreaRef} id="printable-area">
+                {displayOrders.map((order, index) => (
                     <React.Fragment key={order.id}>
                        <Policy order={order} settings={activeSettings} loginSettings={loginSettings}/>
-                       <div className="page-break"></div>
+                       {index < displayOrders.length - 1 && <div className="page-break"></div>}
                     </React.Fragment>
                 ))}
             </div>
             {orders.length === 0 && (
                 <div className="text-center mt-4 no-print">
-                     <Button onClick={() => handleExportPDF()}>
-                        <Icon name="Printer" className="ml-2 h-4 w-4" />
+                     <button onClick={handleExportPDF} className="bg-primary text-primary-foreground p-2 rounded-md">
+                        <Icon name="Printer" className="ml-2 h-4 w-4 inline" />
                         طباعة معاينة
-                    </Button>
+                    </button>
                 </div>
             )}
         </div>
