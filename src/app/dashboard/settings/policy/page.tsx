@@ -36,7 +36,8 @@ import {
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { DndContext, PointerSensor, useSensor, useSensors, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
-import { Resizable, type ResizeCallback, type DraggableCallback } from 're-resizable';
+import { useSortable } from '@dnd-kit/sortable';
+import { Resizable, type ResizeCallback } from 're-resizable';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -90,35 +91,16 @@ const dataFields = [
 
 // --- Sub-components ---
 
-const DraggableItem = ({ element, selected, onSelect, onUpdate }: {
-  element: PolicyElement;
-  selected: boolean;
-  onSelect: (id: string, e: React.MouseEvent) => void;
-  onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
-}) => {
-  const handleResizeStop: ResizeCallback = (e, direction, ref, d) => {
-    onUpdate(element.id, {
-      width: snapToGrid(element.width + d.width),
-      height: snapToGrid(element.height + d.height),
-    });
-  };
-
-  const handleDragStop: DraggableCallback = (e, data) => {
-    onUpdate(element.id, {
-      x: snapToGrid(data.x),
-      y: snapToGrid(data.y),
-    });
-  };
-
+const PolicyElementComponent = ({ element }: { element: PolicyElement }) => {
   const renderContent = () => {
     switch (element.type) {
       case 'text':
-        return <div className="p-1 w-full h-full" style={{ fontFamily: 'inherit', fontSize: `${element.fontSize}px`, fontWeight: element.fontWeight, color: element.color, textAlign: element.textAlign as any }}>{element.content}</div>;
+        return <div className="p-1 w-full h-full" style={{ fontFamily: 'inherit', fontSize: `${element.fontSize}px`, fontWeight: element.fontWeight as any, color: element.color, textAlign: element.textAlign as any }}>{element.content}</div>;
       case 'barcode':
         return <div className="p-1 w-full h-full flex flex-col items-center justify-center text-xs"> <ScanBarcode className="w-10 h-10" /> <p className='mt-1'>باركود: {element.content}</p> </div>;
       case 'image':
-        if(element.content) {
-            return <img src={element.content} alt="logo" className="w-full h-full object-contain" />;
+        if (element.content) {
+          return <img src={element.content} alt="logo" className="w-full h-full object-contain" />;
         }
         return <ImageIcon className="w-full h-full text-muted-foreground p-2" />;
       case 'shape':
@@ -128,21 +110,58 @@ const DraggableItem = ({ element, selected, onSelect, onUpdate }: {
   };
 
   return (
-    <Resizable
-      size={{ width: element.width, height: element.height }}
-      position={{ x: element.x, y: element.y }}
-      onResizeStop={handleResizeStop}
-      onDragStop={handleDragStop}
-      enable={{
-        top: selected, right: selected, bottom: selected, left: selected,
-        topRight: selected, bottomRight: selected, bottomLeft: selected, topLeft: selected,
-      }}
-      className={`absolute cursor-move ${selected ? 'border-2 border-dashed border-primary z-50' : 'border-transparent'}`}
-      style={{ zIndex: element.zIndex, borderColor: element.borderColor, borderWidth: `${element.borderWidth}px`, borderRadius: `${element.borderRadius}px` }}
-      onClick={(e) => onSelect(element.id, e)}
+    <div
+      className="w-full h-full"
+      style={{ borderColor: element.borderColor, borderWidth: `${element.borderWidth}px`, borderRadius: `${element.borderRadius}px` }}
     >
       {renderContent()}
-    </Resizable>
+    </div>
+  );
+};
+
+
+const SortableItem = ({ element, selected, onSelect, onUpdate }: {
+  element: PolicyElement;
+  selected: boolean;
+  onSelect: (id: string, e: React.MouseEvent) => void;
+  onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
+}) => {
+  const { attributes, listeners, setNodeRef, transform } = useSortable({ id: element.id, data: { element } });
+
+  const style: React.CSSProperties = {
+    position: 'absolute',
+    left: `${element.x}px`,
+    top: `${element.y}px`,
+    width: `${element.width}px`,
+    height: `${element.height}px`,
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    zIndex: element.zIndex,
+    cursor: 'move',
+  };
+
+  const handleResizeStop: ResizeCallback = (e, direction, ref, d) => {
+    onUpdate(element.id, {
+      width: snapToGrid(element.width + d.width),
+      height: snapToGrid(element.height + d.height),
+    });
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <Resizable
+        size={{ width: element.width, height: element.height }}
+        onResizeStop={handleResizeStop}
+        enable={{
+          top: selected, right: selected, bottom: selected, left: selected,
+          topRight: selected, bottomRight: selected, bottomLeft: selected, topLeft: selected,
+        }}
+        className={`absolute !inset-0 ${selected ? 'border-2 border-dashed border-primary z-50' : 'border-transparent'}`}
+        onClick={(e) => onSelect(element.id, e)}
+        onMouseDown={(e) => e.stopPropagation()} // Prevent drag listener from firing on resize handles
+      >
+        <PolicyElementComponent element={element} />
+      </Resizable>
+    </div>
   );
 };
 
@@ -681,7 +700,7 @@ export default function PolicyEditorPage() {
                                     backgroundImage: `linear-gradient(to right, #e5e5e5 1px, transparent 1px), linear-gradient(to bottom, #e5e5e5 1px, transparent 1px)`
                                 }} />
                                 {elements.sort((a,b) => a.zIndex - b.zIndex).map(el => (
-                                    <DraggableItem key={el.id} element={el} selected={selectedIds.includes(el.id)} onSelect={(id, e) => { e.stopPropagation(); setSelectedIds(e.metaKey || e.ctrlKey ? [...selectedIds, id] : [id]); }} onUpdate={handleUpdateElement} />
+                                    <SortableItem key={el.id} element={el} selected={selectedIds.includes(el.id)} onSelect={(id, e) => { e.stopPropagation(); setSelectedIds(e.metaKey || e.ctrlKey ? [...selectedIds, id] : [id]); }} onUpdate={handleUpdateElement} />
                                 ))}
                             </div>
                             <DragOverlay>
@@ -691,7 +710,7 @@ export default function PolicyEditorPage() {
                                 </div>
                                 : activeDragId ?
                                  <div style={{transform: `scale(${zoomLevel})`}}>
-                                    <DraggableItem element={elements.find(el => el.id === activeDragId)!} selected={true} onSelect={()=>{}} onUpdate={()=>{}} />
+                                    <PolicyElementComponent element={elements.find(el => el.id === activeDragId)!} />
                                  </div>
                                 : null}
                             </DragOverlay>
@@ -703,4 +722,5 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
 
