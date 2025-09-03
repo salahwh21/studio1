@@ -13,7 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Check, ChevronsUpDown, Printer, Trash2 } from 'lucide-react';
 import { useActionState } from 'react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
-import { PrintablePolicy } from '@/components/printable-policy';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,7 +30,7 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStatusesStore } from '@/store/statuses-store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useSettings, type PolicySettings, type PolicyElement, type SavedTemplate } from '@/contexts/SettingsContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
@@ -64,11 +63,6 @@ const AddOrderPage = () => {
   const [merchantPopoverOpen, setMerchantPopoverOpen] = useState(false);
   const [regionPopoverOpen, setRegionPopoverOpen] = useState(false);
   const [popoverStates, setPopoverStates] = useState<Record<string, boolean>>({});
-  const printablePolicyRef = useRef<{ handleExportPDF: () => void }>(null);
-
-  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
-  const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<SavedTemplate | null>(null);
 
   const togglePopover = (id: string) => {
     setPopoverStates(prev => ({ ...prev, [id]: !prev[id] }));
@@ -219,81 +213,17 @@ const AddOrderPage = () => {
     toast({ title: "تم الحذف", description: `تم حذف ${selectedRecent.length} طلبات.` });
     setSelectedRecent([]);
   }
-  
-  const ordersToPrint = useMemo(() => {
-    return recentlyAdded.filter(o => selectedRecent.includes(o.id));
-  }, [recentlyAdded, selectedRecent]);
-  
-  const handlePrintClick = () => {
-    if (ordersToPrint.length === 0) {
-        toast({ variant: "destructive", title: "لا توجد طلبات محددة", description: "الرجاء تحديد طلب واحد على الأقل للطباعة." });
-        return;
-    }
-    
-    let templates: SavedTemplate[] = [];
-    try {
-      const storedTemplates = localStorage.getItem('policyTemplates');
-      if (storedTemplates) {
-        templates = JSON.parse(storedTemplates);
-      }
-    } catch (e) {
-      console.error("Error parsing templates from localStorage", e);
-    }
-    
-    setSavedTemplates(templates);
 
-    if (templates.length === 0) {
-        toast({ variant: "destructive", title: "لا توجد قوالب", description: "الرجاء إنشاء أو حفظ قالب واحد على الأقل في صفحة إعداد البوليصة." });
-        return;
-    }
-    
-    setSelectedTemplate(templates[0]);
-    setIsPrintDialogOpen(true);
+  const handlePrintClick = () => {
+    toast({
+        variant: 'destructive',
+        title: 'ميزة معطلة',
+        description: 'تم تعطيل طباعة البوالص لأنه تم حذف صفحة إعدادات البوليصة.',
+      });
   };
   
   return (
     <div className="space-y-6">
-       <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
-            <DialogContent className="max-w-xl">
-                <DialogHeader>
-                    <DialogTitle>طباعة البوالص</DialogTitle>
-                    <DialogDescription>
-                        اختر قالب الطباعة المناسب للبوالص المحددة.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                         <Label htmlFor="template-select">اختر من قوالبك المحفوظة</Label>
-                         <Select
-                            value={selectedTemplate?.id}
-                            onValueChange={(id) => setSelectedTemplate(savedTemplates.find(t => t.id === id) || null)}
-                         >
-                            <SelectTrigger id="template-select">
-                                <SelectValue placeholder="اختر قالب..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {savedTemplates.map(template => (
-                                    <SelectItem key={template.id} value={template.id}>
-                                        {template.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                         </Select>
-                    </div>
-                </div>
-                 <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
-                    <Button onClick={() => printablePolicyRef.current?.handleExportPDF()} className="w-full" disabled={!selectedTemplate}>
-                        <Printer className="ml-2 h-4 w-4" /> تأكيد الطباعة
-                    </Button>
-                </DialogFooter>
-                {/* Hidden printable component */}
-                <div className="absolute top-[-10000px] left-[-10000px]">
-                  <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} template={selectedTemplate} onExport={() => setIsPrintDialogOpen(false)} />
-                </div>
-            </DialogContent>
-        </Dialog>
-
       <Card>
         <CardHeader>
           <CardTitle>إضافة طلبات جديدة</CardTitle>
@@ -466,7 +396,7 @@ const AddOrderPage = () => {
                 <div className="flex items-center justify-between">
                     <CardTitle>طلبات مضافة حديثاً ({recentlyAdded.length})</CardTitle>
                     <div className="flex items-center gap-2">
-                         <Button variant="outline" size="sm" disabled={selectedRecent.length === 0} onClick={handlePrintClick}><Printer className="h-4 w-4 ml-2"/>طباعة بوليصة</Button>
+                         <Button variant="outline" size="sm" onClick={handlePrintClick} disabled><Printer className="h-4 w-4 ml-2"/>طباعة بوليصة</Button>
                          <Button variant="destructive" size="sm" disabled={selectedRecent.length === 0} onClick={handleDeleteSelected}><Trash2 className="h-4 w-4 ml-2"/>حذف المحدد</Button>
                     </div>
                 </div>

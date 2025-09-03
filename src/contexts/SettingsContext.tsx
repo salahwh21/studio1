@@ -82,61 +82,37 @@ interface UiSettings {
 }
 
 // Policy
-type ElementType = 'text' | 'image' | 'barcode' | 'rect' | 'line' | 'table';
-type FontWeight = 'normal' | 'bold';
-
-type TableCellData = { id: string; content: string };
-type TableRowData = { id: string; cells: TableCellData[] };
-
+export type ElementType = 'text' | 'barcode' | 'image' | 'shape';
 export type PolicyElement = {
-  id: string;
-  type: ElementType;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  content: string;
-  zIndex: number;
-  fontSize?: number;
-  fontWeight?: FontWeight;
-  color?: string;
-  borderColor?: string;
-  borderWidth?: number;
-  opacity?: number;
-  backgroundColor?: string;
-  // Table specific properties
-  rowCount?: number;
-  colCount?: number;
-  tableData?: TableRowData[];
-  headers?: string[];
+    id: string;
+    type: ElementType;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    content: string;
+    fontSize: number;
+    fontWeight: 'normal' | 'bold';
+    color: string;
+    borderColor: string;
+    borderWidth: number;
+    zIndex: number;
+    opacity: number;
+    backgroundColor: string;
+    rowCount?: number;
+    colCount?: number;
+    headers?: string[];
+    tableData?: { id: string; cells: { id: string; content: string }[] }[];
 };
 
-export type SavedTemplate = {
-  id: string;
-  name: string;
-  elements: PolicyElement[];
-  paperSize: PolicySettings['paperSize'];
-  customDimensions: { width: number; height: number };
-  margins: { top: number; right: number; bottom: number; left: number };
-  isReadyMade?: boolean;
-};
-
-export interface PolicySettings {
-    paperSize: 'a4' | 'a5' | 'label_4x6' | 'label_4x4' | 'custom';
-    layout: 'default' | 'compact' | 'detailed';
-    showCompanyLogo: boolean;
-    showCompanyName: boolean;
-    showCompanyAddress: boolean;
-    showRefNumber: boolean;
-    showItems: boolean;
-    showPrice: boolean;
-    showBarcode: boolean;
-    footerNotes: string;
-    customFields: {label: string, value: string}[];
-    customDimensions: { width: number, height: number };
-    margins: { top: number, right: number, bottom: number, left: number };
+export type PaperSize = 'a4' | 'a5' | 'a6' | '4x6' | 'custom';
+export type PolicySettings = {
     elements: PolicyElement[];
-}
+    paperSize: PaperSize;
+    customDimensions: { width: number; height: number };
+    margins: { top: number; right: number; bottom: number; left: number };
+};
+export type SavedTemplate = PolicySettings & { id: string; name: string; isReadyMade?: boolean; };
 
 
 // Main settings structure
@@ -165,12 +141,6 @@ interface SettingsContextType {
 
 // 3. Create the context
 export const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
-
-const defaultPolicyElements: PolicyElement[] = [
-    { id: "el_brcd", type: "barcode", x: 128, y: 8, width: 136, height: 88, zIndex: 1, content: "{order_id}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
-    { id: "el_brcd_txt", type: "text", x: 128, y: 104, width: 136, height: 24, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
-    { id: "el_logo", type: "image", x: 16, y: 8, width: 104, height: 120, zIndex: 1, content: "{company_logo}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
-];
 
 // 4. Define default settings data
 const defaultSettingsData: ComprehensiveSettings = {
@@ -231,20 +201,10 @@ const defaultSettingsData: ComprehensiveSettings = {
     iconLibrary: 'lucide',
   },
   policy: {
-      paperSize: 'custom',
-      layout: 'default',
-      showCompanyLogo: true,
-      showCompanyName: true,
-      showCompanyAddress: false,
-      showRefNumber: true,
-      showItems: false,
-      showPrice: true,
-      showBarcode: true,
-      footerNotes: 'شكراً لثقتكم بخدماتنا.',
-      customFields: [],
-      customDimensions: { width: 75, height: 45 },
-      margins: { top: 2, right: 2, bottom: 2, left: 2 },
-      elements: defaultPolicyElements,
+    elements: [],
+    paperSize: 'custom',
+    customDimensions: { width: 100, height: 150 }, // Standard 4x6 inch in mm
+    margins: { top: 5, right: 5, bottom: 5, left: 5 },
   }
 };
 
@@ -263,6 +223,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         const mergedSettings = {
           ...defaultSettingsData,
           ...savedSettings,
+           policy: {
+            ...defaultSettingsData.policy,
+            ...(savedSettings.policy || {}),
+          },
           notifications: {
             ...defaultSettingsData.notifications,
             ...(savedSettings.notifications || {}),
@@ -283,10 +247,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
             ...defaultSettingsData.ui,
             ...(savedSettings.ui || {}),
           },
-           policy: {
-            ...defaultSettingsData.policy,
-            ...(savedSettings.policy || {}),
-          }
         };
         setSettings(mergedSettings);
       }
@@ -364,7 +324,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     return `${formattedNumber} ${currencySymbol}`;
   }, [settings.regional]);
 
-  const value = { settings, setSetting, updateOrderSetting, updateLoginSetting, updateSocialLink, updateRegionalSetting, updateUiSetting, updatePolicySetting, formatCurrency, isHydrated };
+  const value = { settings, setSetting, updateOrderSetting, updateLoginSetting, updateSocialLink, updateRegionalSetting, updateUiSetting, formatCurrency, isHydrated, updatePolicySetting };
 
   return (
     <SettingsContext.Provider value={value}>

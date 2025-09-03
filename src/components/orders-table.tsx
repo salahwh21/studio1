@@ -84,8 +84,6 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/comp
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { PrintablePolicy } from '@/components/printable-policy';
-import { readyTemplates } from '@/app/dashboard/settings/policy/page';
 
 
 type OrderSource = Order['source'];
@@ -209,11 +207,6 @@ export function OrdersTable() {
     const [groupBy, setGroupBy] = useState<GroupByOption>(null);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-    const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
-    const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
-    const [selectedTemplate, setSelectedTemplate] = useState<SavedTemplate | null>(null);
-    const printablePolicyRef = useRef<{ handleExportPDF: () => void }>(null);
-
     // State for column management
     const [columns, setColumns] = useState<ColumnConfig[]>(ALL_COLUMNS);
     const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[]>(ALL_COLUMNS.map(c => c.key));
@@ -281,10 +274,6 @@ export function OrdersTable() {
         return sortedOrders.slice(startIndex, startIndex + rowsPerPage);
     }, [sortedOrders, page, rowsPerPage, groupBy, groupedAndSortedOrders]);
     
-    const ordersToPrint = useMemo(() => {
-        return orders.filter(o => selectedRows.includes(o.id));
-    }, [orders, selectedRows]);
-
     const footerTotals = useMemo(() => {
         const listForCalculation = selectedRows.length > 0 
             ? orders.filter(o => selectedRows.includes(o.id))
@@ -391,37 +380,14 @@ export function OrdersTable() {
             description: "تم إعادة تحميل قائمة الطلبات بنجاح.",
         })
     }
-    
+
     const handlePrint = () => {
-        if (ordersToPrint.length === 0) {
+        if (selectedRows.length === 0) {
             toast({ variant: "destructive", title: "لا توجد طلبات محددة", description: "الرجاء تحديد طلب واحد على الأقل للطباعة." });
             return;
         }
-        
-        let templates: SavedTemplate[] = [];
-        try {
-            const storedTemplates = localStorage.getItem('policyTemplates');
-            if (storedTemplates) {
-                templates = JSON.parse(storedTemplates);
-            } else {
-                templates = Object.values(readyTemplates);
-                localStorage.setItem('policyTemplates', JSON.stringify(templates));
-            }
-        } catch (e) {
-            console.error("Error parsing/setting templates from localStorage", e);
-            templates = Object.values(readyTemplates);
-        }
-
-        if (templates.length === 0) {
-            toast({ variant: "destructive", title: "لا توجد قوالب", description: "لم يتم العثور على قوالب جاهزة أو محفوظة. يرجى مراجعة صفحة إعدادات البوليصة." });
-            return;
-        }
-
-        setSavedTemplates(templates);
-        setSelectedTemplate(templates[0]);
-        setIsPrintDialogOpen(true);
+        window.print();
     };
-
 
     const renderOrderRow = (order: Order, index: number) => {
         return (
@@ -566,47 +532,6 @@ export function OrdersTable() {
 
     return (
         <>
-            <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
-                <DialogContent className="max-w-xl">
-                <DialogHeader>
-                    <DialogTitle>طباعة البوالص</DialogTitle>
-                    <DialogDescription>
-                        اختر قالب الطباعة المناسب للبوالص المحددة.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                     <div className="space-y-2">
-                         <Label htmlFor="template-select">اختر من قوالبك المحفوظة</Label>
-                         <Select
-                            value={selectedTemplate?.id}
-                            onValueChange={(id) => setSelectedTemplate(savedTemplates.find(t => t.id === id) || null)}
-                         >
-                            <SelectTrigger id="template-select">
-                                <SelectValue placeholder="اختر قالب..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {savedTemplates.map(template => (
-                                    <SelectItem key={template.id} value={template.id}>
-                                        {template.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                         </Select>
-                    </div>
-                </div>
-                 <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
-                    <Button onClick={() => printablePolicyRef.current?.handleExportPDF()} className="w-full" disabled={!selectedTemplate}>
-                        <Printer className="ml-2 h-4 w-4" /> تأكيد الطباعة
-                    </Button>
-                </DialogFooter>
-                 {/* Hidden printable component */}
-                <div className="absolute top-[-10000px] left-[-10000px]">
-                  <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} template={selectedTemplate} onExport={() => setIsPrintDialogOpen(false)} />
-                </div>
-                </DialogContent>
-            </Dialog>
-
             <TooltipProvider>
                 <Card className="flex flex-col h-[calc(100vh-8rem)] bg-background p-4 gap-4">
                     {/* Header */}
