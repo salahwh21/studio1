@@ -34,6 +34,7 @@ import {
   ChevronsDown,
   ArrowLeft,
   Ruler,
+  MousePointerSquare,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import Draggable, { type DraggableEvent, type DraggableData } from 'react-draggable';
@@ -90,8 +91,8 @@ const dataFields = [
   { value: '{{referenceNumber}}', label: 'الرقم المرجعي' },
   { value: '{{driver}}', label: 'اسم السائق' },
   { value: '{{source}}', label: 'مصدر الطلب' },
-  { value: '{{notes}}', label: 'الملاحظات' },
   { value: '{{items}}', label: 'المنتجات' },
+  { value: '{{notes}}', label: 'الملاحظات' },
   { value: '{{company_logo}}', label: 'شعار الشركة' },
 ];
 
@@ -256,7 +257,7 @@ const PageSettingsPanel = ({ paperSize, customDimensions, margins, onPaperSizeCh
     </Card>
 );
 
-const Ruler = ({ orientation, size }: { orientation: 'horizontal' | 'vertical', size: number }) => {
+const RulerComponent = ({ orientation, size }: { orientation: 'horizontal' | 'vertical', size: number }) => {
     const ticks = Array.from({ length: Math.floor(size / 50) + 1 }, (_, i) => i * 50);
     return (
         <div
@@ -706,10 +707,10 @@ export default function PolicyEditorPage() {
                                 }}
                             >
                                 <div className="absolute top-0 left-0 w-full h-full cursor-ns-resize" onMouseDown={(e) => handleNewGuide(e, 'horizontal')}>
-                                    <Ruler orientation="horizontal" size={paperDimensions.width} />
+                                    <RulerComponent orientation="horizontal" size={paperDimensions.width} />
                                 </div>
                                 <div className="absolute top-0 left-0 w-full h-full cursor-ew-resize" onMouseDown={(e) => handleNewGuide(e, 'vertical')}>
-                                    <Ruler orientation="vertical" size={paperDimensions.height} />
+                                    <RulerComponent orientation="vertical" size={paperDimensions.height} />
                                 </div>
                                 
                                 {horizontalGuides.map((y, i) => (
@@ -777,4 +778,3 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
-
