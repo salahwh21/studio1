@@ -255,12 +255,12 @@ const PropertiesPanel = ({ element, onUpdate, onDelete }: { element: PolicyEleme
 }
 
 // ---------- Canvas item ----------
-const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMenu }: {
+const DraggableItem = ({ element, selected, onSelect, onResizeStop, onDoubleClick }: {
   element: PolicyElement;
   selected: boolean;
   onSelect: (id: string, e: React.MouseEvent) => void;
   onResizeStop: (id: string, w: number, h: number) => void;
-  onContextMenu: (event: React.MouseEvent, element: PolicyElement) => void;
+  onDoubleClick: (element: PolicyElement) => void;
 }) => {
   const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({ id: element.id });
 
@@ -283,7 +283,10 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMen
       {...attributes}
       {...listeners}
       onClick={(e) => onSelect(element.id, e)}
-      onContextMenu={(e) => onContextMenu(e, element)}
+      onDoubleClick={(e) => {
+          e.stopPropagation();
+          onDoubleClick(element)
+      }}
     >
       <Resizable
           size={{ width: element.width, height: element.height }}
@@ -471,10 +474,10 @@ const PropertiesModal = ({ element, onUpdate, onDelete, open, onOpenChange }: {
                     {(currentElement.type === 'rect' || currentElement.type === 'table') && (
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2"><Label>لون الحد</Label><Input type="color" value={currentElement.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full p-1" /></div>
-                            <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={currentElement.borderWidth ?? 1} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
+                            <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={element.borderWidth ?? 1} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
                         </div>
                     )}
-                    <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={currentElement.opacity ?? 1} onChange={(e) => handleFloatChange('opacity', e.target.value)} /></div>
+                    <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={element.opacity ?? 1} onChange={(e) => handleFloatChange('opacity', e.target.value)} /></div>
                 </div>
                 <DialogFooter className="justify-between">
                     <Button variant="destructive" onClick={handleDeleteAndClose}><Trash2 className="ml-2 h-4 w-4" /> حذف</Button>
@@ -504,7 +507,6 @@ export default function PolicyEditorPage() {
   const [templateName, setTemplateName] = useState('');
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const [contextMenu, setContextMenu] = useState<{ x: number, y: number, element: PolicyElement } | null>(null);
   const [modalElement, setModalElement] = useState<PolicyElement | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
@@ -527,39 +529,91 @@ export default function PolicyEditorPage() {
   }), [margins]);
 
   const handleSmartLayout = () => {
-    const { width: canvasWidth, height: canvasHeight } = paperDimensions;
-    const { top, right, left, bottom } = marginPx;
-    const printableWidth = canvasWidth - left - right;
-    const printableHeight = canvasHeight - top - bottom;
-  
-    // Smart layout logic: arrange existing elements instead of creating new ones
     if (elements.length === 0) {
       toast({ variant: "destructive", title: "لا توجد عناصر", description: "الرجاء إضافة بعض العناصر أولاً ليقوم الذكاء الاصطناعي بتنسيقها."});
       return;
     }
 
-    const sortedElements = [...elements].sort((a, b) => a.y - b.y);
-    let currentY = top;
-    const newElements = sortedElements.map(el => {
-        const newEl = {...el};
-        newEl.x = snapToGrid(left + (printableWidth - newEl.width) / 2); // Center horizontally
-        newEl.y = snapToGrid(currentY);
-        
-        // Prevent overflow
-        if (newEl.x < left) newEl.x = left;
-        if ((newEl.x + newEl.width) > (canvasWidth - right)) {
-             newEl.width = snapToGrid(canvasWidth - right - newEl.x);
-        }
-        if (newEl.y < top) newEl.y = top;
-         if ((newEl.y + newEl.height) > (canvasHeight - bottom)) {
-             newEl.height = snapToGrid(canvasHeight - bottom - newEl.y);
-        }
+    const { width: canvasWidth, height: canvasHeight } = paperDimensions;
+    const { top, right, left, bottom } = marginPx;
+    const printableWidth = canvasWidth - left - right;
+    const printableHeight = canvasHeight - top - bottom;
 
-        currentY += newEl.height + GRID_SIZE * 2; // Add spacing
-        return newEl;
-    });
+    const categorized = {
+        logo: elements.find(el => el.content.includes('logo')),
+        companyName: elements.find(el => el.content.includes('company_name')),
+        recipient: elements.find(el => el.content.includes('recipient')),
+        barcode: elements.find(el => el.type === 'barcode'),
+        orderId: elements.find(el => el.content.includes('order_id') && el.type === 'text'),
+        cod: elements.find(el => el.content.includes('cod_amount')),
+        notes: elements.find(el => el.content.includes('notes')),
+        others: elements.filter(el => !Object.values(categorized).flat().find(catEl => catEl && catEl.id === el.id))
+    };
 
-    setElements(newElements);
+    let yOffset = top;
+    const newElements: PolicyElement[] = [];
+
+    // Header Zone
+    const headerHeight = printableHeight * 0.2;
+    if (categorized.logo) {
+        const newWidth = Math.min(printableWidth * 0.3, categorized.logo.width);
+        const newHeight = headerHeight * 0.7;
+        newElements.push({
+            ...categorized.logo,
+            x: left,
+            y: yOffset,
+            width: snapToGrid(newWidth),
+            height: snapToGrid(newHeight)
+        });
+    }
+     if (categorized.barcode) {
+        const newWidth = Math.min(printableWidth * 0.5, categorized.barcode.width);
+        const newHeight = headerHeight * 0.8;
+        newElements.push({
+            ...categorized.barcode,
+            x: snapToGrid(canvasWidth - right - newWidth),
+            y: yOffset,
+            width: snapToGrid(newWidth),
+            height: snapToGrid(newHeight)
+        });
+    }
+    yOffset += headerHeight;
+
+    // Recipient Zone
+    const recipientHeight = printableHeight * 0.3;
+    if (categorized.recipient) {
+        const newWidth = printableWidth;
+        const newHeight = Math.min(recipientHeight, categorized.recipient.height);
+        newElements.push({
+            ...categorized.recipient,
+            x: left,
+            y: yOffset,
+            width: snapToGrid(newWidth),
+            height: snapToGrid(newHeight)
+        });
+        yOffset += newHeight + GRID_SIZE;
+    }
+    
+    // COD and Notes zone
+    const footerHeight = printableHeight * 0.3;
+    let footerY = canvasHeight - bottom - footerHeight;
+    if (categorized.cod) {
+        const newWidth = printableWidth * 0.4;
+        const newHeight = Math.min(footerHeight, categorized.cod.height);
+        newElements.push({
+            ...categorized.cod,
+            x: snapToGrid(left + (printableWidth / 2) - (newWidth / 2)),
+            y: footerY,
+            width: snapToGrid(newWidth),
+            height: snapToGrid(newHeight)
+        });
+    }
+    
+    // Replace old elements with new, preserving ones that weren't categorized.
+    const newElementIds = new Set(newElements.map(e => e.id));
+    const finalElements = [...newElements, ...elements.filter(el => !newElementIds.has(el.id))];
+
+    setElements(finalElements);
     toast({ title: 'تم التنسيق بنجاح', description: 'قام المساعد الذكي بإعادة ترتيب العناصر الموجودة.' });
   };
 
@@ -882,9 +936,7 @@ const handleDuplicate = () => {
     }
   };
 
-  const handleContextMenu = (event: React.MouseEvent, element: PolicyElement) => {
-    event.preventDefault();
-    event.stopPropagation();
+  const handleDoubleClick = (element: PolicyElement) => {
     setModalElement(element);
     setIsModalOpen(true);
   };
@@ -964,25 +1016,7 @@ const handleDuplicate = () => {
                     </CardDescription>
                 </div>
                  <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={() => {
-                        const printArea = document.getElementById('printable-policy-preview-area');
-                        if (printArea) {
-                            const firstPolicy = printArea.querySelector('.policy-sheet');
-                            if (firstPolicy) {
-                                html2canvas(firstPolicy as HTMLElement, { scale: 2, useCORS: true }).then(canvas => {
-                                    const imgData = canvas.toDataURL('image/png');
-                                    const pdf = new jsPDF({
-                                        orientation: paperDimensions.width > paperDimensions.height ? 'l' : 'p',
-                                        unit: 'mm',
-                                        format: [paperDimensions.width * (25.4 / DPI), paperDimensions.height * (25.4 / DPI)],
-                                    });
-                                    pdf.addImage(imgData, 'PNG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
-                                    pdf.autoPrint();
-                                    window.open(pdf.output('bloburl'), '_blank');
-                                });
-                            }
-                        }
-                    }}><Printer className="ml-2 h-4 w-4" /> طباعة عينة</Button>
+                    <Button variant="outline" onClick={handlePrint}><Printer className="ml-2 h-4 w-4" /> طباعة عينة</Button>
                     <Button variant="outline" onClick={handleSmartLayout}>
                         <Wand2 className="ml-2 h-4 w-4" /> المساعدة الذكية
                     </Button>
@@ -1123,7 +1157,7 @@ const handleDuplicate = () => {
                                         selected={selectedIds.includes(el.id)}
                                         onSelect={handleSelect}
                                         onResizeStop={handleResizeStop}
-                                        onContextMenu={handleContextMenu}
+                                        onDoubleClick={handleDoubleClick}
                                         />
                                     ))}
                                 </div>
