@@ -276,6 +276,44 @@ const RulerComponent = ({ orientation, size }: { orientation: 'horizontal' | 've
     );
 };
 
+const PolicyDraggableItem = ({ element, onUpdate, onSelect, isSelected, zoomLevel }: {
+  element: PolicyElement;
+  onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
+  onSelect: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
+  isSelected: boolean;
+  zoomLevel: number;
+}) => {
+  const nodeRef = React.useRef(null);
+  return (
+    <Draggable
+      key={element.id}
+      nodeRef={nodeRef}
+      handle=".handle"
+      position={{ x: element.x, y: element.y }}
+      grid={[GRID_SIZE, GRID_SIZE]}
+      scale={zoomLevel}
+      onStart={(e) => onSelect(element.id, e as any)}
+      onStop={(e, data) => onUpdate(element.id, { x: data.x, y: data.y })}
+    >
+      <Resizable
+        ref={nodeRef}
+        size={{ width: element.width, height: element.height }}
+        onResizeStop={(e, dir, ref, d) => onUpdate(element.id, { width: snapToGrid(element.width + d.width), height: snapToGrid(element.height + d.height) })}
+        onClick={(e) => onSelect(element.id, e)}
+        className="absolute"
+        style={{ zIndex: element.zIndex }}
+        enable={{
+            top: isSelected, right: isSelected, bottom: isSelected, left: isSelected,
+            topRight: isSelected, bottomRight: isSelected, bottomLeft: isSelected, topLeft: isSelected,
+        }}
+      >
+        <div className={`handle w-full h-full cursor-move ${isSelected ? 'border-2 border-dashed border-primary' : ''}`}>
+          <PolicyElementComponent element={element} />
+        </div>
+      </Resizable>
+    </Draggable>
+  );
+};
 
 // --- Main Page Component ---
 export default function PolicyEditorPage() {
@@ -744,38 +782,20 @@ export default function PolicyEditorPage() {
                                     backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
                                     backgroundImage: `linear-gradient(to right, #e5e5e5 1px, transparent 1px), linear-gradient(to bottom, #e5e5e5 1px, transparent 1px)`
                                 }} />
-                                {elements.map(el => {
-                                  const nodeRef = React.useRef(null);
-                                  return (
-                                    <Draggable
-                                        key={el.id}
-                                        nodeRef={nodeRef}
-                                        handle=".handle"
-                                        position={{ x: el.x, y: el.y }}
-                                        grid={[GRID_SIZE, GRID_SIZE]}
-                                        scale={zoomLevel}
-                                        onStart={() => setSelectedIds([el.id])}
-                                        onStop={(e, data) => handleUpdateElement(el.id, { x: data.x, y: data.y })}
-                                    >
-                                        <Resizable
-                                            ref={nodeRef}
-                                            size={{ width: el.width, height: el.height }}
-                                            onResizeStop={(e, dir, ref, d) => handleUpdateElement(el.id, { width: snapToGrid(el.width + d.width), height: snapToGrid(el.height + d.height)})}
-                                            onClick={(e) => { e.stopPropagation(); setSelectedIds([el.id]); }}
-                                            className="absolute"
-                                            style={{ zIndex: el.zIndex }}
-                                            enable={{
-                                                top: selectedIds.includes(el.id), right: selectedIds.includes(el.id), bottom: selectedIds.includes(el.id), left: selectedIds.includes(el.id),
-                                                topRight: selectedIds.includes(el.id), bottomRight: selectedIds.includes(el.id), bottomLeft: selectedIds.includes(el.id), topLeft: selectedIds.includes(el.id),
-                                            }}
-                                        >
-                                            <div className={`handle w-full h-full cursor-move ${selectedIds.includes(el.id) ? 'border-2 border-dashed border-primary' : ''}`}>
-                                                <PolicyElementComponent element={el} />
-                                            </div>
-                                        </Resizable>
-                                    </Draggable>
-                                  );
-                                })}
+                                {elements.map(el => (
+                                    <PolicyDraggableItem
+                                      key={el.id}
+                                      element={el}
+                                      onUpdate={handleUpdateElement}
+                                      onSelect={(id, e) => {
+                                        e.stopPropagation();
+                                        const event = e as React.MouseEvent;
+                                        setSelectedIds(event.metaKey || event.ctrlKey ? [...selectedIds, id] : [id]);
+                                      }}
+                                      isSelected={selectedIds.includes(el.id)}
+                                      zoomLevel={zoomLevel}
+                                    />
+                                ))}
                             </div>
                         </div>
                      </CardContent>
