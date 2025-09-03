@@ -31,6 +31,7 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronsDown,
+  ArrowLeft,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { DndContext, PointerSensor, useSensor, useSensors, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
@@ -50,6 +51,7 @@ import { Separator } from '@/components/ui/separator';
 import { PrintablePolicy } from '@/components/printable-policy';
 import { useOrdersStore } from '@/store/orders-store';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import Icon from '@/components/icon';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 
@@ -236,13 +238,14 @@ export default function PolicyEditorPage() {
     const { toast } = useToast();
     const { orders } = useOrdersStore();
     const context = useSettings();
-    const { settings: policySettings, updatePolicySetting, isHydrated } = context || {};
     
     // Fallback to default if context is not ready
-    const [elements, setElements] = useState<PolicyElement[]>(policySettings?.elements || []);
-    const [paperSize, setPaperSize] = useState<PolicySettings['paperSize']>(policySettings?.paperSize || 'custom');
-    const [customDimensions, setCustomDimensions] = useState(policySettings?.customDimensions || { width: 100, height: 150 });
-    const [margins, setMargins] = useState(policySettings?.margins || { top: 2, right: 2, bottom: 2, left: 2 });
+    const { settings: policySettings, updatePolicySetting, isHydrated } = context || { settings: null, updatePolicySetting: () => {}, isHydrated: false };
+
+    const [elements, setElements] = useState<PolicyElement[]>(policySettings?.policy.elements || []);
+    const [paperSize, setPaperSize] = useState<PolicySettings['paperSize']>(policySettings?.policy.paperSize || 'custom');
+    const [customDimensions, setCustomDimensions] = useState(policySettings?.policy.customDimensions || { width: 100, height: 150 });
+    const [margins, setMargins] = useState(policySettings?.policy.margins || { top: 2, right: 2, bottom: 2, left: 2 });
     const [zoomLevel, setZoomLevel] = useState(0.8);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -265,10 +268,10 @@ export default function PolicyEditorPage() {
     // Load from localStorage
     useEffect(() => {
         if (isHydrated && policySettings) {
-            setElements(policySettings.elements);
-            setPaperSize(policySettings.paperSize);
-            setCustomDimensions(policySettings.customDimensions);
-            setMargins(policySettings.margins);
+            setElements(policySettings.policy.elements);
+            setPaperSize(policySettings.policy.paperSize);
+            setCustomDimensions(policySettings.policy.customDimensions);
+            setMargins(policySettings.policy.margins);
         }
         try {
             const savedTemplatesJson = localStorage.getItem('policyTemplates');
@@ -281,11 +284,12 @@ export default function PolicyEditorPage() {
     }, [isHydrated, policySettings]);
 
     const paperDimensions = useMemo(() => {
+        if (!isHydrated || !customDimensions) return { width: mmToPx(100), height: mmToPx(150) }; // Safe fallback
         if (paperSize === 'custom') return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
         const size = paperSizes[paperSize];
         if (!size) return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) }; // Fallback
         return { width: mmToPx(size.width), height: mmToPx(size.height) };
-    }, [paperSize, customDimensions]);
+    }, [paperSize, customDimensions, isHydrated]);
 
     // ----------- Element Management -----------
     const addElement = useCallback((tool: typeof toolboxItems[0], dropPosition?: { x: number; y: number; }) => {
@@ -580,9 +584,16 @@ export default function PolicyEditorPage() {
 
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <Card>
-                <CardHeader>
-                    <CardTitle>محرر البوليصة</CardTitle>
-                    <CardDescription>اسحب وأفلت العناصر لتصميم البوليصة. انقر على عنصر لتعديل خصائصه.</CardDescription>
+                <CardHeader className="flex-row justify-between items-center">
+                    <div>
+                        <CardTitle>محرر البوليصة</CardTitle>
+                        <CardDescription>اسحب وأفلت العناصر لتصميم البوليصة. انقر على عنصر لتعديل خصائصه.</CardDescription>
+                    </div>
+                    <Button variant="outline" size="icon" asChild>
+                        <Link href="/dashboard/settings">
+                            <ArrowLeft className="h-4 w-4" />
+                        </Link>
+                    </Button>
                 </CardHeader>
                 <CardContent className="border-t border-b p-2">
                     <div className="flex flex-wrap items-center gap-2">
