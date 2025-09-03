@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
@@ -44,7 +45,7 @@ import { Slider } from '@/components/ui/slider';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useSettings, type PolicySettings, type PolicyElement, type SavedTemplate } from '@/contexts/SettingsContext';
+import { useSettings, type PolicySettings, type PolicyElement, type SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
 import { Separator } from '@/components/ui/separator';
 import { PrintablePolicy } from '@/components/printable-policy';
 import { useOrdersStore } from '@/store/orders-store';
@@ -282,6 +283,7 @@ export default function PolicyEditorPage() {
     const paperDimensions = useMemo(() => {
         if (paperSize === 'custom') return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
         const size = paperSizes[paperSize];
+        if (!size) return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) }; // Fallback
         return { width: mmToPx(size.width), height: mmToPx(size.height) };
     }, [paperSize, customDimensions]);
 
@@ -366,17 +368,17 @@ export default function PolicyEditorPage() {
     };
 
     const handleSmartLayout = () => {
-      if (elements.length === 0) return;
-      const newElements = elements.map((el, index) => {
-          const newY = 10 + (index * 40); // Simple vertical stack
-          return {
-              ...el,
-              x: 10,
-              y: newY
-          };
-      });
-      setElements(newElements);
-      toast({ title: "تم التنسيق", description: "تم ترتيب العناصر تلقائياً." });
+        if (elements.length === 0) return;
+        const newElements = elements.map((el, index) => {
+            const newY = 10 + (index * 40); // Simple vertical stack
+            return {
+                ...el,
+                x: 10,
+                y: newY
+            };
+        });
+        setElements(newElements);
+        toast({ title: "تم التنسيق", description: "تم ترتيب العناصر تلقائياً." });
     };
     
     // DND Handlers
@@ -638,7 +640,7 @@ export default function PolicyEditorPage() {
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
-                                <input id="import-template-input" ref={importTemplateInputRef} type="file" accept=".json" onChange={handleImportTemplate} />
+                                <input id="import-template-input" ref={importTemplateInputRef} type="file" accept=".json" onChange={handleImportTemplate} className="hidden" />
                             </div>
                             <ScrollArea className="h-48">
                             {templates.map(template => (
