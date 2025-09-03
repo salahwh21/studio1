@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useRef, useMemo, useCallback, useEffect, forwardRef } from 'react';
@@ -258,7 +259,7 @@ const PageSettingsPanel = ({ paperSize, customDimensions, margins, onPaperSizeCh
     </Card>
 );
 
-const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag, onStop, isSelected, zoomLevel }: {
+const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag, onStop, isSelected }: {
   element: PolicyElement;
   onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
   onSelect: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
@@ -266,36 +267,34 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag,
   onDrag: (e: DraggableEvent, data: DraggableData) => void;
   onStop: (e: DraggableEvent, data: DraggableData) => void;
   isSelected: boolean;
-  zoomLevel: number;
 }) => {
-  const nodeRef = useRef<HTMLDivElement>(null);
+    const nodeRef = useRef(null);
 
-  return (
-    <Draggable
-        nodeRef={nodeRef}
-        position={{x: element.x, y: element.y}}
-        scale={zoomLevel}
-        onStart={onDragStart}
-        onDrag={onDrag}
-        onStop={onStop}
-    >
-      <Resizable
-          ref={nodeRef}
-          size={{ width: element.width, height: element.height }}
-          className="absolute"
-          onResizeStop={(e, dir, ref, d) => onUpdate(element.id, { width: snapToGrid(element.width + d.width), height: snapToGrid(element.height + d.height) })}
-          onClick={(e) => onSelect(element.id, e)}
-          enable={{
-            top: isSelected, right: isSelected, bottom: isSelected, left: isSelected,
-            topRight: isSelected, bottomRight: isSelected, bottomLeft: isSelected, topLeft: isSelected,
-          }}
+    return (
+        <Draggable
+            nodeRef={nodeRef}
+            position={{ x: element.x, y: element.y }}
+            onStart={onDragStart}
+            onDrag={onDrag}
+            onStop={onStop}
         >
-        <div className={`handle w-full h-full cursor-move ${isSelected ? 'border-2 border-dashed border-primary' : ''}`}>
-            <PolicyElementComponent element={element} />
-        </div>
-      </Resizable>
-    </Draggable>
-  );
+            <Resizable
+                ref={nodeRef}
+                size={{ width: element.width, height: element.height }}
+                className="absolute"
+                onResizeStop={(e, dir, ref, d) => onUpdate(element.id, { width: snapToGrid(element.width + d.width), height: snapToGrid(element.height + d.height) })}
+                onClick={(e) => onSelect(element.id, e)}
+                enable={{
+                    top: isSelected, right: isSelected, bottom: isSelected, left: isSelected,
+                    topRight: isSelected, bottomRight: isSelected, bottomLeft: isSelected, topLeft: isSelected,
+                }}
+            >
+                <div className={`w-full h-full cursor-move ${isSelected ? 'border-2 border-dashed border-primary' : ''}`}>
+                    <PolicyElementComponent element={element} />
+                </div>
+            </Resizable>
+        </Draggable>
+    );
 };
 
 
@@ -357,11 +356,16 @@ export default function PolicyEditorPage() {
 
     // ----------- Element Management -----------
     const addElement = useCallback((tool: typeof toolboxItems[0]) => {
+        if (!canvasRef.current) return;
+        const canvasRect = canvasRef.current.getBoundingClientRect();
+        const centerX = canvasRect.width / 2;
+        const centerY = canvasRect.height / 2;
+
         let newElement: PolicyElement = {
             id: nanoid(),
             type: tool.type as any,
-            x: snapToGrid(paperDimensions.width / 2 - (tool.defaultWidth / 2)),
-            y: snapToGrid(paperDimensions.height / 2 - (tool.defaultHeight / 2)),
+            x: snapToGrid(centerX - tool.defaultWidth / 2),
+            y: snapToGrid(centerY - tool.defaultHeight / 2),
             width: tool.defaultWidth,
             height: tool.defaultHeight,
             content: tool.content,
@@ -380,7 +384,7 @@ export default function PolicyEditorPage() {
 
         setElements(prev => [...prev, newElement]);
         setSelectedIds([newElement.id]);
-    }, [elements.length, paperDimensions]);
+    }, [elements.length]);
 
     const handleUpdateElement = (id: string, updates: Partial<PolicyElement>) => {
         setElements(prev => prev.map(el => el.id === id ? { ...el, ...updates } : el));
@@ -445,12 +449,11 @@ export default function PolicyEditorPage() {
     };
 
     const handleDragStart = useCallback((e: DraggableEvent, data: DraggableData) => {
-        const draggableNode = data.node as HTMLElement;
-        if (!draggableNode) return false;
-
+        if (!data.node) return false;
+        
         setTimeout(() => setIsDragging(true), 0);
 
-        const elementId = draggableNode.parentElement?.id || '';
+        const elementId = data.node.parentElement?.id || '';
         
         if (!selectedIds.includes(elementId)) {
             setSelectedIds([elementId]);
@@ -468,9 +471,8 @@ export default function PolicyEditorPage() {
     }, [elements, selectedIds]);
 
     const handleDrag = useCallback((e: DraggableEvent, data: DraggableData) => {
-        const draggableNode = data.node as HTMLElement;
-        if (!draggableNode) return;
-        const elementId = draggableNode.parentElement?.id || '';
+        if (!data.node) return;
+        const elementId = data.node.parentElement?.id || '';
 
         const activeElementStartPos = dragStartPositions.current[elementId];
         if (!activeElementStartPos) return;
@@ -541,10 +543,9 @@ export default function PolicyEditorPage() {
     const handleStopDrag = useCallback((e: DraggableEvent, data: DraggableData) => {
         setTimeout(() => setIsDragging(false), 0);
         setSmartGuides({ x: [], y: [] });
-        const draggableNode = data.node as HTMLElement;
-        if (!draggableNode) return;
+        if (!data.node) return;
         
-        const elementId = draggableNode.parentElement?.id || '';
+        const elementId = data.node.parentElement?.id || '';
         const startPos = dragStartPositions.current[elementId];
 
         if(startPos) {
@@ -889,7 +890,6 @@ export default function PolicyEditorPage() {
                                       onDrag={handleDrag}
                                       onStop={handleStopDrag}
                                       isSelected={selectedIds.includes(el.id)}
-                                      zoomLevel={zoomLevel}
                                     />
                                 ))}
                             </div>
