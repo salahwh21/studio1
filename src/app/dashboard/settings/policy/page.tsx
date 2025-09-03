@@ -511,7 +511,7 @@ export default function PolicyEditorPage() {
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const canvasRef = useRef<HTMLDivElement>(null);
-  const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
+  const [templates, setTemplates] = useState<SavedTemplate[]>([]);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
@@ -548,34 +548,34 @@ export default function PolicyEditorPage() {
         customDimensions: { width: 210, height: 297 }, margins: { top: 10, right: 10, bottom: 10, left: 10 },
         elements: [
             { id: "1", type: "rect", x: 16, y: 16, width: 752, height: 112, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 2, backgroundColor: "#f3f4f6", opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
-            { id: "2", type: "text", x: 576, y: 24, width: 184, height: 40, zIndex: 1, content: "بوليصة شحن", fontSize: 24, fontWeight: "bold", color: "#000000", opacity: 1 },
-            { id: "3", type: "image", x: 24, y: 24, width: 144, height: 56, zIndex: 1, content: "{company_logo}", opacity: 1 },
-            { id: "4", type: "text", x: 24, y: 88, width: 200, height: 24, zIndex: 1, content: "اسم الشركة: {company_name}", fontSize: 12, color: "#000000", opacity: 1 },
-            { id: "5", type: "barcode", x: 584, y: 72, width: 176, height: 48, zIndex: 1, content: "{order_id}", opacity: 1 },
-            { id: "6", type: "rect", x: 16, y: 144, width: 376, height: 200, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1 },
-            { id: "7", type: "rect", x: 400, y: 144, width: 368, height: 200, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1 },
-            { id: "8", type: "text", x: 408, y: 152, width: 120, height: 24, zIndex: 1, content: "إلى (المستلم):", fontSize: 16, fontWeight: "bold", color: "#000000", opacity: 1 },
-            { id: "9", type: "text", x: 24, y: 152, width: 120, height: 24, zIndex: 1, content: "من (المرسل):", fontSize: 16, fontWeight: "bold", color: "#000000", opacity: 1 },
-            { id: "10", type: "text", x: 32, y: 184, width: 352, height: 152, zIndex: 1, content: "اسم المتجر: {merchant_name}\nهاتف: {merchant_phone}\nعنوان: {merchant_address}", fontSize: 14, color: "#000000", opacity: 1 },
-            { id: "11", type: "text", x: 408, y: 184, width: 352, height: 152, zIndex: 1, content: "اسم المستلم: {recipient_name}\nهاتف: {recipient_phone}\nعنوان: {recipient_address}", fontSize: 14, color: "#000000", opacity: 1 },
-            { id: "12", type: "rect", x: 16, y: 360, width: 752, height: 160, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1 },
-            { id: "13", type: "text", x: 608, y: 368, width: 152, height: 32, zIndex: 1, content: "ملخص الطلب", fontSize: 16, fontWeight: "bold", opacity: 1 },
-            { id: "14", type: "text", x: 48, y: 368, width: 150, height: 30, zIndex: 1, content: "قيمة التحصيل (COD)", fontSize: 18, fontWeight: "bold", opacity: 1 },
-            { id: "15", type: "text", x: 32, y: 408, width: 200, height: 60, zIndex: 1, content: "{cod_amount}", fontSize: 36, fontWeight: "bold", color: "#000000", opacity: 1 },
-            { id: "16", type: "text", x: 408, y: 400, width: 352, height: 112, zIndex: 1, content: "المنتجات: {order_items}\nالكمية: {items_count}\nملاحظات: {notes}", fontSize: 12, color: "#374151", opacity: 1 },
+            { id: "2", type: "text", x: 576, y: 24, width: 184, height: 40, zIndex: 1, content: "بوليصة شحن", fontSize: 24, fontWeight: "bold", color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "3", type: "image", x: 24, y: 24, width: 144, height: 56, zIndex: 1, content: "{company_logo}", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "4", type: "text", x: 24, y: 88, width: 200, height: 24, zIndex: 1, content: "اسم الشركة: {company_name}", fontSize: 12, color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "5", type: "barcode", x: 584, y: 72, width: 176, height: 48, zIndex: 1, content: "{order_id}", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "6", type: "rect", x: 16, y: 144, width: 376, height: 200, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
+            { id: "7", type: "rect", x: 400, y: 144, width: 368, height: 200, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
+            { id: "8", type: "text", x: 408, y: 152, width: 120, height: 24, zIndex: 1, content: "إلى (المستلم):", fontSize: 16, fontWeight: "bold", color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "9", type: "text", x: 24, y: 152, width: 120, height: 24, zIndex: 1, content: "من (المرسل):", fontSize: 16, fontWeight: "bold", color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "10", type: "text", x: 32, y: 184, width: 352, height: 152, zIndex: 1, content: "اسم المتجر: {merchant_name}\nهاتف: {merchant_phone}\nعنوان: {merchant_address}", fontSize: 14, color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "11", type: "text", x: 408, y: 184, width: 352, height: 152, zIndex: 1, content: "اسم المستلم: {recipient_name}\nهاتف: {recipient_phone}\nعنوان: {recipient_address}", fontSize: 14, color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "12", type: "rect", x: 16, y: 360, width: 752, height: 160, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
+            { id: "13", type: "text", x: 608, y: 368, width: 152, height: 32, zIndex: 1, content: "ملخص الطلب", fontSize: 16, fontWeight: "bold", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "14", type: "text", x: 48, y: 368, width: 150, height: 30, zIndex: 1, content: "قيمة التحصيل (COD)", fontSize: 18, fontWeight: "bold", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "15", type: "text", x: 32, y: 408, width: 200, height: 60, zIndex: 1, content: "{cod_amount}", fontSize: 36, fontWeight: "bold", color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "16", type: "text", x: 408, y: 400, width: 352, height: 112, zIndex: 1, content: "المنتجات: {order_items}\nالكمية: {items_count}\nملاحظات: {notes}", fontSize: 12, color: "#374151", opacity: 1, borderWidth: 0, borderColor: '#000000' },
         ]
     },
     "label_4x6_default": {
         id: "label_4x6_default", name: "بوليصة 4x6 عملية", paperSize: "label_4x6", isReadyMade: true,
         customDimensions: { width: 101.6, height: 152.4 }, margins: { top: 5, right: 5, bottom: 5, left: 5 },
         elements: [
-            { id: "1", type: "text", x: 16, y: 16, width: 184, height: 24, zIndex: 1, content: "من: {merchant_name}", fontSize: 14, fontWeight: "bold", color: "#000000", opacity: 1 },
-            { id: "2", type: "text", x: 16, y: 48, width: 352, height: 120, zIndex: 1, content: "إلى: {recipient_name}\n{recipient_address}\n{recipient_phone}", fontSize: 18, color: "#000000", opacity: 1 },
-            { id: "3", type: "barcode", x: 40, y: 176, width: 304, height: 80, zIndex: 1, content: "{order_id}", opacity: 1 },
-            { id: "4", type: "text", x: 16, y: 264, width: 352, height: 48, zIndex: 1, content: "المبلغ: {cod_amount}", fontSize: 28, fontWeight: "bold", color: "#000000", opacity: 1 },
-            { id: "5", type: "text", x: 16, y: 320, width: 352, height: 48, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: "normal", color: "#000000", opacity: 1 },
-            { id: "6", type: "text", x: 16, y: 376, width: 352, height: 24, zIndex: 1, content: "مرجع: {reference_id}", fontSize: 12, color: "#000000", opacity: 1 },
-            { id: "7", type: "image", x: 232, y: 8, width: 144, height: 40, zIndex: 1, content: "{company_logo}", opacity: 1 },
+            { id: "1", type: "text", x: 16, y: 16, width: 184, height: 24, zIndex: 1, content: "من: {merchant_name}", fontSize: 14, fontWeight: "bold", color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "2", type: "text", x: 16, y: 48, width: 352, height: 120, zIndex: 1, content: "إلى: {recipient_name}\n{recipient_address}\n{recipient_phone}", fontSize: 18, color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "3", type: "barcode", x: 40, y: 176, width: 304, height: 80, zIndex: 1, content: "{order_id}", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "4", type: "text", x: 16, y: 264, width: 352, height: 48, zIndex: 1, content: "المبلغ: {cod_amount}", fontSize: 28, fontWeight: "bold", color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "5", type: "text", x: 16, y: 320, width: 352, height: 48, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: "normal", color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "6", type: "text", x: 16, y: 376, width: 352, height: 24, zIndex: 1, content: "مرجع: {reference_id}", fontSize: 12, color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
+            { id: "7", type: "image", x: 232, y: 8, width: 144, height: 40, zIndex: 1, content: "{company_logo}", opacity: 1, borderWidth: 0, borderColor: '#000000' },
             { id: "8", type: "line", x: 16, y: 168, width: 352, height: 2, zIndex: 0, content: "", color: "#000000", opacity: 1 },
             { id: "9", type: "line", x: 16, y: 312, width: 352, height: 2, zIndex: 0, content: "", color: "#000000", opacity: 1 },
         ]
@@ -716,22 +716,21 @@ export default function PolicyEditorPage() {
         const storedTemplates = localStorage.getItem('policyTemplates');
         let parsedTemplates: SavedTemplate[] = storedTemplates ? JSON.parse(storedTemplates) : [];
 
-        // If no templates are stored, initialize with ready-made ones.
         if (parsedTemplates.length === 0) {
             parsedTemplates = Object.values(readyTemplates).map(t => ({...t, isReadyMade: false}));
             localStorage.setItem('policyTemplates', JSON.stringify(parsedTemplates));
             toast({ title: "أهلاً بك!", description: "تم تحميل مجموعة من القوالب الجاهزة لتبدأ بها." });
         }
-        setSavedTemplates(parsedTemplates);
-        // Load the first template by default if the canvas is empty
+        setTemplates(parsedTemplates);
+        
         if (elements.length === 0 && parsedTemplates.length > 0) {
             loadTemplate(parsedTemplates[0]);
         }
     } catch (error) {
         console.error("Failed to load templates from localStorage", error);
-        setSavedTemplates(Object.values(readyTemplates));
+        setTemplates(Object.values(readyTemplates));
     }
-}, [toast, elements.length]);
+}, []);
 
 
   useEffect(() => {
@@ -962,17 +961,17 @@ const handleDuplicate = () => {
     
     let updatedTemplates;
     if (editingTemplateId) { // Editing existing template
-        updatedTemplates = savedTemplates.map(t => 
+        updatedTemplates = templates.map(t => 
             t.id === editingTemplateId ? { ...t, ...currentTemplate, name: templateName } : t
         );
         toast({ title: 'تم التحديث', description: `تم تحديث قالب "${templateName}" بنجاح.` });
     } else { // Saving as new template
         const newTemplate = { ...currentTemplate, id: nanoid(), name: templateName, isReadyMade: false };
-        updatedTemplates = [...savedTemplates, newTemplate];
+        updatedTemplates = [...templates, newTemplate];
         toast({ title: 'تم الحفظ', description: `تم حفظ قالب "${templateName}" بنجاح.` });
     }
     
-    setSavedTemplates(updatedTemplates);
+    setTemplates(updatedTemplates);
     localStorage.setItem('policyTemplates', JSON.stringify(updatedTemplates));
     setIsSaveDialogOpen(false);
     setTemplateName('');
@@ -984,7 +983,7 @@ const handleDuplicate = () => {
     setPaperSize(template.paperSize);
     setCustomDimensions(template.customDimensions);
     setMargins(template.margins);
-    setEditingTemplateId(template.isReadyMade ? null : template.id); // Set for editing only if it's not a ready-made one
+    setEditingTemplateId(template.isReadyMade ? null : template.id);
     toast({ title: 'تم التحميل', description: `تم تحميل قالب "${template.name}".` });
   };
 
@@ -998,8 +997,8 @@ const handleDuplicate = () => {
 
   const confirmDeleteTemplate = () => {
     if (templateToDelete) {
-        const updatedTemplates = savedTemplates.filter(t => t.id !== templateToDelete.id);
-        setSavedTemplates(updatedTemplates);
+        const updatedTemplates = templates.filter(t => t.id !== templateToDelete.id);
+        setTemplates(updatedTemplates);
         localStorage.setItem('policyTemplates', JSON.stringify(updatedTemplates));
         toast({ title: 'تم الحذف', description: 'تم حذف القالب بنجاح.' });
         setTemplateToDelete(null);
@@ -1027,7 +1026,7 @@ const handleDuplicate = () => {
             const newTemplate = JSON.parse(text);
             // Basic validation
             if (newTemplate.name && Array.isArray(newTemplate.elements)) {
-                setSavedTemplates(prev => [...prev, {...newTemplate, id: nanoid(), isReadyMade: false}]);
+                setTemplates(prev => [...prev, {...newTemplate, id: nanoid(), isReadyMade: false}]);
                 toast({ title: "تم الاستيراد", description: `تم استيراد قالب "${newTemplate.name}".` });
             } else {
                 toast({ variant: 'destructive', title: "خطأ في الملف", description: "ملف القالب غير صالح." });
@@ -1231,57 +1230,43 @@ const handleDuplicate = () => {
                             <CardTitle>القوالب</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                             <div className="space-y-2">
-                                <Label>القوالب الجاهزة (للبدء)</Label>
-                                <div className="space-y-2">
-                                    {Object.values(readyTemplates).map(template => (
-                                        <Button key={template.id} variant="secondary" size="sm" className="w-full justify-start" onClick={() => loadTemplate(template)}>
+                            <div className='flex items-center gap-2 mb-2'>
+                                <Button size="sm" variant="secondary" onClick={() => handleOpenSaveDialog(null)}><Icon name="Save" className="ml-2 h-4 w-4"/> حفظ التصميم الحالي</Button>
+                                <Button size="sm" variant="outline" onClick={() => document.getElementById('import-template-input')?.click()}><Icon name="Upload" className="ml-2 h-4 w-4"/> استيراد</Button>
+                                <input id="import-template-input" type="file" accept=".json" className="hidden" onChange={importTemplate} />
+                            </div>
+                            {templates.length === 0 ? (
+                                <p className="text-sm text-muted-foreground text-center py-4">لا توجد قوالب.</p>
+                            ) : (
+                                <div className="space-y-2 pt-2">
+                                {templates.map(template => (
+                                    <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                        <Button variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
                                             {template.name}
                                         </Button>
-                                    ))}
-                                </div>
-                            </div>
-                            <Separator />
-                            <div className="space-y-2">
-                                <Label>القوالب المحفوظة</Label>
-                                <div className='flex items-center gap-2 mb-2'>
-                                    <Button size="sm" variant="secondary" onClick={() => handleOpenSaveDialog(null)}><Icon name="Save" className="ml-2 h-4 w-4"/> حفظ التصميم الحالي</Button>
-                                    <Button size="sm" variant="outline" onClick={() => document.getElementById('import-template-input')?.click()}><Icon name="Upload" className="ml-2 h-4 w-4"/> استيراد</Button>
-                                    <input id="import-template-input" type="file" accept=".json" className="hidden" onChange={importTemplate} />
-                                </div>
-                                {savedTemplates.filter(t => !t.isReadyMade).length === 0 ? (
-                                    <p className="text-sm text-muted-foreground text-center py-4">لا توجد قوالب محفوظة.</p>
-                                ) : (
-                                    <div className="space-y-2 pt-2">
-                                    {savedTemplates.filter(t => !t.isReadyMade).map(template => (
-                                        <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                                            <Button variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
-                                                {template.name}
-                                            </Button>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                                                        <MoreVertical className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onSelect={() => handleOpenSaveDialog(template)}>
-                                                        <Edit className="h-4 w-4 ml-2" /> تعديل
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={() => exportTemplate(template)}>
-                                                        <Download className="h-4 w-4 ml-2" /> تصدير
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onSelect={() => handleOpenDeleteDialog(template)} className="text-destructive">
-                                                        <Trash2 className="h-4 w-4 ml-2" /> حذف
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    ))}
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onSelect={() => handleOpenSaveDialog(template)}>
+                                                    <Edit className="h-4 w-4 ml-2" /> تعديل
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => exportTemplate(template)}>
+                                                    <Download className="h-4 w-4 ml-2" /> تصدير
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onSelect={() => handleOpenDeleteDialog(template)} className="text-destructive">
+                                                    <Trash2 className="h-4 w-4 ml-2" /> حذف
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
-                                )}
-                            </div>
+                                ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

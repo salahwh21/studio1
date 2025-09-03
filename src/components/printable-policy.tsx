@@ -34,8 +34,8 @@ const paperSizeClasses = {
 // This function resolves placeholder values like {order_id} with actual order data.
 const resolveContent = (content: string, order: Order, settings: any): string => {
     if (!content) return '';
-    const { formatCurrency } = settings;
-    const loginSettings = settings.settings.login;
+    const { formatCurrency, settings: appSettings } = settings;
+    const loginSettings = appSettings.login;
 
     return content
         .replace(/{order_id}/g, order.id)
