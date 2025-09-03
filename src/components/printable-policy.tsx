@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState, forwardRef, useImperativeHandle, useRef } from 'react';
+import React, { useState, forwardRef, useImperativeHandle, useRef, useMemo } from 'react';
 import type { Order } from '@/store/orders-store';
 import type { SavedTemplate, PolicyElement } from '@/contexts/SettingsContext';
 import { Button } from './ui/button';
