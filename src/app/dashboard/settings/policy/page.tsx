@@ -449,11 +449,12 @@ export default function PolicyEditorPage() {
     };
 
     const handleDragStart = useCallback((e: DraggableEvent, data: DraggableData) => {
-        if (!data.node) return false;
+        const node = data.node.parentElement; // The <Resizable> element
+        if (!node) return false;
         
         setTimeout(() => setIsDragging(true), 0);
 
-        const elementId = data.node.parentElement?.id || '';
+        const elementId = node.id;
         
         if (!selectedIds.includes(elementId)) {
             setSelectedIds([elementId]);
@@ -471,8 +472,9 @@ export default function PolicyEditorPage() {
     }, [elements, selectedIds]);
 
     const handleDrag = useCallback((e: DraggableEvent, data: DraggableData) => {
-        if (!data.node) return;
-        const elementId = data.node.parentElement?.id || '';
+        const node = data.node.parentElement;
+        if (!node) return;
+        const elementId = node.id;
 
         const activeElementStartPos = dragStartPositions.current[elementId];
         if (!activeElementStartPos) return;
@@ -543,9 +545,10 @@ export default function PolicyEditorPage() {
     const handleStopDrag = useCallback((e: DraggableEvent, data: DraggableData) => {
         setTimeout(() => setIsDragging(false), 0);
         setSmartGuides({ x: [], y: [] });
-        if (!data.node) return;
+        const node = data.node.parentElement;
+        if (!node) return;
         
-        const elementId = data.node.parentElement?.id || '';
+        const elementId = node.id;
         const startPos = dragStartPositions.current[elementId];
 
         if(startPos) {
@@ -873,24 +876,43 @@ export default function PolicyEditorPage() {
                                     backgroundImage: `linear-gradient(to right, #e5e5e5 1px, transparent 1px), linear-gradient(to bottom, #e5e5e5 1px, transparent 1px)`
                                 }} />
                                 {elements.map(el => (
-                                    <PolicyDraggableItem
-                                      key={el.id}
-                                      element={el}
-                                      onUpdate={handleUpdateElement}
-                                      onSelect={(id, e) => {
-                                        e.stopPropagation();
-                                        const event = e as React.MouseEvent;
-                                        if (event.metaKey || event.ctrlKey) {
-                                            setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-                                        } else {
-                                            setSelectedIds([id]);
-                                        }
-                                      }}
-                                      onDragStart={handleDragStart}
-                                      onDrag={handleDrag}
-                                      onStop={handleStopDrag}
-                                      isSelected={selectedIds.includes(el.id)}
-                                    />
+                                    <Draggable
+                                        key={el.id}
+                                        nodeRef={el.ref}
+                                        position={{ x: el.x, y: el.y }}
+                                        onStart={(e, data) => {
+                                            const node = el.ref?.current;
+                                            if (!node) return false;
+                                            handleDragStart(e, data);
+                                        }}
+                                        onDrag={handleDrag}
+                                        onStop={handleStopDrag}
+                                    >
+                                        <Resizable
+                                            ref={el.ref}
+                                            id={el.id}
+                                            size={{ width: el.width, height: el.height }}
+                                            className="absolute"
+                                            onResizeStop={(e, dir, ref, d) => handleUpdateElement(el.id, { width: snapToGrid(el.width + d.width), height: snapToGrid(el.height + d.height) })}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const event = e as React.MouseEvent;
+                                                if (event.metaKey || event.ctrlKey) {
+                                                    setSelectedIds(prev => prev.includes(el.id) ? prev.filter(i => i !== id) : [...prev, el.id]);
+                                                } else {
+                                                    setSelectedIds([el.id]);
+                                                }
+                                            }}
+                                            enable={{
+                                                top: selectedIds.includes(el.id), right: selectedIds.includes(el.id), bottom: selectedIds.includes(el.id), left: selectedIds.includes(el.id),
+                                                topRight: selectedIds.includes(el.id), bottomRight: selectedIds.includes(el.id), bottomLeft: selectedIds.includes(el.id), topLeft: selectedIds.includes(el.id),
+                                            }}
+                                        >
+                                            <div className={`w-full h-full cursor-move ${selectedIds.includes(el.id) ? 'border-2 border-dashed border-primary' : ''}`}>
+                                                <PolicyElementComponent element={el} />
+                                            </div>
+                                        </Resizable>
+                                    </Draggable>
                                 ))}
                             </div>
                         </div>
