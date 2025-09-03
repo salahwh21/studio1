@@ -1,5 +1,3 @@
-
-
 // PolicyEditorPage.tsx
 'use client';
 
@@ -42,6 +40,9 @@ import {
     AlertTriangle,
     Wand2,
     Printer,
+    Upload,
+    Download,
+    MoreVertical
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -49,6 +50,8 @@ import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
 import { Separator } from '@/components/ui/separator';
 import jsPDF from 'jspdf';
 import { PrintablePolicy } from '@/components/printable-policy';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 
 // ---------- Types ----------
@@ -88,6 +91,7 @@ type SavedTemplate = {
   paperSize: PolicySettings['paperSize'];
   customDimensions: { width: number; height: number };
   margins: { top: number; right: number; bottom: number; left: number };
+  isReadyMade?: boolean;
 };
 
 type DesignError = {
@@ -495,18 +499,21 @@ const PropertiesModal = ({ element, onUpdate, onDelete, open, onOpenChange }: {
 export default function PolicyEditorPage() {
   const { toast } = useToast();
   const context = useSettings();
-  const { settings, updatePolicySetting, isHydrated } = context || {};
+  const { isHydrated } = context || {};
   
-  const [elements, setElements] = useState<PolicyElement[]>(settings?.policy?.elements || []);
-  const [paperSize, setPaperSize] = useState<PolicySettings['paperSize']>(settings?.policy?.paperSize || 'custom');
-  const [customDimensions, setCustomDimensions] = useState(settings?.policy?.customDimensions || { width: 75, height: 45 });
-  const [margins, setMargins] = useState(settings?.policy?.margins || { top: 2, right: 2, bottom: 2, left: 2 });
+  const [elements, setElements] = useState<PolicyElement[]>([]);
+  const [paperSize, setPaperSize] = useState<PolicySettings['paperSize']>('custom');
+  const [customDimensions, setCustomDimensions] = useState({ width: 75, height: 45 });
+  const [margins, setMargins] = useState({ top: 2, right: 2, bottom: 2, left: 2 });
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [templateName, setTemplateName] = useState('');
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [templateToDelete, setTemplateToDelete] = useState<SavedTemplate | null>(null);
+
   const sensors = useSensors(useSensor(PointerSensor));
 
   const [modalElement, setModalElement] = useState<PolicyElement | null>(null);
@@ -534,7 +541,7 @@ export default function PolicyEditorPage() {
 
   const readyTemplates: Record<string, SavedTemplate> = {
     "a4_default": {
-        id: "a4_default", name: "A4 احترافي", paperSize: "a4",
+        id: "a4_default", name: "A4 احترافي", paperSize: "a4", isReadyMade: true,
         customDimensions: { width: 210, height: 297 }, margins: { top: 10, right: 10, bottom: 10, left: 10 },
         elements: [
             { id: "1", type: "rect", x: 16, y: 16, width: 752, height: 112, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 2, backgroundColor: "#f3f4f6", opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
@@ -556,7 +563,7 @@ export default function PolicyEditorPage() {
         ]
     },
     "label_4x6_default": {
-        id: "label_4x6_default", name: "بوليصة 4x6 عملية", paperSize: "label_4x6",
+        id: "label_4x6_default", name: "بوليصة 4x6 عملية", paperSize: "label_4x6", isReadyMade: true,
         customDimensions: { width: 101.6, height: 152.4 }, margins: { top: 5, right: 5, bottom: 5, left: 5 },
         elements: [
             { id: "1", type: "text", x: 16, y: 16, width: 184, height: 24, zIndex: 1, content: "من: {merchant_name}", fontSize: 14, fontWeight: "bold", color: "#000000", opacity: 1 },
@@ -571,7 +578,7 @@ export default function PolicyEditorPage() {
         ]
     },
     "label_45x75_default": {
-        id: "label_45x75_default", name: "بوليصة 75x45 (عرضية)", paperSize: "custom",
+        id: "label_45x75_default", name: "بوليصة 75x45 (عرضية)", paperSize: "custom", isReadyMade: true,
         customDimensions: { width: 75, height: 45 }, margins: { top: 2, right: 2, bottom: 2, left: 2 },
         elements: [
             { id: "el_brcd", type: "barcode", x: 128, y: 8, width: 136, height: 88, zIndex: 1, content: "{order_id}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
@@ -701,7 +708,7 @@ export default function PolicyEditorPage() {
     setDesignErrors(errors);
   }, [elements, paperDimensions, marginPx]);
 
-  useEffect(() => {
+ useEffect(() => {
     try {
         const storedTemplates = localStorage.getItem('policyTemplates');
         let parsedTemplates: SavedTemplate[] = storedTemplates ? JSON.parse(storedTemplates) : [];
@@ -713,12 +720,16 @@ export default function PolicyEditorPage() {
             toast({ title: "أهلاً بك!", description: "تم تحميل مجموعة من القوالب الجاهزة لتبدأ بها." });
         }
         setSavedTemplates(parsedTemplates);
+        // Load the first template by default if the canvas is empty
+        if (elements.length === 0 && parsedTemplates.length > 0) {
+            loadTemplate(parsedTemplates[0]);
+        }
     } catch (error) {
         console.error("Failed to load templates from localStorage", error);
-        // Fallback to ready templates if localStorage is corrupt
         setSavedTemplates(Object.values(readyTemplates));
     }
-  }, [toast]);
+}, [toast, elements.length]);
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -922,27 +933,46 @@ const handleDuplicate = () => {
 };
 
 
+  const handleOpenSaveDialog = (templateToEdit: SavedTemplate | null = null) => {
+    if (templateToEdit) {
+        setTemplateName(templateToEdit.name);
+        setEditingTemplateId(templateToEdit.id);
+    } else {
+        setTemplateName('');
+        setEditingTemplateId(null);
+    }
+    setIsSaveDialogOpen(true);
+  };
+  
   const handleConfirmSave = () => {
     if (!templateName) {
       toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء إدخال اسم للقالب.' });
       return;
     }
-    const currentTemplate: Omit<SavedTemplate, 'id' | 'name'> = {
+    const currentTemplate: Omit<SavedTemplate, 'id' | 'name' | 'isReadyMade'> = {
         elements,
         paperSize: paperSize,
         customDimensions,
         margins,
     };
     
-    const newTemplate = { ...currentTemplate, id: nanoid(), name: templateName };
-    const updatedTemplates = [...savedTemplates, newTemplate];
+    let updatedTemplates;
+    if (editingTemplateId) { // Editing existing template
+        updatedTemplates = savedTemplates.map(t => 
+            t.id === editingTemplateId ? { ...currentTemplate, id: t.id, name: templateName } : t
+        );
+        toast({ title: 'تم التحديث', description: `تم تحديث قالب "${templateName}" بنجاح.` });
+    } else { // Saving as new template
+        const newTemplate = { ...currentTemplate, id: nanoid(), name: templateName };
+        updatedTemplates = [...savedTemplates, newTemplate];
+        toast({ title: 'تم الحفظ', description: `تم حفظ قالب "${templateName}" بنجاح.` });
+    }
     
     setSavedTemplates(updatedTemplates);
     localStorage.setItem('policyTemplates', JSON.stringify(updatedTemplates));
-    
-    toast({ title: 'تم الحفظ', description: `تم حفظ قالب "${templateName}" بنجاح.` });
     setIsSaveDialogOpen(false);
     setTemplateName('');
+    setEditingTemplateId(null);
   };
   
   const loadTemplate = (template: SavedTemplate) => {
@@ -950,15 +980,28 @@ const handleDuplicate = () => {
     setPaperSize(template.paperSize);
     setCustomDimensions(template.customDimensions);
     setMargins(template.margins);
+    setEditingTemplateId(template.isReadyMade ? null : template.id); // Set for editing only if it's not a ready-made one
     toast({ title: 'تم التحميل', description: `تم تحميل قالب "${template.name}".` });
   };
 
-  const deleteTemplate = (id: string) => {
-    const updatedTemplates = savedTemplates.filter(t => t.id !== id);
-    setSavedTemplates(updatedTemplates);
-    localStorage.setItem('policyTemplates', JSON.stringify(updatedTemplates));
-    toast({ title: 'تم الحذف', description: 'تم حذف القالب بنجاح.' });
+  const handleOpenDeleteDialog = (template: SavedTemplate) => {
+    if (template.isReadyMade) {
+        toast({ variant: 'destructive', title: 'خطأ', description: 'لا يمكن حذف القوالب الجاهزة.'});
+        return;
+    }
+    setTemplateToDelete(template);
+  }
+
+  const confirmDeleteTemplate = () => {
+    if (templateToDelete) {
+        const updatedTemplates = savedTemplates.filter(t => t.id !== templateToDelete.id);
+        setSavedTemplates(updatedTemplates);
+        localStorage.setItem('policyTemplates', JSON.stringify(updatedTemplates));
+        toast({ title: 'تم الحذف', description: 'تم حذف القالب بنجاح.' });
+        setTemplateToDelete(null);
+    }
   };
+  
   
   const exportTemplate = (template: SavedTemplate) => {
     const dataStr = JSON.stringify(template, null, 2);
@@ -1029,9 +1072,9 @@ const handleDuplicate = () => {
         <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
             <DialogContent>
                 <DialogHeader>
-                <DialogTitle>حفظ قالب البوليصة</DialogTitle>
+                <DialogTitle>{editingTemplateId ? 'تحديث القالب' : 'حفظ قالب جديد'}</DialogTitle>
                 <DialogDescription>
-                    أدخل اسمًا مميزًا لهذا القالب ليتم حفظه للاستخدام المستقبلي.
+                    أدخل اسمًا مميزًا لهذا القالب.
                 </DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
@@ -1040,10 +1083,25 @@ const handleDuplicate = () => {
                 </div>
                 <DialogFooter>
                     <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
-                    <Button onClick={handleConfirmSave}>حفظ القالب</Button>
+                    <Button onClick={handleConfirmSave}>{editingTemplateId ? 'تحديث القالب' : 'حفظ القالب'}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+
+        <AlertDialog open={!!templateToDelete} onOpenChange={() => setTemplateToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        هل أنت متأكد من حذف قالب "{templateToDelete?.name}"؟ لا يمكن التراجع عن هذا الإجراء.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                    <AlertDialogAction onClick={confirmDeleteTemplate} className="bg-destructive hover:bg-destructive/90">حذف</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
         
         <Dialog open={isPrintSampleDialogOpen} onOpenChange={setIsPrintSampleDialogOpen}>
             <DialogContent className="max-w-4xl">
@@ -1083,7 +1141,7 @@ const handleDuplicate = () => {
                     <Button variant="outline" onClick={handleSmartLayout}>
                         <Wand2 className="ml-2 h-4 w-4" /> المساعدة الذكية
                     </Button>
-                    <Button onClick={() => setIsSaveDialogOpen(true)}><Save className="ml-2 h-4 w-4" />حفظ القالب الحالي</Button>
+                    <Button onClick={() => handleOpenSaveDialog(null)}><Save className="ml-2 h-4 w-4" />حفظ كقالب جديد</Button>
                     <Button variant="outline" size="icon" asChild>
                         <Link href="/dashboard/settings/general">
                             <Icon name="ArrowLeft" className="h-4 w-4" />
@@ -1167,48 +1225,49 @@ const handleDuplicate = () => {
                      <Card>
                         <CardHeader>
                             <CardTitle>القوالب</CardTitle>
+                             <CardDescription>
+                                القوالب التي تظهر هنا هي التي يمكنك الاختيار منها عند طباعة الطلبات.
+                            </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                             <div>
-                                <h4 className="font-semibold text-sm mb-2 text-primary">قوالب جاهزة</h4>
-                                <div className='flex flex-col items-start'>
-                                    {Object.values(readyTemplates).map(template => (
-                                        <Button key={template.id} variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
-                                            {template.name}
+                            <div className='flex items-center gap-2 mb-2'>
+                                <Button size="sm" variant="secondary" onClick={() => handleOpenSaveDialog(null)}><Icon name="Save" className="ml-2 h-4 w-4"/> حفظ التصميم الحالي</Button>
+                                <Button size="sm" variant="outline" onClick={() => document.getElementById('import-template-input')?.click()}><Icon name="Upload" className="ml-2 h-4 w-4"/> استيراد</Button>
+                                <input id="import-template-input" type="file" accept=".json" className="hidden" onChange={importTemplate} />
+                            </div>
+                            <Separator />
+                            {savedTemplates.length === 0 ? (
+                                <p className="text-sm text-muted-foreground text-center py-4">لا توجد قوالب.</p>
+                            ) : (
+                                <div className="space-y-2 pt-2">
+                                {savedTemplates.map(template => (
+                                    <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                        <Button variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
+                                            {template.name} {template.isReadyMade && '(جاهز)'}
                                         </Button>
-                                    ))}
-                                </div>
-                             </div>
-                             <Separator />
-                             <div>
-                                <h4 className="font-semibold text-sm mb-2">القوالب المحفوظة</h4>
-                                <div className='flex items-center gap-2 mb-2'>
-                                    <Button size="sm" variant="outline" onClick={() => setIsSaveDialogOpen(true)}><Icon name="Save" className="ml-2 h-4 w-4"/> حفظ كقالب جديد</Button>
-                                    <Button size="sm" variant="outline" onClick={() => document.getElementById('import-template-input')?.click()}><Icon name="Upload" className="ml-2 h-4 w-4"/> استيراد</Button>
-                                    <input id="import-template-input" type="file" accept=".json" className="hidden" onChange={importTemplate} />
-                                </div>
-                                {savedTemplates.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground text-center py-4">لا توجد قوالب محفوظة.</p>
-                                ) : (
-                                    <div className="space-y-2 pt-2">
-                                    {savedTemplates.map(template => (
-                                        <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                                            <Button variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
-                                                {template.name}
-                                            </Button>
-                                            <div className='flex items-center'>
-                                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => exportTemplate(template)}>
-                                                    <Icon name="Download" className="h-4 w-4" />
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                    <MoreVertical className="h-4 w-4" />
                                                 </Button>
-                                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteTemplate(template.id)}>
-                                                    <Icon name="Trash2" className="h-4 w-4 text-destructive" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onSelect={() => handleOpenSaveDialog(template)} disabled={template.isReadyMade}>
+                                                    <Save className="h-4 w-4 ml-2" /> حفظ التعديلات
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => exportTemplate(template)}>
+                                                    <Download className="h-4 w-4 ml-2" /> تصدير
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onSelect={() => handleOpenDeleteDialog(template)} className="text-destructive" disabled={template.isReadyMade}>
+                                                    <Trash2 className="h-4 w-4 ml-2" /> حذف
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
-                                )}
-                             </div>
+                                ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

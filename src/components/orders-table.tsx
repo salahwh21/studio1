@@ -404,9 +404,10 @@ export function OrdersTable() {
             return;
         }
         const storedTemplates = localStorage.getItem('policyTemplates');
-        const templates = storedTemplates ? JSON.parse(storedTemplates) : [];
+        const templates: SavedTemplate[] = storedTemplates ? JSON.parse(storedTemplates) : [];
+
         if (templates.length === 0) {
-            toast({ variant: 'destructive', title: 'لا توجد قوالب', description: 'الرجاء إنشاء وحفظ قالب واحد على الأقل في صفحة إعدادات البوليصة.' });
+            toast({ variant: 'destructive', title: 'لا توجد قوالب', description: 'الرجاء إنشاء أو حفظ قالب واحد على الأقل في صفحة إعدادات البوليصة.' });
             return;
         }
         setSavedTemplates(templates);
