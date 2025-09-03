@@ -110,7 +110,7 @@ const RenderedElement = ({ el, order, settings }: { el: any, order: Order, setti
     }
     if (el.type === 'barcode') {
         const barcodeValue = resolveContent(el.content, order, settings);
-        return <div style={{ ...baseStyle, backgroundColor: '#ffffff' }}><Barcode value={barcodeValue} height={el.height - 10} width={1.5} displayValue={false} margin={0} /></div>
+        return <div style={{ ...baseStyle, backgroundColor: '#ffffff' }}><Barcode value={barcodeValue} height={el.height - 10} width={1.5} displayValue={false} margin={0} renderer="canvas" /></div>
     }
     if (el.type === 'table') {
         const { headers = [], tableData = [], borderColor = '#000000', fontSize = 12, fontWeight = 'bold' } = el;
@@ -204,13 +204,6 @@ export const PrintablePolicy = forwardRef<
             format: [mmToPt(paperDimensions.width), mmToPt(paperDimensions.height)]
         });
         
-        try {
-            // await pdf.addFont('/Tajawal-Regular.ttf', 'Tajawal', 'normal');
-            // pdf.setFont('Tajawal');
-        } catch(e) {
-            console.warn("Could not load custom font for PDF. Arabic text might not render correctly.", e);
-        }
-
         for (let i = 0; i < displayOrders.length; i++) {
             const order = displayOrders[i];
             if (i > 0) {
