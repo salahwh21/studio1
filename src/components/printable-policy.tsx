@@ -103,7 +103,10 @@ const RenderedElement = ({ el, order, settings }: { el: any, order: Order, setti
                         crossOrigin="anonymous"
                     />
                 ) : (
-                    <Icon name="Image" className="h-8 w-8 text-muted-foreground" isPrinting />
+                    // Replaced Icon with a simple div to avoid SVG issues with jsPDF
+                    <div className="h-full w-full bg-muted flex items-center justify-center text-muted-foreground text-xs">
+                        Image
+                    </div>
                 )}
             </div>
         );
@@ -215,13 +218,19 @@ export const PrintablePolicy = forwardRef<
                 continue;
             }
 
-            await pdf.html(policyHtmlElement, {
-                callback: (doc) => {},
-                x: 0,
-                y: 0,
-                width: mmToPt(paperDimensions.width),
-                windowWidth: policyHtmlElement.scrollWidth,
-            });
+            try {
+                await pdf.html(policyHtmlElement, {
+                    callback: (doc) => {},
+                    x: 0,
+                    y: 0,
+                    width: mmToPt(paperDimensions.width),
+                    windowWidth: policyHtmlElement.scrollWidth,
+                });
+            } catch(e) {
+                console.error("Error generating PDF page:", e);
+                toast({ variant: 'destructive', title: 'خطأ في الطباعة', description: 'حدث خطأ أثناء توليد ملف PDF.' });
+                return;
+            }
         }
         
         if (displayOrders.length > 0) {
