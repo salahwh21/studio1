@@ -61,7 +61,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 import { useOrdersStore, type Order } from '@/store/orders-store';
-import { useSettings, PolicySettings, PolicyElement } from '@/contexts/SettingsContext';
+import { useSettings, PolicySettings, PolicyElement, readyTemplates } from '@/contexts/SettingsContext';
 
 
 // ShadCN UI Components
@@ -403,15 +403,24 @@ export function OrdersTable() {
             toast({ variant: "destructive", title: "لا توجد طلبات محددة", description: "الرجاء تحديد طلب واحد على الأقل للطباعة." });
             return;
         }
-        const storedTemplates = localStorage.getItem('policyTemplates');
-        const templates: SavedTemplate[] = storedTemplates ? JSON.parse(storedTemplates) : [];
-
-        if (templates.length === 0) {
-            toast({ variant: 'destructive', title: 'لا توجد قوالب', description: 'الرجاء إنشاء أو حفظ قالب واحد على الأقل في صفحة إعدادات البوليصة.' });
-            return;
+        
+        let templates: SavedTemplate[] = [];
+        try {
+            const storedTemplates = localStorage.getItem('policyTemplates');
+            if (storedTemplates) {
+                templates = JSON.parse(storedTemplates);
+            }
+        } catch (e) {
+             console.error("Error parsing templates from localStorage", e);
         }
+
+        // If no templates are stored, use the default ready-made ones
+        if (templates.length === 0) {
+            templates = Object.values(readyTemplates);
+        }
+        
         setSavedTemplates(templates);
-        setSelectedTemplate(templates[0]); // Select the first one by default
+        setSelectedTemplate(templates[0]);
         setIsPrintDialogOpen(true);
     };
 

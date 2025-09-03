@@ -31,7 +31,7 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStatusesStore } from '@/store/statuses-store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useSettings, PolicySettings, PolicyElement } from '@/contexts/SettingsContext';
+import { useSettings, PolicySettings, PolicyElement, readyTemplates } from '@/contexts/SettingsContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
@@ -243,12 +243,20 @@ const AddOrderPage = () => {
         toast({ variant: "destructive", title: "لا توجد طلبات محددة", description: "الرجاء تحديد طلب واحد على الأقل للطباعة." });
         return;
     }
-    const storedTemplates = localStorage.getItem('policyTemplates');
-    const templates = storedTemplates ? JSON.parse(storedTemplates) : [];
+    
+    let templates: SavedTemplate[] = [];
+    try {
+        const storedTemplates = localStorage.getItem('policyTemplates');
+        if (storedTemplates) {
+            templates = JSON.parse(storedTemplates);
+        }
+    } catch (e) { console.error("Error parsing templates from localStorage", e); }
+
+    // If no templates are stored, use the default ready-made ones
     if (templates.length === 0) {
-        toast({ variant: 'destructive', title: 'لا توجد قوالب', description: 'الرجاء إنشاء وحفظ قالب واحد على الأقل في صفحة إعدادات البوليصة.' });
-        return;
+        templates = Object.values(readyTemplates);
     }
+    
     setSavedTemplates(templates);
     setSelectedTemplate(templates[0]);
     setIsPrintDialogOpen(true);
