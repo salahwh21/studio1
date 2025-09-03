@@ -497,9 +497,12 @@ export default function PolicyEditorPage() {
   const { toast } = useToast();
   const context = useSettings();
   const { settings, updatePolicySetting, isHydrated } = context || {};
-  const { paperSize = 'custom', customDimensions = { width: 75, height: 45 }, margins = { top: 2, right: 2, bottom: 2, left: 2 } } = settings?.policy || {};
   
-  const [elements, setElements] = useState<PolicyElement[]>([]);
+  const [elements, setElements] = useState<PolicyElement[]>(settings?.policy?.elements || []);
+  const [paperSize, setPaperSize] = useState<PolicySettings['paperSize']>(settings?.policy?.paperSize || 'custom');
+  const [customDimensions, setCustomDimensions] = useState(settings?.policy?.customDimensions || { width: 75, height: 45 });
+  const [margins, setMargins] = useState(settings?.policy?.margins || { top: 2, right: 2, bottom: 2, left: 2 });
+  
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
@@ -530,7 +533,7 @@ export default function PolicyEditorPage() {
     left: mmToPx(margins.left),
   }), [margins]);
 
-  const handleSmartLayout = () => {
+ const handleSmartLayout = () => {
     if (elements.length === 0) {
       toast({ variant: "destructive", title: "لا توجد عناصر", description: "الرجاء إضافة بعض العناصر أولاً ليقوم الذكاء الاصطناعي بتنسيقها."});
       return;
@@ -541,7 +544,7 @@ export default function PolicyEditorPage() {
     const printableWidth = canvasWidth - left - right;
     const printableHeight = canvasHeight - top - bottom;
 
-     const categorized = {
+    const baseCategorized = {
         logo: elements.find(el => el.content.includes('logo')),
         companyName: elements.find(el => el.content.includes('company_name')),
         recipient: elements.find(el => el.content.includes('recipient')),
@@ -549,8 +552,14 @@ export default function PolicyEditorPage() {
         orderId: elements.find(el => el.content.includes('order_id') && el.type === 'text'),
         cod: elements.find(el => el.content.includes('cod_amount')),
         notes: elements.find(el => el.content.includes('notes')),
-        others: elements.filter(el => !Object.values(categorized).flat().find(catEl => catEl && catEl.id === el.id))
     };
+    
+    const categorizedIds = new Set(Object.values(baseCategorized).filter(Boolean).map(el => el!.id));
+    const categorized = {
+        ...baseCategorized,
+        others: elements.filter(el => !categorizedIds.has(el.id)),
+    }
+
 
     let yOffset = top;
     const newElements: PolicyElement[] = [];
@@ -653,6 +662,16 @@ export default function PolicyEditorPage() {
       if (storedTemplates) {
         setSavedTemplates(JSON.parse(storedTemplates));
       }
+      
+      const activeTemplate = localStorage.getItem('activePolicyTemplate');
+      if (activeTemplate) {
+          const template: SavedTemplate = JSON.parse(activeTemplate);
+          setElements(template.elements);
+          setPaperSize(template.paperSize);
+          setCustomDimensions(template.customDimensions);
+          setMargins(template.margins);
+      }
+
     } catch (error) {
       console.error("Failed to load templates from localStorage", error);
     }
@@ -686,7 +705,7 @@ export default function PolicyEditorPage() {
                 newEl.x = Math.min(paperDimensions.width - newEl.width, newEl.x + step);
                 break;
             }
-            return newEl;
+            return {...newEl, x: snapToGrid(newEl.x), y: snapToGrid(newEl.y)};
           }
           return el;
         })
@@ -865,29 +884,43 @@ const handleDuplicate = () => {
       toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء إدخال اسم للقالب.' });
       return;
     }
-    const newTemplate: SavedTemplate = {
-      id: nanoid(),
-      name: templateName,
-      elements,
-      paperSize: paperSize,
-      customDimensions,
-      margins,
+    const currentTemplate: Omit<SavedTemplate, 'id' | 'name'> = {
+        elements,
+        paperSize: paperSize,
+        customDimensions,
+        margins,
     };
+    
+    const newTemplate = { ...currentTemplate, id: nanoid(), name: templateName };
     const updatedTemplates = [...savedTemplates, newTemplate];
+    
     setSavedTemplates(updatedTemplates);
     localStorage.setItem('policyTemplates', JSON.stringify(updatedTemplates));
+    localStorage.setItem('activePolicyTemplate', JSON.stringify(newTemplate)); // Also save as active
+    
     toast({ title: 'تم الحفظ', description: `تم حفظ قالب "${templateName}" بنجاح.` });
     setIsSaveDialogOpen(false);
     setTemplateName('');
   };
+  
+  const handleSaveActiveTemplate = () => {
+     const activeTemplate: SavedTemplate = {
+        id: 'active_template',
+        name: 'Active Template',
+        elements,
+        paperSize: paperSize,
+        customDimensions,
+        margins,
+    };
+    localStorage.setItem('activePolicyTemplate', JSON.stringify(activeTemplate));
+    toast({ title: 'تم الحفظ', description: 'تم حفظ القالب الحالي كقالب نشط للطباعة.' });
+  }
 
   const loadTemplate = (template: SavedTemplate) => {
     setElements(template.elements);
-    if(updatePolicySetting) {
-        updatePolicySetting('paperSize', template.paperSize);
-        updatePolicySetting('customDimensions', template.customDimensions);
-        updatePolicySetting('margins', template.margins);
-    }
+    setPaperSize(template.paperSize);
+    setCustomDimensions(template.customDimensions);
+    setMargins(template.margins);
     toast({ title: 'تم التحميل', description: `تم تحميل قالب "${template.name}".` });
   };
 
@@ -897,6 +930,39 @@ const handleDuplicate = () => {
     localStorage.setItem('policyTemplates', JSON.stringify(updatedTemplates));
     toast({ title: 'تم الحذف', description: 'تم حذف القالب بنجاح.' });
   };
+  
+  const exportTemplate = (template: SavedTemplate) => {
+    const dataStr = JSON.stringify(template, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', `${template.name}.json`);
+    linkElement.click();
+  }
+
+  const importTemplate = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const text = e.target?.result as string;
+            const newTemplate = JSON.parse(text);
+            // Basic validation
+            if (newTemplate.name && Array.isArray(newTemplate.elements)) {
+                setSavedTemplates(prev => [...prev, {...newTemplate, id: nanoid()}]);
+                toast({ title: "تم الاستيراد", description: `تم استيراد قالب "${newTemplate.name}".` });
+            } else {
+                toast({ variant: 'destructive', title: "خطأ في الملف", description: "ملف القالب غير صالح." });
+            }
+        } catch (error) {
+            toast({ variant: 'destructive', title: "خطأ", description: "لا يمكن قراءة ملف القالب." });
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  }
   
   const readyTemplates: Record<string, SavedTemplate> = {
     "a4_default": {
@@ -1022,7 +1088,7 @@ const handleDuplicate = () => {
                     <Button variant="outline" onClick={handleSmartLayout}>
                         <Wand2 className="ml-2 h-4 w-4" /> المساعدة الذكية
                     </Button>
-                    <Button onClick={() => setIsSaveDialogOpen(true)}><Save className="ml-2 h-4 w-4" />حفظ القالب</Button>
+                    <Button onClick={handleSaveActiveTemplate}><Save className="ml-2 h-4 w-4" />حفظ القالب النشط</Button>
                     <Button variant="outline" size="icon" asChild>
                         <Link href="/dashboard/settings/general">
                             <Icon name="ArrowLeft" className="h-4 w-4" />
@@ -1067,24 +1133,24 @@ const handleDuplicate = () => {
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
                                 <Label>حجم الورق</Label>
-                                <Select value={paperSize} onValueChange={(val) => updatePolicySetting && updatePolicySetting('paperSize', val as PolicySettings['paperSize'])}>
+                                <Select value={paperSize} onValueChange={(val) => setPaperSize(val as PolicySettings['paperSize'])}>
                                     <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                                     <SelectContent>{Object.entries(paperSizes).map(([key, { label }]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
                              {paperSize === 'custom' && (
                                 <div className="grid grid-cols-2 gap-2">
-                                    <div className="space-y-2"><Label>العرض (مم)</Label><Input type="number" value={customDimensions.width} onChange={e => updatePolicySetting && updatePolicySetting('customDimensions', {...customDimensions, width: parseInt(e.target.value, 10) || 0})} /></div>
-                                    <div className="space-y-2"><Label>الارتفاع (مم)</Label><Input type="number" value={customDimensions.height} onChange={e => updatePolicySetting && updatePolicySetting('customDimensions', {...customDimensions, height: parseInt(e.target.value, 10) || 0})} /></div>
+                                    <div className="space-y-2"><Label>العرض (مم)</Label><Input type="number" value={customDimensions.width} onChange={e => setCustomDimensions({...customDimensions, width: parseInt(e.target.value, 10) || 0})} /></div>
+                                    <div className="space-y-2"><Label>الارتفاع (مم)</Label><Input type="number" value={customDimensions.height} onChange={e => setCustomDimensions({...customDimensions, height: parseInt(e.target.value, 10) || 0})} /></div>
                                 </div>
                             )}
                              <div className="space-y-2">
                                 <Label>الهوامش (مم)</Label>
                                 <div className="grid grid-cols-2 gap-2">
-                                     <div className="space-y-2"><Label className="text-xs">الأعلى</Label><Input type="number" placeholder="أعلى" value={margins.top} onChange={e => updatePolicySetting && updatePolicySetting('margins', {...margins, top: parseInt(e.target.value, 10) || 0})}/></div>
-                                     <div className="space-y-2"><Label className="text-xs">الأسفل</Label><Input type="number" placeholder="أسفل" value={margins.bottom} onChange={e => updatePolicySetting && updatePolicySetting('margins', {...margins, bottom: parseInt(e.target.value, 10) || 0})}/></div>
-                                     <div className="space-y-2"><Label className="text-xs">اليمين</Label><Input type="number" placeholder="يمين" value={margins.right} onChange={e => updatePolicySetting && updatePolicySetting('margins', {...margins, right: parseInt(e.target.value, 10) || 0})}/></div>
-                                     <div className="space-y-2"><Label className="text-xs">اليسار</Label><Input type="number" placeholder="يسار" value={margins.left} onChange={e => updatePolicySetting && updatePolicySetting('margins', {...margins, left: parseInt(e.target.value, 10) || 0})}/></div>
+                                     <div className="space-y-2"><Label className="text-xs">الأعلى</Label><Input type="number" placeholder="أعلى" value={margins.top} onChange={e => setMargins({...margins, top: parseInt(e.target.value, 10) || 0})}/></div>
+                                     <div className="space-y-2"><Label className="text-xs">الأسفل</Label><Input type="number" placeholder="أسفل" value={margins.bottom} onChange={e => setMargins({...margins, bottom: parseInt(e.target.value, 10) || 0})}/></div>
+                                     <div className="space-y-2"><Label className="text-xs">اليمين</Label><Input type="number" placeholder="يمين" value={margins.right} onChange={e => setMargins({...margins, right: parseInt(e.target.value, 10) || 0})}/></div>
+                                     <div className="space-y-2"><Label className="text-xs">اليسار</Label><Input type="number" placeholder="يسار" value={margins.left} onChange={e => setMargins({...margins, left: parseInt(e.target.value, 10) || 0})}/></div>
                                 </div>
                             </div>
                         </CardContent>
@@ -1102,27 +1168,42 @@ const handleDuplicate = () => {
                         </Card>
                     )}
                      <Card>
-                        <CardHeader><CardTitle>القوالب</CardTitle></CardHeader>
+                        <CardHeader>
+                            <CardTitle>القوالب</CardTitle>
+                        </CardHeader>
                         <CardContent className="space-y-2">
                              <h4 className="font-semibold text-sm">قوالب جاهزة</h4>
-                             {Object.values(readyTemplates).map(template => (
-                                <Button key={template.id} variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
-                                    {template.name}
-                                </Button>
-                             ))}
-                             <h4 className="font-semibold text-sm pt-2 border-t">القوالب المحفوظة</h4>
-                            {savedTemplates.length === 0 ? (
-                                <p className="text-sm text-muted-foreground text-center">لا توجد قوالب محفوظة.</p>
-                            ) : (
-                                <div className="space-y-2">
-                                {savedTemplates.map(template => (
-                                    <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                                    <Button variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
+                             <div className='flex flex-col items-start'>
+                                {Object.values(readyTemplates).map(template => (
+                                    <Button key={template.id} variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
                                         {template.name}
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteTemplate(template.id)}>
-                                        <Icon name="Trash2" className="h-4 w-4 text-destructive" />
-                                    </Button>
+                                ))}
+                             </div>
+                             <Separator />
+                             <h4 className="font-semibold text-sm pt-2">القوالب المحفوظة</h4>
+                             <div className='flex items-center gap-2'>
+                                <Button size="sm" variant="outline" onClick={() => setIsSaveDialogOpen(true)}><Icon name="Save" className="ml-2 h-4 w-4"/> حفظ كقالب جديد</Button>
+                                <Button size="sm" variant="outline" onClick={() => document.getElementById('import-template-input')?.click()}><Icon name="Upload" className="ml-2 h-4 w-4"/> استيراد قالب</Button>
+                                <input id="import-template-input" type="file" accept=".json" className="hidden" onChange={importTemplate} />
+                             </div>
+                            {savedTemplates.length === 0 ? (
+                                <p className="text-sm text-muted-foreground text-center py-4">لا توجد قوالب محفوظة.</p>
+                            ) : (
+                                <div className="space-y-2 pt-2">
+                                {savedTemplates.map(template => (
+                                    <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                        <Button variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
+                                            {template.name}
+                                        </Button>
+                                        <div className='flex items-center'>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => exportTemplate(template)}>
+                                                <Icon name="Download" className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteTemplate(template.id)}>
+                                                <Icon name="Trash2" className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </div>
                                     </div>
                                 ))}
                                 </div>
