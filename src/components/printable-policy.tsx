@@ -2,16 +2,15 @@
 
 'use client';
 
-import React, { useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useRef, useImperativeHandle, forwardRef, useContext } from 'react';
 import type { Order } from '@/store/orders-store';
-import { useSettings, type PolicySettings, type PolicyElement } from '@/contexts/SettingsContext';
+import { useSettings, type PolicySettings, type PolicyElement, SettingsContext } from '@/contexts/SettingsContext';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 import Barcode from 'react-barcode';
 import Icon from './icon';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
-import { htmlToText } from 'html-to-text';
 import { Button } from './ui/button';
 
 type SavedTemplate = {
@@ -36,6 +35,8 @@ const paperSizeClasses = {
 const resolveContent = (content: string, order: Order, settings: any): string => {
     if (!content) return '';
     const { formatCurrency } = settings;
+    const loginSettings = settings.settings.login;
+
     return content
         .replace(/{order_id}/g, order.id)
         .replace(/{reference_id}/g, order.referenceNumber || '')
@@ -49,7 +50,8 @@ const resolveContent = (content: string, order: Order, settings: any): string =>
         .replace(/{items_count}/g, '3') // Replace with actual item count
         .replace(/{merchant_name}/g, order.merchant)
         .replace(/{merchant_phone}/g, '0780123456') // Placeholder
-        .replace(/{merchant_address}/g, 'Amman, Jordan'); // Placeholder
+        .replace(/{merchant_address}/g, 'Amman, Jordan') // Placeholder
+        .replace(/{company_name}/g, loginSettings.companyName || '');
 };
 
 
@@ -65,7 +67,7 @@ const RenderedElement = ({ el, order, settings, loginSettings }: { el: any, orde
         fontSize: `${el.fontSize ?? 14}px`,
         fontWeight: el.fontWeight ?? 'normal',
         color: el.type === 'line' ? 'transparent' : (el.color ?? '#000000'),
-        borderWidth: el.type === 'rect' || el.type === 'table' ? `${el.borderWidth ?? 1}px` : 0,
+        borderWidth: el.borderWidth ? `${el.borderWidth}px` : 0,
         borderColor: el.borderColor ?? 'transparent',
         borderStyle: 'solid',
         opacity: el.opacity ?? 1,
@@ -138,8 +140,11 @@ const RenderedElement = ({ el, order, settings, loginSettings }: { el: any, orde
     return null;
 }
 
-const Policy: React.FC<{ order: Order; template: SavedTemplate; loginSettings: any }> = ({ order, template, loginSettings }) => {
-    const context = useSettings();
+const Policy: React.FC<{ order: Order; template: SavedTemplate; }> = ({ order, template }) => {
+    const context = useContext(SettingsContext);
+    if (!context) return null;
+
+    const { settings } = context;
     const paperSizeKey = template.paperSize || 'custom';
     const customDimensions = template.customDimensions || { width: 75, height: 45 };
     
@@ -157,7 +162,7 @@ const Policy: React.FC<{ order: Order; template: SavedTemplate; loginSettings: a
     return (
         <div className="policy-sheet relative font-sans text-black bg-white shadow-lg mx-auto" style={style}>
             {(template.elements || []).sort((a, b) => a.zIndex - b.zIndex).map(el => (
-                <RenderedElement key={el.id} el={el} order={order} settings={context} loginSettings={loginSettings} />
+                <RenderedElement key={el.id} el={el} order={order} settings={context} loginSettings={settings.login} />
             ))}
         </div>
     );
@@ -173,7 +178,6 @@ export const PrintablePolicy = forwardRef<
     
     const loginSettings = context?.settings.login;
 
-    const pxToMm = (px: number) => px * (25.4 / 96);
     const mmToPt = (mm: number) => mm * (72 / 25.4);
 
     const handleExportPDF = async () => {
@@ -259,7 +263,7 @@ export const PrintablePolicy = forwardRef<
                 {displayOrders.map((order, index) => (
                     <React.Fragment key={order.id}>
                         <div id={`policy-sheet-${order.id}`}>
-                           <Policy order={order} template={template} loginSettings={loginSettings}/>
+                           <Policy order={order} template={template} />
                         </div>
                        {index < displayOrders.length - 1 && <div className="page-break"></div>}
                     </React.Fragment>

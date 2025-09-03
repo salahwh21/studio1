@@ -1,4 +1,5 @@
 
+
 // PolicyEditorPage.tsx
 'use client';
 
@@ -43,7 +44,9 @@ import {
     Printer,
     Upload,
     Download,
-    MoreVertical
+    MoreVertical,
+    ZoomIn,
+    ZoomOut
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -147,7 +150,7 @@ function ElementContent({ el }: { el: PolicyElement }) {
     fontSize: el.fontSize ?? 14,
     fontWeight: el.fontWeight ?? 'normal',
     color: el.type === 'line' ? 'transparent' : (el.color ?? '#111827'),
-    borderWidth: el.type === 'rect' ? el.borderWidth ?? 1 : 0,
+    borderWidth: el.borderWidth ? `${el.borderWidth}px` : 0,
     borderColor: el.borderColor ?? 'transparent',
     borderStyle: 'solid',
     opacity: el.opacity ?? 1,
@@ -244,13 +247,13 @@ const PropertiesPanel = ({ element, onUpdate, onDelete }: { element: PolicyEleme
                     <div className="space-y-2"><Label>الارتفاع</Label><Input type="number" value={element.height} onChange={(e) => handleNumericChange('height', e.target.value)} /></div>
                 </div>
                  {(element.type === 'text' || element.type === 'line') && <div className="space-y-2"><Label>اللون</Label><Input type="color" value={element.color ?? '#000000'} onChange={(e) => handleChange('color', e.target.value)} className="h-10 w-full p-1" /></div>}
-                {(element.type === 'rect') && <div className="space-y-2"><Label>لون التعبئة</Label><Input type="color" value={element.backgroundColor ?? '#ffffff'} onChange={(e) => handleChange('backgroundColor', e.target.value)} className="h-10 w-full p-1" /></div>}
-                 {(element.type === 'rect' || element.type === 'table') && (
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label>لون الحد</Label><Input type="color" value={element.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full p-1" /></div>
-                        <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={element.borderWidth ?? 1} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
-                    </div>
-                )}
+                 {(element.type === 'rect') && <div className="space-y-2"><Label>لون التعبئة</Label><Input type="color" value={element.backgroundColor ?? '#ffffff'} onChange={(e) => handleChange('backgroundColor', e.target.value)} className="h-10 w-full p-1" /></div>}
+                 
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2"><Label>لون الحد</Label><Input type="color" value={element.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full p-1" /></div>
+                    <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={element.borderWidth ?? 0} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
+                </div>
+
                 <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={element.opacity ?? 1} onChange={(e) => handleFloatChange('opacity', e.target.value)} /></div>
                 <Button variant="destructive" onClick={() => onDelete(element.id)} className="w-full"><Trash2 className="ml-2 h-4 w-4" /> حذف العنصر</Button>
             </CardContent>
@@ -475,13 +478,11 @@ const PropertiesModal = ({ element, onUpdate, onDelete, open, onOpenChange }: {
                     </div>
                     {(currentElement.type === 'text' || currentElement.type === 'line') && <div className="space-y-2"><Label>اللون</Label><Input type="color" value={currentElement.color ?? '#000000'} onChange={(e) => handleChange('color', e.target.value)} className="h-10 w-full p-1" /></div>}
                     {(currentElement.type === 'rect') && <div className="space-y-2"><Label>لون التعبئة</Label><Input type="color" value={currentElement.backgroundColor ?? '#ffffff'} onChange={(e) => handleChange('backgroundColor', e.target.value)} className="h-10 w-full p-1" /></div>}
-                    {(currentElement.type === 'rect' || currentElement.type === 'table') && (
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2"><Label>لون الحد</Label><Input type="color" value={currentElement.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full p-1" /></div>
-                            <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={element.borderWidth ?? 1} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
-                        </div>
-                    )}
-                    <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={element.opacity ?? 1} onChange={(e) => handleFloatChange('opacity', e.target.value)} /></div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label>لون الحد</Label><Input type="color" value={currentElement.borderColor ?? '#000000'} onChange={(e) => handleChange('borderColor', e.target.value)} className="h-10 w-full p-1" /></div>
+                        <div className="space-y-2"><Label>عرض الحد</Label><Input type="number" value={currentElement.borderWidth ?? 0} onChange={(e) => handleNumericChange('borderWidth', e.target.value)} /></div>
+                    </div>
+                    <div className="space-y-2"><Label>الشفافية</Label><Input type="number" step="0.1" min="0" max="1" value={currentElement.opacity ?? 1} onChange={(e) => handleFloatChange('opacity', e.target.value)} /></div>
                 </div>
                 <DialogFooter className="justify-between">
                     <Button variant="destructive" onClick={handleDeleteAndClose}><Trash2 className="ml-2 h-4 w-4" /> حذف</Button>
@@ -506,6 +507,7 @@ export default function PolicyEditorPage() {
   const [paperSize, setPaperSize] = useState<PolicySettings['paperSize']>('custom');
   const [customDimensions, setCustomDimensions] = useState({ width: 75, height: 45 });
   const [margins, setMargins] = useState({ top: 2, right: 2, bottom: 2, left: 2 });
+  const [zoomLevel, setZoomLevel] = useState(1);
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -716,7 +718,7 @@ export default function PolicyEditorPage() {
 
         // If no templates are stored, initialize with ready-made ones.
         if (parsedTemplates.length === 0) {
-            parsedTemplates = Object.values(readyTemplates);
+            parsedTemplates = Object.values(readyTemplates).map(t => ({...t, isReadyMade: false}));
             localStorage.setItem('policyTemplates', JSON.stringify(parsedTemplates));
             toast({ title: "أهلاً بك!", description: "تم تحميل مجموعة من القوالب الجاهزة لتبدأ بها." });
         }
@@ -790,7 +792,7 @@ export default function PolicyEditorPage() {
         fontWeight: 'normal',
         color: '#000000',
         borderColor: '#000000',
-        borderWidth: 1,
+        borderWidth: 0,
         opacity: 1,
         backgroundColor: '#ffffff'
     };
@@ -800,6 +802,7 @@ export default function PolicyEditorPage() {
         const colCount = 3;
         newElement = {
             ...newElement,
+            borderWidth: 1,
             rowCount,
             colCount,
             headers: Array.from({ length: colCount }, (_, i) => `رأس ${i + 1}`),
@@ -821,14 +824,14 @@ export default function PolicyEditorPage() {
     setElements((items) =>
         items.map((item) => {
             if (item.id === active.id) {
-                const newX = Math.max(0, Math.min(item.x + delta.x, canvasRect.width - item.width));
-                const newY = Math.max(0, Math.min(item.y + delta.y, canvasRect.height - item.height));
+                const newX = Math.max(0, Math.min(item.x + delta.x, (paperDimensions.width * zoomLevel) - item.width));
+                const newY = Math.max(0, Math.min(item.y + delta.y, (paperDimensions.height * zoomLevel) - item.height));
                 return { ...item, x: snapToGrid(newX), y: snapToGrid(newY) };
             }
             return item;
         })
     );
-  }, []);
+  }, [zoomLevel, paperDimensions]);
   
   const handleSelect = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -871,8 +874,8 @@ export default function PolicyEditorPage() {
               if(!selectedIds.includes(el.id)) return el;
               
               const newEl = {...el};
-              const canvasWidth = paperDimensions.width;
-              const canvasHeight = paperDimensions.height;
+              const canvasWidth = paperDimensions.width * zoomLevel;
+              const canvasHeight = paperDimensions.height * zoomLevel;
 
               switch (type) {
                   case 'left': newEl.x = 0; break;
@@ -960,7 +963,7 @@ const handleDuplicate = () => {
     let updatedTemplates;
     if (editingTemplateId) { // Editing existing template
         updatedTemplates = savedTemplates.map(t => 
-            t.id === editingTemplateId ? { ...currentTemplate, id: t.id, name: templateName } : t
+            t.id === editingTemplateId ? { ...t, ...currentTemplate, name: templateName } : t
         );
         toast({ title: 'تم التحديث', description: `تم تحديث قالب "${templateName}" بنجاح.` });
     } else { // Saving as new template
@@ -1024,7 +1027,7 @@ const handleDuplicate = () => {
             const newTemplate = JSON.parse(text);
             // Basic validation
             if (newTemplate.name && Array.isArray(newTemplate.elements)) {
-                setSavedTemplates(prev => [...prev, {...newTemplate, id: nanoid()}]);
+                setSavedTemplates(prev => [...prev, {...newTemplate, id: nanoid(), isReadyMade: false}]);
                 toast({ title: "تم الاستيراد", description: `تم استيراد قالب "${newTemplate.name}".` });
             } else {
                 toast({ variant: 'destructive', title: "خطأ في الملف", description: "ملف القالب غير صالح." });
@@ -1223,13 +1226,13 @@ const handleDuplicate = () => {
                              </CardContent>
                         </Card>
                     )}
-                     <Card>
+                    <Card>
                         <CardHeader>
                             <CardTitle>القوالب</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                              <div className="space-y-2">
-                                <Label>القوالب الجاهزة</Label>
+                                <Label>القوالب الجاهزة (للبدء)</Label>
                                 <div className="space-y-2">
                                     {Object.values(readyTemplates).map(template => (
                                         <Button key={template.id} variant="secondary" size="sm" className="w-full justify-start" onClick={() => loadTemplate(template)}>
@@ -1285,14 +1288,23 @@ const handleDuplicate = () => {
                 <div className="space-y-6 lg:col-span-3">
                      <div id="printable-policy-preview-area">
                         <Card>
-                            <CardHeader>
+                             <CardHeader className="flex items-center justify-between">
                                 <CardTitle>لوحة التصميم</CardTitle>
+                                <div className="flex items-center gap-2">
+                                    <Button variant="outline" size="icon" onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))}><ZoomOut className="h-4 w-4"/></Button>
+                                    <span className="text-sm font-semibold w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
+                                    <Button variant="outline" size="icon" onClick={() => setZoomLevel(z => Math.min(2, z + 0.1))}><ZoomIn className="h-4 w-4"/></Button>
+                                </div>
                             </CardHeader>
                             <CardContent className="flex-grow w-full bg-muted p-8 rounded-lg overflow-auto flex items-center justify-center min-h-[70vh]">
                                 <div
                                 ref={canvasRef}
-                                className="relative bg-white rounded-md shadow-inner"
-                                style={{ ...paperDimensions }}
+                                className="relative bg-white rounded-md shadow-inner origin-top-left"
+                                style={{ 
+                                    width: paperDimensions.width, 
+                                    height: paperDimensions.height,
+                                    transform: `scale(${zoomLevel})`
+                                }}
                                 onClick={(e) => { e.stopPropagation(); setSelectedIds([]);}}
                                 >
                                     <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
