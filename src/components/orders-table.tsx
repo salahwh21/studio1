@@ -588,7 +588,7 @@ export function OrdersTable() {
                     </div>
                 </div>
                  <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
+                    <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
                     <Button onClick={() => printablePolicyRef.current?.handleExportPDF()} className="w-full" disabled={!selectedTemplate}>
                         <Printer className="ml-2 h-4 w-4" /> تأكيد الطباعة
                     </Button>

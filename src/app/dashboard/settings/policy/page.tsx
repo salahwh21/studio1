@@ -1,3 +1,4 @@
+
 // PolicyEditorPage.tsx
 'use client';
 
@@ -963,7 +964,7 @@ const handleDuplicate = () => {
         );
         toast({ title: 'تم التحديث', description: `تم تحديث قالب "${templateName}" بنجاح.` });
     } else { // Saving as new template
-        const newTemplate = { ...currentTemplate, id: nanoid(), name: templateName };
+        const newTemplate = { ...currentTemplate, id: nanoid(), name: templateName, isReadyMade: false };
         updatedTemplates = [...savedTemplates, newTemplate];
         toast({ title: 'تم الحفظ', description: `تم حفظ قالب "${templateName}" بنجاح.` });
     }
@@ -1225,49 +1226,59 @@ const handleDuplicate = () => {
                      <Card>
                         <CardHeader>
                             <CardTitle>القوالب</CardTitle>
-                             <CardDescription>
-                                القوالب التي تظهر هنا هي التي يمكنك الاختيار منها عند طباعة الطلبات.
-                            </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className='flex items-center gap-2 mb-2'>
-                                <Button size="sm" variant="secondary" onClick={() => handleOpenSaveDialog(null)}><Icon name="Save" className="ml-2 h-4 w-4"/> حفظ التصميم الحالي</Button>
-                                <Button size="sm" variant="outline" onClick={() => document.getElementById('import-template-input')?.click()}><Icon name="Upload" className="ml-2 h-4 w-4"/> استيراد</Button>
-                                <input id="import-template-input" type="file" accept=".json" className="hidden" onChange={importTemplate} />
+                             <div className="space-y-2">
+                                <Label>القوالب الجاهزة</Label>
+                                <div className="space-y-2">
+                                    {Object.values(readyTemplates).map(template => (
+                                        <Button key={template.id} variant="secondary" size="sm" className="w-full justify-start" onClick={() => loadTemplate(template)}>
+                                            {template.name}
+                                        </Button>
+                                    ))}
+                                </div>
                             </div>
                             <Separator />
-                            {savedTemplates.length === 0 ? (
-                                <p className="text-sm text-muted-foreground text-center py-4">لا توجد قوالب.</p>
-                            ) : (
-                                <div className="space-y-2 pt-2">
-                                {savedTemplates.map(template => (
-                                    <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                                        <Button variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
-                                            {template.name} {template.isReadyMade && '(جاهز)'}
-                                        </Button>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-7 w-7">
-                                                    <MoreVertical className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onSelect={() => handleOpenSaveDialog(template)} disabled={template.isReadyMade}>
-                                                    <Save className="h-4 w-4 ml-2" /> حفظ التعديلات
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => exportTemplate(template)}>
-                                                    <Download className="h-4 w-4 ml-2" /> تصدير
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem onSelect={() => handleOpenDeleteDialog(template)} className="text-destructive" disabled={template.isReadyMade}>
-                                                    <Trash2 className="h-4 w-4 ml-2" /> حذف
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                ))}
+                            <div className="space-y-2">
+                                <Label>القوالب المحفوظة</Label>
+                                <div className='flex items-center gap-2 mb-2'>
+                                    <Button size="sm" variant="secondary" onClick={() => handleOpenSaveDialog(null)}><Icon name="Save" className="ml-2 h-4 w-4"/> حفظ التصميم الحالي</Button>
+                                    <Button size="sm" variant="outline" onClick={() => document.getElementById('import-template-input')?.click()}><Icon name="Upload" className="ml-2 h-4 w-4"/> استيراد</Button>
+                                    <input id="import-template-input" type="file" accept=".json" className="hidden" onChange={importTemplate} />
                                 </div>
-                            )}
+                                {savedTemplates.filter(t => !t.isReadyMade).length === 0 ? (
+                                    <p className="text-sm text-muted-foreground text-center py-4">لا توجد قوالب محفوظة.</p>
+                                ) : (
+                                    <div className="space-y-2 pt-2">
+                                    {savedTemplates.filter(t => !t.isReadyMade).map(template => (
+                                        <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                            <Button variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
+                                                {template.name}
+                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onSelect={() => handleOpenSaveDialog(template)}>
+                                                        <Edit className="h-4 w-4 ml-2" /> تعديل
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => exportTemplate(template)}>
+                                                        <Download className="h-4 w-4 ml-2" /> تصدير
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onSelect={() => handleOpenDeleteDialog(template)} className="text-destructive">
+                                                        <Trash2 className="h-4 w-4 ml-2" /> حذف
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    ))}
+                                    </div>
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
