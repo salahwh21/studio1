@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import Draggable, { type DraggableEvent, type DraggableData } from 'react-draggable';
-import { Resizable, type ResizableProps } from 're-resizable';
+import { Resizable } from 're-resizable';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -102,7 +102,7 @@ const PolicyElementComponent = forwardRef(({ element }: { element: PolicyElement
   const renderContent = () => {
     switch (element.type) {
       case 'text':
-        return <div className="p-1 w-full h-full" style={{ fontFamily: 'inherit', fontSize: `${element.fontSize}px`, fontWeight: element.fontWeight as any, color: element.color, textAlign: element.textAlign as any, fontStyle: element.fontStyle as any }}>{element.content}</div>;
+        return <div className="p-1 w-full h-full" style={{ fontFamily: 'inherit', fontSize: `${element.fontSize}px`, fontWeight: element.fontWeight as any, color: element.color, textAlign: element.textAlign as any, fontStyle: element.fontStyle as any, textDecoration: element.textDecoration as any }}>{element.content}</div>;
       case 'barcode':
         return <div className="p-1 w-full h-full flex flex-col items-center justify-center text-xs"> <ScanBarcode className="w-10 h-10" /> <p className='mt-1'>باركود: {element.content}</p> </div>;
       case 'image':
@@ -259,44 +259,39 @@ const PageSettingsPanel = ({ paperSize, customDimensions, margins, onPaperSizeCh
     </Card>
 );
 
-const PolicyDraggableItem = forwardRef<HTMLDivElement, {
+const PolicyDraggableItem = ({ element, onUpdate, onSelect, isSelected }: {
     element: PolicyElement;
     onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
     onSelect: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
-    onDragStart: (e: DraggableEvent, data: DraggableData) => void;
-    onDrag: (e: DraggableEvent, data: DraggableData) => void;
-    onStop: (e: DraggableEvent, data: DraggableData) => void;
     isSelected: boolean;
-    zoomLevel: number;
-    nodeRef: React.RefObject<HTMLDivElement>;
-}>(({ element, onUpdate, onSelect, onDragStart, onDrag, onStop, isSelected, zoomLevel, nodeRef }, ref) => {
+}) => {
+    const nodeRef = useRef<HTMLDivElement>(null);
+
     return (
         <Draggable
             nodeRef={nodeRef}
             position={{ x: element.x, y: element.y }}
-            onStart={onDragStart}
-            onDrag={onDrag}
-            onStop={onStop}
+            onStop={(e, data) => onUpdate(element.id, { x: data.x, y: data.y })}
+            handle=".handle"
         >
             <Resizable
                 ref={nodeRef}
                 size={{ width: element.width, height: element.height }}
-                className="absolute"
-                onResizeStop={(e, dir, ref, d) => onUpdate(element.id, { width: snapToGrid(element.width + d.width), height: snapToGrid(element.height + d.height) })}
+                onResizeStop={(e, dir, ref, d) => onUpdate(element.id, { width: element.width + d.width, height: element.height + d.height })}
                 onClick={(e) => onSelect(element.id, e)}
+                className="absolute"
                 enable={{
                     top: isSelected, right: isSelected, bottom: isSelected, left: isSelected,
                     topRight: isSelected, bottomRight: isSelected, bottomLeft: isSelected, topLeft: isSelected,
                 }}
             >
-                <div className={`w-full h-full cursor-move ${isSelected ? 'border-2 border-dashed border-primary' : ''}`}>
+                <div className={`handle w-full h-full cursor-move ${isSelected ? 'border-2 border-dashed border-primary' : ''}`}>
                     <PolicyElementComponent element={element} />
                 </div>
             </Resizable>
         </Draggable>
     );
-});
-PolicyDraggableItem.displayName = 'PolicyDraggableItem';
+};
 
 
 // --- Main Page Component ---
@@ -328,12 +323,6 @@ export default function PolicyEditorPage() {
     const [isPrintSampleDialogOpen, setIsPrintSampleDialogOpen] = useState(false);
     const printablePolicyRef = useRef<{ handleExport: () => void; handleDirectPrint: (order: any, type: 'zpl' | 'escpos') => Promise<void> }>(null);
     
-    const elementRefs = useMemo(() =>
-        elements.reduce((acc: Record<string, React.RefObject<HTMLDivElement>>, el) => {
-            acc[el.id] = React.createRef<HTMLDivElement>();
-            return acc;
-        }, {}), [elements]);
-
     // Load from localStorage
     useEffect(() => {
         if (isHydrated && policySettings) {
@@ -379,6 +368,7 @@ export default function PolicyEditorPage() {
             fontSize: 14,
             fontWeight: 'normal',
             fontStyle: 'normal',
+            textDecoration: 'none',
             color: '#000000',
             borderColor: '#000000',
             borderWidth: 0,
@@ -396,18 +386,6 @@ export default function PolicyEditorPage() {
         setElements(prev => prev.map(el => el.id === id ? { ...el, ...updates } : el));
     };
     
-    const handleBulkUpdateElements = (ids: string[], deltaX: number, deltaY: number) => {
-        setElements(prev => prev.map(el => {
-            if (ids.includes(el.id)) {
-                const startPos = dragStartPositions.current[el.id];
-                if (startPos) {
-                    return { ...el, x: startPos.x + deltaX, y: startPos.y + deltaY };
-                }
-            }
-            return el;
-        }));
-    };
-
     const handleDeleteElement = () => {
         if (selectedIds.length > 0) {
             setElements(p => p.filter(el => !selectedIds.includes(el.id)));
@@ -453,121 +431,8 @@ export default function PolicyEditorPage() {
             return sorted.map((el, i) => ({ ...el, zIndex: i }));
         });
     };
-
-    const handleDragStart = useCallback((e: DraggableEvent, data: DraggableData) => {
-        const node = data.node.parentElement;
-        if (!node) return false;
-        
-        setTimeout(() => setIsDragging(true), 0);
-        
-        const elementId = selectedIds.includes(data.node.id) ? data.node.id : (node.id || data.node.id);
-        
-        if (!selectedIds.includes(elementId)) {
-            setSelectedIds([elementId]);
-            dragStartPositions.current = {
-                [elementId]: { x: data.x, y: data.y },
-            };
-        } else {
-            dragStartPositions.current = elements
-                .filter(el => selectedIds.includes(el.id))
-                .reduce((acc, el) => {
-                    acc[el.id] = { x: el.x, y: el.y };
-                    return acc;
-                }, {} as Record<string, {x: number, y: number}>);
-        }
-    }, [elements, selectedIds]);
-
-    const handleDrag = useCallback((e: DraggableEvent, data: DraggableData) => {
-        const node = data.node.parentElement;
-        if (!node) return;
-        const elementId = selectedIds.includes(data.node.id) ? data.node.id : (node.id || data.node.id);
-
-        const activeElementStartPos = dragStartPositions.current[elementId];
-        if (!activeElementStartPos) return;
-
-        const deltaX = data.x - activeElementStartPos.x;
-        const deltaY = data.y - activeElementStartPos.y;
-
-        const otherElements = elements.filter(el => !selectedIds.includes(el.id));
-        const activeElements = elements.filter(el => selectedIds.includes(el.id));
-        
-        let finalDeltaX = deltaX;
-        let finalDeltaY = deltaY;
-        const newGuides = { x: new Set<number>(), y: new Set<number>() };
-
-        activeElements.forEach(activeEl => {
-            const currentX = dragStartPositions.current[activeEl.id].x + deltaX;
-            const currentY = dragStartPositions.current[activeEl.id].y + deltaY;
-            
-            const activePoints = {
-                x: [currentX, currentX + activeEl.width / 2, currentX + activeEl.width],
-                y: [currentY, currentY + activeEl.height / 2, currentY + activeEl.height],
-            };
-
-            const canvasSnapPoints = {
-                x: [mmToPx(margins.left), paperDimensions.width / 2, paperDimensions.width - mmToPx(margins.right)],
-                y: [mmToPx(margins.top), paperDimensions.height / 2, paperDimensions.height - mmToPx(margins.bottom)],
-            };
-            
-            for (let p_idx = 0; p_idx < 3; p_idx++) {
-                for (let c_idx = 0; c_idx < 3; c_idx++) {
-                    if (Math.abs(activePoints.x[p_idx] - canvasSnapPoints.x[c_idx]) < SNAP_THRESHOLD) {
-                        finalDeltaX = canvasSnapPoints.x[c_idx] - dragStartPositions.current[activeEl.id].x - (activePoints.x[p_idx] - currentX);
-                        newGuides.x.add(canvasSnapPoints.x[c_idx]);
-                    }
-                     if (Math.abs(activePoints.y[p_idx] - canvasSnapPoints.y[c_idx]) < SNAP_THRESHOLD) {
-                        finalDeltaY = canvasSnapPoints.y[c_idx] - dragStartPositions.current[activeEl.id].y - (activePoints.y[p_idx] - currentY);
-                        newGuides.y.add(canvasSnapPoints.y[c_idx]);
-                    }
-                }
-            }
-            
-            otherElements.forEach(otherEl => {
-                const otherPoints = {
-                    x: [otherEl.x, otherEl.x + otherEl.width / 2, otherEl.x + otherEl.width],
-                    y: [otherEl.y, otherEl.y + otherEl.height / 2, otherEl.y + otherEl.height],
-                };
-
-                for (let p_idx = 0; p_idx < 3; p_idx++) {
-                    for (let o_idx = 0; o_idx < 3; o_idx++) {
-                        if (Math.abs(activePoints.x[p_idx] - otherPoints.x[o_idx]) < SNAP_THRESHOLD) {
-                            finalDeltaX = otherPoints.x[o_idx] - dragStartPositions.current[activeEl.id].x - (activePoints.x[p_idx] - currentX);
-                            newGuides.x.add(otherPoints.x[o_idx]);
-                        }
-                        if (Math.abs(activePoints.y[p_idx] - otherPoints.y[o_idx]) < SNAP_THRESHOLD) {
-                           finalDeltaY = otherPoints.y[o_idx] - dragStartPositions.current[activeEl.id].y - (activePoints.y[p_idx] - currentY);
-                           newGuides.y.add(otherPoints.y[o_idx]);
-                        }
-                    }
-                }
-            });
-        });
-        
-        setSmartGuides({ x: Array.from(newGuides.x), y: Array.from(newGuides.y) });
-        handleBulkUpdateElements(selectedIds, snapToGrid(finalDeltaX), snapToGrid(finalDeltaY));
-
-    }, [elements, selectedIds, margins, paperDimensions]);
-
-    const handleStopDrag = useCallback((e: DraggableEvent, data: DraggableData) => {
-        setTimeout(() => setIsDragging(false), 0);
-        setSmartGuides({ x: [], y: [] });
-        const node = data.node.parentElement;
-        if (!node) return;
-        
-        const elementId = selectedIds.includes(data.node.id) ? data.node.id : (node.id || data.node.id);
-        const startPos = dragStartPositions.current[elementId];
-
-        if(startPos) {
-             const deltaX = data.x - startPos.x;
-             const deltaY = data.y - startPos.y;
-             handleBulkUpdateElements(selectedIds, snapToGrid(deltaX), snapToGrid(deltaY));
-        }
-        
-        dragStartPositions.current = {};
-    }, [selectedIds]);
     
     const selectedElement = useMemo(() => elements.find(el => el.id === selectedIds[0]), [elements, selectedIds]);
-    
 
     // --- Template Management ---
     const saveTemplatesToStorage = (newTemplates: SavedTemplate[]) => {
@@ -669,7 +534,7 @@ export default function PolicyEditorPage() {
       }), [elements, paperSize, customDimensions, margins]);
 
   return (
-    <div className="space-y-6" onClick={(e) => { if (!isDragging) { e.stopPropagation(); setSelectedIds([]); } }}>
+    <div className="space-y-6">
         <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
             <DialogContent>
                 <DialogHeader>
@@ -735,10 +600,10 @@ export default function PolicyEditorPage() {
                 </Button>
             </CardHeader>
         </Card>
-
+        
         <Card>
             <CardContent className="p-2">
-                <div className="flex items-center gap-4">
+                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                         <Label className="text-sm font-medium whitespace-nowrap">إضافة:</Label>
                         {toolboxItems.map(tool => (
@@ -885,7 +750,6 @@ export default function PolicyEditorPage() {
                                     <PolicyDraggableItem
                                         key={el.id}
                                         element={el}
-                                        nodeRef={elementRefs[el.id]}
                                         onUpdate={handleUpdateElement}
                                         onSelect={(id, e) => {
                                             e.stopPropagation();
@@ -896,11 +760,7 @@ export default function PolicyEditorPage() {
                                                 setSelectedIds([id]);
                                             }
                                         }}
-                                        onDragStart={handleDragStart}
-                                        onDrag={handleDrag}
-                                        onStop={handleStopDrag}
                                         isSelected={selectedIds.includes(el.id)}
-                                        zoomLevel={zoomLevel}
                                     />
                                 ))}
                             </div>
