@@ -33,11 +33,10 @@ import {
   ChevronDown,
   ChevronsDown,
   ArrowLeft,
+  Ruler,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { DndContext, PointerSensor, useSensor, useSensors, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
-import { useSortable } from '@dnd-kit/sortable';
-import { Resizable, type ResizeCallback, type DraggableData, type ResizableDelta } from 're-resizable';
+import Draggable, { type DraggableEvent, type DraggableData } from 'react-draggable';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,13 +54,14 @@ import { useOrdersStore } from '@/store/orders-store';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import Icon from '@/components/icon';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
+import { Resizable } from 're-resizable';
 
 // --- Constants & Helpers ---
 
 const GRID_SIZE = 5;
 const snapToGrid = (value: number) => Math.round(value / GRID_SIZE) * GRID_SIZE;
 const mmToPx = (mm: number) => (mm / 25.4) * 96;
+const RULER_WIDTH = 20;
 
 const paperSizes: Record<string, { width: number; height: number }> = {
   a4: { width: 210, height: 297 },
@@ -121,52 +121,6 @@ const PolicyElementComponent = ({ element }: { element: PolicyElement }) => {
       style={{ borderColor: element.borderColor, borderWidth: `${element.borderWidth}px`, borderRadius: `${element.borderRadius}px` }}
     >
       {renderContent()}
-    </div>
-  );
-};
-
-
-const SortableItem = ({ element, selected, onSelect, onUpdate }: {
-  element: PolicyElement;
-  selected: boolean;
-  onSelect: (id: string, e: React.MouseEvent) => void;
-  onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
-}) => {
-  const { attributes, listeners, setNodeRef, transform } = useSortable({ id: element.id, data: { element } });
-
-  const style: React.CSSProperties = {
-    position: 'absolute',
-    left: `${element.x}px`,
-    top: `${element.y}px`,
-    width: `${element.width}px`,
-    height: `${element.height}px`,
-    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    zIndex: element.zIndex,
-    cursor: 'move',
-  };
-
-  const handleResizeStop: ResizeCallback = (e, direction, ref, d) => {
-    onUpdate(element.id, {
-      width: snapToGrid(element.width + d.width),
-      height: snapToGrid(element.height + d.height),
-    });
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <Resizable
-        size={{ width: element.width, height: element.height }}
-        onResizeStop={handleResizeStop}
-        enable={{
-          top: selected, right: selected, bottom: selected, left: selected,
-          topRight: selected, bottomRight: selected, bottomLeft: selected, topLeft: selected,
-        }}
-        className={`absolute !inset-0 ${selected ? 'border-2 border-dashed border-primary z-50' : 'border-transparent'}`}
-        onClick={(e) => onSelect(element.id, e)}
-        onMouseDown={(e) => e.stopPropagation()} // Prevent drag listener from firing on resize handles
-      >
-        <PolicyElementComponent key={element.id} element={element} />
-      </Resizable>
     </div>
   );
 };
@@ -302,6 +256,23 @@ const PageSettingsPanel = ({ paperSize, customDimensions, margins, onPaperSizeCh
     </Card>
 );
 
+const Ruler = ({ orientation, size }: { orientation: 'horizontal' | 'vertical', size: number }) => {
+    const ticks = Array.from({ length: Math.floor(size / 50) + 1 }, (_, i) => i * 50);
+    return (
+        <div
+            className={`absolute bg-muted text-muted-foreground text-[10px] ${orientation === 'horizontal' ? 'w-full h-5 top-0 left-0 flex items-center' : 'h-full w-5 top-0 left-0 flex flex-col justify-start'}`}
+            style={orientation === 'horizontal' ? { top: -RULER_WIDTH } : { left: -RULER_WIDTH }}
+        >
+            {ticks.map(tick => (
+                <div key={tick} className="relative" style={orientation === 'horizontal' ? { left: tick } : { top: tick }}>
+                    <div className={`absolute ${orientation === 'horizontal' ? 'w-px h-2 bg-muted-foreground top-3' : 'h-px w-2 bg-muted-foreground left-3'}`}></div>
+                    <span className={`absolute ${orientation === 'horizontal' ? 'top-0 -translate-x-1/2' : 'left-0 -translate-y-1/2'}`}>{tick}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 
 // --- Main Page Component ---
 export default function PolicyEditorPage() {
@@ -317,7 +288,8 @@ export default function PolicyEditorPage() {
     const [margins, setMargins] = useState(policySettings?.policy.margins || { top: 2, right: 2, bottom: 2, left: 2 });
     const [zoomLevel, setZoomLevel] = useState(0.8);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [activeDragId, setActiveDragId] = useState<string | null>(null);
+    const [horizontalGuides, setHorizontalGuides] = useState<number[]>([]);
+    const [verticalGuides, setVerticalGuides] = useState<number[]>([]);
     const canvasRef = useRef<HTMLDivElement>(null);
     const importTemplateInputRef = useRef<HTMLInputElement>(null);
 
@@ -330,7 +302,6 @@ export default function PolicyEditorPage() {
     const [isPrintSampleDialogOpen, setIsPrintSampleDialogOpen] = useState(false);
     const printablePolicyRef = useRef<{ handleExport: () => void; handleDirectPrint: (order: any, type: 'zpl' | 'escpos') => Promise<void> }>(null);
     
-    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
     // Load from localStorage
     useEffect(() => {
@@ -359,15 +330,12 @@ export default function PolicyEditorPage() {
     }, [paperSize, customDimensions, isHydrated]);
 
     // ----------- Element Management -----------
-    const addElement = useCallback((tool: typeof toolboxItems[0], dropPosition?: { x: number; y: number; }) => {
-        if (!canvasRef.current) return;
-        const canvasRect = canvasRef.current.getBoundingClientRect();
-        
+    const addElement = useCallback((tool: typeof toolboxItems[0]) => {
         let newElement: PolicyElement = {
             id: nanoid(),
             type: tool.type as any,
-            x: dropPosition ? snapToGrid(dropPosition.x - canvasRect.left / zoomLevel) : snapToGrid(paperDimensions.width / 2 - (tool.defaultWidth / 2)),
-            y: dropPosition ? snapToGrid(dropPosition.y - canvasRect.top / zoomLevel) : snapToGrid(paperDimensions.height / 2 - (tool.defaultHeight / 2)),
+            x: snapToGrid(paperDimensions.width / 2 - (tool.defaultWidth / 2)),
+            y: snapToGrid(paperDimensions.height / 2 - (tool.defaultHeight / 2)),
             width: tool.defaultWidth,
             height: tool.defaultHeight,
             content: tool.content,
@@ -386,7 +354,7 @@ export default function PolicyEditorPage() {
 
         setElements(prev => [...prev, newElement]);
         setSelectedIds([newElement.id]);
-    }, [elements.length, zoomLevel, paperDimensions]);
+    }, [elements.length, paperDimensions]);
 
     const handleUpdateElement = (id: string, updates: Partial<PolicyElement>) => {
         setElements(prev => prev.map(el => el.id === id ? { ...el, ...updates } : el));
@@ -436,32 +404,6 @@ export default function PolicyEditorPage() {
             }
             return sorted.map((el, i) => ({ ...el, zIndex: i }));
         });
-    };
-    
-    // DND Handlers
-    const handleDragStart = (event: DragStartEvent) => {
-        setActiveDragId(event.active.id as string);
-    };
-    
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over, delta } = event;
-        setActiveDragId(null);
-        if (!over) return; // Dropped outside canvas
-
-        if (String(active.id).startsWith('tool-')) {
-            const toolType = String(active.id).replace('tool-', '');
-            const tool = toolboxItems.find(t => t.type === toolType);
-            const dropPosition = (event.activatorEvent as MouseEvent);
-            if (tool) addElement(tool, {x: dropPosition.clientX, y: dropPosition.clientY});
-        } else {
-            const element = elements.find(el => el.id === active.id);
-            if(element) {
-                handleUpdateElement(element.id, {
-                    x: snapToGrid(element.x + delta.x / zoomLevel),
-                    y: snapToGrid(element.y + delta.y / zoomLevel),
-                });
-            }
-        }
     };
     
     const selectedElement = useMemo(() => elements.find(el => el.id === selectedIds[0]), [elements, selectedIds]);
@@ -556,6 +498,18 @@ export default function PolicyEditorPage() {
         reader.readAsText(file);
     };
 
+    const handleNewGuide = (e: React.MouseEvent, orientation: 'horizontal' | 'vertical') => {
+        if (!canvasRef.current) return;
+        const canvasRect = canvasRef.current.getBoundingClientRect();
+        if (orientation === 'horizontal') {
+            const y = (e.clientY - canvasRect.top) / zoomLevel;
+            setHorizontalGuides(prev => [...prev, snapToGrid(y)]);
+        } else {
+            const x = (e.clientX - canvasRect.left) / zoomLevel;
+            setVerticalGuides(prev => [...prev, snapToGrid(x)]);
+        }
+    };
+
 
     if (!isHydrated) return null;
     
@@ -622,127 +576,154 @@ export default function PolicyEditorPage() {
             </AlertDialogContent>
         </AlertDialog>
 
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <Card>
-                <CardHeader className="flex-row justify-between items-start">
-                    <div>
-                        <CardTitle className="text-2xl font-bold tracking-tight">محرر البوليصة</CardTitle>
-                        <CardDescription className="mt-1">اسحب وأفلت العناصر لتصميم البوليصة. انقر على عنصر لتعديل خصائصه.</CardDescription>
-                    </div>
-                    <Button variant="outline" size="icon" asChild>
-                        <Link href="/dashboard/settings/general">
-                            <ArrowLeft className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                </CardHeader>
-                <CardContent className="border-t p-2 flex flex-col md:flex-row items-center gap-4 flex-wrap">
-                    <div className="flex items-center gap-2">
-                        <Label className="text-sm font-medium whitespace-nowrap">إضافة:</Label>
-                        {toolboxItems.map(tool => (
-                             <Button key={tool.label} variant="outline" size="sm" className="flex items-center gap-2 h-8" onClick={() => addElement(tool)}>
-                                <tool.icon className="h-4 w-4 text-muted-foreground" />
-                                <span>{tool.label}</span>
-                            </Button>
-                        ))}
-                    </div>
-
-                    <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
-                    
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))}><ZoomOut className="h-5 w-5"/></Button>
-                        <span className="text-sm font-semibold w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
-                        <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.min(2, z + 0.1))}><ZoomIn className="h-5 w-5"/></Button>
-                    </div>
-
-                    <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
-
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => handleLayering('front')} disabled={selectedIds.length !== 1}><ChevronsUp /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleLayering('forward')} disabled={selectedIds.length !== 1}><ChevronUp /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleLayering('backward')} disabled={selectedIds.length !== 1}><ChevronDown /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleLayering('back')} disabled={selectedIds.length !== 1}><ChevronsDown /></Button>
-                    </div>
-                    
-                    <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
-
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" onClick={handleDuplicate} disabled={selectedIds.length === 0}><Copy /></Button>
-                        <Button variant="ghost" size="icon" onClick={handleDeleteElement} disabled={selectedIds.length === 0}><Trash /></Button>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 md:mr-auto">
-                        <Button variant="secondary" onClick={() => {setIsPrintSampleDialogOpen(true)}}> <PrinterIcon className="w-4 h-4 ml-1"/> معاينة وطباعة</Button>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <div className="lg:col-span-3 space-y-6 lg:sticky lg:top-24">
-                     <PropertiesPanel
-                        element={selectedElement || null}
-                        onUpdate={handleUpdateElement}
-                    />
-                     <PageSettingsPanel 
-                        paperSize={paperSize}
-                        customDimensions={customDimensions}
-                        margins={margins}
-                        onPaperSizeChange={setPaperSize}
-                        onDimensionChange={(dim, val) => setCustomDimensions(prev => ({...prev, [dim]: val}))}
-                        onMarginChange={(margin, val) => setMargins(prev => ({...prev, [margin]: val}))}
-                    />
-                    <Card>
-                        <CardHeader><CardTitle className='text-base'>القوالب</CardTitle></CardHeader>
-                        <CardContent>
-                            <div className="flex items-center gap-2 mb-2">
-                                <Button size="sm" variant="secondary" onClick={() => { setEditingTemplateId(null); setTemplateName(''); setIsSaveDialogOpen(true); }}>حفظ الحالي</Button>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button size="sm" variant="outline"><MoreVertical className="w-4 h-4"/></Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        <DropdownMenuItem onSelect={() => importTemplateInputRef.current?.click()}>
-                                            <Upload className="ml-2 h-4 w-4"/> استيراد قالب
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onSelect={handleExportTemplate}>
-                                            <Download className="ml-2 h-4 w-4"/> تصدير الحالي
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                                <input id="import-template-input" ref={importTemplateInputRef} type="file" accept=".json" onChange={handleImportTemplate} className="hidden" />
-                            </div>
-                            <ScrollArea className="h-48">
-                            {templates.map(template => (
-                            <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                                <Button variant="link" className="p-0 h-auto" onClick={() => handleLoadTemplate(template)}>{template.name}</Button>
-                                <DropdownMenu>
-                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical /></Button></DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onSelect={() => {setEditingTemplateId(template.id); setTemplateName(template.name); handleLoadTemplate(template); setIsSaveDialogOpen(true); }}>تحديث</DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onSelect={() => setTemplateToDelete(template)} className="text-destructive">حذف</DropdownMenuItem>
-                                </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                            ))}
-                            </ScrollArea>
-                        </CardContent>
-                    </Card>
+        <Card>
+            <CardHeader className="flex-row justify-between items-start">
+                <div>
+                    <CardTitle className="text-2xl font-bold tracking-tight">محرر البوليصة</CardTitle>
+                    <CardDescription className="mt-1">اسحب وأفلت العناصر لتصميم البوليصة. انقر على عنصر لتعديل خصائصه.</CardDescription>
+                </div>
+                <Button variant="outline" size="icon" asChild>
+                    <Link href="/dashboard/settings/general">
+                        <ArrowLeft className="h-4 w-4" />
+                    </Link>
+                </Button>
+            </CardHeader>
+            <CardContent className="border-t p-2 flex flex-col md:flex-row items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium whitespace-nowrap">إضافة:</Label>
+                    {toolboxItems.map(tool => (
+                         <Button key={tool.label} variant="outline" size="sm" className="flex items-center gap-2 h-8" onClick={() => addElement(tool)}>
+                            <tool.icon className="h-4 w-4 text-muted-foreground" />
+                            <span>{tool.label}</span>
+                        </Button>
+                    ))}
                 </div>
 
-                <div className="lg:col-span-9 space-y-6">
-                    <Card>
-                         <CardContent className="flex justify-center items-center bg-muted p-8 rounded-lg overflow-auto min-h-[70vh]">
-                            <div 
+                <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
+                
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))}><ZoomOut className="h-5 w-5"/></Button>
+                    <span className="text-sm font-semibold w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
+                    <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.min(2, z + 0.1))}><ZoomIn className="h-5 w-5"/></Button>
+                </div>
+
+                <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
+
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => handleLayering('front')} disabled={selectedIds.length !== 1}><ChevronsUp /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleLayering('forward')} disabled={selectedIds.length !== 1}><ChevronUp /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleLayering('backward')} disabled={selectedIds.length !== 1}><ChevronDown /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleLayering('back')} disabled={selectedIds.length !== 1}><ChevronsDown /></Button>
+                </div>
+                
+                <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
+
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={handleDuplicate} disabled={selectedIds.length === 0}><Copy /></Button>
+                    <Button variant="ghost" size="icon" onClick={handleDeleteElement} disabled={selectedIds.length === 0}><Trash /></Button>
+                </div>
+                
+                <div className="flex items-center gap-2 md:mr-auto">
+                    <Button variant="secondary" onClick={() => {setIsPrintSampleDialogOpen(true)}}> <PrinterIcon className="w-4 h-4 ml-1"/> معاينة وطباعة</Button>
+                </div>
+            </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div className="lg:col-span-3 space-y-6 lg:sticky lg:top-24">
+                 <PropertiesPanel
+                    element={selectedElement || null}
+                    onUpdate={handleUpdateElement}
+                />
+                 <PageSettingsPanel 
+                    paperSize={paperSize}
+                    customDimensions={customDimensions}
+                    margins={margins}
+                    onPaperSizeChange={setPaperSize}
+                    onDimensionChange={(dim, val) => setCustomDimensions(prev => ({...prev, [dim]: val}))}
+                    onMarginChange={(margin, val) => setMargins(prev => ({...prev, [margin]: val}))}
+                />
+                <Card>
+                    <CardHeader><CardTitle className='text-base'>القوالب</CardTitle></CardHeader>
+                    <CardContent>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Button size="sm" variant="secondary" onClick={() => { setEditingTemplateId(null); setTemplateName(''); setIsSaveDialogOpen(true); }}>حفظ الحالي</Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button size="sm" variant="outline"><MoreVertical className="w-4 h-4"/></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onSelect={() => importTemplateInputRef.current?.click()}>
+                                        <Upload className="ml-2 h-4 w-4"/> استيراد قالب
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={handleExportTemplate}>
+                                        <Download className="ml-2 h-4 w-4"/> تصدير الحالي
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <input id="import-template-input" ref={importTemplateInputRef} type="file" accept=".json" onChange={handleImportTemplate} className="hidden" />
+                        </div>
+                        <ScrollArea className="h-48">
+                        {templates.map(template => (
+                        <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                            <Button variant="link" className="p-0 h-auto" onClick={() => handleLoadTemplate(template)}>{template.name}</Button>
+                            <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onSelect={() => {setEditingTemplateId(template.id); setTemplateName(template.name); handleLoadTemplate(template); setIsSaveDialogOpen(true); }}>تحديث</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={() => setTemplateToDelete(template)} className="text-destructive">حذف</DropdownMenuItem>
+                            </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                        ))}
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="lg:col-span-9 space-y-6">
+                <Card>
+                     <CardContent className="flex justify-center items-center bg-muted p-8 rounded-lg overflow-auto min-h-[70vh]">
+                        <div
+                            className="relative"
+                            style={{ 
+                                width: paperDimensions.width + RULER_WIDTH, 
+                                height: paperDimensions.height + RULER_WIDTH,
+                                transform: `scale(${zoomLevel})`, 
+                                transformOrigin: 'top center' 
+                            }}
+                        >
+                             <div 
                                 id="canvas" 
                                 ref={canvasRef} 
-                                className="relative bg-white rounded-md shadow-inner" 
+                                className="absolute bg-white rounded-md shadow-inner" 
                                 style={{ 
                                     width: paperDimensions.width, 
-                                    height: paperDimensions.height, 
-                                    transform: `scale(${zoomLevel})`, 
-                                    transformOrigin: 'top center' 
+                                    height: paperDimensions.height,
+                                    left: RULER_WIDTH,
+                                    top: RULER_WIDTH
                                 }}
                             >
+                                <div className="absolute top-0 left-0 w-full h-full cursor-ns-resize" onMouseDown={(e) => handleNewGuide(e, 'horizontal')}>
+                                    <Ruler orientation="horizontal" size={paperDimensions.width} />
+                                </div>
+                                <div className="absolute top-0 left-0 w-full h-full cursor-ew-resize" onMouseDown={(e) => handleNewGuide(e, 'vertical')}>
+                                    <Ruler orientation="vertical" size={paperDimensions.height} />
+                                </div>
+                                
+                                {horizontalGuides.map((y, i) => (
+                                    <Draggable key={`h-${i}`} axis="y" bounds="parent" onStop={(e, data) => setHorizontalGuides(prev => prev.map((g, gi) => gi === i ? snapToGrid(data.y) : g))} position={{x:0, y}}>
+                                        <div className="absolute w-full h-px bg-cyan-400 opacity-75 cursor-row-resize z-[99]" style={{left: -RULER_WIDTH}}></div>
+                                    </Draggable>
+                                ))}
+                                {verticalGuides.map((x, i) => (
+                                     <Draggable key={`v-${i}`} axis="x" bounds="parent" onStop={(e, data) => setVerticalGuides(prev => prev.map((g, gi) => gi === i ? snapToGrid(data.x) : g))} position={{x, y:0}}>
+                                        <div className="absolute h-full w-px bg-cyan-400 opacity-75 cursor-col-resize z-[99]" style={{top: -RULER_WIDTH}}></div>
+                                    </Draggable>
+                                ))}
+
+
                                 <div 
                                     aria-hidden 
                                     className="absolute inset-0 pointer-events-none" 
@@ -760,30 +741,40 @@ export default function PolicyEditorPage() {
                                     backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
                                     backgroundImage: `linear-gradient(to right, #e5e5e5 1px, transparent 1px), linear-gradient(to bottom, #e5e5e5 1px, transparent 1px)`
                                 }} />
-                                {elements.sort((a,b) => a.zIndex - b.zIndex).map(el => (
-                                    <SortableItem key={el.id} element={el} selected={selectedIds.includes(el.id)} onSelect={(id, e) => { e.stopPropagation(); setSelectedIds(e.metaKey || e.ctrlKey ? [...selectedIds, id] : [id]); }} onUpdate={handleUpdateElement} />
+                                {elements.map(el => (
+                                    <Draggable
+                                        key={el.id}
+                                        handle=".handle"
+                                        position={{ x: el.x, y: el.y }}
+                                        grid={[GRID_SIZE, GRID_SIZE]}
+                                        scale={zoomLevel}
+                                        onStart={() => setSelectedIds([el.id])}
+                                        onStop={(e, data) => handleUpdateElement(el.id, { x: data.x, y: data.y })}
+                                    >
+                                        <Resizable
+                                            size={{ width: el.width, height: el.height }}
+                                            onResizeStop={(e, dir, ref, d) => handleUpdateElement(el.id, { width: snapToGrid(el.width + d.width), height: snapToGrid(el.height + d.height)})}
+                                            onClick={(e) => { e.stopPropagation(); setSelectedIds([el.id]); }}
+                                            className="absolute"
+                                            style={{ zIndex: el.zIndex }}
+                                            enable={{
+                                                top: selectedIds.includes(el.id), right: selectedIds.includes(el.id), bottom: selectedIds.includes(el.id), left: selectedIds.includes(el.id),
+                                                topRight: selectedIds.includes(el.id), bottomRight: selectedIds.includes(el.id), bottomLeft: selectedIds.includes(el.id), topLeft: selectedIds.includes(el.id),
+                                            }}
+                                        >
+                                            <div className={`handle w-full h-full cursor-move ${selectedIds.includes(el.id) ? 'border-2 border-dashed border-primary' : ''}`}>
+                                                <PolicyElementComponent key={el.id} element={el} />
+                                            </div>
+                                        </Resizable>
+                                    </Draggable>
                                 ))}
                             </div>
-                            <DragOverlay>
-                                {activeDragId && activeDragId.startsWith('tool-') ? 
-                                <div className="bg-primary/20 border-2 border-dashed border-primary rounded-md p-4 flex items-center justify-center gap-2">
-                                    <ImageIcon className="h-5 w-5" /><span>{toolboxItems.find(t=>`tool-${t.type}` === activeDragId)?.label}</span>
-                                </div>
-                                : activeDragId ?
-                                 <div style={{transform: `scale(${zoomLevel})`}}>
-                                    <PolicyElementComponent key={activeDragId} element={elements.find(el => el.id === activeDragId)!} />
-                                 </div>
-                                : null}
-                            </DragOverlay>
-                        </CardContent>
-                    </Card>
-                </div>
+                        </div>
+                     </CardContent>
+                </Card>
             </div>
-        </DndContext>
+        </div>
     </div>
   );
 }
-
-
-
 
