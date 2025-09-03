@@ -61,7 +61,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 import { useOrdersStore, type Order } from '@/store/orders-store';
-import { useSettings, PolicySettings, PolicyElement, readyTemplates } from '@/contexts/SettingsContext';
+import { useSettings, PolicySettings, PolicyElement, SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
 
 
 // ShadCN UI Components
@@ -91,14 +91,6 @@ type OrderSource = Order['source'];
 type ColumnConfig = { key: keyof Order | 'id-link' | 'notes'; label: string; type?: 'default' | 'financial'; sortable?: boolean };
 type GroupByOption = keyof Order | null;
 
-type SavedTemplate = {
-  id: string;
-  name: string;
-  elements: PolicyElement[];
-  paperSize: PolicySettings['paperSize'];
-  customDimensions: { width: number; height: number };
-  margins: { top: number; right: number; bottom: number; left: number };
-};
 
 // Initial columns configuration
 const ALL_COLUMNS: ColumnConfig[] = [
@@ -415,9 +407,14 @@ export function OrdersTable() {
              console.error("Error parsing templates from localStorage", e);
         }
 
-        // If no templates are stored, use the default ready-made ones
+        // If no templates are stored, use the default ready-made ones as a fallback
         if (templates.length === 0) {
             templates = Object.values(readyTemplates);
+        }
+        
+        if (templates.length === 0) {
+             toast({ variant: "destructive", title: "لا توجد قوالب", description: "الرجاء إنشاء أو حفظ قالب واحد على الأقل في صفحة إعداد البوليصة." });
+            return;
         }
         
         setSavedTemplates(templates);

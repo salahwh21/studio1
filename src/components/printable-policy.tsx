@@ -4,7 +4,7 @@
 
 import React, { useRef, useImperativeHandle, forwardRef, useContext } from 'react';
 import type { Order } from '@/store/orders-store';
-import { useSettings, type PolicySettings, type PolicyElement, SettingsContext, readyTemplates } from '@/contexts/SettingsContext';
+import { useSettings, type PolicySettings, type PolicyElement, SettingsContext, SavedTemplate } from '@/contexts/SettingsContext';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 import Barcode from 'react-barcode';
@@ -12,15 +12,7 @@ import Icon from './icon';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import { Button } from '@/components/ui/button';
-
-type SavedTemplate = {
-  id: string;
-  name: string;
-  elements: PolicyElement[];
-  paperSize: PolicySettings['paperSize'];
-  customDimensions: { width: number; height: number };
-  margins: { top: number; right: number; bottom: number; left: number };
-};
+import { AmiriFont } from '@/lib/amiri-font';
 
 
 const paperSizeClasses = {
@@ -207,6 +199,15 @@ export const PrintablePolicy = forwardRef<
             format: [mmToPt(paperDimensions.width), mmToPt(paperDimensions.height)]
         });
         
+        // Add the font to jsPDF
+        try {
+            pdf.addFileToVFS('Amiri-Regular.ttf', AmiriFont);
+            pdf.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+            pdf.setFont('Amiri');
+        } catch(e) {
+            console.warn("Could not load custom font for PDF. Arabic text might not render correctly.", e);
+        }
+
         for (let i = 0; i < displayOrders.length; i++) {
             const order = displayOrders[i];
             if (i > 0) {
