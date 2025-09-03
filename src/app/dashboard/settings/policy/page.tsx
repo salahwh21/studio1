@@ -106,7 +106,7 @@ const PolicyElementComponent = ({ element }: { element: PolicyElement }) => {
   const renderContent = () => {
     switch (element.type) {
       case 'text':
-        return <div className="p-1 w-full h-full" style={{ fontFamily: 'inherit', fontSize: `${element.fontSize}px`, fontWeight: element.fontWeight as any, color: element.color, textAlign: element.textAlign as any }}>{element.content}</div>;
+        return <div className="p-1 w-full h-full" style={{ fontFamily: 'inherit', fontSize: `${element.fontSize}px`, fontWeight: element.fontWeight as any, color: element.color, textAlign: element.textAlign as any, fontStyle: element.fontStyle }}>{element.content}</div>;
       case 'barcode':
         return <div className="p-1 w-full h-full flex flex-col items-center justify-center text-xs"> <ScanBarcode className="w-10 h-10" /> <p className='mt-1'>باركود: {element.content}</p> </div>;
       case 'image':
@@ -177,16 +177,12 @@ const SortableItem = ({ element, selected, onSelect, onUpdate }: {
 };
 
 
-const PropertiesModal = ({ element, onUpdate, open, onOpenChange }: { 
+const PropertiesPanel = ({ element, onUpdate }: { 
     element: PolicyElement | null; 
     onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
 }) => {
-    if (!element) return null;
-
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if(e.target.files && e.target.files[0]) {
+        if(e.target.files && e.target.files[0] && element) {
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onload = () => {
@@ -197,69 +193,77 @@ const PropertiesModal = ({ element, onUpdate, open, onOpenChange }: {
     };
     
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>خصائص العنصر</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
-                    <div className="grid grid-cols-2 gap-2">
-                        <div><Label>العرض (px)</Label><Input type="number" value={element.width} onChange={e => onUpdate(element.id, { width: +e.target.value })} /></div>
-                        <div><Label>الارتفاع (px)</Label><Input type="number" value={element.height} onChange={e => onUpdate(element.id, { height: +e.target.value })} /></div>
+        <Card>
+            <CardHeader><CardTitle className='text-base'>خصائص العنصر</CardTitle></CardHeader>
+            <CardContent>
+                {!element ? (
+                    <div className="text-center text-muted-foreground py-10">
+                        <Icon name="MousePointerSquare" className="mx-auto h-8 w-8 mb-2" />
+                        <p>حدد عنصرًا لتعديل خصائصه</p>
                     </div>
-                    {element.type === 'text' && (
-                        <>
-                            <div><Label>المحتوى</Label><Input value={element.content} onChange={e => onUpdate(element.id, { content: e.target.value })} /></div>
+                ) : (
+                    <ScrollArea className="h-96 pr-3">
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-2">
+                                <div><Label>العرض (px)</Label><Input type="number" value={element.width} onChange={e => onUpdate(element.id, { width: +e.target.value })} /></div>
+                                <div><Label>الارتفاع (px)</Label><Input type="number" value={element.height} onChange={e => onUpdate(element.id, { height: +e.target.value })} /></div>
+                            </div>
+                            {element.type === 'text' && (
+                                <>
+                                    <div><Label>المحتوى</Label><Input value={element.content} onChange={e => onUpdate(element.id, { content: e.target.value })} /></div>
+                                    <div>
+                                        <Label>ربط ببيانات</Label>
+                                        <Select onValueChange={value => onUpdate(element.id, { content: value })}>
+                                            <SelectTrigger><SelectValue placeholder="اختر حقل بيانات..." /></SelectTrigger>
+                                            <SelectContent>{dataFields.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div><Label>حجم الخط (px)</Label><Input type="number" value={element.fontSize} onChange={e => onUpdate(element.id, { fontSize: +e.target.value })} /></div>
+                                    <div><Label>اللون</Label><Input type="color" value={element.color} onChange={e => onUpdate(element.id, { color: e.target.value })} className="w-full h-10"/></div>
+                                    <div className='flex items-center gap-1'>
+                                        <Label>المحاذاة والنمط</Label>
+                                        <Button variant={element.fontWeight === 'bold' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { fontWeight: element.fontWeight === 'bold' ? 'normal' : 'bold' })}><Bold/></Button>
+                                        <Button variant={element.fontStyle === 'italic' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { fontStyle: element.fontStyle === 'italic' ? 'normal' : 'italic' })}><Italic/></Button>
+                                        <Button variant={element.textAlign === 'left' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { textAlign: 'left'})}><AlignLeft/></Button>
+                                        <Button variant={element.textAlign === 'center' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { textAlign: 'center'})}><AlignCenter/></Button>
+                                        <Button variant={element.textAlign === 'right' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { textAlign: 'right'})}><AlignRight/></Button>
+                                    </div>
+                                </>
+                            )}
+                            {element.type === 'barcode' && (
+                                <div>
+                                    <Label>ربط الباركود بـ</Label>
+                                    <Select value={element.content} onValueChange={value => onUpdate(element.id, { content: value })}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>{dataFields.filter(f=>f.value.includes('Id') || f.value.includes('phone')).map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+                            {element.type === 'image' && (
+                                <div>
+                                    <Label>رفع صورة</Label>
+                                    <Input type="file" accept="image/*" onChange={handleImageUpload} />
+                                </div>
+                            )}
+                            {element.type === 'shape' && (
+                                <>
+                                    <div><Label>لون الخلفية</Label><Input type="color" value={element.backgroundColor} onChange={e => onUpdate(element.id, { backgroundColor: e.target.value })} className="w-full h-10"/></div>
+                                    <div><Label>الشفافية</Label><Slider value={[element.opacity || 1]} onValueChange={v => onUpdate(element.id, { opacity: v[0]})} max={1} step={0.1}/></div>
+                                </>
+                            )}
                             <div>
-                                <Label>ربط ببيانات</Label>
-                                <Select onValueChange={value => onUpdate(element.id, { content: value })}>
-                                    <SelectTrigger><SelectValue placeholder="اختر حقل بيانات..." /></SelectTrigger>
-                                    <SelectContent>{dataFields.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
-                                </Select>
+                                <Label>الإطار</Label>
+                                <div className="flex gap-2">
+                                    <Input type="number" value={element.borderWidth} onChange={e => onUpdate(element.id, { borderWidth: +e.target.value })} placeholder="السماكة" />
+                                    <Input type="color" value={element.borderColor} onChange={e => onUpdate(element.id, { borderColor: e.target.value })} />
+                                </div>
                             </div>
-                            <div><Label>حجم الخط (px)</Label><Input type="number" value={element.fontSize} onChange={e => onUpdate(element.id, { fontSize: +e.target.value })} /></div>
-                            <div><Label>اللون</Label><Input type="color" value={element.color} onChange={e => onUpdate(element.id, { color: e.target.value })} className="w-full h-10"/></div>
-                            <div className='flex items-center gap-1'>
-                                <Label>المحاذاة والنمط</Label>
-                                <Button variant={element.fontWeight === 'bold' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { fontWeight: element.fontWeight === 'bold' ? 'normal' : 'bold' })}><Bold/></Button>
-                                <Button variant={element.textAlign === 'left' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { textAlign: 'left'})}><AlignLeft/></Button>
-                                <Button variant={element.textAlign === 'center' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { textAlign: 'center'})}><AlignCenter/></Button>
-                                <Button variant={element.textAlign === 'right' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { textAlign: 'right'})}><AlignRight/></Button>
-                            </div>
-                        </>
-                    )}
-                    {element.type === 'barcode' && (
-                        <div>
-                            <Label>ربط الباركود بـ</Label>
-                            <Select value={element.content} onValueChange={value => onUpdate(element.id, { content: value })}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>{dataFields.filter(f=>f.value.includes('Id') || f.value.includes('phone')).map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <div><Label>استدارة الحواف (px)</Label><Input type="number" value={element.borderRadius} onChange={e => onUpdate(element.id, { borderRadius: +e.target.value })} /></div>
                         </div>
-                    )}
-                    {element.type === 'image' && (
-                        <div>
-                            <Label>رفع صورة</Label>
-                            <Input type="file" accept="image/*" onChange={handleImageUpload} />
-                        </div>
-                    )}
-                    {element.type === 'shape' && (
-                        <>
-                            <div><Label>لون الخلفية</Label><Input type="color" value={element.backgroundColor} onChange={e => onUpdate(element.id, { backgroundColor: e.target.value })} className="w-full h-10"/></div>
-                            <div><Label>الشفافية</Label><Slider value={[element.opacity || 1]} onValueChange={v => onUpdate(element.id, { opacity: v[0]})} max={1} step={0.1}/></div>
-                        </>
-                    )}
-                    <div>
-                        <Label>الإطار</Label>
-                        <div className="flex gap-2">
-                            <Input type="number" value={element.borderWidth} onChange={e => onUpdate(element.id, { borderWidth: +e.target.value })} placeholder="السماكة" />
-                            <Input type="color" value={element.borderColor} onChange={e => onUpdate(element.id, { borderColor: e.target.value })} />
-                        </div>
-                    </div>
-                    <div><Label>استدارة الحواف (px)</Label><Input type="number" value={element.borderRadius} onChange={e => onUpdate(element.id, { borderRadius: +e.target.value })} /></div>
-                </div>
-            </DialogContent>
-        </Dialog>
+                    </ScrollArea>
+                )}
+            </CardContent>
+        </Card>
     );
 };
 
@@ -292,8 +296,6 @@ export default function PolicyEditorPage() {
     const [isPrintSampleDialogOpen, setIsPrintSampleDialogOpen] = useState(false);
     const printablePolicyRef = useRef<{ handleExport: () => void; handleDirectPrint: (order: any, type: 'zpl' | 'escpos') => Promise<void> }>(null);
     
-    const [modalElement, setModalElement] = useState<PolicyElement | null>(null);
-
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
     // Load from localStorage
@@ -328,7 +330,7 @@ export default function PolicyEditorPage() {
         if (!isHydrated || !customDimensions) return { width: mmToPx(100), height: mmToPx(150) };
         if (paperSize === 'custom') return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
         const size = paperSizes[paperSize];
-        if (!size) return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
+        if (!size) return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) }; // Fallback
         return { width: mmToPx(size.width), height: mmToPx(size.height) };
     }, [paperSize, customDimensions, isHydrated]);
 
@@ -348,6 +350,7 @@ export default function PolicyEditorPage() {
             zIndex: elements.length,
             fontSize: 14,
             fontWeight: 'normal',
+            fontStyle: 'normal',
             color: '#000000',
             borderColor: '#000000',
             borderWidth: 0,
@@ -363,7 +366,6 @@ export default function PolicyEditorPage() {
 
     const handleUpdateElement = (id: string, updates: Partial<PolicyElement>) => {
         setElements(prev => prev.map(el => el.id === id ? { ...el, ...updates } : el));
-        setModalElement(prev => prev && prev.id === id ? {...prev, ...updates} : prev);
     };
 
     const handleDeleteElement = () => {
@@ -452,13 +454,7 @@ export default function PolicyEditorPage() {
         }
     };
     
-    useEffect(() => {
-        if (selectedIds.length === 1) {
-            setModalElement(elements.find(el => el.id === selectedIds[0]) || null);
-        } else {
-            setModalElement(null);
-        }
-    }, [selectedIds, elements]);
+    const selectedElement = useMemo(() => elements.find(el => el.id === selectedIds[0]), [elements, selectedIds]);
     
 
     // --- Template Management ---
@@ -615,13 +611,6 @@ export default function PolicyEditorPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-        <PropertiesModal
-            element={modalElement}
-            onUpdate={handleUpdateElement}
-            open={!!modalElement}
-            onOpenChange={(open) => !open && setModalElement(null)}
-        />
-
 
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <Card>
@@ -693,7 +682,7 @@ export default function PolicyEditorPage() {
             </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <div className="lg:col-span-2 space-y-6">
+                <div className="lg:col-span-3 space-y-6 lg:sticky lg:top-24">
                     <Card>
                         <CardHeader><CardTitle className='text-base'>الأدوات</CardTitle></CardHeader>
                         <CardContent className="grid grid-cols-2 gap-3">
@@ -742,9 +731,13 @@ export default function PolicyEditorPage() {
                             </ScrollArea>
                         </CardContent>
                     </Card>
+                    <PropertiesPanel
+                        element={selectedElement || null}
+                        onUpdate={handleUpdateElement}
+                    />
                 </div>
 
-                <div className="lg:col-span-10 space-y-6">
+                <div className="lg:col-span-9 space-y-6">
                     <Card>
                          <CardContent className="flex justify-center items-center bg-muted p-8 rounded-lg overflow-auto min-h-[70vh]">
                             <div id="canvas" ref={canvasRef} className="relative bg-white rounded-md shadow-inner" style={{ width: paperDimensions.width, height: paperDimensions.height, transform: `scale(${zoomLevel})`, transformOrigin: 'top center' }}>
@@ -775,6 +768,7 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
 
 
 
