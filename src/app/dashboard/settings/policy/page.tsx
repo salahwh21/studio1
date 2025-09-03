@@ -119,6 +119,7 @@ const toolboxItems = [
     { type: 'barcode', label: 'باركود', icon: 'Barcode', content: '{order_id}', defaultWidth: 150, defaultHeight: 50 },
     { type: 'text', label: 'رقم الطلب', icon: 'ClipboardList', content: '{order_id}', defaultWidth: 150, defaultHeight: 24 },
     { type: 'text', label: 'الرقم المرجعي', icon: 'ClipboardCheck', content: '{reference_id}', defaultWidth: 150, defaultHeight: 24 },
+    { type: 'text', label: 'ملاحظات الطلب', icon: 'Clipboard', content: '{order_notes}', defaultWidth: 200, defaultHeight: 60 },
     { type: 'table', label: 'جدول', icon: 'Table', content: '', defaultWidth: 320, defaultHeight: 120 },
     { type: 'text', label: 'نص', icon: 'Type', content: 'نص جديد', defaultWidth: 120, defaultHeight: 24 },
     { type: 'rect', label: 'مستطيل', icon: 'RectangleHorizontal', content: '', defaultWidth: 160, defaultHeight: 80 },
@@ -203,8 +204,11 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMen
     outline: selected ? '2px solid hsl(var(--primary))' : 'none',
     outlineOffset: '2px',
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    visibility: isDragging ? 'hidden' : 'visible'
   };
+
+  if(isDragging) {
+      style.visibility = 'hidden';
+  }
 
   return (
     <div
@@ -457,41 +461,48 @@ export default function PolicyEditorPage() {
   }), [margins]);
 
   const handleSmartLayout = () => {
-    if (elements.length === 0) {
-      toast({ variant: 'destructive', title: 'لا توجد عناصر', description: 'الرجاء إضافة بعض العناصر أولاً.' });
-      return;
-    }
-
     const { width: canvasWidth, height: canvasHeight } = paperDimensions;
     const { top, right, left, bottom } = marginPx;
     const printableWidth = canvasWidth - left - right;
     const printableHeight = canvasHeight - top - bottom;
-
-    let yOffset = top;
-
-    const newElements = elements.map(el => {
-      const newEl = { ...el };
-      let newWidth = Math.min(newEl.width, printableWidth);
-      let newHeight = newEl.height;
-
-      // Basic heuristic to stack elements vertically
-      newEl.x = snapToGrid(left + (printableWidth - newWidth) / 2); // Center horizontally
-      newEl.y = snapToGrid(yOffset);
-
-      if (newEl.y + newHeight > printableHeight + top) {
-        // Element overflows, try to shrink it
-        newHeight = Math.max(GRID_SIZE * 2, printableHeight + top - newEl.y);
-      }
+  
+    // Header section
+    const headerHeight = snapToGrid(printableHeight * 0.2);
+    const logoWidth = snapToGrid(printableWidth * 0.3);
+    const barcodeWidth = snapToGrid(printableWidth * 0.4);
+  
+    // Body section
+    const bodyY = top + headerHeight + GRID_SIZE;
+    const bodyHeight = printableHeight * 0.4;
+    const halfWidth = snapToGrid(printableWidth / 2 - GRID_SIZE / 2);
+  
+    // Footer section
+    const footerY = bodyY + bodyHeight + GRID_SIZE;
+    const footerHeight = printableHeight - headerHeight - bodyHeight - (GRID_SIZE * 2);
+  
+    const newElements: PolicyElement[] = [
+      // Header
+      { id: nanoid(), type: 'image', x: left, y: top, width: logoWidth, height: headerHeight - GRID_SIZE, content: '{company_logo}', zIndex: 1 },
+      { id: nanoid(), type: 'barcode', x: canvasWidth - right - barcodeWidth, y: top, width: barcodeWidth, height: headerHeight - GRID_SIZE, content: '{order_id}', zIndex: 1 },
       
-      newEl.width = newWidth;
-      newEl.height = newHeight;
-      yOffset += newHeight + GRID_SIZE; // Add spacing
+      // Line separator
+      { id: nanoid(), type: 'line', x: left, y: top + headerHeight, width: printableWidth, height: 2, content: '', zIndex: 0, color: '#000000', backgroundColor: '#000000' },
+      
+      // Body
+      { id: nanoid(), type: 'rect', x: left, y: bodyY, width: halfWidth, height: bodyHeight, content: '', zIndex: 0, borderColor: '#cccccc', borderWidth: 1 },
+      { id: nanoid(), type: 'text', x: left + GRID_SIZE, y: bodyY + GRID_SIZE, width: halfWidth - (GRID_SIZE*2), height: 30, content: 'من (المرسل)', zIndex: 1, fontWeight: 'bold' },
+      { id: nanoid(), type: 'text', x: left + GRID_SIZE, y: bodyY + 40, width: halfWidth - (GRID_SIZE*2), height: bodyHeight - 50, content: '{merchant_name}\n{merchant_phone}', zIndex: 1 },
 
-      return newEl;
-    });
+      { id: nanoid(), type: 'rect', x: left + halfWidth + GRID_SIZE, y: bodyY, width: halfWidth, height: bodyHeight, content: '', zIndex: 0, borderColor: '#cccccc', borderWidth: 1 },
+      { id: nanoid(), type: 'text', x: left + halfWidth + (GRID_SIZE*2), y: bodyY + GRID_SIZE, width: halfWidth - (GRID_SIZE*2), height: 30, content: 'إلى (المستلم)', zIndex: 1, fontWeight: 'bold' },
+      { id: nanoid(), type: 'text', x: left + halfWidth + (GRID_SIZE*2), y: bodyY + 40, width: halfWidth - (GRID_SIZE*2), height: bodyHeight - 50, content: '{recipient_name}\n{recipient_address}\n{recipient_phone}', zIndex: 1 },
 
+      // Footer
+      { id: nanoid(), type: 'text', x: left, y: footerY, width: printableWidth, height: footerHeight, content: 'ملاحظات: {order_notes}', zIndex: 1 },
+    ];
+    
     setElements(newElements);
-    toast({ title: 'تم الترتيب بذكاء', description: 'تمت إعادة ترتيب العناصر لتناسب الصفحة.' });
+    toast({ title: 'تم إنشاء التصميم', description: 'تم إنشاء تصميم احترافي بناءً على حجم الصفحة.' });
   };
 
 
