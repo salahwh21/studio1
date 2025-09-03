@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import React, { useState, useRef, useMemo, useCallback, useEffect, forwardRef } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import {
   AlignCenter,
@@ -97,7 +98,7 @@ const dataFields = [
 
 // --- Sub-components ---
 
-const PolicyElementComponent = forwardRef(({ element }: { element: PolicyElement }, ref: React.Ref<HTMLDivElement>) => {
+const PolicyElementComponent = React.forwardRef(({ element }: { element: PolicyElement }, ref: React.Ref<HTMLDivElement>) => {
   const renderContent = () => {
     switch (element.type) {
       case 'text':
@@ -258,7 +259,7 @@ const PageSettingsPanel = ({ paperSize, customDimensions, margins, onPaperSizeCh
     </Card>
 );
 
-const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag, onStop, isSelected, zoomLevel }: {
+const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag, onStop, isSelected }: {
   element: PolicyElement;
   onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
   onSelect: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
@@ -266,21 +267,19 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag,
   onDrag: (e: DraggableEvent, data: DraggableData, elementId: string) => void;
   onStop: () => void;
   isSelected: boolean;
-  zoomLevel: number;
 }) => {
-  const nodeRef = React.useRef(null);
+  const nodeRef = React.useRef<HTMLDivElement>(null);
   
   return (
-    <Draggable
+      <Draggable
         nodeRef={nodeRef}
         handle=".handle"
         position={{x: element.x, y: element.y}}
-        scale={zoomLevel}
         onStart={(e, data) => onDragStart(e, data, element.id)}
         onDrag={(e, data) => onDrag(e, data, element.id)}
         onStop={onStop}
       >
-      <Resizable
+        <Resizable
           ref={nodeRef}
           size={{ width: element.width, height: element.height }}
           onResizeStop={(e, dir, ref, d) => onUpdate(element.id, { width: snapToGrid(element.width + d.width), height: snapToGrid(element.height + d.height) })}
@@ -298,6 +297,7 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag,
     </Draggable>
   );
 };
+
 
 // --- Main Page Component ---
 export default function PolicyEditorPage() {
@@ -642,7 +642,7 @@ export default function PolicyEditorPage() {
       }), [elements, paperSize, customDimensions, margins]);
 
   return (
-    <div className="space-y-6" onClick={() => setSelectedIds([])}>
+    <div className="space-y-6" onClick={(e) => { e.stopPropagation(); setSelectedIds([]); }}>
         <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
             <DialogContent>
                 <DialogHeader>
@@ -701,51 +701,51 @@ export default function PolicyEditorPage() {
                     <CardTitle className="text-2xl font-bold tracking-tight">محرر البوليصة</CardTitle>
                     <CardDescription className="mt-1">اسحب وأفلت العناصر لتصميم البوليصة. انقر على عنصر لتعديل خصائصه.</CardDescription>
                 </div>
-                <Button variant="outline" size="icon" asChild>
-                    <Link href="/dashboard/settings/general">
-                        <ArrowLeft className="h-4 w-4" />
-                    </Link>
-                </Button>
-            </CardHeader>
-            <CardContent className="border-t p-2 flex flex-col md:flex-row items-center gap-4 flex-wrap">
-                <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium whitespace-nowrap">إضافة:</Label>
-                    {toolboxItems.map(tool => (
-                         <Button key={tool.label} variant="outline" size="sm" className="flex items-center gap-2 h-8" onClick={() => addElement(tool)}>
-                            <tool.icon className="h-4 w-4 text-muted-foreground" />
-                            <span>{tool.label}</span>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <Label className="text-sm font-medium whitespace-nowrap">إضافة:</Label>
+                        {toolboxItems.map(tool => (
+                             <Button key={tool.label} variant="outline" size="sm" className="flex items-center gap-2 h-8" onClick={() => addElement(tool)}>
+                                <tool.icon className="h-4 w-4 text-muted-foreground" />
+                                <span>{tool.label}</span>
+                            </Button>
+                        ))}
+                    </div>
+
+                    <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
+                    
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))}><ZoomOut className="h-5 w-5"/></Button>
+                        <span className="text-sm font-semibold w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
+                        <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.min(2, z + 0.1))}><ZoomIn className="h-5 w-5"/></Button>
+                    </div>
+
+                    <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
+
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleLayering('front')} disabled={selectedIds.length !== 1}><ChevronsUp /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleLayering('forward')} disabled={selectedIds.length !== 1}><ChevronUp /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleLayering('backward')} disabled={selectedIds.length !== 1}><ChevronDown /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleLayering('back')} disabled={selectedIds.length !== 1}><ChevronsDown /></Button>
+                    </div>
+                    
+                    <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
+
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={handleDuplicate} disabled={selectedIds.length === 0}><Copy /></Button>
+                        <Button variant="ghost" size="icon" onClick={handleDeleteElement} disabled={selectedIds.length === 0}><Trash /></Button>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 md:mr-auto">
+                        <Button variant="secondary" onClick={() => {setIsPrintSampleDialogOpen(true)}}> <PrinterIcon className="w-4 h-4 ml-1"/> معاينة وطباعة</Button>
+                         <Button variant="outline" size="icon" asChild>
+                            <Link href="/dashboard/settings/general">
+                                <ArrowLeft className="h-4 w-4" />
+                            </Link>
                         </Button>
-                    ))}
+                    </div>
                 </div>
-
-                <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
-                
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))}><ZoomOut className="h-5 w-5"/></Button>
-                    <span className="text-sm font-semibold w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
-                    <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.min(2, z + 0.1))}><ZoomIn className="h-5 w-5"/></Button>
-                </div>
-
-                <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
-
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleLayering('front')} disabled={selectedIds.length !== 1}><ChevronsUp /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleLayering('forward')} disabled={selectedIds.length !== 1}><ChevronUp /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleLayering('backward')} disabled={selectedIds.length !== 1}><ChevronDown /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleLayering('back')} disabled={selectedIds.length !== 1}><ChevronsDown /></Button>
-                </div>
-                
-                <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
-
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={handleDuplicate} disabled={selectedIds.length === 0}><Copy /></Button>
-                    <Button variant="ghost" size="icon" onClick={handleDeleteElement} disabled={selectedIds.length === 0}><Trash /></Button>
-                </div>
-                
-                <div className="flex items-center gap-2 md:mr-auto">
-                    <Button variant="secondary" onClick={() => {setIsPrintSampleDialogOpen(true)}}> <PrinterIcon className="w-4 h-4 ml-1"/> معاينة وطباعة</Button>
-                </div>
-            </CardContent>
+            </CardHeader>
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -861,7 +861,6 @@ export default function PolicyEditorPage() {
                                       onDrag={handleDrag}
                                       onStop={handleStopDrag}
                                       isSelected={selectedIds.includes(el.id)}
-                                      zoomLevel={zoomLevel}
                                     />
                                 ))}
                             </div>
