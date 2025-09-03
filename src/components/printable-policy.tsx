@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
@@ -188,6 +189,10 @@ export const PrintablePolicy = forwardRef<
                 
                 const canvas = await html2canvas(element, { scale: 3, useCORS: true });
                 const imgData = canvas.toDataURL('image/png');
+
+                if (!imgData || imgData === 'data:,') {
+                    throw new Error("Failed to generate image data from the policy element.");
+                }
                 
                 if (i > 0) {
                     pdf.addPage([paperDimensions.width, paperDimensions.height], paperDimensions.width > paperDimensions.height ? 'l' : 'p');
