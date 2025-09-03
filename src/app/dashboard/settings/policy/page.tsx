@@ -4,6 +4,7 @@
 
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
+import { useActionState } from 'react';
 import {
   AlignCenter,
   AlignLeft,
@@ -33,6 +34,8 @@ import {
   ChevronDown,
   ChevronsDown,
   ArrowLeft,
+  Wand2,
+  Loader2,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { DndContext, PointerSensor, useSensor, useSensors, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
@@ -55,6 +58,8 @@ import { useOrdersStore } from '@/store/orders-store';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import Icon from '@/components/icon';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { generatePolicyAction } from '@/app/actions/generate-policy';
+import { Textarea } from '@/components/ui/textarea';
 
 
 // --- Constants & Helpers ---
@@ -266,6 +271,7 @@ export default function PolicyEditorPage() {
     const context = useSettings();
     
     const { settings: policySettings, isHydrated } = context;
+    const [aiState, formAction, isAiPending] = useActionState(generatePolicyAction, { data: null, error: null, success: false });
 
     const [elements, setElements] = useState<PolicyElement[]>(policySettings?.policy.elements || []);
     const [paperSize, setPaperSize] = useState<PolicySettings['paperSize']>(policySettings?.policy.paperSize || 'custom');
@@ -307,12 +313,22 @@ export default function PolicyEditorPage() {
             }
         } catch {}
     }, [isHydrated, policySettings]);
+    
+    // Handle AI action state
+    useEffect(() => {
+        if (aiState.success && aiState.data) {
+            setElements(aiState.data.elements);
+            toast({ title: "تم إنشاء التصميم بنجاح!", description: "تم تحديث لوحة التصميم بناءً على وصفك." });
+        } else if (aiState.error) {
+            toast({ variant: 'destructive', title: "خطأ في التصميم", description: aiState.error });
+        }
+    }, [aiState, toast]);
 
     const paperDimensions = useMemo(() => {
-        if (!isHydrated || !customDimensions) return { width: mmToPx(100), height: mmToPx(150) }; // Safe fallback
+        if (!isHydrated || !customDimensions) return { width: mmToPx(100), height: mmToPx(150) };
         if (paperSize === 'custom') return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
         const size = paperSizes[paperSize];
-        if (!size) return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) }; // Fallback
+        if (!size) return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
         return { width: mmToPx(size.width), height: mmToPx(size.height) };
     }, [paperSize, customDimensions, isHydrated]);
 
@@ -645,6 +661,37 @@ export default function PolicyEditorPage() {
                 </CardContent>
             </Card>
 
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Wand2 /> مصمم البوالص بالذكاء الاصطناعي</CardTitle>
+                    <CardDescription>صف التصميم الذي تريده باللغة العربية، وسيقوم الذكاء الاصطناعي بإنشائه لك.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form action={formAction}>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <Textarea
+                                name="description"
+                                placeholder="مثال: تصميم بوليصة شحن حرارية مقاس 4x6، ضع شعار الشركة في الأعلى، ثم عنوان المستلم ورقم هاتفه، وفي الأسفل باركود لرقم الطلب."
+                                className="md:col-span-3 min-h-[80px]"
+                                rows={3}
+                            />
+                            <div className="flex flex-col gap-2">
+                                <input type="hidden" name="paperWidth" value={paperDimensions.width / 3.78} />
+                                <input type="hidden" name="paperHeight" value={paperDimensions.height / 3.78} />
+                                <Button type="submit" className="h-full" disabled={isAiPending}>
+                                    {isAiPending ? (
+                                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                                    ) : (
+                                        <Wand2 className="h-4 w-4 ml-2" />
+                                    )}
+                                    {isAiPending ? 'جاري الإنشاء...' : 'إنشاء التصميم'}
+                                </Button>
+                            </div>
+                        </div>
+                    </form>
+                </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 <div className="lg:col-span-2 space-y-6">
                     <Card>
@@ -728,6 +775,7 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
 
 
 
