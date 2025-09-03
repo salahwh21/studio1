@@ -437,20 +437,6 @@ export default function PolicyEditorPage() {
             return sorted.map((el, i) => ({ ...el, zIndex: i }));
         });
     };
-
-    const handleSmartLayout = () => {
-        if (elements.length === 0) return;
-        const newElements = elements.map((el, index) => {
-            const newY = 10 + (index * 40); // Simple vertical stack
-            return {
-                ...el,
-                x: 10,
-                y: newY
-            };
-        });
-        setElements(newElements);
-        toast({ title: "تم التنسيق", description: "تم ترتيب العناصر تلقائياً." });
-    };
     
     // DND Handlers
     const handleDragStart = (event: DragStartEvent) => {
@@ -667,7 +653,6 @@ export default function PolicyEditorPage() {
                             <Button variant="ghost" size="icon" onClick={handleDeleteElement} disabled={selectedIds.length === 0}><Trash /></Button>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={handleSmartLayout}><LayoutGrid className="w-4 h-4 ml-1"/> تنسيق ذكي</Button>
                             <Button variant="secondary" onClick={() => {setIsPrintSampleDialogOpen(true)}}> <PrinterIcon className="w-4 h-4 ml-1"/> معاينة وطباعة</Button>
                         </div>
                     </div>
@@ -687,6 +672,10 @@ export default function PolicyEditorPage() {
                             ))}
                         </CardContent>
                     </Card>
+                    <PropertiesPanel
+                        element={selectedElement || null}
+                        onUpdate={handleUpdateElement}
+                    />
                      <PageSettingsPanel 
                         paperSize={paperSize}
                         customDimensions={customDimensions}
@@ -732,10 +721,6 @@ export default function PolicyEditorPage() {
                             </ScrollArea>
                         </CardContent>
                     </Card>
-                    <PropertiesPanel
-                        element={selectedElement || null}
-                        onUpdate={handleUpdateElement}
-                    />
                 </div>
 
                 <div className="lg:col-span-9 space-y-6">
@@ -769,4 +754,5 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
 
