@@ -56,7 +56,7 @@ const RenderedElement = ({ el, order, settings, loginSettings }: { el: PolicyEle
         fontSize: el.fontSize ?? 14,
         fontWeight: el.fontWeight ?? 'normal',
         color: el.type === 'line' ? 'transparent' : (el.color ?? '#000000'),
-        borderWidth: el.type === 'rect' ? el.borderWidth ?? 1 : 0,
+        borderWidth: el.type === 'rect' || el.type === 'table' ? el.borderWidth ?? 1 : 0,
         borderColor: el.borderColor ?? 'transparent',
         borderStyle: 'solid',
         opacity: el.opacity ?? 1,
@@ -125,20 +125,26 @@ const RenderedElement = ({ el, order, settings, loginSettings }: { el: PolicyEle
 }
 
 const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: any }> = ({ order, settings, loginSettings }) => {
+    const policySettings = settings || {};
+    const paperSize = policySettings.paperSize || 'custom';
+    const customDimensions = policySettings.customDimensions || { width: 75, height: 45 };
+    const margins = policySettings.margins || { top: 2, right: 2, bottom: 2, left: 2 };
+    const elements = policySettings.elements || [];
+
     const paperDimensions = {
-        width: settings.paperSize === 'custom' ? settings.customDimensions.width : parseFloat(paperSizeClasses[settings.paperSize].match(/w-\[(\d+\.?\d*)mm\]/)?.[1] || '0'),
-        height: settings.paperSize === 'custom' ? settings.customDimensions.height : parseFloat(paperSizeClasses[settings.paperSize].match(/min-h-\[(\d+\.?\d*)mm\]/)?.[0].match(/(\d+\.?\d*)/)?.[0] || '0'),
+        width: paperSize === 'custom' ? customDimensions.width : parseFloat(paperSizeClasses[paperSize].match(/w-\[(\d+\.?\d*)mm\]/)?.[1] || '0'),
+        height: paperSize === 'custom' ? customDimensions.height : parseFloat(paperSizeClasses[paperSize].match(/min-h-\[(\d+\.?\d*)mm\]/)?.[0].match(/(\d+\.?\d*)/)?.[0] || '0'),
     };
     
     const style = {
         width: `${paperDimensions.width}mm`,
         minHeight: `${paperDimensions.height}mm`,
-        padding: `${settings.margins.top}mm ${settings.margins.right}mm ${settings.margins.bottom}mm ${settings.margins.left}mm`,
+        padding: `${margins.top}mm ${margins.right}mm ${margins.bottom}mm ${margins.left}mm`,
     };
 
     return (
         <div className="policy-sheet relative font-sans text-black bg-white shadow-lg mx-auto" style={style}>
-            {(settings.elements || []).sort((a, b) => a.zIndex - b.zIndex).map(el => (
+            {elements.sort((a, b) => a.zIndex - b.zIndex).map(el => (
                 <RenderedElement key={el.id} el={el} order={order} settings={useSettings()} loginSettings={loginSettings} />
             ))}
         </div>
@@ -171,6 +177,11 @@ export const PrintablePolicy = forwardRef<
             toast({ variant: 'destructive', title: 'لا طلبات محددة', description: 'الرجاء تحديد طلب واحد على الأقل لطباعة البوليصة.' });
             return;
         }
+        
+        if (!finalSettings) {
+            toast({ variant: 'destructive', title: 'خطأ في الإعدادات', description: 'لا يمكن تحميل إعدادات البوليصة.' });
+            return;
+        }
 
         const paperDimensions = {
             width: finalSettings.paperSize === 'custom' ? finalSettings.customDimensions.width : parseFloat(paperSizeClasses[finalSettings.paperSize].match(/w-\[(\d+\.?\d*)mm\]/)?.[1] || '0'),
@@ -187,7 +198,11 @@ export const PrintablePolicy = forwardRef<
             for (let i = 0; i < policyElements.length; i++) {
                 const element = policyElements[i] as HTMLElement;
                 
-                const canvas = await html2canvas(element, { scale: 3, useCORS: true });
+                const canvas = await html2canvas(element, { 
+                    scale: 3, 
+                    useCORS: true,
+                    allowTaint: true // Allow cross-origin images to be rendered
+                });
                 const imgData = canvas.toDataURL('image/png');
 
                 if (!imgData || imgData === 'data:,') {
