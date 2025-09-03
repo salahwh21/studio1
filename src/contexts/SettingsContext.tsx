@@ -82,7 +82,7 @@ interface UiSettings {
 
 // Policy
 export interface PolicySettings {
-    paperSize: 'a4' | 'a5' | 'label_4x6' | 'label_4x4';
+    paperSize: 'a4' | 'a5' | 'label_4x6' | 'label_4x4' | 'custom';
     layout: 'default' | 'compact' | 'detailed';
     showCompanyLogo: boolean;
     showCompanyName: boolean;
@@ -93,6 +93,8 @@ export interface PolicySettings {
     showBarcode: boolean;
     footerNotes: string;
     customFields: {label: string, value: string}[];
+    customDimensions: { width: number, height: number };
+    margins: { top: number, right: number, bottom: number, left: number };
 }
 
 
@@ -182,17 +184,19 @@ const defaultSettingsData: ComprehensiveSettings = {
     iconLibrary: 'lucide',
   },
   policy: {
-      paperSize: 'a4',
+      paperSize: 'custom',
       layout: 'default',
       showCompanyLogo: true,
       showCompanyName: true,
-      showCompanyAddress: true,
+      showCompanyAddress: false,
       showRefNumber: true,
-      showItems: true,
+      showItems: false,
       showPrice: true,
       showBarcode: true,
-      footerNotes: 'شكراً لثقتكم بخدماتنا. يمكنكم التواصل معنا على 079xxxxxxx لأي استفسار.',
+      footerNotes: 'شكراً لثقتكم بخدماتنا.',
       customFields: [],
+      customDimensions: { width: 75, height: 45 },
+      margins: { top: 2, right: 2, bottom: 2, left: 2 },
   }
 };
 

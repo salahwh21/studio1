@@ -41,11 +41,14 @@ import {
     Copy,
     AlertTriangle,
     Wand2,
+    Printer,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
 import { Separator } from '@/components/ui/separator';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 
 // ---------- Types ----------
@@ -82,7 +85,7 @@ type SavedTemplate = {
   id: string;
   name: string;
   elements: PolicyElement[];
-  paperSizeKey: PaperSizeKey;
+  paperSize: PolicySettings['paperSize'];
   customDimensions: { width: number; height: number };
   margins: { top: number; right: number; bottom: number; left: number };
 };
@@ -426,16 +429,17 @@ const PropertiesModal = ({ element, onUpdate, onDelete, open, onOpenChange }: {
 
 // ---------- Main component ----------
 export default function PolicyEditorPage() {
-  const [paperSizeKey, setPaperSizeKey] = useState<PaperSizeKey>('custom');
-  const [customDimensions, setCustomDimensions] = useState({ width: 75, height: 45 });
-  const [margins, setMargins] = useState({ top: 2, right: 2, bottom: 2, left: 2 });
+  const { toast } = useToast();
+  const context = useSettings();
+  const { settings, updatePolicySetting, isHydrated } = context || {};
+  const { paperSize = 'custom', customDimensions = { width: 75, height: 45 }, margins = { top: 2, right: 2, bottom: 2, left: 2 } } = settings?.policy || {};
+  
   const [elements, setElements] = useState<PolicyElement[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [templateName, setTemplateName] = useState('');
-  const { toast } = useToast();
   const sensors = useSensors(useSensor(PointerSensor));
 
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, element: PolicyElement } | null>(null);
@@ -446,12 +450,12 @@ export default function PolicyEditorPage() {
 
 
   const paperDimensions = useMemo(() => {
-    if (paperSizeKey === 'custom') {
+    if (paperSize === 'custom') {
       return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
     }
-    const size = paperSizes[paperSizeKey];
+    const size = paperSizes[paperSize];
     return { width: mmToPx(size.width), height: mmToPx(size.height) };
-  }, [paperSizeKey, customDimensions]);
+  }, [paperSize, customDimensions]);
   
   const marginPx = useMemo(() => ({
     top: mmToPx(margins.top),
@@ -460,46 +464,42 @@ export default function PolicyEditorPage() {
     left: mmToPx(margins.left),
   }), [margins]);
 
-  const handleSmartLayout = () => {
+ const handleSmartLayout = () => {
     const { width: canvasWidth, height: canvasHeight } = paperDimensions;
     const { top, right, left, bottom } = marginPx;
     const printableWidth = canvasWidth - left - right;
     const printableHeight = canvasHeight - top - bottom;
   
-    // Header section
-    const headerHeight = snapToGrid(printableHeight * 0.2);
-    const logoWidth = snapToGrid(printableWidth * 0.3);
-    const barcodeWidth = snapToGrid(printableWidth * 0.4);
-  
-    // Body section
-    const bodyY = top + headerHeight + GRID_SIZE;
-    const bodyHeight = printableHeight * 0.4;
-    const halfWidth = snapToGrid(printableWidth / 2 - GRID_SIZE / 2);
-  
-    // Footer section
-    const footerY = bodyY + bodyHeight + GRID_SIZE;
-    const footerHeight = printableHeight - headerHeight - bodyHeight - (GRID_SIZE * 2);
-  
-    const newElements: PolicyElement[] = [
-      // Header
-      { id: nanoid(), type: 'image', x: left, y: top, width: logoWidth, height: headerHeight - GRID_SIZE, content: '{company_logo}', zIndex: 1 },
-      { id: nanoid(), type: 'barcode', x: canvasWidth - right - barcodeWidth, y: top, width: barcodeWidth, height: headerHeight - GRID_SIZE, content: '{order_id}', zIndex: 1 },
-      
-      // Line separator
-      { id: nanoid(), type: 'line', x: left, y: top + headerHeight, width: printableWidth, height: 2, content: '', zIndex: 0, color: '#000000', backgroundColor: '#000000' },
-      
-      // Body
-      { id: nanoid(), type: 'rect', x: left, y: bodyY, width: halfWidth, height: bodyHeight, content: '', zIndex: 0, borderColor: '#cccccc', borderWidth: 1 },
-      { id: nanoid(), type: 'text', x: left + GRID_SIZE, y: bodyY + GRID_SIZE, width: halfWidth - (GRID_SIZE*2), height: 30, content: 'من (المرسل)', zIndex: 1, fontWeight: 'bold' },
-      { id: nanoid(), type: 'text', x: left + GRID_SIZE, y: bodyY + 40, width: halfWidth - (GRID_SIZE*2), height: bodyHeight - 50, content: '{merchant_name}\n{merchant_phone}', zIndex: 1 },
+    let newElements: PolicyElement[] = [];
 
-      { id: nanoid(), type: 'rect', x: left + halfWidth + GRID_SIZE, y: bodyY, width: halfWidth, height: bodyHeight, content: '', zIndex: 0, borderColor: '#cccccc', borderWidth: 1 },
-      { id: nanoid(), type: 'text', x: left + halfWidth + (GRID_SIZE*2), y: bodyY + GRID_SIZE, width: halfWidth - (GRID_SIZE*2), height: 30, content: 'إلى (المستلم)', zIndex: 1, fontWeight: 'bold' },
-      { id: nanoid(), type: 'text', x: left + halfWidth + (GRID_SIZE*2), y: bodyY + 40, width: halfWidth - (GRID_SIZE*2), height: bodyHeight - 50, content: '{recipient_name}\n{recipient_address}\n{recipient_phone}', zIndex: 1 },
-
-      // Footer
-      { id: nanoid(), type: 'text', x: left, y: footerY, width: printableWidth, height: footerHeight, content: 'ملاحظات: {order_notes}', zIndex: 1 },
-    ];
+    // Smart layout logic for A4 paper
+    if (paperSize === 'a4' || paperSize === 'a5') {
+        const headerHeight = snapToGrid(printableHeight * 0.15);
+        const halfWidth = snapToGrid(printableWidth / 2 - GRID_SIZE / 2);
+        const bodyY = top + headerHeight + GRID_SIZE;
+        const bodyHeight = snapToGrid(printableHeight * 0.25);
+        
+        newElements = [
+            { id: nanoid(), type: 'image', x: left, y: top, width: snapToGrid(printableWidth * 0.3), height: headerHeight - GRID_SIZE, content: '{company_logo}', zIndex: 1 },
+            { id: nanoid(), type: 'barcode', x: canvasWidth - right - snapToGrid(printableWidth * 0.4), y: top, width: snapToGrid(printableWidth * 0.4), height: headerHeight - GRID_SIZE, content: '{order_id}', zIndex: 1 },
+            { id: nanoid(), type: 'line', x: left, y: top + headerHeight, width: printableWidth, height: 2, zIndex: 0, color: '#000000', backgroundColor: '#000000' },
+            { id: nanoid(), type: 'rect', x: left, y: bodyY, width: halfWidth, height: bodyHeight, content: '', zIndex: 0, borderColor: '#cccccc', borderWidth: 1 },
+            { id: nanoid(), type: 'text', x: left + GRID_SIZE, y: bodyY + GRID_SIZE, width: halfWidth - (GRID_SIZE*2), height: 30, content: 'من (المرسل)', zIndex: 1, fontWeight: 'bold' },
+            { id: nanoid(), type: 'text', x: left + GRID_SIZE, y: bodyY + 40, width: halfWidth - (GRID_SIZE*2), height: bodyHeight - 50, content: '{merchant_name}\n{merchant_phone}', zIndex: 1 },
+            { id: nanoid(), type: 'rect', x: left + halfWidth + GRID_SIZE, y: bodyY, width: halfWidth, height: bodyHeight, content: '', zIndex: 0, borderColor: '#cccccc', borderWidth: 1 },
+            { id: nanoid(), type: 'text', x: left + halfWidth + (GRID_SIZE*2), y: bodyY + GRID_SIZE, width: halfWidth - (GRID_SIZE*2), height: 30, content: 'إلى (المستلم)', zIndex: 1, fontWeight: 'bold' },
+            { id: nanoid(), type: 'text', x: left + halfWidth + (GRID_SIZE*2), y: bodyY + 40, width: halfWidth - (GRID_SIZE*2), height: bodyHeight - 50, content: '{recipient_name}\n{recipient_address}\n{recipient_phone}', zIndex: 1 },
+        ];
+    } else { // Smart layout for labels (e.g., 4x6)
+        const recipientInfoHeight = snapToGrid(printableHeight * 0.4);
+        const barcodeHeight = snapToGrid(printableHeight * 0.25);
+        newElements = [
+            { id: nanoid(), type: 'text', x: left, y: top, width: printableWidth, height: 24, content: 'من: {merchant_name}', zIndex: 1, fontWeight: 'bold' },
+            { id: nanoid(), type: 'text', x: left, y: top + 32, width: printableWidth, height: recipientInfoHeight, content: 'إلى: {recipient_name}\n{recipient_address}\n{recipient_phone}', zIndex: 1, fontSize: 16 },
+            { id: nanoid(), type: 'barcode', x: left, y: top + 40 + recipientInfoHeight, width: printableWidth, height: barcodeHeight, content: '{order_id}', zIndex: 1 },
+            { id: nanoid(), type: 'text', x: left, y: top + 48 + recipientInfoHeight + barcodeHeight, width: printableWidth, height: 32, content: 'المبلغ: {cod_amount}', zIndex: 1, fontSize: 20, fontWeight: 'bold' },
+        ];
+    }
     
     setElements(newElements);
     toast({ title: 'تم إنشاء التصميم', description: 'تم إنشاء تصميم احترافي بناءً على حجم الصفحة.' });
@@ -751,7 +751,7 @@ const handleDuplicate = () => {
       id: nanoid(),
       name: templateName,
       elements,
-      paperSizeKey,
+      paperSize: paperSize,
       customDimensions,
       margins,
     };
@@ -765,9 +765,11 @@ const handleDuplicate = () => {
 
   const loadTemplate = (template: SavedTemplate) => {
     setElements(template.elements);
-    setPaperSizeKey(template.paperSizeKey);
-    setCustomDimensions(template.customDimensions);
-    setMargins(template.margins);
+    if(updatePolicySetting) {
+        updatePolicySetting('paperSize', template.paperSize);
+        updatePolicySetting('customDimensions', template.customDimensions);
+        updatePolicySetting('margins', template.margins);
+    }
     toast({ title: 'تم التحميل', description: `تم تحميل قالب "${template.name}".` });
   };
 
@@ -780,7 +782,7 @@ const handleDuplicate = () => {
   
   const readyTemplates: Record<string, SavedTemplate> = {
     "a4_default": {
-        id: "a4_default", name: "A4 احترافي", paperSizeKey: "a4",
+        id: "a4_default", name: "A4 احترافي", paperSize: "a4",
         customDimensions: { width: 210, height: 297 }, margins: { top: 10, right: 10, bottom: 10, left: 10 },
         elements: [
             { id: "1", type: "rect", x: 16, y: 16, width: 752, height: 112, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 2, backgroundColor: "#f3f4f6", opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
@@ -802,7 +804,7 @@ const handleDuplicate = () => {
         ]
     },
     "label_4x6_default": {
-        id: "label_4x6_default", name: "بوليصة 4x6 عملية", paperSizeKey: "label_4x6",
+        id: "label_4x6_default", name: "بوليصة 4x6 عملية", paperSize: "label_4x6",
         customDimensions: { width: 101.6, height: 152.4 }, margins: { top: 5, right: 5, bottom: 5, left: 5 },
         elements: [
             { id: "1", type: "text", x: 16, y: 16, width: 184, height: 24, zIndex: 1, content: "من: {merchant_name}", fontSize: 14, fontWeight: "bold", color: "#000000", opacity: 1 },
@@ -817,7 +819,7 @@ const handleDuplicate = () => {
         ]
     },
     "label_45x75_default": {
-        id: "label_45x75_default", name: "بوليصة 45x75", paperSizeKey: "custom",
+        id: "label_45x75_default", name: "بوليصة 75x45 (عرضية)", paperSize: "custom",
         customDimensions: { width: 75, height: 45 }, margins: { top: 2, right: 2, bottom: 2, left: 2 },
         elements: [
             { id: "el_brcd", type: "barcode", x: 128, y: 8, width: 136, height: 88, zIndex: 1, content: "{order_id}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
@@ -839,6 +841,41 @@ const handleDuplicate = () => {
           setIsModalOpen(true);
           setContextMenu(null);
       }
+  }
+
+  const handlePrint = async () => {
+    const canvasElement = canvasRef.current;
+    if (!canvasElement) return;
+
+    try {
+        const canvas = await html2canvas(canvasElement, {
+            scale: 2, // Higher scale for better quality
+            useCORS: true, // If you use external images
+        });
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+            orientation: paperDimensions.width > paperDimensions.height ? 'l' : 'p',
+            unit: 'mm',
+            format: [paperDimensions.width * (25.4 / DPI), paperDimensions.height * (25.4 / DPI)],
+        });
+
+        pdf.addImage(imgData, 'PNG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
+        pdf.autoPrint();
+        window.open(pdf.output('bloburl'), '_blank');
+
+    } catch (e) {
+        console.error('Error generating PDF', e);
+        toast({
+            variant: 'destructive',
+            title: 'خطأ في الطباعة',
+            description: 'حدث خطأ أثناء محاولة إنشاء ملف PDF.',
+        });
+    }
+  };
+
+
+  if (!isHydrated) {
+    return null; // or a loading skeleton
   }
 
 
@@ -891,6 +928,9 @@ const handleDuplicate = () => {
                     </CardDescription>
                 </div>
                  <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={handlePrint}>
+                        <Printer className="ml-2 h-4 w-4" /> طباعة عينة
+                    </Button>
                     <Button variant="outline" onClick={handleSmartLayout}>
                         <Wand2 className="ml-2 h-4 w-4" /> المساعدة الذكية
                     </Button>
@@ -939,24 +979,24 @@ const handleDuplicate = () => {
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
                                 <Label>حجم الورق</Label>
-                                <Select value={paperSizeKey} onValueChange={(val) => setPaperSizeKey(val as PaperSizeKey)}>
+                                <Select value={paperSize} onValueChange={(val) => updatePolicySetting && updatePolicySetting('paperSize', val as PolicySettings['paperSize'])}>
                                     <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                                     <SelectContent>{Object.entries(paperSizes).map(([key, { label }]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
-                             {paperSizeKey === 'custom' && (
+                             {paperSize === 'custom' && (
                                 <div className="grid grid-cols-2 gap-2">
-                                    <div className="space-y-2"><Label>العرض (مم)</Label><Input type="number" value={customDimensions.width} onChange={e => setCustomDimensions(p => ({...p, width: parseInt(e.target.value, 10) || 0}))} /></div>
-                                    <div className="space-y-2"><Label>الارتفاع (مم)</Label><Input type="number" value={customDimensions.height} onChange={e => setCustomDimensions(p => ({...p, height: parseInt(e.target.value, 10) || 0}))} /></div>
+                                    <div className="space-y-2"><Label>العرض (مم)</Label><Input type="number" value={customDimensions.width} onChange={e => updatePolicySetting && updatePolicySetting('customDimensions', {...customDimensions, width: parseInt(e.target.value, 10) || 0})} /></div>
+                                    <div className="space-y-2"><Label>الارتفاع (مم)</Label><Input type="number" value={customDimensions.height} onChange={e => updatePolicySetting && updatePolicySetting('customDimensions', {...customDimensions, height: parseInt(e.target.value, 10) || 0})} /></div>
                                 </div>
                             )}
                              <div className="space-y-2">
                                 <Label>الهوامش (مم)</Label>
                                 <div className="grid grid-cols-2 gap-2">
-                                     <div className="space-y-2"><Label className="text-xs">الأعلى</Label><Input type="number" placeholder="أعلى" value={margins.top} onChange={e => setMargins(p => ({...p, top: parseInt(e.target.value, 10) || 0}))}/></div>
-                                     <div className="space-y-2"><Label className="text-xs">الأسفل</Label><Input type="number" placeholder="أسفل" value={margins.bottom} onChange={e => setMargins(p => ({...p, bottom: parseInt(e.target.value, 10) || 0}))}/></div>
-                                     <div className="space-y-2"><Label className="text-xs">اليمين</Label><Input type="number" placeholder="يمين" value={margins.right} onChange={e => setMargins(p => ({...p, right: parseInt(e.target.value, 10) || 0}))}/></div>
-                                     <div className="space-y-2"><Label className="text-xs">اليسار</Label><Input type="number" placeholder="يسار" value={margins.left} onChange={e => setMargins(p => ({...p, left: parseInt(e.target.value, 10) || 0}))}/></div>
+                                     <div className="space-y-2"><Label className="text-xs">الأعلى</Label><Input type="number" placeholder="أعلى" value={margins.top} onChange={e => updatePolicySetting && updatePolicySetting('margins', {...margins, top: parseInt(e.target.value, 10) || 0})}/></div>
+                                     <div className="space-y-2"><Label className="text-xs">الأسفل</Label><Input type="number" placeholder="أسفل" value={margins.bottom} onChange={e => updatePolicySetting && updatePolicySetting('margins', {...margins, bottom: parseInt(e.target.value, 10) || 0})}/></div>
+                                     <div className="space-y-2"><Label className="text-xs">اليمين</Label><Input type="number" placeholder="يمين" value={margins.right} onChange={e => updatePolicySetting && updatePolicySetting('margins', {...margins, right: parseInt(e.target.value, 10) || 0})}/></div>
+                                     <div className="space-y-2"><Label className="text-xs">اليسار</Label><Input type="number" placeholder="يسار" value={margins.left} onChange={e => updatePolicySetting && updatePolicySetting('margins', {...margins, left: parseInt(e.target.value, 10) || 0})}/></div>
                                 </div>
                             </div>
                         </CardContent>
