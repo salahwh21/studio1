@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useState, useEffect, ReactNode, useContext, useCallback } from 'react';
@@ -81,6 +82,35 @@ interface UiSettings {
 }
 
 // Policy
+type ElementType = 'text' | 'image' | 'barcode' | 'rect' | 'line' | 'table';
+type FontWeight = 'normal' | 'bold';
+
+type TableCellData = { id: string; content: string };
+type TableRowData = { id: string; cells: TableCellData[] };
+
+type PolicyElement = {
+  id: string;
+  type: ElementType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  content: string;
+  zIndex: number;
+  fontSize?: number;
+  fontWeight?: FontWeight;
+  color?: string;
+  borderColor?: string;
+  borderWidth?: number;
+  opacity?: number;
+  backgroundColor?: string;
+  // Table specific properties
+  rowCount?: number;
+  colCount?: number;
+  tableData?: TableRowData[];
+  headers?: string[];
+};
+
 export interface PolicySettings {
     paperSize: 'a4' | 'a5' | 'label_4x6' | 'label_4x4' | 'custom';
     layout: 'default' | 'compact' | 'detailed';
@@ -95,6 +125,7 @@ export interface PolicySettings {
     customFields: {label: string, value: string}[];
     customDimensions: { width: number, height: number };
     margins: { top: number, right: number, bottom: number, left: number };
+    elements: PolicyElement[];
 }
 
 
@@ -197,6 +228,7 @@ const defaultSettingsData: ComprehensiveSettings = {
       customFields: [],
       customDimensions: { width: 75, height: 45 },
       margins: { top: 2, right: 2, bottom: 2, left: 2 },
+      elements: [],
   }
 };
 
