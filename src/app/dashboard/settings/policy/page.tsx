@@ -63,7 +63,6 @@ const GRID_SIZE = 5;
 const SNAP_THRESHOLD = 6;
 const snapToGrid = (value: number) => Math.round(value / GRID_SIZE) * GRID_SIZE;
 const mmToPx = (mm: number) => (mm / 25.4) * 96;
-const RULER_WIDTH = 20;
 
 const paperSizes: Record<string, { width: number; height: number }> = {
   a4: { width: 210, height: 297 },
@@ -270,34 +269,34 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDrag, onStop, isSe
   zoomLevel: number;
 }) => {
   const nodeRef = React.useRef(null);
+  
   return (
-    <Resizable
-        ref={nodeRef}
-        size={{ width: element.width, height: element.height }}
-        style={{ position: 'absolute', transform: `translate(${element.x}px, ${element.y}px)`, zIndex: element.zIndex }}
-        onResizeStop={(e, dir, ref, d) => onUpdate(element.id, { width: snapToGrid(element.width + d.width), height: snapToGrid(element.height + d.height) })}
-        onClick={(e) => onSelect(element.id, e)}
-        className={`${isSelected ? 'border-2 border-dashed border-primary' : ''}`}
-        enable={{
+    <Draggable
+        nodeRef={nodeRef}
+        handle=".handle"
+        position={{x: element.x, y: element.y}}
+        scale={zoomLevel}
+        onStart={(e) => onSelect(element.id, e as any)}
+        onDrag={(e, data) => onDrag(e, data, element.id)}
+        onStop={onStop}
+      >
+        <Resizable
+          ref={nodeRef}
+          size={{ width: element.width, height: element.height }}
+          style={{ position: 'absolute', zIndex: element.zIndex }}
+          onResizeStop={(e, dir, ref, d) => onUpdate(element.id, { width: snapToGrid(element.width + d.width), height: snapToGrid(element.height + d.height) })}
+          onClick={(e) => onSelect(element.id, e)}
+          className={`${isSelected ? 'border-2 border-dashed border-primary' : ''}`}
+          enable={{
             top: isSelected, right: isSelected, bottom: isSelected, left: isSelected,
             topRight: isSelected, bottomRight: isSelected, bottomLeft: isSelected, topLeft: isSelected,
-        }}
-    >
-        <Draggable
-            handle=".handle"
-            position={{ x: 0, y: 0 }}
-            scale={zoomLevel}
-            onStart={(e) => onSelect(element.id, e as any)}
-            onDrag={(e, data) => onDrag(e, data, element.id)}
-            onStop={onStop}
+          }}
         >
-          <div className="w-full h-full relative">
-            <div className="handle w-full h-full cursor-move">
-              <PolicyElementComponent element={element} />
-            </div>
+          <div className="handle w-full h-full cursor-move">
+            <PolicyElementComponent element={element} />
           </div>
-        </Draggable>
-    </Resizable>
+        </Resizable>
+    </Draggable>
   );
 };
 
@@ -317,8 +316,6 @@ export default function PolicyEditorPage() {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isDragging, setIsDragging] = useState(false);
     const [smartGuides, setSmartGuides] = useState<{ x: number[], y: number[] }>({ x: [], y: [] });
-    const [horizontalGuides, setHorizontalGuides] = useState<number[]>([]);
-    const [verticalGuides, setVerticalGuides] = useState<number[]>([]);
     const canvasRef = useRef<HTMLDivElement>(null);
     const importTemplateInputRef = useRef<HTMLInputElement>(null);
 
@@ -437,12 +434,11 @@ export default function PolicyEditorPage() {
 
     const handleDrag = useCallback((e: DraggableEvent, data: DraggableData, elementId: string) => {
         setIsDragging(true);
-        let { x, y } = data;
         const activeElement = elements.find(el => el.id === elementId);
         if (!activeElement) return;
         
-        let newX = activeElement.x + x;
-        let newY = activeElement.y + y;
+        let newX = data.x;
+        let newY = data.y;
 
         const newGuides = { x: [] as number[], y: [] as number[] };
 
@@ -595,19 +591,6 @@ export default function PolicyEditorPage() {
         };
         reader.readAsText(file);
     };
-
-    const handleNewGuide = (e: React.MouseEvent, orientation: 'horizontal' | 'vertical') => {
-        if (!canvasRef.current) return;
-        const canvasRect = canvasRef.current.getBoundingClientRect();
-        if (orientation === 'horizontal') {
-            const y = (e.clientY - canvasRect.top) / zoomLevel;
-            setHorizontalGuides(prev => [...prev, snapToGrid(y)]);
-        } else {
-            const x = (e.clientX - canvasRect.left) / zoomLevel;
-            setVerticalGuides(prev => [...prev, snapToGrid(x)]);
-        }
-    };
-
 
     if (!isHydrated) return null;
     
