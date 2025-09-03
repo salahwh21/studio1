@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useRef, useMemo, useCallback, useEffect, forwardRef } from 'react';
@@ -33,7 +32,6 @@ import {
   ChevronDown,
   ChevronsDown,
   ArrowLeft,
-  Ruler,
   MousePointerSquare,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
@@ -264,37 +262,38 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag,
   element: PolicyElement;
   onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
   onSelect: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
-  onDragStart: (e: DraggableEvent, data: DraggableData, elementId: string) => void;
-  onDrag: (e: DraggableEvent, data: DraggableData, elementId: string) => void;
-  onStop: () => void;
+  onDragStart: (e: DraggableEvent, data: DraggableData) => void;
+  onDrag: (e: DraggableEvent, data: DraggableData) => void;
+  onStop: (e: DraggableEvent, data: DraggableData) => void;
   isSelected: boolean;
   zoomLevel: number;
 }) => {
   const nodeRef = React.useRef<HTMLDivElement>(null);
   
   return (
-      <Draggable
+    <Draggable
         nodeRef={nodeRef}
         handle=".handle"
         position={{x: element.x, y: element.y}}
         scale={zoomLevel}
-        onStart={(e, data) => onDragStart(e, data, element.id)}
-        onDrag={(e, data) => onDrag(e, data, element.id)}
+        onStart={onDragStart}
+        onDrag={onDrag}
         onStop={onStop}
-      >
+    >
         <Resizable
           ref={nodeRef}
           size={{ width: element.width, height: element.height }}
+          className="absolute"
           onResizeStop={(e, dir, ref, d) => onUpdate(element.id, { width: snapToGrid(element.width + d.width), height: snapToGrid(element.height + d.height) })}
           onClick={(e) => onSelect(element.id, e)}
-          className={`${isSelected ? 'border-2 border-dashed border-primary' : ''}`}
           enable={{
             top: isSelected, right: isSelected, bottom: isSelected, left: isSelected,
             topRight: isSelected, bottomRight: isSelected, bottomLeft: isSelected, topLeft: isSelected,
           }}
         >
-            <div className="handle w-full h-full absolute top-0 left-0 cursor-move z-10"></div>
-            <PolicyElementComponent element={element} />
+            <div className={`handle w-full h-full cursor-move ${isSelected ? 'border-2 border-dashed border-primary' : ''}`}>
+                <PolicyElementComponent element={element} />
+            </div>
         </Resizable>
     </Draggable>
   );
@@ -446,8 +445,15 @@ export default function PolicyEditorPage() {
         });
     };
 
-    const handleDragStart = useCallback((e: DraggableEvent, data: DraggableData, elementId: string) => {
-        setIsDragging(true);
+    const handleDragStart = useCallback((e: DraggableEvent, data: DraggableData) => {
+        const draggableNode = data.node.parentElement;
+        if (!draggableNode) return false;
+
+        // Defer state update to prevent race condition with mount
+        setTimeout(() => setIsDragging(true), 0);
+
+        const elementId = draggableNode.id || '';
+        
         // If dragging an unselected element, select only that one.
         if (!selectedIds.includes(elementId)) {
             setSelectedIds([elementId]);
@@ -465,7 +471,11 @@ export default function PolicyEditorPage() {
         }
     }, [elements, selectedIds]);
 
-    const handleDrag = useCallback((e: DraggableEvent, data: DraggableData, elementId: string) => {
+    const handleDrag = useCallback((e: DraggableEvent, data: DraggableData) => {
+        const draggableNode = data.node.parentElement;
+        if (!draggableNode) return;
+        const elementId = draggableNode.id || '';
+
         const activeElementStartPos = dragStartPositions.current[elementId];
         if (!activeElementStartPos) return;
 
@@ -534,11 +544,23 @@ export default function PolicyEditorPage() {
 
     }, [elements, selectedIds, margins, paperDimensions]);
 
-    const handleStopDrag = useCallback(() => {
+    const handleStopDrag = useCallback((e: DraggableEvent, data: DraggableData) => {
         setIsDragging(false);
         setSmartGuides({ x: [], y: [] });
+        const draggableNode = data.node.parentElement;
+        if (!draggableNode) return;
+        
+        const elementId = draggableNode.id || '';
+        const startPos = dragStartPositions.current[elementId];
+
+        if(startPos) {
+             const deltaX = data.x - startPos.x;
+             const deltaY = data.y - startPos.y;
+             handleBulkUpdateElements(selectedIds, snapToGrid(deltaX), snapToGrid(deltaY));
+        }
+        
         dragStartPositions.current = {};
-    }, []);
+    }, [selectedIds]);
     
     const selectedElement = useMemo(() => elements.find(el => el.id === selectedIds[0]), [elements, selectedIds]);
     
@@ -822,6 +844,11 @@ export default function PolicyEditorPage() {
                                 style={{ 
                                     width: paperDimensions.width, 
                                     height: paperDimensions.height,
+                                }}
+                                onClick={(e) => {
+                                    if(e.target === e.currentTarget){
+                                        setSelectedIds([]);
+                                    }
                                 }}
                             >
                                 {isDragging && smartGuides.x.map((x, i) => <div key={`sgx-${i}`} className="absolute top-0 h-full w-px bg-red-500 z-50" style={{ left: x }} />)}
