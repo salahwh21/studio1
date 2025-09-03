@@ -103,7 +103,7 @@ const DraggableItem = ({ element, selected, onSelect, onUpdate }: {
     });
   };
 
-  const handleDrag: DraggableCallback = (e, data) => {
+  const handleDragStop: DraggableCallback = (e, data) => {
     onUpdate(element.id, {
       x: snapToGrid(data.x),
       y: snapToGrid(data.y),
@@ -132,7 +132,7 @@ const DraggableItem = ({ element, selected, onSelect, onUpdate }: {
       size={{ width: element.width, height: element.height }}
       position={{ x: element.x, y: element.y }}
       onResizeStop={handleResizeStop}
-      onDragStop={handleDrag}
+      onDragStop={handleDragStop}
       enable={{
         top: selected, right: selected, bottom: selected, left: selected,
         topRight: selected, bottomRight: selected, bottomLeft: selected, topLeft: selected,
@@ -240,8 +240,7 @@ export default function PolicyEditorPage() {
     const { orders } = useOrdersStore();
     const context = useSettings();
     
-    // Fallback to default if context is not ready
-    const { settings: policySettings, updatePolicySetting, isHydrated } = context || { settings: null, updatePolicySetting: () => {}, isHydrated: false };
+    const { settings: policySettings, updatePolicySetting, isHydrated } = context;
 
     const [elements, setElements] = useState<PolicyElement[]>(policySettings?.policy.elements || []);
     const [paperSize, setPaperSize] = useState<PolicySettings['paperSize']>(policySettings?.policy.paperSize || 'custom');
@@ -591,7 +590,7 @@ export default function PolicyEditorPage() {
                         <CardDescription>اسحب وأفلت العناصر لتصميم البوليصة. انقر على عنصر لتعديل خصائصه.</CardDescription>
                     </div>
                     <Button variant="outline" size="icon" asChild>
-                        <Link href="/dashboard/settings">
+                        <Link href="/dashboard/settings/general">
                             <ArrowLeft className="h-4 w-4" />
                         </Link>
                     </Button>
@@ -704,3 +703,4 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
