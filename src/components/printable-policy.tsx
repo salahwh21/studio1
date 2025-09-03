@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
@@ -7,7 +6,8 @@ import type { Order } from '@/store/orders-store';
 import { useSettings, type PolicySettings, type PolicyElement } from '@/contexts/SettingsContext';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
-import Image from 'next/image';
+// Removed next/image as it causes issues with html2canvas
+// import Image from 'next/image';
 import Barcode from 'react-barcode';
 import Icon from './icon';
 import { useToast } from '@/hooks/use-toast';
@@ -84,7 +84,13 @@ const RenderedElement = ({ el, order, settings, loginSettings }: { el: PolicyEle
         return (
             <div style={baseStyle}>
                 {imageUrl ? (
-                    <Image src={imageUrl} alt="Logo" layout="fill" objectFit="contain" />
+                    // Using a standard <img> tag instead of next/image for better compatibility with html2canvas
+                    <img 
+                        src={imageUrl} 
+                        alt="Logo" 
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        crossOrigin="anonymous" // Important for html2canvas
+                    />
                 ) : (
                     <Icon name="Image" className="h-8 w-8 text-muted-foreground" isPrinting />
                 )}
@@ -184,8 +190,8 @@ export const PrintablePolicy = forwardRef<
         }
 
         const paperDimensions = {
-            width: finalSettings.paperSize === 'custom' ? finalSettings.customDimensions.width : parseFloat(paperSizeClasses[finalSettings.paperSize].match(/w-\[(\d+\.?\d*)mm\]/)?.[1] || '0'),
-            height: finalSettings.paperSize === 'custom' ? finalSettings.customDimensions.height : parseFloat(paperSizeClasses[finalSettings.paperSize].match(/min-h-\[(\d+\.?\d*)mm\]/)?.[0].match(/(\d+\.?\d*)/)?.[0] || '0'),
+            width: finalSettings.paperSize === 'custom' ? finalSettings.customDimensions.width : parseFloat(finalSettings.paperSize === 'custom' ? finalSettings.customDimensions.width : parseFloat(paperSizeClasses[finalSettings.paperSize].match(/w-\[(\d+\.?\d*)mm\]/)?.[1] || '0')),
+            height: finalSettings.paperSize === 'custom' ? finalSettings.customDimensions.height : parseFloat(finalSettings.paperSize === 'custom' ? finalSettings.customDimensions.height : parseFloat(paperSizeClasses[finalSettings.paperSize].match(/min-h-\[(\d+\.?\d*)mm\]/)?.[0].match(/(\d+\.?\d*)/)?.[0] || '0')),
         };
 
         try {
