@@ -66,17 +66,8 @@ const ElementRenderer = ({ el, order, settings }: { el: PolicyElement; order: Or
 
         case 'barcode':
             const barcodeValue = replacePlaceholders(el.content, order, settings.login.companyName);
-            return (
-                <div style={baseStyle}>
-                    <Barcode 
-                        value={barcodeValue} 
-                        width={2} 
-                        height={50} 
-                        fontSize={12} 
-                        renderer="canvas"
-                    />
-                </div>
-            );
+            // Fallback to simple text rendering to avoid canvas/svg issues in PDF generation
+            return <div style={{...baseStyle, fontSize: '10px'}}>{barcodeValue}</div>;
         
         case 'rect':
             return <div style={baseStyle}></div>;
@@ -84,6 +75,31 @@ const ElementRenderer = ({ el, order, settings }: { el: PolicyElement; order: Or
         case 'line':
             return <div style={{ ...baseStyle, padding: 0 }}></div>;
             
+        case 'table':
+            const { headers = [], tableData = [], borderColor = '#000000', fontSize = 12, fontWeight = 'bold' } = el;
+            return (
+                <div style={{ ...baseStyle, display: 'block', padding: 0, alignItems: 'stretch', justifyContent: 'stretch' }}>
+                    <table className="w-full h-full border-collapse" style={{fontSize: `${fontSize}px`}}>
+                        <thead>
+                            <tr style={{fontWeight: fontWeight}}>
+                                {headers.map((header, i) => (
+                                    <th key={i} className="border p-1 overflow-hidden" style={{borderColor}}>{header}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {tableData.map((row) => (
+                                <tr key={row.id}>
+                                    {row.cells.map((cell) => (
+                                        <td key={cell.id} className="border p-1" style={{borderColor}}>{cell.content}</td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )
+
         default:
             return null;
     }
@@ -96,7 +112,7 @@ const Policy = ({ order, template, settings }: { order: Order; template: SavedTe
   }
 
   const { paperSize, customDimensions, margins, elements } = template;
-  const dimensions = paperSize === 'custom' ? customDimensions : { width: 0, height: 0 };
+  const dimensions = paperSize === 'custom' ? customDimensions : (paperSizeClasses[paperSize] || paperSizeClasses.custom);
   
   const mmToPx = (mm: number) => (mm / 25.4) * 96;
 
@@ -128,5 +144,15 @@ const Policy = ({ order, template, settings }: { order: Order; template: SavedTe
     </div>
   );
 };
+
+// Define paper sizes directly in this component as well to avoid circular dependencies
+const paperSizeClasses: Record<string, { width: number; height: number; }> = {
+  a4: { width: 210, height: 297 },
+  a5: { width: 148, height: 210 },
+  label_4x6: { width: 101.6, height: 152.4 },
+  label_4x4: { width: 101.6, height: 101.6 },
+  custom: { width: 75, height: 45 },
+};
+
 
 export default Policy;
