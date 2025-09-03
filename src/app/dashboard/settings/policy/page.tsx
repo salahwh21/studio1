@@ -60,6 +60,7 @@ import { Resizable } from 're-resizable';
 // --- Constants & Helpers ---
 
 const GRID_SIZE = 5;
+const SNAP_THRESHOLD = 6;
 const snapToGrid = (value: number) => Math.round(value / GRID_SIZE) * GRID_SIZE;
 const mmToPx = (mm: number) => (mm / 25.4) * 96;
 const RULER_WIDTH = 20;
@@ -276,10 +277,12 @@ const RulerComponent = ({ orientation, size }: { orientation: 'horizontal' | 've
     );
 };
 
-const PolicyDraggableItem = ({ element, onUpdate, onSelect, isSelected, zoomLevel }: {
+const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDrag, onStop, isSelected, zoomLevel }: {
   element: PolicyElement;
   onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
   onSelect: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
+  onDrag: (e: DraggableEvent, data: DraggableData, elementId: string) => void;
+  onStop: () => void;
   isSelected: boolean;
   zoomLevel: number;
 }) => {
@@ -287,12 +290,11 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, isSelected, zoomLeve
   return (
     <Draggable
       nodeRef={nodeRef}
-      handle=".handle"
       position={{ x: element.x, y: element.y }}
-      grid={[GRID_SIZE, GRID_SIZE]}
       scale={zoomLevel}
       onStart={(e) => onSelect(element.id, e as any)}
-      onStop={(e, data) => onUpdate(element.id, { x: data.x, y: data.y })}
+      onDrag={(e, data) => onDrag(e, data, element.id)}
+      onStop={onStop}
     >
         <Resizable
             ref={nodeRef}
@@ -326,6 +328,8 @@ export default function PolicyEditorPage() {
     const [margins, setMargins] = useState(policySettings?.policy.margins || { top: 2, right: 2, bottom: 2, left: 2 });
     const [zoomLevel, setZoomLevel] = useState(0.8);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isDragging, setIsDragging] = useState(false);
+    const [smartGuides, setSmartGuides] = useState<{ x: number[], y: number[] }>({ x: [], y: [] });
     const [horizontalGuides, setHorizontalGuides] = useState<number[]>([]);
     const [verticalGuides, setVerticalGuides] = useState<number[]>([]);
     const canvasRef = useRef<HTMLDivElement>(null);
@@ -443,6 +447,72 @@ export default function PolicyEditorPage() {
             return sorted.map((el, i) => ({ ...el, zIndex: i }));
         });
     };
+
+    const handleDrag = useCallback((e: DraggableEvent, data: DraggableData, elementId: string) => {
+        setIsDragging(true);
+        let { x, y } = data;
+        const activeElement = elements.find(el => el.id === elementId);
+        if (!activeElement) return;
+
+        const newGuides = { x: [] as number[], y: [] as number[] };
+
+        // Define target snap points for the canvas
+        const canvasSnapPoints = {
+            x: [mmToPx(margins.left), (paperDimensions.width / 2), paperDimensions.width - mmToPx(margins.right)],
+            y: [mmToPx(margins.top), (paperDimensions.height / 2), paperDimensions.height - mmToPx(margins.bottom)],
+        };
+        
+        // Define points of interest for the dragged element
+        const elementPoints = {
+            x: [x, x + activeElement.width / 2, x + activeElement.width],
+            y: [y, y + activeElement.height / 2, y + activeElement.height],
+        };
+
+        // Check against other elements
+        elements.forEach(el => {
+            if (el.id === elementId) return;
+
+            const otherPoints = {
+                x: [el.x, el.x + el.width / 2, el.x + el.width],
+                y: [el.y, el.y + el.height / 2, el.y + el.height],
+            };
+
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (Math.abs(elementPoints.x[i] - otherPoints.x[j]) < SNAP_THRESHOLD) {
+                        x += otherPoints.x[j] - elementPoints.x[i];
+                        newGuides.x.push(otherPoints.x[j]);
+                    }
+                    if (Math.abs(elementPoints.y[i] - otherPoints.y[j]) < SNAP_THRESHOLD) {
+                        y += otherPoints.y[j] - elementPoints.y[i];
+                        newGuides.y.push(otherPoints.y[j]);
+                    }
+                }
+            }
+        });
+
+        // Check against canvas snap points
+        for(let i=0; i<3; i++) {
+            for(let j=0; j<3; j++) {
+                if (Math.abs(elementPoints.x[i] - canvasSnapPoints.x[j]) < SNAP_THRESHOLD) {
+                    x += canvasSnapPoints.x[j] - elementPoints.x[i];
+                    newGuides.x.push(canvasSnapPoints.x[j]);
+                }
+                if (Math.abs(elementPoints.y[i] - canvasSnapPoints.y[j]) < SNAP_THRESHOLD) {
+                    y += canvasSnapPoints.y[j] - elementPoints.y[i];
+                    newGuides.y.push(canvasSnapPoints.y[j]);
+                }
+            }
+        }
+        
+        setSmartGuides(newGuides);
+        handleUpdateElement(elementId, { x, y });
+    }, [elements, margins, paperDimensions]);
+
+    const handleStopDrag = useCallback(() => {
+        setIsDragging(false);
+        setSmartGuides({ x: [], y: [] });
+    }, []);
     
     const selectedElement = useMemo(() => elements.find(el => el.id === selectedIds[0]), [elements, selectedIds]);
     
@@ -761,6 +831,9 @@ export default function PolicyEditorPage() {
                                     </Draggable>
                                 ))}
 
+                                {isDragging && smartGuides.x.map((x, i) => <div key={`sgx-${i}`} className="absolute top-0 h-full w-px bg-red-500 z-50" style={{ left: x }} />)}
+                                {isDragging && smartGuides.y.map((y, i) => <div key={`sgy-${i}`} className="absolute left-0 w-full h-px bg-red-500 z-50" style={{ top: y }} />)}
+
 
                                 <div 
                                     aria-hidden 
@@ -789,6 +862,8 @@ export default function PolicyEditorPage() {
                                         const event = e as React.MouseEvent;
                                         setSelectedIds(event.metaKey || event.ctrlKey ? [...selectedIds, id] : [id]);
                                       }}
+                                      onDrag={handleDrag}
+                                      onStop={handleStopDrag}
                                       isSelected={selectedIds.includes(el.id)}
                                       zoomLevel={zoomLevel}
                                     />
