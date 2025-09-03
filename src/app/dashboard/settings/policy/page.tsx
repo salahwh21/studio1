@@ -1059,7 +1059,7 @@ const handleDuplicate = () => {
                    </div>
                 </div>
                 <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
+                    <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
                      <Button onClick={() => printablePolicyRef.current?.handleExportPDF()}>
                         <Icon name="Printer" className="ml-2 h-4 w-4 inline" />
                         طباعة
@@ -1093,23 +1093,25 @@ const handleDuplicate = () => {
             </CardHeader>
         </Card>
         
-        <Card>
-            <CardContent className="p-2 flex flex-wrap items-center gap-2">
-                 <Button variant="ghost" size="sm" disabled={selectedIds.length === 0} onClick={() => handleAlignment('left')}><AlignHorizontalJustifyStart className="h-4 w-4 mr-1" /> محاذاة لليسار</Button>
-                 <Button variant="ghost" size="sm" disabled={selectedIds.length === 0} onClick={() => handleAlignment('h-center')}><AlignHorizontalJustifyCenter className="h-4 w-4 mr-1" /> توسيط أفقي</Button>
-                 <Button variant="ghost" size="sm" disabled={selectedIds.length === 0} onClick={() => handleAlignment('right')}><AlignHorizontalJustifyEnd className="h-4 w-4 mr-1" /> محاذاة لليمين</Button>
-                 <Separator orientation="vertical" className="h-6" />
-                 <Button variant="ghost" size="sm" disabled={selectedIds.length === 0} onClick={() => handleAlignment('top')}><AlignVerticalJustifyStart className="h-4 w-4 mr-1" /> محاذاة للأعلى</Button>
-                 <Button variant="ghost" size="sm" disabled={selectedIds.length === 0} onClick={() => handleAlignment('v-center')}><AlignVerticalJustifyCenter className="h-4 w-4 mr-1" /> توسيط عمودي</Button>
-                 <Button variant="ghost" size="sm" disabled={selectedIds.length === 0} onClick={() => handleAlignment('bottom')}><AlignVerticalJustifyEnd className="h-4 w-4 mr-1" /> محاذاة للأسفل</Button>
-                 <Separator orientation="vertical" className="h-6" />
-                 <Button variant="ghost" size="sm" disabled={selectedIds.length !== 1} onClick={() => handleLayering('forward')}><BringToFront className="h-4 w-4 mr-1" /> تقديم</Button>
-                 <Button variant="ghost" size="sm" disabled={selectedIds.length !== 1} onClick={() => handleLayering('backward')}><SendToBack className="h-4 w-4 mr-1" /> تأخير</Button>
-                 <Separator orientation="vertical" className="h-6" />
-                 <Button variant="ghost" size="sm" disabled={selectedIds.length === 0} onClick={handleDuplicate}><Copy className="h-4 w-4 mr-1" /> نسخ</Button>
-                 <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" disabled={selectedIds.length === 0} onClick={() => handleDeleteElement(selectedIds[0])}><Trash2 className="h-4 w-4 mr-1" /> حذف</Button>
-            </CardContent>
-        </Card>
+        {selectedIds.length > 0 && (
+            <Card>
+                <CardContent className="p-2 flex flex-wrap items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleAlignment('left')}><AlignHorizontalJustifyStart className="h-4 w-4 mr-1" /> محاذاة لليسار</Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleAlignment('h-center')}><AlignHorizontalJustifyCenter className="h-4 w-4 mr-1" /> توسيط أفقي</Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleAlignment('right')}><AlignHorizontalJustifyEnd className="h-4 w-4 mr-1" /> محاذاة لليمين</Button>
+                    <Separator orientation="vertical" className="h-6" />
+                    <Button variant="ghost" size="sm" onClick={() => handleAlignment('top')}><AlignVerticalJustifyStart className="h-4 w-4 mr-1" /> محاذاة للأعلى</Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleAlignment('v-center')}><AlignVerticalJustifyCenter className="h-4 w-4 mr-1" /> توسيط عمودي</Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleAlignment('bottom')}><AlignVerticalJustifyEnd className="h-4 w-4 mr-1" /> محاذاة للأسفل</Button>
+                    <Separator orientation="vertical" className="h-6" />
+                    <Button variant="ghost" size="sm" onClick={() => handleLayering('forward')}><BringToFront className="h-4 w-4 mr-1" /> تقديم</Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleLayering('backward')}><SendToBack className="h-4 w-4 mr-1" /> تأخير</Button>
+                    <Separator orientation="vertical" className="h-6" />
+                    <Button variant="ghost" size="sm" onClick={handleDuplicate}><Copy className="h-4 w-4 mr-1" /> نسخ</Button>
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDeleteElement(selectedIds[0])}><Trash2 className="h-4 w-4 mr-1" /> حذف</Button>
+                </CardContent>
+            </Card>
+        )}
 
         <DndContext sensors={sensors} onDragEnd={handleDragEnd} modifiers={[createSnapModifier(GRID_SIZE)]}>
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
@@ -1168,7 +1170,7 @@ const handleDuplicate = () => {
                         </CardHeader>
                         <CardContent className="space-y-4">
                              <div>
-                                <h4 className="font-semibold text-sm mb-2">قوالب جاهزة</h4>
+                                <h4 className="font-semibold text-sm mb-2 text-primary">قوالب جاهزة</h4>
                                 <div className='flex flex-col items-start'>
                                     {Object.values(readyTemplates).map(template => (
                                         <Button key={template.id} variant="link" className="p-0 h-auto" onClick={() => loadTemplate(template)}>
