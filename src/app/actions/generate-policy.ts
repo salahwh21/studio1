@@ -16,6 +16,15 @@ type State = {
 };
 
 export async function generatePolicyAction(prevState: State, formData: FormData): Promise<State> {
+  // Check for API Key first
+  if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'YOUR_API_KEY_HERE') {
+    return {
+      data: null,
+      error: 'مفتاح Google AI API غير مهيأ. يرجى إضافته في ملف .env',
+      success: false,
+    };
+  }
+
   const validatedFields = actionSchema.safeParse({
     description: formData.get('description'),
     paperWidth: formData.get('paperWidth'),
@@ -42,9 +51,13 @@ export async function generatePolicyAction(prevState: State, formData: FormData)
     };
   } catch (error: any) {
     console.error('Error in generatePolicyAction:', error);
+    let errorMessage = error.message || 'فشل إنشاء التصميم من الذكاء الاصطناعي.';
+    if (error.message?.includes('API key not valid')) {
+      errorMessage = 'مفتاح Google AI API غير صالح. يرجى التحقق منه في ملف .env';
+    }
     return {
       data: null,
-      error: error.message || 'فشل إنشاء التصميم من الذكاء الاصطناعي.',
+      error: errorMessage,
       success: false,
     };
   }
