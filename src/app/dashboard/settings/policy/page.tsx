@@ -286,7 +286,6 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, isSelected, zoomLeve
   const nodeRef = React.useRef(null);
   return (
     <Draggable
-      key={element.id}
       nodeRef={nodeRef}
       handle=".handle"
       position={{ x: element.x, y: element.y }}
@@ -295,22 +294,20 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, isSelected, zoomLeve
       onStart={(e) => onSelect(element.id, e as any)}
       onStop={(e, data) => onUpdate(element.id, { x: data.x, y: data.y })}
     >
-      <Resizable
-        ref={nodeRef}
-        size={{ width: element.width, height: element.height }}
-        onResizeStop={(e, dir, ref, d) => onUpdate(element.id, { width: snapToGrid(element.width + d.width), height: snapToGrid(element.height + d.height) })}
-        onClick={(e) => onSelect(element.id, e)}
-        className="absolute"
-        style={{ zIndex: element.zIndex }}
-        enable={{
-            top: isSelected, right: isSelected, bottom: isSelected, left: isSelected,
-            topRight: isSelected, bottomRight: isSelected, bottomLeft: isSelected, topLeft: isSelected,
-        }}
-      >
-        <div className={`handle w-full h-full cursor-move ${isSelected ? 'border-2 border-dashed border-primary' : ''}`}>
-          <PolicyElementComponent element={element} />
-        </div>
-      </Resizable>
+        <Resizable
+            ref={nodeRef}
+            size={{ width: element.width, height: element.height }}
+            onResizeStop={(e, dir, ref, d) => onUpdate(element.id, { width: snapToGrid(element.width + d.width), height: snapToGrid(element.height + d.height) })}
+            onClick={(e) => onSelect(element.id, e)}
+            className={`absolute handle cursor-move ${isSelected ? 'border-2 border-dashed border-primary' : ''}`}
+            style={{ zIndex: element.zIndex }}
+            enable={{
+                top: isSelected, right: isSelected, bottom: isSelected, left: isSelected,
+                topRight: isSelected, bottomRight: isSelected, bottomLeft: isSelected, topLeft: isSelected,
+            }}
+        >
+            <PolicyElementComponent element={element} />
+        </Resizable>
     </Draggable>
   );
 };
