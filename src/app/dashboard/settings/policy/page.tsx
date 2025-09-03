@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect, forwardRef } from 'react';
 import Link from 'next/link';
 import {
   AlignCenter,
@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import Draggable, { type DraggableEvent, type DraggableData } from 'react-draggable';
+import { Resizable } from 're-resizable';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,7 +56,7 @@ import { useOrdersStore } from '@/store/orders-store';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import Icon from '@/components/icon';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Resizable } from 're-resizable';
+
 
 // --- Constants & Helpers ---
 
@@ -98,11 +99,11 @@ const dataFields = [
 
 // --- Sub-components ---
 
-const PolicyElementComponent = React.forwardRef(({ element }: { element: PolicyElement }, ref: React.Ref<HTMLDivElement>) => {
+const PolicyElementComponent = forwardRef(({ element }: { element: PolicyElement }, ref: React.Ref<HTMLDivElement>) => {
   const renderContent = () => {
     switch (element.type) {
       case 'text':
-        return <div className="p-1 w-full h-full" style={{ fontFamily: 'inherit', fontSize: `${element.fontSize}px`, fontWeight: element.fontWeight as any, color: element.color, textAlign: element.textAlign as any, fontStyle: element.fontStyle }}>{element.content}</div>;
+        return <div className="p-1 w-full h-full" style={{ fontFamily: 'inherit', fontSize: `${element.fontSize}px`, fontWeight: element.fontWeight as any, color: element.color, textAlign: element.textAlign as any, fontStyle: element.fontStyle as any }}>{element.content}</div>;
       case 'barcode':
         return <div className="p-1 w-full h-full flex flex-col items-center justify-center text-xs"> <ScanBarcode className="w-10 h-10" /> <p className='mt-1'>باركود: {element.content}</p> </div>;
       case 'image':
@@ -259,7 +260,7 @@ const PageSettingsPanel = ({ paperSize, customDimensions, margins, onPaperSizeCh
     </Card>
 );
 
-const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag, onStop, isSelected }: {
+const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag, onStop, isSelected, zoomLevel }: {
   element: PolicyElement;
   onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
   onSelect: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
@@ -267,6 +268,7 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag,
   onDrag: (e: DraggableEvent, data: DraggableData, elementId: string) => void;
   onStop: () => void;
   isSelected: boolean;
+  zoomLevel: number;
 }) => {
   const nodeRef = React.useRef<HTMLDivElement>(null);
   
@@ -275,6 +277,7 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag,
         nodeRef={nodeRef}
         handle=".handle"
         position={{x: element.x, y: element.y}}
+        scale={zoomLevel}
         onStart={(e, data) => onDragStart(e, data, element.id)}
         onDrag={(e, data) => onDrag(e, data, element.id)}
         onStop={onStop}
@@ -290,9 +293,8 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag,
             topRight: isSelected, bottomRight: isSelected, bottomLeft: isSelected, topLeft: isSelected,
           }}
         >
-          <div className="handle w-full h-full cursor-move">
+            <div className="handle w-full h-full absolute top-0 left-0 cursor-move z-10"></div>
             <PolicyElementComponent element={element} />
-          </div>
         </Resizable>
     </Draggable>
   );
@@ -528,7 +530,7 @@ export default function PolicyEditorPage() {
         });
         
         setSmartGuides({ x: Array.from(newGuides.x), y: Array.from(newGuides.y) });
-        handleBulkUpdateElements(selectedIds, finalDeltaX, finalDeltaY);
+        handleBulkUpdateElements(selectedIds, snapToGrid(finalDeltaX), snapToGrid(finalDeltaY));
 
     }, [elements, selectedIds, margins, paperDimensions]);
 
@@ -642,7 +644,7 @@ export default function PolicyEditorPage() {
       }), [elements, paperSize, customDimensions, margins]);
 
   return (
-    <div className="space-y-6" onClick={(e) => { e.stopPropagation(); setSelectedIds([]); }}>
+    <div className="space-y-6" onClick={(e) => { if (!isDragging) { e.stopPropagation(); setSelectedIds([]); } }}>
         <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
             <DialogContent>
                 <DialogHeader>
@@ -861,6 +863,7 @@ export default function PolicyEditorPage() {
                                       onDrag={handleDrag}
                                       onStop={handleStopDrag}
                                       isSelected={selectedIds.includes(el.id)}
+                                      zoomLevel={zoomLevel}
                                     />
                                 ))}
                             </div>
