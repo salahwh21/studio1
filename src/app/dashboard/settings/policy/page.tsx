@@ -100,7 +100,7 @@ type PaperSize = { width: number; height: number; label: string };
 const paperSizes: Record<string, PaperSize> = {
   a4: { width: 210, height: 297, label: 'A4 (210×297mm)' },
   a5: { width: 148, height: 210, label: 'A5 (148×210mm)' },
-  label_4x6: { width: 4 * 25.4, height: 6 * 25.4, label: 'Label 4×6 in' },
+  label_4x6: { width: 101.6, height: 152.4, label: 'Label 4×6 in' },
   label_4x4: { width: 4 * 25.4, height: 4 * 25.4, label: 'Label 4×4 in' },
   custom: { width: 75, height: 45, label: 'حجم مخصص' },
 };
@@ -181,7 +181,7 @@ function ElementContent({ el }: { el: PolicyElement }) {
 const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMenu, onDoubleClick }: {
   element: PolicyElement;
   selected: boolean;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, e: React.MouseEvent) => void;
   onResizeStop: (id: string, w: number, h: number) => void;
   onContextMenu: (event: React.MouseEvent, element: PolicyElement) => void;
   onDoubleClick: (element: PolicyElement) => void;
@@ -206,7 +206,7 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMen
       style={style}
       {...attributes}
       {...listeners}
-      onClick={(e) => { e.stopPropagation(); onSelect(element.id); }}
+      onClick={(e) => onSelect(element.id, e)}
       onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick(element); }}
       onContextMenu={(e) => onContextMenu(e, element)}
     >
@@ -375,6 +375,45 @@ export default function PolicyEditorPage() {
     left: mmToPx(margins.left),
   }), [margins]);
 
+  const handleSmartLayout = () => {
+    if (elements.length === 0) {
+      toast({ variant: 'destructive', title: 'لا توجد عناصر', description: 'الرجاء إضافة بعض العناصر أولاً.' });
+      return;
+    }
+
+    const { width: canvasWidth, height: canvasHeight } = paperDimensions;
+    const { top, right, left, bottom } = marginPx;
+    const printableWidth = canvasWidth - left - right;
+    const printableHeight = canvasHeight - top - bottom;
+
+    let yOffset = top;
+
+    const newElements = elements.map(el => {
+      const newEl = { ...el };
+      let newWidth = Math.min(newEl.width, printableWidth);
+      let newHeight = newEl.height;
+
+      // Basic heuristic to stack elements vertically
+      newEl.x = snapToGrid(left + (printableWidth - newWidth) / 2); // Center horizontally
+      newEl.y = snapToGrid(yOffset);
+
+      if (newEl.y + newHeight > printableHeight + top) {
+        // Element overflows, try to shrink it
+        newHeight = Math.max(GRID_SIZE * 2, printableHeight + top - newEl.y);
+      }
+      
+      newEl.width = newWidth;
+      newEl.height = newHeight;
+      yOffset += newHeight + GRID_SIZE; // Add spacing
+
+      return newEl;
+    });
+
+    setElements(newElements);
+    toast({ title: 'تم الترتيب بذكاء', description: 'تمت إعادة ترتيب العناصر لتناسب الصفحة.' });
+  };
+
+
   // --- Smart Features ---
   useEffect(() => {
     const errors: DesignError[] = [];
@@ -509,9 +548,13 @@ export default function PolicyEditorPage() {
     );
   }, []);
   
-  const handleSelect = useCallback((id: string) => {
-    setSelectedIds([id]);
-  }, []);
+  const handleSelect = useCallback((id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (selectedIds.includes(id)) {
+        return;
+      }
+      setSelectedIds([id]);
+  }, [selectedIds]);
   
   const handleResizeStop = useCallback((id: string, w: number, h: number) => {
     setElements((p) => p.map((el) => (el.id === id ? { ...el, width: snapToGrid(w), height: snapToGrid(h) } : el)));
@@ -692,12 +735,14 @@ const handleDuplicate = () => {
 
   const handleContextMenu = (event: React.MouseEvent, element: PolicyElement) => {
     event.preventDefault();
+    event.stopPropagation();
     setContextMenu({ x: event.clientX, y: event.clientY, element });
   };
   
   const handleEditFromContextMenu = () => {
       if (contextMenu) {
-          handleDoubleClickElement(contextMenu.element);
+          setModalElement(contextMenu.element);
+          setIsModalOpen(true);
           setContextMenu(null);
       }
   }
@@ -752,7 +797,7 @@ const handleDuplicate = () => {
                     </CardDescription>
                 </div>
                  <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={() => loadTemplate(readyTemplates.a4_default)}>
+                    <Button variant="outline" onClick={handleSmartLayout}>
                         <Wand2 className="ml-2 h-4 w-4" /> المساعدة الذكية
                     </Button>
                     <Button onClick={() => setIsSaveDialogOpen(true)}><Save className="ml-2 h-4 w-4" />حفظ القالب</Button>
@@ -873,7 +918,7 @@ const handleDuplicate = () => {
                               ref={canvasRef}
                               className="relative bg-white rounded-md shadow-inner"
                               style={{ ...paperDimensions }}
-                              onClick={() => {setSelectedIds([]);}}
+                              onClick={(e) => { e.stopPropagation(); setSelectedIds([]);}}
                             >
                                 <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
                                     backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE * 5}px ${GRID_SIZE * 5}px`,
