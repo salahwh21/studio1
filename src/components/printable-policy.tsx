@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, forwardRef, useImperativeHandle, useRef, useMemo } from 'react';
@@ -157,8 +158,43 @@ export const PrintablePolicy = forwardRef(({ orders, template }: PrintablePolicy
         setIsExporting(false);
     };
 
+    const handleDirectPrint = async (order: Order | null, type: 'zpl' | 'escpos') => {
+        if (!order) {
+            toast({ variant: 'destructive', title: 'خطأ', description: 'لا يوجد طلب لطباعته' });
+            return;
+        }
+
+        // Placeholder for generating actual ZPL/ESC/POS data
+        const printData = `
+            ^XA
+            ^FO50,50^A0N,50,50^FD${replacePlaceholders('{{recipient}}', order)}^FS
+            ^FO50,110^A0N,30,30^FD${replacePlaceholders('{{address}}', order)}^FS
+            ^FO50,200^BY3^BCN,100,Y,N,N^FD${replacePlaceholders('{{orderId}}', order)}^FS
+            ^XZ
+        `;
+
+        toast({ title: 'جاري إرسال الطلب للطابعة...' });
+
+        try {
+            const response = await fetch('/api/print', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, data: printData }),
+            });
+            const result = await response.json();
+            if (result.success) {
+                toast({ title: 'تم الإرسال بنجاح!', description: 'تم إرسال أمر الطباعة إلى الطابعة.' });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'فشل الطباعة', description: error.message });
+        }
+    };
+
     useImperativeHandle(ref, () => ({
         handleExport,
+        handleDirectPrint,
     }));
     
     return (

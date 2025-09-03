@@ -37,7 +37,7 @@ import {
 import { nanoid } from 'nanoid';
 import { DndContext, PointerSensor, useSensor, useSensors, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
-import { Resizable, type ResizeCallback } from 're-resizable';
+import { Resizable, type ResizeCallback, type DraggableData, type ResizableDelta } from 're-resizable';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,13 +48,14 @@ import { Slider } from '@/components/ui/slider';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useSettings, type PolicySettings, type PolicyElement, type SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
+import { useSettings, type PolicySettings, type PolicyElement, type SavedTemplate } from '@/contexts/SettingsContext';
 import { Separator } from '@/components/ui/separator';
 import { PrintablePolicy } from '@/components/printable-policy';
 import { useOrdersStore } from '@/store/orders-store';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import Icon from '@/components/icon';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { readyTemplates } from '@/contexts/SettingsContext';
 
 
 // --- Constants & Helpers ---
@@ -609,7 +610,7 @@ export default function PolicyEditorPage() {
                         <CardDescription>اسحب وأفلت العناصر لتصميم البوليصة. انقر على عنصر لتعديل خصائصه.</CardDescription>
                     </div>
                     <Button variant="outline" size="icon" asChild>
-                        <Link href="/dashboard/settings/general">
+                        <Link href="/dashboard/settings">
                             <ArrowLeft className="h-4 w-4" />
                         </Link>
                     </Button>
@@ -722,5 +723,6 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
 
 
