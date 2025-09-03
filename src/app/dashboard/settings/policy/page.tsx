@@ -50,7 +50,7 @@ import {
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
+import { useSettings, type PolicySettings, type PolicyElement, type SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
 import { Separator } from '@/components/ui/separator';
 import jsPDF from 'jspdf';
 import { PrintablePolicy } from '@/components/printable-policy';
@@ -65,38 +65,7 @@ type FontWeight = 'normal' | 'bold';
 type TableCellData = { id: string; content: string };
 type TableRowData = { id: string; cells: TableCellData[] };
 
-export type PolicyElement = {
-  id: string;
-  type: ElementType;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  content: string;
-  zIndex: number;
-  fontSize?: number;
-  fontWeight?: FontWeight;
-  color?: string;
-  borderColor?: string;
-  borderWidth?: number;
-  opacity?: number;
-  backgroundColor?: string;
-  // Table specific properties
-  rowCount?: number;
-  colCount?: number;
-  tableData?: TableRowData[];
-  headers?: string[];
-};
-
-type SavedTemplate = {
-  id: string;
-  name: string;
-  elements: PolicyElement[];
-  paperSize: PolicySettings['paperSize'];
-  customDimensions: { width: number; height: number };
-  margins: { top: number; right: number; bottom: number; left: number };
-  isReadyMade?: boolean;
-};
+// type PolicyElement is imported from context
 
 type DesignError = {
     elementId: string;
@@ -541,56 +510,7 @@ export default function PolicyEditorPage() {
     bottom: mmToPx(margins.bottom),
     left: mmToPx(margins.left),
   }), [margins]);
-
-  const readyTemplates: Record<string, SavedTemplate> = {
-    "a4_default": {
-        id: "a4_default", name: "A4 احترافي", paperSize: "a4", isReadyMade: true,
-        customDimensions: { width: 210, height: 297 }, margins: { top: 10, right: 10, bottom: 10, left: 10 },
-        elements: [
-            { id: "1", type: "rect", x: 16, y: 16, width: 752, height: 112, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 2, backgroundColor: "#f3f4f6", opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
-            { id: "2", type: "text", x: 576, y: 24, width: 184, height: 40, zIndex: 1, content: "بوليصة شحن", fontSize: 24, fontWeight: "bold", color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "3", type: "image", x: 24, y: 24, width: 144, height: 56, zIndex: 1, content: "{company_logo}", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "4", type: "text", x: 24, y: 88, width: 200, height: 24, zIndex: 1, content: "اسم الشركة: {company_name}", fontSize: 12, color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "5", type: "barcode", x: 584, y: 72, width: 176, height: 48, zIndex: 1, content: "{order_id}", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "6", type: "rect", x: 16, y: 144, width: 376, height: 200, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
-            { id: "7", type: "rect", x: 400, y: 144, width: 368, height: 200, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
-            { id: "8", type: "text", x: 408, y: 152, width: 120, height: 24, zIndex: 1, content: "إلى (المستلم):", fontSize: 16, fontWeight: "bold", color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "9", type: "text", x: 24, y: 152, width: 120, height: 24, zIndex: 1, content: "من (المرسل):", fontSize: 16, fontWeight: "bold", color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "10", type: "text", x: 32, y: 184, width: 352, height: 152, zIndex: 1, content: "اسم المتجر: {merchant_name}\nهاتف: {merchant_phone}\nعنوان: {merchant_address}", fontSize: 14, color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "11", type: "text", x: 408, y: 184, width: 352, height: 152, zIndex: 1, content: "اسم المستلم: {recipient_name}\nهاتف: {recipient_phone}\nعنوان: {recipient_address}", fontSize: 14, color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "12", type: "rect", x: 16, y: 360, width: 752, height: 160, zIndex: 0, content: "", borderColor: "#000000", borderWidth: 1, backgroundColor: '#ffffff', opacity: 1, color: '#000000', fontSize: 14, fontWeight: 'normal' },
-            { id: "13", type: "text", x: 608, y: 368, width: 152, height: 32, zIndex: 1, content: "ملخص الطلب", fontSize: 16, fontWeight: "bold", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "14", type: "text", x: 48, y: 368, width: 150, height: 30, zIndex: 1, content: "قيمة التحصيل (COD)", fontSize: 18, fontWeight: "bold", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "15", type: "text", x: 32, y: 408, width: 200, height: 60, zIndex: 1, content: "{cod_amount}", fontSize: 36, fontWeight: "bold", color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "16", type: "text", x: 408, y: 400, width: 352, height: 112, zIndex: 1, content: "المنتجات: {order_items}\nالكمية: {items_count}\nملاحظات: {notes}", fontSize: 12, color: "#374151", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-        ]
-    },
-    "label_4x6_default": {
-        id: "label_4x6_default", name: "بوليصة 4x6 عملية", paperSize: "label_4x6", isReadyMade: true,
-        customDimensions: { width: 101.6, height: 152.4 }, margins: { top: 5, right: 5, bottom: 5, left: 5 },
-        elements: [
-            { id: "1", type: "text", x: 16, y: 16, width: 184, height: 24, zIndex: 1, content: "من: {merchant_name}", fontSize: 14, fontWeight: "bold", color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "2", type: "text", x: 16, y: 48, width: 352, height: 120, zIndex: 1, content: "إلى: {recipient_name}\n{recipient_address}\n{recipient_phone}", fontSize: 18, color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "3", type: "barcode", x: 40, y: 176, width: 304, height: 80, zIndex: 1, content: "{order_id}", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "4", type: "text", x: 16, y: 264, width: 352, height: 48, zIndex: 1, content: "المبلغ: {cod_amount}", fontSize: 28, fontWeight: "bold", color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "5", type: "text", x: 16, y: 320, width: 352, height: 48, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: "normal", color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "6", type: "text", x: 16, y: 376, width: 352, height: 24, zIndex: 1, content: "مرجع: {reference_id}", fontSize: 12, color: "#000000", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "7", type: "image", x: 232, y: 8, width: 144, height: 40, zIndex: 1, content: "{company_logo}", opacity: 1, borderWidth: 0, borderColor: '#000000' },
-            { id: "8", type: "line", x: 16, y: 168, width: 352, height: 2, zIndex: 0, content: "", color: "#000000", opacity: 1 },
-            { id: "9", type: "line", x: 16, y: 312, width: 352, height: 2, zIndex: 0, content: "", color: "#000000", opacity: 1 },
-        ]
-    },
-    "label_45x75_default": {
-        id: "label_45x75_default", name: "بوليصة 75x45 (عرضية)", paperSize: "custom", isReadyMade: true,
-        customDimensions: { width: 75, height: 45 }, margins: { top: 2, right: 2, bottom: 2, left: 2 },
-        elements: [
-            { id: "el_brcd", type: "barcode", x: 128, y: 8, width: 136, height: 88, zIndex: 1, content: "{order_id}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
-            { id: "el_brcd_txt", type: "text", x: 128, y: 104, width: 136, height: 24, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
-            { id: "el_logo", type: "image", x: 16, y: 8, width: 104, height: 120, zIndex: 1, content: "{company_logo}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
-        ]
-    }
-  };
-
+  
  const handleSmartLayout = () => {
     if (elements.length === 0) {
       toast({ variant: "destructive", title: "لا توجد عناصر", description: "الرجاء إضافة بعض العناصر أولاً ليقوم الذكاء الاصطناعي بتنسيقها."});
@@ -1227,7 +1147,7 @@ const handleDuplicate = () => {
                     )}
                     <Card>
                         <CardHeader>
-                            <CardTitle>القوالب</CardTitle>
+                            <CardTitle>القوالب المحفوظة</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className='flex items-center gap-2 mb-2'>
