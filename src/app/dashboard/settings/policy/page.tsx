@@ -259,10 +259,11 @@ const PageSettingsPanel = ({ paperSize, customDimensions, margins, onPaperSizeCh
     </Card>
 );
 
-const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDrag, onStop, isSelected, zoomLevel }: {
+const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag, onStop, isSelected, zoomLevel }: {
   element: PolicyElement;
   onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
   onSelect: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
+  onDragStart: (e: DraggableEvent, data: DraggableData, elementId: string) => void;
   onDrag: (e: DraggableEvent, data: DraggableData, elementId: string) => void;
   onStop: () => void;
   isSelected: boolean;
@@ -276,14 +277,13 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDrag, onStop, isSe
         handle=".handle"
         position={{x: element.x, y: element.y}}
         scale={zoomLevel}
-        onStart={(e) => onSelect(element.id, e as any)}
+        onStart={(e, data) => onDragStart(e, data, element.id)}
         onDrag={(e, data) => onDrag(e, data, element.id)}
         onStop={onStop}
       >
-        <Resizable
+      <Resizable
           ref={nodeRef}
           size={{ width: element.width, height: element.height }}
-          style={{ position: 'absolute', zIndex: element.zIndex }}
           onResizeStop={(e, dir, ref, d) => onUpdate(element.id, { width: snapToGrid(element.width + d.width), height: snapToGrid(element.height + d.height) })}
           onClick={(e) => onSelect(element.id, e)}
           className={`${isSelected ? 'border-2 border-dashed border-primary' : ''}`}
@@ -318,6 +318,7 @@ export default function PolicyEditorPage() {
     const [smartGuides, setSmartGuides] = useState<{ x: number[], y: number[] }>({ x: [], y: [] });
     const canvasRef = useRef<HTMLDivElement>(null);
     const importTemplateInputRef = useRef<HTMLInputElement>(null);
+    const dragStartPositions = useRef<Record<string, {x: number, y: number}>>({});
 
     const [templates, setTemplates] = useState<SavedTemplate[]>([]);
     
@@ -385,6 +386,18 @@ export default function PolicyEditorPage() {
     const handleUpdateElement = (id: string, updates: Partial<PolicyElement>) => {
         setElements(prev => prev.map(el => el.id === id ? { ...el, ...updates } : el));
     };
+    
+    const handleBulkUpdateElements = (ids: string[], deltaX: number, deltaY: number) => {
+        setElements(prev => prev.map(el => {
+            if (ids.includes(el.id)) {
+                const startPos = dragStartPositions.current[el.id];
+                if (startPos) {
+                    return { ...el, x: startPos.x + deltaX, y: startPos.y + deltaY };
+                }
+            }
+            return el;
+        }));
+    };
 
     const handleDeleteElement = () => {
         if (selectedIds.length > 0) {
@@ -432,72 +445,98 @@ export default function PolicyEditorPage() {
         });
     };
 
-    const handleDrag = useCallback((e: DraggableEvent, data: DraggableData, elementId: string) => {
+    const handleDragStart = useCallback((e: DraggableEvent, data: DraggableData, elementId: string) => {
         setIsDragging(true);
-        const activeElement = elements.find(el => el.id === elementId);
-        if (!activeElement) return;
+        // If dragging an unselected element, select only that one.
+        if (!selectedIds.includes(elementId)) {
+            setSelectedIds([elementId]);
+            dragStartPositions.current = {
+                [elementId]: { x: data.x, y: data.y },
+            };
+        } else {
+             // Store initial positions for all selected elements
+            dragStartPositions.current = elements
+                .filter(el => selectedIds.includes(el.id))
+                .reduce((acc, el) => {
+                    acc[el.id] = { x: el.x, y: el.y };
+                    return acc;
+                }, {} as Record<string, {x: number, y: number}>);
+        }
+    }, [elements, selectedIds]);
+
+    const handleDrag = useCallback((e: DraggableEvent, data: DraggableData, elementId: string) => {
+        const activeElementStartPos = dragStartPositions.current[elementId];
+        if (!activeElementStartPos) return;
+
+        const deltaX = data.x - activeElementStartPos.x;
+        const deltaY = data.y - activeElementStartPos.y;
+
+        const otherElements = elements.filter(el => !selectedIds.includes(el.id));
+        const activeElements = elements.filter(el => selectedIds.includes(el.id));
         
-        let newX = data.x;
-        let newY = data.y;
+        let finalDeltaX = deltaX;
+        let finalDeltaY = deltaY;
+        const newGuides = { x: new Set<number>(), y: new Set<number>() };
 
-        const newGuides = { x: [] as number[], y: [] as number[] };
-
-        // Define target snap points for the canvas
-        const canvasSnapPoints = {
-            x: [mmToPx(margins.left), (paperDimensions.width / 2), paperDimensions.width - mmToPx(margins.right)],
-            y: [mmToPx(margins.top), (paperDimensions.height / 2), paperDimensions.height - mmToPx(margins.bottom)],
-        };
-        
-        // Define points of interest for the dragged element
-        const elementPoints = {
-            x: [newX, newX + activeElement.width / 2, newX + activeElement.width],
-            y: [newY, newY + activeElement.height / 2, newY + activeElement.height],
-        };
-
-        // Check against other elements
-        elements.forEach(el => {
-            if (el.id === elementId) return;
-
-            const otherPoints = {
-                x: [el.x, el.x + el.width / 2, el.x + el.width],
-                y: [el.y, el.y + el.height / 2, el.y + el.height],
+        activeElements.forEach(activeEl => {
+            const currentX = dragStartPositions.current[activeEl.id].x + deltaX;
+            const currentY = dragStartPositions.current[activeEl.id].y + deltaY;
+            
+            const activePoints = {
+                x: [currentX, currentX + activeEl.width / 2, currentX + activeEl.width],
+                y: [currentY, currentY + activeEl.height / 2, currentY + activeEl.height],
             };
 
-            for (let i = 0; i < 3; i++) {
-                for (let j = 0; j < 3; j++) {
-                    if (Math.abs(elementPoints.x[i] - otherPoints.x[j]) < SNAP_THRESHOLD) {
-                        newX += otherPoints.x[j] - elementPoints.x[i];
-                        newGuides.x.push(otherPoints.x[j]);
+            // Canvas guides
+            const canvasSnapPoints = {
+                x: [mmToPx(margins.left), paperDimensions.width / 2, paperDimensions.width - mmToPx(margins.right)],
+                y: [mmToPx(margins.top), paperDimensions.height / 2, paperDimensions.height - mmToPx(margins.bottom)],
+            };
+            
+            for (let p_idx = 0; p_idx < 3; p_idx++) {
+                for (let c_idx = 0; c_idx < 3; c_idx++) {
+                    if (Math.abs(activePoints.x[p_idx] - canvasSnapPoints.x[c_idx]) < SNAP_THRESHOLD) {
+                        finalDeltaX = canvasSnapPoints.x[c_idx] - dragStartPositions.current[activeEl.id].x - (activePoints.x[p_idx] - currentX);
+                        newGuides.x.add(canvasSnapPoints.x[c_idx]);
                     }
-                    if (Math.abs(elementPoints.y[i] - otherPoints.y[j]) < SNAP_THRESHOLD) {
-                        newY += otherPoints.y[j] - elementPoints.y[i];
-                        newGuides.y.push(otherPoints.y[j]);
+                     if (Math.abs(activePoints.y[p_idx] - canvasSnapPoints.y[c_idx]) < SNAP_THRESHOLD) {
+                        finalDeltaY = canvasSnapPoints.y[c_idx] - dragStartPositions.current[activeEl.id].y - (activePoints.y[p_idx] - currentY);
+                        newGuides.y.add(canvasSnapPoints.y[c_idx]);
                     }
                 }
             }
-        });
+            
+            // Other elements guides
+            otherElements.forEach(otherEl => {
+                const otherPoints = {
+                    x: [otherEl.x, otherEl.x + otherEl.width / 2, otherEl.x + otherEl.width],
+                    y: [otherEl.y, otherEl.y + otherEl.height / 2, otherEl.y + otherEl.height],
+                };
 
-        // Check against canvas snap points
-        for(let i=0; i<3; i++) {
-            for(let j=0; j<3; j++) {
-                if (Math.abs(elementPoints.x[i] - canvasSnapPoints.x[j]) < SNAP_THRESHOLD) {
-                    newX += canvasSnapPoints.x[j] - elementPoints.x[i];
-                    newGuides.x.push(canvasSnapPoints.x[j]);
+                for (let p_idx = 0; p_idx < 3; p_idx++) {
+                    for (let o_idx = 0; o_idx < 3; o_idx++) {
+                        if (Math.abs(activePoints.x[p_idx] - otherPoints.x[o_idx]) < SNAP_THRESHOLD) {
+                            finalDeltaX = otherPoints.x[o_idx] - dragStartPositions.current[activeEl.id].x - (activePoints.x[p_idx] - currentX);
+                            newGuides.x.add(otherPoints.x[o_idx]);
+                        }
+                        if (Math.abs(activePoints.y[p_idx] - otherPoints.y[o_idx]) < SNAP_THRESHOLD) {
+                           finalDeltaY = otherPoints.y[o_idx] - dragStartPositions.current[activeEl.id].y - (activePoints.y[p_idx] - currentY);
+                           newGuides.y.add(otherPoints.y[o_idx]);
+                        }
+                    }
                 }
-                if (Math.abs(elementPoints.y[i] - canvasSnapPoints.y[j]) < SNAP_THRESHOLD) {
-                    newY += canvasSnapPoints.y[j] - elementPoints.y[i];
-                    newGuides.y.push(canvasSnapPoints.y[j]);
-                }
-            }
-        }
+            });
+        });
         
-        setSmartGuides(newGuides);
-        handleUpdateElement(elementId, { x: newX, y: newY });
-    }, [elements, margins, paperDimensions]);
+        setSmartGuides({ x: Array.from(newGuides.x), y: Array.from(newGuides.y) });
+        handleBulkUpdateElements(selectedIds, finalDeltaX, finalDeltaY);
+
+    }, [elements, selectedIds, margins, paperDimensions]);
 
     const handleStopDrag = useCallback(() => {
         setIsDragging(false);
         setSmartGuides({ x: [], y: [] });
+        dragStartPositions.current = {};
     }, []);
     
     const selectedElement = useMemo(() => elements.find(el => el.id === selectedIds[0]), [elements, selectedIds]);
@@ -813,8 +852,13 @@ export default function PolicyEditorPage() {
                                       onSelect={(id, e) => {
                                         e.stopPropagation();
                                         const event = e as React.MouseEvent;
-                                        setSelectedIds(event.metaKey || event.ctrlKey ? [...selectedIds, id] : [id]);
+                                        if (event.metaKey || event.ctrlKey) {
+                                            setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+                                        } else {
+                                            setSelectedIds([id]);
+                                        }
                                       }}
+                                      onDragStart={handleDragStart}
                                       onDrag={handleDrag}
                                       onStop={handleStopDrag}
                                       isSelected={selectedIds.includes(el.id)}
