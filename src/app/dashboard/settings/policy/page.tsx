@@ -58,7 +58,7 @@ type FontWeight = 'normal' | 'bold';
 type TableCellData = { id: string; content: string };
 type TableRowData = { id: string; cells: TableCellData[] };
 
-type PolicyElement = {
+export type PolicyElement = {
   id: string;
   type: ElementType;
   x: number;
@@ -554,10 +554,7 @@ export default function PolicyEditorPage() {
     };
     
     const categorizedIds = new Set(Object.values(baseCategorized).filter(Boolean).map(el => el!.id));
-    const categorized = {
-        ...baseCategorized,
-        others: elements.filter(el => !categorizedIds.has(el.id)),
-    }
+    const others = elements.filter(el => !categorizedIds.has(el.id));
 
 
     let yOffset = top;
@@ -565,22 +562,22 @@ export default function PolicyEditorPage() {
 
     // Header Zone
     const headerHeight = printableHeight * 0.2;
-    if (categorized.logo) {
-        const newWidth = Math.min(printableWidth * 0.3, categorized.logo.width);
+    if (baseCategorized.logo) {
+        const newWidth = Math.min(printableWidth * 0.3, baseCategorized.logo.width);
         const newHeight = headerHeight * 0.7;
         newElements.push({
-            ...categorized.logo,
+            ...baseCategorized.logo,
             x: left,
             y: yOffset,
             width: snapToGrid(newWidth),
             height: snapToGrid(newHeight)
         });
     }
-     if (categorized.barcode) {
-        const newWidth = Math.min(printableWidth * 0.5, categorized.barcode.width);
+     if (baseCategorized.barcode) {
+        const newWidth = Math.min(printableWidth * 0.5, baseCategorized.barcode.width);
         const newHeight = headerHeight * 0.8;
         newElements.push({
-            ...categorized.barcode,
+            ...baseCategorized.barcode,
             x: snapToGrid(canvasWidth - right - newWidth),
             y: yOffset,
             width: snapToGrid(newWidth),
@@ -591,11 +588,11 @@ export default function PolicyEditorPage() {
 
     // Recipient Zone
     const recipientHeight = printableHeight * 0.3;
-    if (categorized.recipient) {
+    if (baseCategorized.recipient) {
         const newWidth = printableWidth;
-        const newHeight = Math.min(recipientHeight, categorized.recipient.height);
+        const newHeight = Math.min(recipientHeight, baseCategorized.recipient.height);
         newElements.push({
-            ...categorized.recipient,
+            ...baseCategorized.recipient,
             x: left,
             y: yOffset,
             width: snapToGrid(newWidth),
@@ -607,11 +604,11 @@ export default function PolicyEditorPage() {
     // COD and Notes zone
     const footerHeight = printableHeight * 0.3;
     let footerY = canvasHeight - bottom - footerHeight;
-    if (categorized.cod) {
+    if (baseCategorized.cod) {
         const newWidth = printableWidth * 0.4;
-        const newHeight = Math.min(footerHeight, categorized.cod.height);
+        const newHeight = Math.min(footerHeight, baseCategorized.cod.height);
         newElements.push({
-            ...categorized.cod,
+            ...baseCategorized.cod,
             x: snapToGrid(left + (printableWidth / 2) - (newWidth / 2)),
             y: footerY,
             width: snapToGrid(newWidth),
@@ -661,16 +658,6 @@ export default function PolicyEditorPage() {
       if (storedTemplates) {
         setSavedTemplates(JSON.parse(storedTemplates));
       }
-      
-      const activeTemplate = localStorage.getItem('activePolicyTemplate');
-      if (activeTemplate) {
-          const template: SavedTemplate = JSON.parse(activeTemplate);
-          setElements(template.elements);
-          setPaperSize(template.paperSize);
-          setCustomDimensions(template.customDimensions);
-          setMargins(template.margins);
-      }
-
     } catch (error) {
       console.error("Failed to load templates from localStorage", error);
     }
@@ -895,26 +882,12 @@ const handleDuplicate = () => {
     
     setSavedTemplates(updatedTemplates);
     localStorage.setItem('policyTemplates', JSON.stringify(updatedTemplates));
-    localStorage.setItem('activePolicyTemplate', JSON.stringify(newTemplate)); // Also save as active
     
     toast({ title: 'تم الحفظ', description: `تم حفظ قالب "${templateName}" بنجاح.` });
     setIsSaveDialogOpen(false);
     setTemplateName('');
   };
   
-  const handleSaveActiveTemplate = () => {
-     const activeTemplate: SavedTemplate = {
-        id: 'active_template',
-        name: 'Active Template',
-        elements,
-        paperSize: paperSize,
-        customDimensions,
-        margins,
-    };
-    localStorage.setItem('activePolicyTemplate', JSON.stringify(activeTemplate));
-    toast({ title: 'تم الحفظ', description: 'تم حفظ القالب الحالي كقالب نشط للطباعة.' });
-  }
-
   const loadTemplate = (template: SavedTemplate) => {
     setElements(template.elements);
     setPaperSize(template.paperSize);
@@ -1073,10 +1046,16 @@ const handleDuplicate = () => {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="bg-muted p-4 rounded-md my-4">
-                    <PrintablePolicy ref={printablePolicyRef} orders={[]} template={currentTemplate} />
+                  <div className="absolute top-[-10000px] left-[-10000px]">
+                    <PrintablePolicy ref={printablePolicyRef} orders={[]} template={currentTemplate} onExport={() => setIsPrintSampleDialogOpen(false)} />
+                  </div>
                 </div>
                 <DialogFooter>
                     <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
+                     <Button onClick={() => printablePolicyRef.current?.handleExportPDF()}>
+                        <Icon name="Printer" className="ml-2 h-4 w-4 inline" />
+                        طباعة
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -1096,7 +1075,7 @@ const handleDuplicate = () => {
                     <Button variant="outline" onClick={handleSmartLayout}>
                         <Wand2 className="ml-2 h-4 w-4" /> المساعدة الذكية
                     </Button>
-                    <Button onClick={handleSaveActiveTemplate}><Save className="ml-2 h-4 w-4" />حفظ القالب النشط</Button>
+                    <Button onClick={() => setIsSaveDialogOpen(true)}><Save className="ml-2 h-4 w-4" />حفظ القالب الحالي</Button>
                     <Button variant="outline" size="icon" asChild>
                         <Link href="/dashboard/settings/general">
                             <Icon name="ArrowLeft" className="h-4 w-4" />

@@ -227,14 +227,6 @@ export function OrdersTable() {
 
     useEffect(() => { 
         setIsClient(true); 
-        const storedTemplates = localStorage.getItem('policyTemplates');
-        if (storedTemplates) {
-            setSavedTemplates(JSON.parse(storedTemplates));
-        }
-        const activeTemplate = localStorage.getItem('activePolicyTemplate');
-        if (activeTemplate) {
-            setSelectedTemplate(JSON.parse(activeTemplate));
-        }
     }, []);
 
     // Reset open groups when groupBy changes
@@ -411,6 +403,14 @@ export function OrdersTable() {
             toast({ variant: "destructive", title: "لا توجد طلبات محددة", description: "الرجاء تحديد طلب واحد على الأقل للطباعة." });
             return;
         }
+        const storedTemplates = localStorage.getItem('policyTemplates');
+        const templates = storedTemplates ? JSON.parse(storedTemplates) : [];
+        if (templates.length === 0) {
+            toast({ variant: 'destructive', title: 'لا توجد قوالب', description: 'الرجاء إنشاء وحفظ قالب واحد على الأقل في صفحة إعدادات البوليصة.' });
+            return;
+        }
+        setSavedTemplates(templates);
+        setSelectedTemplate(templates[0]); // Select the first one by default
         setIsPrintDialogOpen(true);
     };
 
@@ -559,40 +559,42 @@ export function OrdersTable() {
     return (
         <>
             <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
-                <DialogContent className="max-w-4xl">
+                <DialogContent className="max-w-xl">
                 <DialogHeader>
                     <DialogTitle>طباعة البوالص</DialogTitle>
                     <DialogDescription>
                         اختر قالب الطباعة المناسب للبوالص المحددة.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4">
-                    <div className="md:col-span-1 space-y-4">
-                        <div className="space-y-2">
-                             <Label htmlFor="template-select">اختر القالب</Label>
-                             <Select
-                                value={selectedTemplate?.id}
-                                onValueChange={(id) => setSelectedTemplate(savedTemplates.find(t => t.id === id) || null)}
-                             >
-                                <SelectTrigger id="template-select">
-                                    <SelectValue placeholder="اختر قالب..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {savedTemplates.map(template => (
-                                        <SelectItem key={template.id} value={template.id}>
-                                            {template.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                             </Select>
-                        </div>
-                        <Button onClick={() => printablePolicyRef.current?.handleExportPDF()} className="w-full" disabled={!selectedTemplate}>
-                            <Printer className="ml-2 h-4 w-4" /> تأكيد الطباعة
-                        </Button>
+                <div className="space-y-4 py-4">
+                     <div className="space-y-2">
+                         <Label htmlFor="template-select">اختر من قوالبك المحفوظة</Label>
+                         <Select
+                            value={selectedTemplate?.id}
+                            onValueChange={(id) => setSelectedTemplate(savedTemplates.find(t => t.id === id) || null)}
+                         >
+                            <SelectTrigger id="template-select">
+                                <SelectValue placeholder="اختر قالب..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {savedTemplates.map(template => (
+                                    <SelectItem key={template.id} value={template.id}>
+                                        {template.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                         </Select>
                     </div>
-                     <div className="md:col-span-2 bg-muted rounded-lg p-4 max-h-[60vh] overflow-auto">
-                        <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} template={selectedTemplate} onExport={() => setIsPrintDialogOpen(false)} />
-                    </div>
+                </div>
+                 <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
+                    <Button onClick={() => printablePolicyRef.current?.handleExportPDF()} className="w-full" disabled={!selectedTemplate}>
+                        <Printer className="ml-2 h-4 w-4" /> تأكيد الطباعة
+                    </Button>
+                </DialogFooter>
+                 {/* Hidden printable component */}
+                <div className="absolute top-[-10000px] left-[-10000px]">
+                  <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} template={selectedTemplate} onExport={() => setIsPrintDialogOpen(false)} />
                 </div>
                 </DialogContent>
             </Dialog>
