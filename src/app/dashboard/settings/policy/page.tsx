@@ -511,6 +511,8 @@ export default function PolicyEditorPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const [designErrors, setDesignErrors] = useState<DesignError[]>([]);
+  const [isPrintSampleDialogOpen, setIsPrintSampleDialogOpen] = useState(false);
+  const printablePolicyRef = useRef<{ handleExportPDF: () => void }>(null);
 
 
   const paperDimensions = useMemo(() => {
@@ -539,7 +541,7 @@ export default function PolicyEditorPage() {
     const printableWidth = canvasWidth - left - right;
     const printableHeight = canvasHeight - top - bottom;
 
-    const categorized = {
+     const categorized = {
         logo: elements.find(el => el.content.includes('logo')),
         companyName: elements.find(el => el.content.includes('company_name')),
         recipient: elements.find(el => el.content.includes('recipient')),
@@ -755,12 +757,21 @@ export default function PolicyEditorPage() {
   }, []);
   
   const handleSelect = useCallback((id: string, e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (selectedIds.length === 1 && selectedIds[0] === id) {
-          return;
-      }
-      setSelectedIds([id]);
-  }, [selectedIds]);
+    e.stopPropagation();
+    if (e.detail === 1) { // Single click
+        if (selectedIds.length === 1 && selectedIds[0] === id) {
+             // Already selected, do nothing to prevent re-renders
+        } else {
+            setSelectedIds([id]);
+        }
+    } else if (e.detail === 2) { // Double click
+        const element = elements.find(el => el.id === id);
+        if (element) {
+            setModalElement(element);
+            setIsModalOpen(true);
+        }
+    }
+  }, [elements, selectedIds]);
   
   const handleResizeStop = useCallback((id: string, w: number, h: number) => {
     setElements((p) => p.map((el) => (el.id === id ? { ...el, width: snapToGrid(w), height: snapToGrid(h) } : el)));
@@ -940,35 +951,9 @@ const handleDuplicate = () => {
     setModalElement(element);
     setIsModalOpen(true);
   };
-
-  const handlePrint = async () => {
-    const canvasElement = canvasRef.current;
-    if (!canvasElement) return;
-
-    try {
-        const canvas = await html2canvas(canvasElement, {
-            scale: 2, // Higher scale for better quality
-            useCORS: true, // If you use external images
-        });
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({
-            orientation: paperDimensions.width > paperDimensions.height ? 'l' : 'p',
-            unit: 'mm',
-            format: [paperDimensions.width * (25.4 / DPI), paperDimensions.height * (25.4 / DPI)],
-        });
-
-        pdf.addImage(imgData, 'PNG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
-        pdf.autoPrint();
-        window.open(pdf.output('bloburl'), '_blank');
-
-    } catch (e) {
-        console.error('Error generating PDF', e);
-        toast({
-            variant: 'destructive',
-            title: 'خطأ في الطباعة',
-            description: 'حدث خطأ أثناء محاولة إنشاء ملف PDF.',
-        });
-    }
+  
+  const handlePrintSample = () => {
+    setIsPrintSampleDialogOpen(true);
   };
 
 
@@ -1005,6 +990,23 @@ const handleDuplicate = () => {
             </DialogContent>
         </Dialog>
         
+        <Dialog open={isPrintSampleDialogOpen} onOpenChange={setIsPrintSampleDialogOpen}>
+            <DialogContent className="max-w-4xl">
+                 <DialogHeader>
+                    <DialogTitle>معاينة الطباعة</DialogTitle>
+                    <DialogDescription>
+                        هذه معاينة لكيف ستبدو البوليصة عند الطباعة بالبيانات الفعلية.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="bg-muted p-4 rounded-md my-4">
+                    <PrintablePolicy ref={printablePolicyRef} orders={[]} />
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
         <Card>
             <CardHeader className="flex flex-row items-start justify-between">
                 <div>
@@ -1016,7 +1018,7 @@ const handleDuplicate = () => {
                     </CardDescription>
                 </div>
                  <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={handlePrint}><Printer className="ml-2 h-4 w-4" /> طباعة عينة</Button>
+                    <Button variant="outline" onClick={handlePrintSample}><Printer className="ml-2 h-4 w-4" /> طباعة عينة</Button>
                     <Button variant="outline" onClick={handleSmartLayout}>
                         <Wand2 className="ml-2 h-4 w-4" /> المساعدة الذكية
                     </Button>

@@ -190,7 +190,7 @@ const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: 
 };
 
 export const PrintablePolicy = forwardRef<
-    { handleExportPDF: (overrideSettings?: Partial<PolicySettings>) => void },
+    { handleExportPDF: () => void },
     { orders: Order[], previewSettings?: PolicySettings }
 >(({ orders, previewSettings }, ref) => {
     const context = useSettings();
@@ -200,7 +200,7 @@ export const PrintablePolicy = forwardRef<
     const activeSettings = previewSettings || context?.settings.policy;
     const loginSettings = context?.settings.login;
     
-    const handleExportPDF = async (overrideSettings?: Partial<PolicySettings>) => {
+    const handleExportPDF = async () => {
         const printArea = printAreaRef.current;
         if (!printArea) {
             toast({ variant: 'destructive', title: 'خطأ في الطباعة', description: 'لا يمكن العثور على المحتوى للطباعة.' });
