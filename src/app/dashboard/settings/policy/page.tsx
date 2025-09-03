@@ -165,7 +165,7 @@ const SortableItem = ({ element, selected, onSelect, onUpdate }: {
         onClick={(e) => onSelect(element.id, e)}
         onMouseDown={(e) => e.stopPropagation()} // Prevent drag listener from firing on resize handles
       >
-        <PolicyElementComponent element={element} key={element.id} />
+        <PolicyElementComponent key={element.id} element={element} />
       </Resizable>
     </div>
   );
@@ -678,6 +678,10 @@ export default function PolicyEditorPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 <div className="lg:col-span-3 space-y-6 lg:sticky lg:top-24">
+                     <PropertiesPanel
+                        element={selectedElement || null}
+                        onUpdate={handleUpdateElement}
+                    />
                      <PageSettingsPanel 
                         paperSize={paperSize}
                         customDimensions={customDimensions}
@@ -685,10 +689,6 @@ export default function PolicyEditorPage() {
                         onPaperSizeChange={setPaperSize}
                         onDimensionChange={(dim, val) => setCustomDimensions(prev => ({...prev, [dim]: val}))}
                         onMarginChange={(margin, val) => setMargins(prev => ({...prev, [margin]: val}))}
-                    />
-                    <PropertiesPanel
-                        element={selectedElement || null}
-                        onUpdate={handleUpdateElement}
                     />
                     <Card>
                         <CardHeader><CardTitle className='text-base'>القوالب</CardTitle></CardHeader>
@@ -771,7 +771,7 @@ export default function PolicyEditorPage() {
                                 </div>
                                 : activeDragId ?
                                  <div style={{transform: `scale(${zoomLevel})`}}>
-                                    <PolicyElementComponent element={elements.find(el => el.id === activeDragId)!} />
+                                    <PolicyElementComponent key={activeDragId} element={elements.find(el => el.id === activeDragId)!} />
                                  </div>
                                 : null}
                             </DragOverlay>
@@ -783,6 +783,7 @@ export default function PolicyEditorPage() {
     </div>
   );
 }
+
 
 
 
