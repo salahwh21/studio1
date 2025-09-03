@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
@@ -20,6 +21,7 @@ const paperSizeClasses = {
   a5: 'w-[148mm] min-h-[210mm] p-6',
   label_4x6: 'w-[101.6mm] min-h-[152.4mm] p-4 text-sm',
   label_4x4: 'w-[101.6mm] min-h-[101.6mm] p-3 text-[10px] leading-tight',
+  custom: 'w-[75mm] h-[45mm] p-2 text-[9px] leading-tight'
 };
 
 const renderCustomFields = (customFields: {label: string, value: string}[], isSmallLabel: boolean) => (
@@ -136,7 +138,7 @@ const CompactLayout = ({ settings, loginSettings, order, isSmallLabel }: { setti
             </footer>
         </>
     );
-}
+};
 
 const DetailedLayout = ({ settings, loginSettings, order, isSmallLabel }: { settings: PolicySettings, loginSettings: any, order: Order, isSmallLabel: boolean }) => {
     const { formatCurrency } = useSettings();
@@ -190,7 +192,7 @@ const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: 
 };
 
 export const PrintablePolicy = forwardRef<
-    { handleExportPDF: () => void },
+    { handleExportPDF: (overrideSettings?: Partial<PolicySettings>) => void },
     { orders: Order[], previewSettings?: PolicySettings }
 >(({ orders, previewSettings }, ref) => {
     const context = useSettings();
@@ -200,7 +202,9 @@ export const PrintablePolicy = forwardRef<
     const activeSettings = previewSettings || context?.settings.policy;
     const loginSettings = context?.settings.login;
     
-    const handleExportPDF = async () => {
+    const handleExportPDF = async (overrideSettings?: Partial<PolicySettings>) => {
+        const finalSettings = { ...activeSettings, ...overrideSettings };
+
         const printArea = printAreaRef.current;
         if (!printArea) {
             toast({ variant: 'destructive', title: 'خطأ في الطباعة', description: 'لا يمكن العثور على المحتوى للطباعة.' });
