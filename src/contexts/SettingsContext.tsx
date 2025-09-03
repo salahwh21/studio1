@@ -88,7 +88,7 @@ type FontWeight = 'normal' | 'bold';
 type TableCellData = { id: string; content: string };
 type TableRowData = { id: string; cells: TableCellData[] };
 
-type PolicyElement = {
+export type PolicyElement = {
   id: string;
   type: ElementType;
   x: number;
@@ -155,6 +155,12 @@ interface SettingsContextType {
 
 // 3. Create the context
 export const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+
+const defaultPolicyElements: PolicyElement[] = [
+    { id: "el_brcd", type: "barcode", x: 128, y: 8, width: 136, height: 88, zIndex: 1, content: "{order_id}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+    { id: "el_brcd_txt", type: "text", x: 128, y: 104, width: 136, height: 24, zIndex: 1, content: "{order_id}", fontSize: 12, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+    { id: "el_logo", type: "image", x: 16, y: 8, width: 104, height: 120, zIndex: 1, content: "{company_logo}", fontSize: 14, fontWeight: 'normal', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff' },
+];
 
 // 4. Define default settings data
 const defaultSettingsData: ComprehensiveSettings = {
@@ -228,7 +234,7 @@ const defaultSettingsData: ComprehensiveSettings = {
       customFields: [],
       customDimensions: { width: 75, height: 45 },
       margins: { top: 2, right: 2, bottom: 2, left: 2 },
-      elements: [],
+      elements: defaultPolicyElements,
   }
 };
 
