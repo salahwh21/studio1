@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -66,14 +67,6 @@ const AddOrderPage = () => {
   const printablePolicyRef = useRef<{ handleExportPDF: () => void }>(null);
 
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
-  const [printSettings, setPrintSettings] = useState<PolicySettings | null>(null);
-
-  useEffect(() => {
-    if (context.isHydrated) {
-        setPrintSettings(context.settings.policy);
-    }
-  }, [context.isHydrated, context.settings.policy]);
-
 
   const togglePopover = (id: string) => {
     setPopoverStates(prev => ({ ...prev, [id]: !prev[id] }));
@@ -243,7 +236,7 @@ const AddOrderPage = () => {
             <DialogDescription>اختر حجم وتصميم البوليصة قبل الطباعة.</DialogDescription>
           </DialogHeader>
           <div className="md:col-span-2 bg-muted rounded-lg p-4 max-h-[60vh] overflow-auto">
-            <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} onExport={() => setIsPrintDialogOpen(false)} />
+             <PrintablePolicy ref={printablePolicyRef} orders={ordersToPrint} onExport={() => setIsPrintDialogOpen(false)} />
           </div>
         </DialogContent>
       </Dialog>

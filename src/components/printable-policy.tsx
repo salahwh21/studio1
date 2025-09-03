@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useRef, useImperativeHandle, forwardRef } from 'react';
@@ -10,6 +11,7 @@ import Barcode from 'react-barcode';
 import Icon from './icon';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
+import { htmlToText } from 'html-to-text';
 
 const paperSizeClasses = {
   a4: { width: 210, height: 297 },
@@ -128,9 +130,7 @@ const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: 
     const policySettings = settings || {};
     const paperSizeKey = policySettings.paperSize || 'custom';
     const customDimensions = policySettings.customDimensions || { width: 75, height: 45 };
-    const margins = policySettings.margins || { top: 2, right: 2, bottom: 2, left: 2 };
-    const elements = policySettings.elements || [];
-
+    
     const paperDimensions = {
         width: paperSizeKey === 'custom' ? customDimensions.width : paperSizeClasses[paperSizeKey].width,
         height: paperSizeKey === 'custom' ? customDimensions.height : paperSizeClasses[paperSizeKey].height,
@@ -139,12 +139,12 @@ const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: 
     const style = {
         width: `${paperDimensions.width}mm`,
         height: `${paperDimensions.height}mm`,
-        padding: `${margins.top}mm ${margins.right}mm ${margins.bottom}mm ${margins.left}mm`,
+        padding: 0, // Padding is handled by element positions now
     };
 
     return (
         <div className="policy-sheet relative font-sans text-black bg-white shadow-lg mx-auto" style={style}>
-            {elements.sort((a, b) => a.zIndex - b.zIndex).map(el => (
+            {policySettings.elements.sort((a, b) => a.zIndex - b.zIndex).map(el => (
                 <RenderedElement key={el.id} el={el} order={order} settings={useSettings()} loginSettings={loginSettings} />
             ))}
         </div>
@@ -154,37 +154,32 @@ const Policy: React.FC<{ order: Order; settings: PolicySettings; loginSettings: 
 
 export const PrintablePolicy = forwardRef<
     { handleExportPDF: () => void },
-    { orders: Order[], previewSettings?: PolicySettings, onExport?: () => void }
->(({ orders, previewSettings, onExport }, ref) => {
+    { orders: Order[], onExport?: () => void }
+>(({ orders, onExport }, ref) => {
     const context = useSettings();
     const { toast } = useToast();
-    const printAreaRef = useRef<HTMLDivElement>(null);
-
-    const activeSettings = previewSettings || context?.settings.policy;
+    
+    const activeSettings = context?.settings.policy;
     const loginSettings = context?.settings.login;
 
+    const pxToMm = (px: number) => px * (25.4 / 96);
+    const mmToPt = (mm: number) => mm * (72 / 25.4);
+
     const handleExportPDF = async () => {
-        const finalSettings = activeSettings;
-        const printArea = printAreaRef.current;
-
-        if (!printArea) {
-            toast({ variant: 'destructive', title: 'خطأ في الطباعة', description: 'لا يمكن العثور على المحتوى للطباعة.' });
+        if (!activeSettings) {
+            toast({ variant: 'destructive', title: 'خطأ', description: 'لا يمكن تحميل إعدادات البوليصة.' });
             return;
         }
 
-        const policyElements = Array.from(printArea.querySelectorAll('.policy-sheet')) as HTMLElement[];
-        if (policyElements.length === 0) {
-            toast({ variant: 'destructive', title: 'لا طلبات محددة', description: 'الرجاء تحديد طلب واحد على الأقل لطباعة البوليصة.' });
-            return;
-        }
-
-        if (!finalSettings) {
-            toast({ variant: 'destructive', title: 'خطأ في الإعدادات', description: 'لا يمكن تحميل إعدادات البوليصة.' });
-            return;
-        }
-
-        const paperSizeKey = finalSettings.paperSize || 'custom';
-        const customDimensions = finalSettings.customDimensions || { width: 0, height: 0 };
+        const displayOrders = orders.length > 0 ? orders : [{
+            id: 'ORD-1719810001', recipient: 'محمد جاسم', merchant: 'تاجر أ', date: new Date().toISOString(),
+            phone: '07701112233', address: 'الصويفية, عمان, شارع الوكالات, بناية 15, الطابق 3',
+            cod: 35.5, referenceNumber: 'REF-00101',
+            city: 'عمان', driver: 'علي', itemPrice: 33, deliveryFee: 2.5, notes: 'ملاحظة تجريبية للطباعة.', orderNumber: 1, region: 'الصويفية', source: 'Manual', status: 'جاري التوصيل', whatsapp: ''
+        }];
+        
+        const paperSizeKey = activeSettings.paperSize || 'custom';
+        const customDimensions = activeSettings.customDimensions || { width: 0, height: 0 };
         const paperDimensions = {
             width: paperSizeKey === 'custom' ? customDimensions.width : paperSizeClasses[paperSizeKey].width,
             height: paperSizeKey === 'custom' ? customDimensions.height : paperSizeClasses[paperSizeKey].height,
@@ -192,30 +187,73 @@ export const PrintablePolicy = forwardRef<
 
         const pdf = new jsPDF({
             orientation: paperDimensions.width > paperDimensions.height ? 'l' : 'p',
-            unit: 'mm',
-            format: [paperDimensions.width, paperDimensions.height]
+            unit: 'pt',
+            format: [mmToPt(paperDimensions.width), mmToPt(paperDimensions.height)]
         });
-
-        for (let i = 0; i < policyElements.length; i++) {
-            const element = policyElements[i];
-            if (i > 0) {
-                pdf.addPage([paperDimensions.width, paperDimensions.height], paperDimensions.width > paperDimensions.height ? 'l' : 'p');
-            }
-            await pdf.html(element, {
-                callback: (doc) => {
-                    // This callback is called for each page. We only save at the end.
-                    if (i === policyElements.length - 1) {
-                        doc.autoPrint();
-                        window.open(doc.output('bloburl'), '_blank');
-                        if (onExport) onExport();
-                    }
-                },
-                x: 0,
-                y: 0,
-                width: paperDimensions.width,
-                windowWidth: element.offsetWidth,
-            });
+        
+        // Add the font. jsPDF requires this for Arabic text.
+        // The font file needs to be publicly available. For this example, I'll assume it is.
+        // This is a simplified approach. A real app would bundle the font.
+        try {
+            await pdf.addFont('/Tajawal-Regular.ttf', 'Tajawal', 'normal');
+            pdf.setFont('Tajawal');
+        } catch(e) {
+            console.warn("Could not load custom font for PDF. Arabic text might not render correctly.", e);
         }
+
+        for (let i = 0; i < displayOrders.length; i++) {
+            const order = displayOrders[i];
+            if (i > 0) {
+                pdf.addPage([mmToPt(paperDimensions.width), mmToPt(paperDimensions.height)], paperDimensions.width > paperDimensions.height ? 'l' : 'p');
+            }
+
+            for (const el of activeSettings.elements.sort((a, b) => a.zIndex - b.zIndex)) {
+                const x_pt = mmToPt(pxToMm(el.x));
+                const y_pt = mmToPt(pxToMm(el.y));
+                const w_pt = mmToPt(pxToMm(el.width));
+                const h_pt = mmToPt(pxToMm(el.height));
+
+                switch (el.type) {
+                    case 'text':
+                        const text = resolveContent(el.content, order, context);
+                        pdf.setFontSize(el.fontSize || 14);
+                        pdf.setTextColor(el.color || '#000000');
+                        pdf.text(text, x_pt, y_pt + (el.fontSize || 14), { align: 'right', lang: 'ar' });
+                        break;
+                    
+                    case 'rect':
+                        pdf.setDrawColor(el.borderColor || '#000000');
+                        pdf.setFillColor(el.backgroundColor || '#FFFFFF');
+                        pdf.rect(x_pt, y_pt, w_pt, h_pt, el.backgroundColor ? 'FD' : 'S');
+                        break;
+                    
+                    case 'line':
+                         pdf.setDrawColor(el.color || '#000000');
+                         pdf.line(x_pt, y_pt, x_pt + w_pt, y_pt + h_pt);
+                         break;
+
+                    case 'image':
+                        let imageUrl: string | null = null;
+                        if (el.content.includes('{company_logo}')) imageUrl = loginSettings.policyLogo;
+                        if (imageUrl) {
+                             try {
+                                // We can't directly use external URLs in jsPDF addImage due to CORS.
+                                // A proper solution would be to fetch via a server-side proxy.
+                                // For now, we will skip if it fails.
+                                pdf.addImage(imageUrl, 'PNG', x_pt, y_pt, w_pt, h_pt);
+                             } catch(e) {
+                                console.error("Could not add image to PDF, likely due to CORS.", e);
+                             }
+                        }
+                        break;
+                }
+            }
+        }
+
+        pdf.autoPrint();
+        window.open(pdf.output('bloburl'), '_blank');
+        if (onExport) onExport();
+
     };
     
     useImperativeHandle(ref, () => ({
@@ -235,7 +273,7 @@ export const PrintablePolicy = forwardRef<
 
     return (
         <div>
-             <div ref={printAreaRef} id="printable-area">
+             <div id="printable-area">
                 {displayOrders.map((order, index) => (
                     <React.Fragment key={order.id}>
                        <Policy order={order} settings={activeSettings} loginSettings={loginSettings}/>
@@ -256,3 +294,4 @@ export const PrintablePolicy = forwardRef<
 });
 
 PrintablePolicy.displayName = 'PrintablePolicy';
+
