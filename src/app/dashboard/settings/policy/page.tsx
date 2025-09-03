@@ -259,17 +259,17 @@ const PageSettingsPanel = ({ paperSize, customDimensions, margins, onPaperSizeCh
     </Card>
 );
 
-const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag, onStop, isSelected }: {
-  element: PolicyElement;
-  onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
-  onSelect: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
-  onDragStart: (e: DraggableEvent, data: DraggableData) => void;
-  onDrag: (e: DraggableEvent, data: DraggableData) => void;
-  onStop: (e: DraggableEvent, data: DraggableData) => void;
-  isSelected: boolean;
-}) => {
-    const nodeRef = useRef(null);
-
+const PolicyDraggableItem = forwardRef<HTMLDivElement, {
+    element: PolicyElement;
+    onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
+    onSelect: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
+    onDragStart: (e: DraggableEvent, data: DraggableData) => void;
+    onDrag: (e: DraggableEvent, data: DraggableData) => void;
+    onStop: (e: DraggableEvent, data: DraggableData) => void;
+    isSelected: boolean;
+    zoomLevel: number;
+    nodeRef: React.RefObject<HTMLDivElement>;
+}>(({ element, onUpdate, onSelect, onDragStart, onDrag, onStop, isSelected, zoomLevel, nodeRef }, ref) => {
     return (
         <Draggable
             nodeRef={nodeRef}
@@ -295,7 +295,8 @@ const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDragStart, onDrag,
             </Resizable>
         </Draggable>
     );
-};
+});
+PolicyDraggableItem.displayName = 'PolicyDraggableItem';
 
 
 // --- Main Page Component ---
@@ -327,6 +328,11 @@ export default function PolicyEditorPage() {
     const [isPrintSampleDialogOpen, setIsPrintSampleDialogOpen] = useState(false);
     const printablePolicyRef = useRef<{ handleExport: () => void; handleDirectPrint: (order: any, type: 'zpl' | 'escpos') => Promise<void> }>(null);
     
+    const elementRefs = useMemo(() =>
+        elements.reduce((acc: Record<string, React.RefObject<HTMLDivElement>>, el) => {
+            acc[el.id] = React.createRef<HTMLDivElement>();
+            return acc;
+        }, {}), [elements]);
 
     // Load from localStorage
     useEffect(() => {
@@ -449,12 +455,12 @@ export default function PolicyEditorPage() {
     };
 
     const handleDragStart = useCallback((e: DraggableEvent, data: DraggableData) => {
-        const node = data.node.parentElement; // The <Resizable> element
+        const node = data.node.parentElement;
         if (!node) return false;
         
         setTimeout(() => setIsDragging(true), 0);
-
-        const elementId = node.id;
+        
+        const elementId = selectedIds.includes(data.node.id) ? data.node.id : (node.id || data.node.id);
         
         if (!selectedIds.includes(elementId)) {
             setSelectedIds([elementId]);
@@ -474,7 +480,7 @@ export default function PolicyEditorPage() {
     const handleDrag = useCallback((e: DraggableEvent, data: DraggableData) => {
         const node = data.node.parentElement;
         if (!node) return;
-        const elementId = node.id;
+        const elementId = selectedIds.includes(data.node.id) ? data.node.id : (node.id || data.node.id);
 
         const activeElementStartPos = dragStartPositions.current[elementId];
         if (!activeElementStartPos) return;
@@ -548,7 +554,7 @@ export default function PolicyEditorPage() {
         const node = data.node.parentElement;
         if (!node) return;
         
-        const elementId = node.id;
+        const elementId = selectedIds.includes(data.node.id) ? data.node.id : (node.id || data.node.id);
         const startPos = dragStartPositions.current[elementId];
 
         if(startPos) {
@@ -715,7 +721,7 @@ export default function PolicyEditorPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-
+      
         <Card>
             <CardHeader className="flex-row justify-between items-start">
                 <div>
@@ -729,7 +735,7 @@ export default function PolicyEditorPage() {
                 </Button>
             </CardHeader>
         </Card>
-        
+
         <Card>
             <CardContent className="p-2">
                 <div className="flex items-center gap-4">
@@ -876,43 +882,26 @@ export default function PolicyEditorPage() {
                                     backgroundImage: `linear-gradient(to right, #e5e5e5 1px, transparent 1px), linear-gradient(to bottom, #e5e5e5 1px, transparent 1px)`
                                 }} />
                                 {elements.map(el => (
-                                    <Draggable
+                                    <PolicyDraggableItem
                                         key={el.id}
-                                        nodeRef={el.ref}
-                                        position={{ x: el.x, y: el.y }}
-                                        onStart={(e, data) => {
-                                            const node = el.ref?.current;
-                                            if (!node) return false;
-                                            handleDragStart(e, data);
+                                        element={el}
+                                        nodeRef={elementRefs[el.id]}
+                                        onUpdate={handleUpdateElement}
+                                        onSelect={(id, e) => {
+                                            e.stopPropagation();
+                                            const event = e as React.MouseEvent;
+                                            if (event.metaKey || event.ctrlKey) {
+                                                setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+                                            } else {
+                                                setSelectedIds([id]);
+                                            }
                                         }}
+                                        onDragStart={handleDragStart}
                                         onDrag={handleDrag}
                                         onStop={handleStopDrag}
-                                    >
-                                        <Resizable
-                                            ref={el.ref}
-                                            id={el.id}
-                                            size={{ width: el.width, height: el.height }}
-                                            className="absolute"
-                                            onResizeStop={(e, dir, ref, d) => handleUpdateElement(el.id, { width: snapToGrid(el.width + d.width), height: snapToGrid(el.height + d.height) })}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                const event = e as React.MouseEvent;
-                                                if (event.metaKey || event.ctrlKey) {
-                                                    setSelectedIds(prev => prev.includes(el.id) ? prev.filter(i => i !== id) : [...prev, el.id]);
-                                                } else {
-                                                    setSelectedIds([el.id]);
-                                                }
-                                            }}
-                                            enable={{
-                                                top: selectedIds.includes(el.id), right: selectedIds.includes(el.id), bottom: selectedIds.includes(el.id), left: selectedIds.includes(el.id),
-                                                topRight: selectedIds.includes(el.id), bottomRight: selectedIds.includes(el.id), bottomLeft: selectedIds.includes(el.id), topLeft: selectedIds.includes(el.id),
-                                            }}
-                                        >
-                                            <div className={`w-full h-full cursor-move ${selectedIds.includes(el.id) ? 'border-2 border-dashed border-primary' : ''}`}>
-                                                <PolicyElementComponent element={el} />
-                                            </div>
-                                        </Resizable>
-                                    </Draggable>
+                                        isSelected={selectedIds.includes(el.id)}
+                                        zoomLevel={zoomLevel}
+                                    />
                                 ))}
                             </div>
                         </div>
