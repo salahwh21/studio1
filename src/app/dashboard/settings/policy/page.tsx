@@ -48,7 +48,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useSettings, type PolicySettings } from '@/contexts/SettingsContext';
 import { Separator } from '@/components/ui/separator';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { PrintablePolicy } from '@/components/printable-policy';
 
 
@@ -1022,6 +1021,15 @@ const handleDuplicate = () => {
     setIsPrintSampleDialogOpen(true);
   };
 
+  const currentTemplate: SavedTemplate = useMemo(() => ({
+    id: 'current_design',
+    name: 'Current Design',
+    elements,
+    paperSize,
+    customDimensions,
+    margins,
+  }), [elements, paperSize, customDimensions, margins]);
+
 
   if (!isHydrated) {
     return null; // or a loading skeleton
@@ -1065,7 +1073,7 @@ const handleDuplicate = () => {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="bg-muted p-4 rounded-md my-4">
-                    <PrintablePolicy ref={printablePolicyRef} orders={[]} />
+                    <PrintablePolicy ref={printablePolicyRef} orders={[]} template={currentTemplate} />
                 </div>
                 <DialogFooter>
                     <DialogClose asChild><Button variant="outline">إغلاق</Button></DialogClose>
