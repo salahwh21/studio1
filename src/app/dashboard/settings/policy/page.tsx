@@ -36,8 +36,7 @@ import {
   MousePointerSquare,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import Draggable, { type DraggableEvent, type DraggableData } from 'react-draggable';
-import { Resizable } from 're-resizable';
+import { Rnd } from 'react-rnd';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -259,41 +258,6 @@ const PageSettingsPanel = ({ paperSize, customDimensions, margins, onPaperSizeCh
     </Card>
 );
 
-const PolicyDraggableItem = ({ element, onUpdate, onSelect, isSelected }: {
-    element: PolicyElement;
-    onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
-    onSelect: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
-    isSelected: boolean;
-}) => {
-    const nodeRef = useRef<HTMLDivElement>(null);
-
-    return (
-        <Draggable
-            nodeRef={nodeRef}
-            position={{ x: element.x, y: element.y }}
-            onStop={(e, data) => onUpdate(element.id, { x: data.x, y: data.y })}
-            handle=".handle"
-        >
-            <Resizable
-                ref={nodeRef}
-                size={{ width: element.width, height: element.height }}
-                onResizeStop={(e, dir, ref, d) => onUpdate(element.id, { width: element.width + d.width, height: element.height + d.height })}
-                onClick={(e) => onSelect(element.id, e)}
-                className="absolute"
-                enable={{
-                    top: isSelected, right: isSelected, bottom: isSelected, left: isSelected,
-                    topRight: isSelected, bottomRight: isSelected, bottomLeft: isSelected, topLeft: isSelected,
-                }}
-            >
-                <div className={`handle w-full h-full cursor-move ${isSelected ? 'border-2 border-dashed border-primary' : ''}`}>
-                    <PolicyElementComponent element={element} />
-                </div>
-            </Resizable>
-        </Draggable>
-    );
-};
-
-
 // --- Main Page Component ---
 export default function PolicyEditorPage() {
     const { toast } = useToast();
@@ -353,8 +317,8 @@ export default function PolicyEditorPage() {
     const addElement = useCallback((tool: typeof toolboxItems[0]) => {
         if (!canvasRef.current) return;
         const canvasRect = canvasRef.current.getBoundingClientRect();
-        const centerX = canvasRect.width / 2;
-        const centerY = canvasRect.height / 2;
+        const centerX = paperDimensions.width / 2;
+        const centerY = paperDimensions.height / 2;
 
         let newElement: PolicyElement = {
             id: nanoid(),
@@ -380,7 +344,7 @@ export default function PolicyEditorPage() {
 
         setElements(prev => [...prev, newElement]);
         setSelectedIds([newElement.id]);
-    }, [elements.length]);
+    }, [elements.length, paperDimensions]);
 
     const handleUpdateElement = (id: string, updates: Partial<PolicyElement>) => {
         setElements(prev => prev.map(el => el.id === id ? { ...el, ...updates } : el));
@@ -433,6 +397,102 @@ export default function PolicyEditorPage() {
     };
     
     const selectedElement = useMemo(() => elements.find(el => el.id === selectedIds[0]), [elements, selectedIds]);
+    const elementRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+    const handleSelect = (id: string, e: React.MouseEvent<HTMLDivElement>) => {
+        e.stopPropagation();
+        if (e.metaKey || e.ctrlKey) {
+            setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+        } else {
+            setSelectedIds([id]);
+        }
+    };
+    
+    // --- Smart Guides and Snapping Logic ---
+    const generateSmartGuides = (draggingElement: PolicyElement) => {
+        const guides: {x: number[], y: number[]} = { x: [], y: [] };
+        const otherElements = elements.filter(el => !selectedIds.includes(el.id));
+        const canvasBounds = { x: 0, y: 0, width: paperDimensions.width, height: paperDimensions.height };
+
+        const elBounds = {
+            left: draggingElement.x, right: draggingElement.x + draggingElement.width,
+            top: draggingElement.y, bottom: draggingElement.y + draggingElement.height,
+            cx: draggingElement.x + draggingElement.width / 2, cy: draggingElement.y + draggingElement.height / 2
+        };
+        const targets = [...otherElements.map(el => ({
+            left: el.x, right: el.x + el.width, top: el.y, bottom: el.y + el.height,
+            cx: el.x + el.width / 2, cy: el.y + el.height / 2
+        })), {
+            left: canvasBounds.x, right: canvasBounds.width, top: canvasBounds.y, bottom: canvasBounds.height,
+            cx: canvasBounds.width / 2, cy: canvasBounds.height / 2
+        }];
+
+        let newX = elBounds.left, newY = elBounds.top;
+
+        targets.forEach(target => {
+            ['left', 'cx', 'right'].forEach(p => {
+                const prop = p as 'left' | 'cx' | 'right';
+                if (Math.abs(elBounds[prop] - target[prop]) < SNAP_THRESHOLD) { newX += target[prop] - elBounds[prop]; guides.x.push(target[prop]); }
+            });
+            ['top', 'cy', 'bottom'].forEach(p => {
+                const prop = p as 'top' | 'cy' | 'bottom';
+                if (Math.abs(elBounds[prop] - target[prop]) < SNAP_THRESHOLD) { newY += target[prop] - elBounds[prop]; guides.y.push(target[prop]); }
+            });
+        });
+
+        return { newX: snapToGrid(newX), newY: snapToGrid(newY), guides };
+    };
+
+    const handleDragStart = (id: string) => {
+        setIsDragging(true);
+        const startPositions: Record<string, {x: number, y: number}> = {};
+        selectedIds.forEach(selectedId => {
+            const el = elements.find(e => e.id === selectedId);
+            if (el) startPositions[selectedId] = { x: el.x, y: el.y };
+        });
+        dragStartPositions.current = startPositions;
+    };
+    
+    const handleDragStop = (id: string, d: {x: number, y: number}) => {
+        setIsDragging(false);
+        setSmartGuides({ x: [], y: [] });
+    };
+
+    const handleDrag = (id: string, d: {x: number, y: number}) => {
+        const mainElement = elements.find(el => el.id === id);
+        if (!mainElement) return;
+
+        const mainElementStartPos = dragStartPositions.current[id];
+        if (!mainElementStartPos) return;
+
+        const deltaX = d.x - mainElementStartPos.x;
+        const deltaY = d.y - mainElementStartPos.y;
+
+        let movedElements = elements.map(el => {
+            if (selectedIds.includes(el.id)) {
+                const startPos = dragStartPositions.current[el.id];
+                if (startPos) {
+                    return { ...el, x: startPos.x + deltaX, y: startPos.y + deltaY };
+                }
+            }
+            return el;
+        });
+        
+        const { newX, newY, guides } = generateSmartGuides({ ...mainElement, x: d.x, y: d.y });
+        setSmartGuides(guides);
+
+        const snapDeltaX = newX - d.x;
+        const snapDeltaY = newY - d.y;
+        
+        movedElements = movedElements.map(el => {
+            if (selectedIds.includes(el.id)) {
+                return { ...el, x: el.x + snapDeltaX, y: el.y + snapDeltaY };
+            }
+            return el;
+        });
+
+        setElements(movedElements);
+    };
 
     // --- Template Management ---
     const saveTemplatesToStorage = (newTemplates: SavedTemplate[]) => {
@@ -747,21 +807,29 @@ export default function PolicyEditorPage() {
                                     backgroundImage: `linear-gradient(to right, #e5e5e5 1px, transparent 1px), linear-gradient(to bottom, #e5e5e5 1px, transparent 1px)`
                                 }} />
                                 {elements.map(el => (
-                                    <PolicyDraggableItem
+                                     <Rnd
                                         key={el.id}
-                                        element={el}
-                                        onUpdate={handleUpdateElement}
-                                        onSelect={(id, e) => {
-                                            e.stopPropagation();
-                                            const event = e as React.MouseEvent;
-                                            if (event.metaKey || event.ctrlKey) {
-                                                setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-                                            } else {
-                                                setSelectedIds([id]);
-                                            }
+                                        size={{ width: el.width, height: el.height }}
+                                        position={{ x: el.x, y: el.y }}
+                                        onDragStart={() => handleDragStart(el.id)}
+                                        onDrag={(e, d) => handleDrag(el.id, d)}
+                                        onDragStop={(e, d) => {
+                                            handleUpdateElement(el.id, { x: d.x, y: d.y });
+                                            handleDragStop(el.id, d);
                                         }}
-                                        isSelected={selectedIds.includes(el.id)}
-                                    />
+                                        onResizeStop={(e, direction, ref, delta, position) => {
+                                            handleUpdateElement(el.id, {
+                                                width: parseInt(ref.style.width, 10),
+                                                height: parseInt(ref.style.height, 10),
+                                                ...position,
+                                            });
+                                        }}
+                                        onClick={(e) => handleSelect(el.id, e)}
+                                        className={selectedIds.includes(el.id) ? 'border-2 border-dashed border-primary z-40' : 'z-30'}
+                                        bounds="parent"
+                                     >
+                                        <PolicyElementComponent element={el} ref={(node) => (elementRefs.current[el.id] = node)} />
+                                     </Rnd>
                                 ))}
                             </div>
                         </div>
