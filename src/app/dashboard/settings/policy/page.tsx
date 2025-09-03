@@ -268,7 +268,7 @@ export default function PolicyEditorPage() {
         
         let newElement: PolicyElement = {
             id: nanoid(),
-            type: tool.type as ElementType,
+            type: tool.type as any,
             x: snapToGrid(canvasRect.width / 2 - ((tool.defaultWidth || 100) * zoomLevel) / 2),
             y: snapToGrid(canvasRect.height / 2 - ((tool.defaultHeight || 50) * zoomLevel) / 2),
             width: tool.defaultWidth,
@@ -463,7 +463,7 @@ export default function PolicyEditorPage() {
                                 <Button variant="outline" size="icon" onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))}><ZoomOut /></Button>
                                 <span className="text-sm font-semibold w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
                                 <Button variant="outline" size="icon" onClick={() => setZoomLevel(z => Math.min(2, z + 0.1))}><ZoomIn /></Button>
-                                 <Button variant="secondary" onClick={() => {}}>معاينة وطباعة</Button>
+                                 <Button variant="secondary" onClick={() => {setIsPrintSampleDialogOpen(true)}}>معاينة وطباعة</Button>
                             </div>
                             </CardHeader>
                              <CardContent className="flex justify-center items-center bg-muted p-8 rounded-lg overflow-auto min-h-[70vh]">
@@ -479,7 +479,7 @@ export default function PolicyEditorPage() {
                                 <DragOverlay>
                                     {activeDragId && activeDragId.startsWith('tool-') ? 
                                     <div className="bg-primary/20 border-2 border-dashed border-primary rounded-md p-4 flex items-center justify-center gap-2">
-                                        <tool.icon className="h-5 w-5" /><span>{toolboxItems.find(t=>`tool-${t.type}` === activeDragId)?.label}</span>
+                                        <ImageIcon className="h-5 w-5" /><span>{toolboxItems.find(t=>`tool-${t.type}` === activeDragId)?.label}</span>
                                     </div>
                                     : activeDragId ?
                                     <DraggableItem element={elements.find(el => el.id === activeDragId)!} selected={true} onSelect={()=>{}} onUpdate={()=>{}} isOverlay />
