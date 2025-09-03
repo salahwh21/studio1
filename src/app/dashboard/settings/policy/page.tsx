@@ -154,24 +154,29 @@ function ElementContent({ el }: { el: PolicyElement }) {
   if (el.type === 'rect') return <div style={baseStyle}></div>;
   if (el.type === 'line') return <div style={{...baseStyle, padding: 0}}></div>;
   if (el.type === 'table') {
-      return (
-          <div style={{ ...baseStyle, alignItems: 'flex-start', justifyContent: 'flex-start' }}>
-              <table className="w-full h-full border-collapse" style={{fontSize: el.fontSize ?? 12}}>
-                  <thead style={{fontWeight: el.fontWeight ?? 'bold'}}>
-                      <tr>
-                          {Array.from({length: el.colCount ?? 2}).map((_, i) => <th key={i} className="border p-1" style={{borderColor: el.borderColor ?? '#000000'}}>عنوان {i+1}</th>)}
-                      </tr>
-                  </thead>
-                  <tbody>
-                      {Array.from({length: el.rowCount ?? 2}).map((_, i) => (
-                           <tr key={i}>
-                               {Array.from({length: el.colCount ?? 2}).map((_, j) => <td key={j} className="border p-1" style={{borderColor: el.borderColor ?? '#000000'}}>بيانات</td>)}
-                           </tr>
-                      ))}
-                  </tbody>
-              </table>
-          </div>
-      )
+    const { headers = [], tableData = [], borderColor = '#000000', fontSize = 12, fontWeight = 'bold' } = el;
+    return (
+        <div style={{ ...baseStyle, display: 'block', padding: 0, alignItems: 'stretch', justifyContent: 'stretch' }}>
+            <table className="w-full h-full border-collapse" style={{fontSize: `${fontSize}px`}}>
+                <thead>
+                    <tr style={{fontWeight: fontWeight}}>
+                        {headers.map((header, i) => (
+                            <th key={i} className="border p-1 overflow-hidden" style={{borderColor}}>{header}</th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {tableData.map((row) => (
+                        <tr key={row.id}>
+                            {row.cells.map((cell) => (
+                                <td key={cell.id} className="border p-1" style={{borderColor}}>{cell.content}</td>
+                            ))}
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    )
   }
   
   return null;
@@ -195,9 +200,10 @@ const DraggableItem = ({ element, selected, onSelect, onResizeStop, onContextMen
     width: element.width,
     height: element.height,
     zIndex: element.zIndex,
-    outline: selected && !isDragging ? '2px solid hsl(var(--primary))' : 'none',
+    outline: selected ? '2px solid hsl(var(--primary))' : 'none',
     outlineOffset: '2px',
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    visibility: isDragging ? 'hidden' : 'visible'
   };
 
   return (
@@ -277,6 +283,55 @@ const PropertiesModal = ({ element, onUpdate, onDelete, open, onOpenChange }: {
         }
     };
 
+    const handleTableDimensionChange = (dimension: 'colCount' | 'rowCount', value: number) => {
+        if (value < 1 || value > 20) return;
+    
+        setCurrentElement(prev => {
+            if (!prev) return null;
+            const newElement = { ...prev, [dimension]: value };
+    
+            const newRowCount = dimension === 'rowCount' ? value : (prev.rowCount ?? 2);
+            const newColCount = dimension === 'colCount' ? value : (prev.colCount ?? 2);
+    
+            // Adjust headers
+            const currentHeaders = prev.headers ?? [];
+            const newHeaders = Array.from({ length: newColCount }, (_, i) => currentHeaders[i] || `رأس ${i + 1}`);
+            newElement.headers = newHeaders;
+    
+            // Adjust tableData
+            const currentTableData = prev.tableData ?? [];
+            const newTableData = Array.from({ length: newRowCount }, (_, rowIndex) => {
+                const existingRow = currentTableData[rowIndex];
+                const newCells = Array.from({ length: newColCount }, (_, colIndex) => {
+                    const existingCell = existingRow?.cells[colIndex];
+                    return existingCell || { id: nanoid(), content: '' };
+                });
+                return { id: existingRow?.id || nanoid(), cells: newCells };
+            });
+            newElement.tableData = newTableData;
+    
+            return newElement;
+        });
+    };
+    
+    const handleTableHeaderChange = (index: number, value: string) => {
+        setCurrentElement(prev => {
+            if (!prev || !prev.headers) return prev;
+            const newHeaders = [...prev.headers];
+            newHeaders[index] = value;
+            return { ...prev, headers: newHeaders };
+        });
+    };
+    
+    const handleTableCellChange = (rowIndex: number, colIndex: number, value: string) => {
+        setCurrentElement(prev => {
+            if (!prev || !prev.tableData) return prev;
+            const newTableData = JSON.parse(JSON.stringify(prev.tableData));
+            newTableData[rowIndex].cells[colIndex].content = value;
+            return { ...prev, tableData: newTableData };
+        });
+    };
+
     const handleSave = () => {
         if(currentElement) {
             onUpdate(currentElement.id, currentElement);
@@ -308,7 +363,33 @@ const PropertiesModal = ({ element, onUpdate, onDelete, open, onOpenChange }: {
                         </div>
                     )}
                     {currentElement.type === 'table' && (
-                        <div className="space-y-4 p-4 border rounded-md"><h4 className="font-semibold">إعدادات الجدول</h4><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>عدد الأعمدة</Label><Input type="number" value={currentElement.colCount ?? 2} onChange={(e) => handleNumericChange('colCount', e.target.value)} /></div><div className="space-y-2"><Label>عدد الصفوف</Label><Input type="number" value={currentElement.rowCount ?? 2} onChange={(e) => handleNumericChange('rowCount', e.target.value)} /></div></div></div>
+                        <div className="space-y-4 p-4 border rounded-md">
+                            <h4 className="font-semibold">إعدادات الجدول</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2"><Label>عدد الأعمدة</Label><Input type="number" value={currentElement.colCount ?? 2} onChange={(e) => handleTableDimensionChange('colCount', parseInt(e.target.value, 10))} /></div>
+                                <div className="space-y-2"><Label>عدد الصفوف</Label><Input type="number" value={currentElement.rowCount ?? 2} onChange={(e) => handleTableDimensionChange('rowCount', parseInt(e.target.value, 10))} /></div>
+                            </div>
+                             <div className="space-y-2">
+                                <Label>رؤوس الأعمدة</Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                {(currentElement.headers ?? []).map((header, index) => (
+                                    <Input key={index} value={header} onChange={(e) => handleTableHeaderChange(index, e.target.value)} placeholder={`رأس ${index + 1}`} />
+                                ))}
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>بيانات الخلايا</Label>
+                                <div className="space-y-2">
+                                {(currentElement.tableData ?? []).map((row, rowIndex) => (
+                                    <div key={row.id} className="grid grid-cols-2 gap-2">
+                                    {row.cells.map((cell, colIndex) => (
+                                        <Input key={cell.id} value={cell.content} onChange={(e) => handleTableCellChange(rowIndex, colIndex, e.target.value)} placeholder={`صف ${rowIndex+1}, عمود ${colIndex+1}`} />
+                                    ))}
+                                    </div>
+                                ))}
+                                </div>
+                            </div>
+                        </div>
                     )}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2"><Label>X</Label><Input type="number" value={currentElement.x} onChange={(e) => handleNumericChange('x', e.target.value)} /></div>
@@ -516,14 +597,16 @@ export default function PolicyEditorPage() {
     };
 
      if (tool.type === 'table') {
+        const rowCount = 3;
+        const colCount = 3;
         newElement = {
             ...newElement,
-            rowCount: 3,
-            colCount: 3,
-            headers: ['Header 1', 'Header 2', 'Header 3'],
-            tableData: Array.from({ length: 3 }, () => ({
+            rowCount,
+            colCount,
+            headers: Array.from({ length: colCount }, (_, i) => `رأس ${i + 1}`),
+            tableData: Array.from({ length: rowCount }, () => ({
                 id: nanoid(),
-                cells: Array.from({ length: 3 }, () => ({ id: nanoid(), content: 'Data' }))
+                cells: Array.from({ length: colCount }, () => ({ id: nanoid(), content: 'بيانات' }))
             }))
         };
     }
@@ -550,8 +633,8 @@ export default function PolicyEditorPage() {
   
   const handleSelect = useCallback((id: string, e: React.MouseEvent) => {
       e.stopPropagation();
-      if (selectedIds.includes(id)) {
-        return;
+      if (selectedIds.length === 1 && selectedIds[0] === id) {
+          return;
       }
       setSelectedIds([id]);
   }, [selectedIds]);
