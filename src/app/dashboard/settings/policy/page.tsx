@@ -260,23 +260,6 @@ const PageSettingsPanel = ({ paperSize, customDimensions, margins, onPaperSizeCh
     </Card>
 );
 
-const RulerComponent = ({ orientation, size }: { orientation: 'horizontal' | 'vertical', size: number }) => {
-    const ticks = Array.from({ length: Math.floor(size / 50) + 1 }, (_, i) => i * 50);
-    return (
-        <div
-            className={`absolute bg-muted text-muted-foreground text-[10px] ${orientation === 'horizontal' ? 'w-full h-5 top-0 left-0 flex items-center' : 'h-full w-5 top-0 left-0 flex flex-col justify-start'}`}
-            style={orientation === 'horizontal' ? { top: -RULER_WIDTH } : { left: -RULER_WIDTH }}
-        >
-            {ticks.map(tick => (
-                <div key={tick} className="relative" style={orientation === 'horizontal' ? { left: tick } : { top: tick }}>
-                    <div className={`absolute ${orientation === 'horizontal' ? 'w-px h-2 bg-muted-foreground top-3' : 'h-px w-2 bg-muted-foreground left-3'}`}></div>
-                    <span className={`absolute ${orientation === 'horizontal' ? 'top-0 -translate-x-1/2' : 'left-0 -translate-y-1/2'}`}>{tick}</span>
-                </div>
-            ))}
-        </div>
-    );
-};
-
 const PolicyDraggableItem = ({ element, onUpdate, onSelect, onDrag, onStop, isSelected, zoomLevel }: {
   element: PolicyElement;
   onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
@@ -796,8 +779,8 @@ export default function PolicyEditorPage() {
                         <div
                             className="relative"
                             style={{ 
-                                width: paperDimensions.width + RULER_WIDTH, 
-                                height: paperDimensions.height + RULER_WIDTH,
+                                width: paperDimensions.width, 
+                                height: paperDimensions.height,
                                 transform: `scale(${zoomLevel})`, 
                                 transformOrigin: 'top center' 
                             }}
@@ -809,16 +792,18 @@ export default function PolicyEditorPage() {
                                 style={{ 
                                     width: paperDimensions.width, 
                                     height: paperDimensions.height,
-                                    left: RULER_WIDTH,
-                                    top: RULER_WIDTH
+                                }}
+                                onMouseDown={(e) => {
+                                    if(e.target === e.currentTarget) {
+                                        const event = e as React.MouseEvent;
+                                        if (event.shiftKey) { // Simple check, could be more robust
+                                            handleNewGuide(e, 'horizontal');
+                                        } else {
+                                            handleNewGuide(e, 'vertical');
+                                        }
+                                    }
                                 }}
                             >
-                                <div className="absolute top-0 left-0 w-full h-full cursor-ns-resize" onMouseDown={(e) => handleNewGuide(e, 'horizontal')}>
-                                    <RulerComponent orientation="horizontal" size={paperDimensions.width} />
-                                </div>
-                                <div className="absolute top-0 left-0 w-full h-full cursor-ew-resize" onMouseDown={(e) => handleNewGuide(e, 'vertical')}>
-                                    <RulerComponent orientation="vertical" size={paperDimensions.height} />
-                                </div>
                                 
                                 {horizontalGuides.map((y, i) => (
                                     <Draggable key={`h-${i}`} axis="y" bounds="parent" onStop={(e, data) => setHorizontalGuides(prev => prev.map((g, gi) => gi === i ? snapToGrid(data.y) : g))} position={{x:0, y}}>
