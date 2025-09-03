@@ -4,7 +4,7 @@
 
 import React, { useRef, useImperativeHandle, forwardRef, useContext } from 'react';
 import type { Order } from '@/store/orders-store';
-import { useSettings, type PolicySettings, type PolicyElement, SettingsContext } from '@/contexts/SettingsContext';
+import { useSettings, type PolicySettings, type PolicyElement, SettingsContext, readyTemplates } from '@/contexts/SettingsContext';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 import Barcode from 'react-barcode';
@@ -207,8 +207,8 @@ export const PrintablePolicy = forwardRef<
         });
         
         try {
-            await pdf.addFont('/Tajawal-Regular.ttf', 'Tajawal', 'normal');
-            pdf.setFont('Tajawal');
+            // await pdf.addFont('/Tajawal-Regular.ttf', 'Tajawal', 'normal');
+            // pdf.setFont('Tajawal');
         } catch(e) {
             console.warn("Could not load custom font for PDF. Arabic text might not render correctly.", e);
         }
