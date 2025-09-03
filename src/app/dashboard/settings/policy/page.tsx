@@ -98,7 +98,7 @@ const dataFields = [
 
 // --- Sub-components ---
 
-const PolicyElementComponent = ({ element }: { element: PolicyElement }) => {
+const PolicyElementComponent = forwardRef(({ element }: { element: PolicyElement }, ref: React.Ref<HTMLDivElement>) => {
   const renderContent = () => {
     switch (element.type) {
       case 'text':
@@ -118,13 +118,15 @@ const PolicyElementComponent = ({ element }: { element: PolicyElement }) => {
 
   return (
     <div
+      ref={ref}
       className="w-full h-full"
       style={{ borderColor: element.borderColor, borderWidth: `${element.borderWidth}px`, borderRadius: `${element.borderRadius}px` }}
     >
       {renderContent()}
     </div>
   );
-};
+});
+PolicyElementComponent.displayName = 'PolicyElementComponent';
 
 
 const PropertiesPanel = ({ element, onUpdate }: { 
@@ -742,9 +744,12 @@ export default function PolicyEditorPage() {
                                     backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
                                     backgroundImage: `linear-gradient(to right, #e5e5e5 1px, transparent 1px), linear-gradient(to bottom, #e5e5e5 1px, transparent 1px)`
                                 }} />
-                                {elements.map(el => (
+                                {elements.map(el => {
+                                  const nodeRef = React.useRef(null);
+                                  return (
                                     <Draggable
                                         key={el.id}
+                                        nodeRef={nodeRef}
                                         handle=".handle"
                                         position={{ x: el.x, y: el.y }}
                                         grid={[GRID_SIZE, GRID_SIZE]}
@@ -753,6 +758,7 @@ export default function PolicyEditorPage() {
                                         onStop={(e, data) => handleUpdateElement(el.id, { x: data.x, y: data.y })}
                                     >
                                         <Resizable
+                                            ref={nodeRef}
                                             size={{ width: el.width, height: el.height }}
                                             onResizeStop={(e, dir, ref, d) => handleUpdateElement(el.id, { width: snapToGrid(el.width + d.width), height: snapToGrid(el.height + d.height)})}
                                             onClick={(e) => { e.stopPropagation(); setSelectedIds([el.id]); }}
@@ -764,11 +770,12 @@ export default function PolicyEditorPage() {
                                             }}
                                         >
                                             <div className={`handle w-full h-full cursor-move ${selectedIds.includes(el.id) ? 'border-2 border-dashed border-primary' : ''}`}>
-                                                <PolicyElementComponent key={el.id} element={el} />
+                                                <PolicyElementComponent element={el} />
                                             </div>
                                         </Resizable>
                                     </Draggable>
-                                ))}
+                                  );
+                                })}
                             </div>
                         </div>
                      </CardContent>
