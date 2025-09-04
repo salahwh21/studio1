@@ -41,6 +41,9 @@ const allNavItems: NavItem[] = [
   { href: '/dashboard/returns', iconName: 'Undo2', label: 'إدارة المرتجعات', permissionId: 'returns:view' },
   { href: '/dashboard/financials', iconName: 'Calculator', label: 'المحاسبة', permissionId: 'financials:view' },
   { href: '/dashboard/settings', iconName: 'Settings', label: 'الإعدادات', permissionId: 'settings:view' },
+  // Specific app views
+  { href: '/dashboard/driver-app', iconName: 'Smartphone', label: 'تطبيق السائق', permissionId: 'driver-app:use' },
+  { href: '/dashboard/merchant', iconName: 'Store', label: 'بوابة التاجر', permissionId: 'merchant-portal:use' },
 ];
 
 
@@ -64,8 +67,6 @@ export function AppHeader() {
       if (userPermissions.includes(`${group}:*`)) return true;
       return userPermissions.includes(permissionId);
   };
-
-  const navItems = allNavItems.filter(item => hasPermission(item.permissionId));
   // --- End RBAC Logic ---
 
 
@@ -83,6 +84,10 @@ export function AppHeader() {
 
   const { settings } = context;
   const headerLogo = settings.login.headerLogo;
+
+  // Determine which nav items to show
+  const visiblePermissionIds = settings.menuVisibility[currentUserRole] || allNavItems.map(item => item.permissionId);
+  const navItems = allNavItems.filter(item => hasPermission(item.permissionId) && visiblePermissionIds.includes(item.permissionId));
 
 
   const isActive = (href: string) => {

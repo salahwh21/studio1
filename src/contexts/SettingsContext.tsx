@@ -5,6 +5,12 @@ import React, { createContext, useState, useEffect, ReactNode, useContext, useCa
 
 // 1. Define the shapes of our settings
 
+// Menu Visibility
+export type MenuVisibilitySettings = {
+    [roleId: string]: string[]; // e.g. { 'merchant': ['dashboard:view', 'orders:view'] }
+};
+
+
 // Notifications
 export type NotificationTemplate = {
   id: string;
@@ -247,6 +253,7 @@ interface ComprehensiveSettings {
   regional: RegionalSettings;
   ui: UiSettings;
   policy: PolicySettings;
+  menuVisibility: MenuVisibilitySettings;
 }
 
 // 2. Define the context shape
@@ -259,6 +266,7 @@ interface SettingsContextType {
   updateRegionalSetting: <K extends keyof RegionalSettings>(key: K, value: RegionalSettings[K]) => void;
   updateUiSetting: <K extends keyof UiSettings>(key: K, value: UiSettings[K]) => void;
   updatePolicySetting: <K extends keyof PolicySettings>(key: K, value: PolicySettings[K]) => void;
+  updateMenuVisibility: (roleId: string, permissionId: string, checked: boolean) => void;
   formatCurrency: (amount: number) => string;
   isHydrated: boolean;
 }
@@ -329,7 +337,11 @@ const defaultSettingsData: ComprehensiveSettings = {
     paperSize: 'custom',
     customDimensions: { width: 100, height: 150 }, // Standard 4x6 inch in mm
     margins: { top: 5, right: 5, bottom: 5, left: 5 },
-  }
+  },
+  menuVisibility: {
+    merchant: ['dashboard:view', 'orders:view', 'financials:view', 'merchant-portal:use'],
+    driver: ['driver-app:use'],
+  },
 };
 
 const SETTINGS_KEY = 'comprehensiveAppSettings';
@@ -372,6 +384,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
             ...defaultSettingsData.ui,
             ...(savedSettings.ui || {}),
           },
+          menuVisibility: {
+            ...defaultSettingsData.menuVisibility,
+            ...(savedSettings.menuVisibility || {}),
+          }
         };
         setSettings(mergedSettings);
       }
@@ -451,6 +467,22 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           }
       }))
   }
+
+  const updateMenuVisibility = (roleId: string, permissionId: string, checked: boolean) => {
+    setSettings(prev => {
+        const currentVisibility = prev.menuVisibility[roleId] || [];
+        const newVisibility = checked
+            ? [...new Set([...currentVisibility, permissionId])]
+            : currentVisibility.filter(id => id !== permissionId);
+        return {
+            ...prev,
+            menuVisibility: {
+                ...prev.menuVisibility,
+                [roleId]: newVisibility
+            }
+        };
+    });
+  };
   
   const formatCurrency = useCallback((amount: number): string => {
     const { currencySymbol, currencySymbolPosition, thousandsSeparator, decimalSeparator } = settings.regional;
@@ -467,7 +499,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     return `${formattedNumber} ${currencySymbol}`;
   }, [settings.regional]);
 
-  const value = { settings, setSetting, updateOrderSetting, updateLoginSetting, updateSocialLink, updateRegionalSetting, updateUiSetting, formatCurrency, isHydrated, updatePolicySetting };
+  const value = { settings, setSetting, updateOrderSetting, updateLoginSetting, updateSocialLink, updateRegionalSetting, updateUiSetting, formatCurrency, isHydrated, updatePolicySetting, updateMenuVisibility };
 
   return (
     <SettingsContext.Provider value={value}>

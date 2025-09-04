@@ -20,6 +20,7 @@ const generalSettingsItems: {
   { href: '/dashboard/settings/regional', iconName: 'Languages', title: 'الإعدادات الإقليمية', description: 'إدارة اللغة، العملة، والمنطقة الزمنية للنظام.' },
   { href: '/dashboard/settings/orders', iconName: 'Package', title: 'إعدادات الطلبات', description: 'التحكم في دورة حياة الطلبات والأرشفة.' },
   { href: '/dashboard/settings/policy', iconName: 'ReceiptText', title: 'إعدادات البوليصة', description: 'تصميم وتخصيص شكل بوليصة الشحن.' },
+  { href: '/dashboard/settings/menu-visibility', iconName: 'List', title: 'إعدادات ظهور القائمة', description: 'التحكم في القوائم التي تظهر للسائق والتاجر.' },
 ];
 
 const SettingsItemCard = ({ item }: { item: (typeof generalSettingsItems)[0] }) => (
