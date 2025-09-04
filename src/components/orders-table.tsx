@@ -643,7 +643,7 @@ const OrdersTableComponent = () => {
                                             <ScrollArea className="flex-1 min-h-0">
                                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
                                                     <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
-                                                        {columns.map((column) => (
+                                                        {ALL_COLUMNS.map((column) => (
                                                             <SortableColumn
                                                                 key={column.key}
                                                                 id={column.key}
@@ -717,28 +717,30 @@ const OrdersTableComponent = () => {
                                                     onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
                                                     className="font-bold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border"
                                                 >
-                                                    <TableCell colSpan={visibleColumns.length + 1} className="p-4">
+                                                    <TableCell className="p-4 border-l">
                                                         <div className="flex items-center gap-2">
                                                             <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
                                                             <span>{groupKey} ({groupOrders.length})</span>
                                                         </div>
                                                     </TableCell>
+                                                    {visibleColumns.slice(1).map(col => {
+                                                        const isFinancial = col.type === 'financial' || col.type === 'admin_financial';
+                                                        if (isFinancial) {
+                                                            const totalValue = groupOrders.reduce((sum, order) => {
+                                                                let value = 0;
+                                                                if (col.key === 'companyDue') {
+                                                                    value = (order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0));
+                                                                } else {
+                                                                    value = order[col.key as keyof Order] as number || 0;
+                                                                }
+                                                                return sum + value;
+                                                            }, 0);
+                                                            return <TableCell key={col.key} className="p-5 text-center whitespace-nowrap border-l text-primary font-bold">{formatCurrency(totalValue)}</TableCell>
+                                                        }
+                                                        return <TableCell key={col.key} className="p-5 text-center whitespace-nowrap border-l"></TableCell>
+                                                    })}
                                                 </TableRow>
                                                 
-                                                {isGroupOpen && (
-                                                    <TableRow className="bg-muted/20 font-semibold">
-                                                        <TableCell className="text-center">الإجمالي</TableCell>
-                                                        {visibleColumns.map(col => {
-                                                            if (col.type === 'financial' || col.type === 'admin_financial') {
-                                                                const totalValue = groupOrders.reduce((sum, order) => sum + (order[col.key as keyof Order] as number || 0), 0);
-                                                                return <TableCell key={col.key} className="text-center text-primary font-bold">{formatCurrency(totalValue)}</TableCell>
-                                                            } else {
-                                                                return <TableCell key={col.key}></TableCell>
-                                                            }
-                                                        })}
-                                                    </TableRow>
-                                                )}
-
                                                 {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
                                             </React.Fragment>
                                         );
