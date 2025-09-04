@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -714,43 +713,58 @@ const OrdersTableComponent = () => {
                                         return (
                                             <React.Fragment key={groupKey}>
                                                 <TableRow>
-                                                    <TableCell colSpan={visibleColumns.length + 1} className="p-0 border-none">
-                                                        <div
-                                                            onClick={() => setOpenGroups(prev => ({ ...prev, [groupKey]: !isGroupOpen }))}
-                                                            className={cn(
-                                                                "grid items-center cursor-pointer font-bold rounded-md shadow-md m-1 px-4 py-3",
-                                                                groupIndex % 2 === 0
-                                                                ? "bg-gradient-to-r from-primary/70 via-primary/90 to-primary/70 text-primary-foreground"
-                                                                : "bg-gradient-to-r from-secondary/70 via-secondary/90 to-secondary/70 text-secondary-foreground"
-                                                            )}
-                                                            style={{ gridTemplateColumns: `repeat(${visibleColumns.length + 1}, minmax(0, 1fr))` }}
-                                                        >
-                                                            <div className="flex items-center gap-2">
-                                                                <ChevronDown
-                                                                    className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")}
-                                                                />
-                                                                {groupKey} ({groupOrders.length})
-                                                            </div>
+                                                  <TableCell colSpan={visibleColumns.length + 1} className="p-0 border-none">
+                                                    <div
+                                                      onClick={() => setOpenGroups(prev => ({ ...prev, [groupKey]: !isGroupOpen }))}
+                                                      className={cn(
+                                                        "cursor-pointer font-bold rounded-md shadow-md m-1 px-4 py-3 transition-all duration-300",
+                                                        groupIndex % 2 === 0
+                                                          ? "bg-gradient-to-r from-primary/70 via-primary/90 to-primary/70 text-primary-foreground"
+                                                          : "bg-gradient-to-r from-secondary/70 via-secondary/90 to-secondary/70 text-secondary-foreground"
+                                                      )}
+                                                    >
+                                                      {/* العنوان + عدد الطلبات في نفس السطر */}
+                                                      <div className="flex items-center gap-2 mb-2">
+                                                        <ChevronDown
+                                                          className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")}
+                                                        />
+                                                        <span>{groupKey}</span>
+                                                        <span className="text-sm opacity-90">({groupOrders.length})</span>
+                                                      </div>
 
-                                                            {visibleColumns.map(col => {
-                                                                if (col.type === "financial" || col.type === 'admin_financial') {
-                                                                    const totalValue = groupOrders.reduce(
-                                                                        (sum, order) => {
-                                                                            if (col.key === 'companyDue') {
-                                                                                return sum + ((order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0)));
-                                                                            }
-                                                                            return sum + (order[col.key as keyof Order] as number || 0);
-                                                                        }, 0);
-                                                                    return (
-                                                                        <div key={col.key} className="text-center font-semibold">
-                                                                            {formatCurrency(totalValue)}
-                                                                        </div>
-                                                                    );
-                                                                }
-                                                                return <div key={col.key}></div>;
-                                                            })}
-                                                        </div>
-                                                    </TableCell>
+                                                      {/* المجاميع: شبكة بنفس عدد أعمدة الجدول */}
+                                                      <div
+                                                        className="grid gap-x-2"
+                                                        style={{ gridTemplateColumns: `repeat(${visibleColumns.length + 1}, minmax(0, 1fr))` }}
+                                                      >
+                                                        {/* العمود الأول */}
+                                                        <div className="text-left font-semibold">المجاميع</div>
+
+                                                        {/* الأعمدة الأخرى */}
+                                                        {visibleColumns.map(col => {
+                                                          if (col.type === "financial" || col.type === "admin_financial") {
+                                                            const totalValue = groupOrders.reduce(
+                                                              (sum, order) => {
+                                                                  if (col.key === 'companyDue') {
+                                                                    return sum + ((order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0)));
+                                                                  }
+                                                                  return sum + (order[col.key as keyof Order] as number || 0);
+                                                              }, 0
+                                                            );
+                                                            return (
+                                                              <div
+                                                                key={col.key}
+                                                                className="text-right font-bold border-l border-white/20 pr-2"
+                                                              >
+                                                                {formatCurrency(totalValue)}
+                                                              </div>
+                                                            );
+                                                          }
+                                                          return <div key={col.key}></div>;
+                                                        })}
+                                                      </div>
+                                                    </div>
+                                                  </TableCell>
                                                 </TableRow>
                                                 
                                                 {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
@@ -898,3 +912,5 @@ export function OrdersTable() {
         </React.Suspense>
     );
 }
+
+    
