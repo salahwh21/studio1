@@ -22,6 +22,8 @@ export const metadata: Metadata = {
   title: 'إدارة تسجيل الطلبات - الوميض',
   description:
     'حل شامل لإدارة تسجيل الطلبات والشؤون المالية والسائقين لشركة الوميض.',
+  manifest: '/manifest.json',
+  themeColor: '#ffffff',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
