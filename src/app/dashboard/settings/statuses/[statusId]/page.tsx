@@ -18,10 +18,13 @@ import Icon from '@/components/icon';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
 
 
-const SwitchControl = ({ id, label, checked, onCheckedChange }: { id: string, label: string, checked: boolean, onCheckedChange: (checked: boolean) => void }) => (
-    <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-        <Label htmlFor={id} className="font-medium cursor-pointer">{label}</Label>
-        <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
+const SwitchControl = ({ id, label, description, checked, onCheckedChange }: { id: string, label: string, description: string, checked: boolean, onCheckedChange: (checked: boolean) => void }) => (
+    <div className="flex flex-col gap-2 rounded-lg border p-4 shadow-sm">
+        <div className="flex items-center justify-between">
+            <Label htmlFor={id} className="font-semibold cursor-pointer">{label}</Label>
+            <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
+        </div>
+        <p className="text-xs text-muted-foreground">{description}</p>
     </div>
 );
 
@@ -204,18 +207,18 @@ export default function StatusEditPage() {
                 <CardContent className="space-y-6">
                     <div>
                         <h4 className="font-semibold mb-3">من يمكنه رؤية الحالة؟</h4>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            <SwitchControl id="visible-admin" label="المدير" checked={status.visibleTo.admin} onCheckedChange={(val) => handlePermissionUpdate('visibleTo', 'admin', val)} />
-                            <SwitchControl id="visible-driver" label="السائق" checked={status.visibleTo.driver} onCheckedChange={(val) => handlePermissionUpdate('visibleTo', 'driver', val)} />
-                            <SwitchControl id="visible-merchant" label="التاجر" checked={status.visibleTo.merchant} onCheckedChange={(val) => handlePermissionUpdate('visibleTo', 'merchant', val)} />
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                           <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm"><Label htmlFor="visible-admin" className="font-medium cursor-pointer">المدير</Label><Switch id="visible-admin" checked={status.visibleTo.admin} onCheckedChange={(val) => handlePermissionUpdate('visibleTo', 'admin', val)} /></div>
+                           <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm"><Label htmlFor="visible-driver" className="font-medium cursor-pointer">السائق</Label><Switch id="visible-driver" checked={status.visibleTo.driver} onCheckedChange={(val) => handlePermissionUpdate('visibleTo', 'driver', val)} /></div>
+                           <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm"><Label htmlFor="visible-merchant" className="font-medium cursor-pointer">التاجر</Label><Switch id="visible-merchant" checked={status.visibleTo.merchant} onCheckedChange={(val) => handlePermissionUpdate('visibleTo', 'merchant', val)} /></div>
                         </div>
                     </div>
                      <Separator />
                     <div>
                         <h4 className="font-semibold mb-3">صلاحيات السائق</h4>
-                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                           <SwitchControl id="driver-can-set" label="يمكنه تعيينها" checked={status.permissions.driver.canSet} onCheckedChange={(val) => handlePermissionUpdate('permissions', 'canSet', val)} />
-                           <SwitchControl id="driver-cod" label="يسمح بتحصيل المبلغ" checked={status.permissions.driver.allowCODCollection} onCheckedChange={(val) => handlePermissionUpdate('permissions', 'allowCODCollection', val)} />
+                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                           <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm"><Label htmlFor="driver-can-set" className="font-medium cursor-pointer">يمكنه تعيينها</Label><Switch id="driver-can-set" checked={status.permissions.driver.canSet} onCheckedChange={(val) => handlePermissionUpdate('permissions', 'canSet', val)} /></div>
+                           <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm"><Label htmlFor="driver-cod" className="font-medium cursor-pointer">يسمح بتحصيل المبلغ</Label><Switch id="driver-cod" checked={status.permissions.driver.allowCODCollection} onCheckedChange={(val) => handlePermissionUpdate('permissions', 'allowCODCollection', val)} /></div>
                         </div>
                     </div>
                 </CardContent>
@@ -226,11 +229,11 @@ export default function StatusEditPage() {
                 <CardHeader>
                     <CardTitle>الإجراءات التلقائية</CardTitle>
                 </CardHeader>
-                 <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <SwitchControl id="trigger-reason" label="تتطلب تحديد سبب" checked={status.triggers.requiresReason} onCheckedChange={(val) => handleUpdate('triggers', {...status.triggers, requiresReason: val})} />
-                    <SwitchControl id="trigger-return" label="تنشئ مهمة مرتجع" checked={status.triggers.createsReturnTask} onCheckedChange={(val) => handleUpdate('triggers', {...status.triggers, createsReturnTask: val})} />
-                    <SwitchControl id="trigger-message" label="ترسل رسالة للعميل" checked={status.triggers.sendsCustomerMessage} onCheckedChange={(val) => handleUpdate('triggers', {...status.triggers, sendsCustomerMessage: val})} />
-                    <SwitchControl id="trigger-driver-account" label="تحدث حساب السائق" checked={status.triggers.updatesDriverAccount} onCheckedChange={(val) => handleUpdate('triggers', {...status.triggers, updatesDriverAccount: val})} />
+                 <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <SwitchControl id="trigger-reason" label="تتطلب تحديد سبب" description="عند تغيير الحالة، يجب على المستخدم اختيار سبب من قائمة محددة." checked={status.triggers.requiresReason} onCheckedChange={(val) => handleUpdate('triggers', {...status.triggers, requiresReason: val})} />
+                    <SwitchControl id="trigger-return" label="تنشئ مهمة مرتجع" description="عند تطبيق الحالة، يتم إنشاء طلب مرتجع تلقائياً في النظام." checked={status.triggers.createsReturnTask} onCheckedChange={(val) => handleUpdate('triggers', {...status.triggers, createsReturnTask: val})} />
+                    <SwitchControl id="trigger-message" label="ترسل رسالة للعميل" description="إرسال رسالة واتساب أو SMS تلقائية للعميل عند تحديث الحالة." checked={status.triggers.sendsCustomerMessage} onCheckedChange={(val) => handleUpdate('triggers', {...status.triggers, sendsCustomerMessage: val})} />
+                    <SwitchControl id="trigger-driver-account" label="تحدث حساب السائق" description="تقوم بتسوية الذمة المالية للسائق المتعلقة بهذا الطلب (مثلاً عند استلام المبلغ)." checked={status.triggers.updatesDriverAccount} onCheckedChange={(val) => handleUpdate('triggers', {...status.triggers, updatesDriverAccount: val})} />
                 </CardContent>
             </Card>
 
