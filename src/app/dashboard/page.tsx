@@ -229,7 +229,7 @@ export default function DashboardPage() {
                                       </div>
                                       <div className="grid grid-cols-3 gap-2 text-center">
                                           {statsList.map(s => (
-                                              <Link key={s.label} href={`/dashboard/orders?driver=${encodeURIComponent(name)}&status=${s.filter}`} className="hover:bg-accent/50 rounded-md p-2 transition-colors flex flex-col items-center justify-center">
+                                              <Link key={s.label} href={`/dashboard/orders?driver=${encodeURIComponent(name)}&status=${encodeURIComponent(s.filter)}`} className="hover:bg-accent/50 rounded-md p-2 transition-colors flex flex-col items-center justify-center">
                                                   <Icon name={s.iconName} className={`w-5 h-5 mb-1 ${s.color}`} />
                                                   <p className="font-semibold text-base">{s.value}</p>
                                                   <p className="text-xs text-muted-foreground">{s.label}</p>

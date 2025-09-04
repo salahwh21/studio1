@@ -5,6 +5,7 @@
 import * as React from 'react';
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   ListFilter,
   MoreHorizontal,
@@ -184,8 +185,9 @@ const SortableColumn = ({ id, label, onToggle, isVisible }: { id: string; label:
     );
 };
 
-export function OrdersTable() {
+const OrdersTableComponent = () => {
     const { toast } = useToast();
+    const searchParams = useSearchParams();
     const [isClient, setIsClient] = useState(false);
     const context = useSettings();
     const { settings: orderSettings, isHydrated: settingsHydrated, formatCurrency } = context;
@@ -230,16 +232,24 @@ export function OrdersTable() {
     const visibleColumns = useMemo(() => columns.filter(c => visibleColumnKeys.includes(c.key)), [columns, visibleColumnKeys]);
     
     const filteredOrders = useMemo(() => {
+        const statusFilter = searchParams.get('status');
+        const driverFilter = searchParams.get('driver');
+
         return orders.filter(order => {
             const searchLower = searchQuery.toLowerCase();
-            return searchQuery === '' ||
+            const searchMatch = searchQuery === '' ||
                 order.recipient.toLowerCase().includes(searchLower) ||
                 order.phone.includes(searchQuery) ||
                 order.id.toLowerCase().includes(searchLower) ||
                 order.merchant.toLowerCase().includes(searchLower) ||
                 (order.referenceNumber && order.referenceNumber.toLowerCase().includes(searchLower));
+
+            const statusMatch = !statusFilter || order.status === statusFilter;
+            const driverMatch = !driverFilter || order.driver === driverFilter;
+            
+            return searchMatch && statusMatch && driverMatch;
         });
-    }, [orders, searchQuery]);
+    }, [orders, searchQuery, searchParams]);
     
     const sortedOrders = useMemo(() => {
         let sortableItems = [...filteredOrders];
@@ -868,3 +878,15 @@ export function OrdersTable() {
         </>
     );
 }
+
+
+// The main page component that wraps the table logic in a Suspense boundary
+// This is necessary because the table component uses `useSearchParams`, which requires it.
+export function OrdersTable() {
+    return (
+        <React.Suspense fallback={<Skeleton className="w-full h-screen" />}>
+            <OrdersTableComponent />
+        </React.Suspense>
+    );
+}
+
