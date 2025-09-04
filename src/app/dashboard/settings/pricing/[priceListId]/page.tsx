@@ -20,6 +20,8 @@ import { Badge } from '@/components/ui/badge';
 // Mock data for price lists - replace with a store later
 const mockPriceLists = [
     { id: 'pl_1', name: 'الأسعار الافتراضية' },
+    { id: 'pl_brands_of_less', name: 'Brands of less' },
+    { id: 'pl_soundrush', name: 'SoundRush' },
     { id: 'pl_2', name: 'أسعار VIP' },
     { id: 'pl_3', name: 'أسعار المحافظات' },
 ];
@@ -112,6 +114,37 @@ export default function PriceListDetailPage() {
     const [rules, setRules] = useState<PricingRule[]>([]);
     
     const priceList = mockPriceLists.find(p => p.id === priceListId);
+
+    // Populate initial rules based on priceListId
+    useEffect(() => {
+        const getInitialRules = () => {
+            const ammanCity = cities.find(c => c.name === 'عمان');
+            const otherCities = cities.filter(c => c.name !== 'عمان');
+            
+            if (!ammanCity) return [];
+
+            switch(priceListId) {
+                case 'pl_1': // Default Pricelist
+                    return [
+                        { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2' },
+                        { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
+                    ];
+                case 'pl_brands_of_less': // Brands of less (2.5-3)
+                     return [
+                        { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
+                        { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
+                    ];
+                case 'pl_soundrush': // SoundRush (1.5-2)
+                     return [
+                        { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '1.5' },
+                        { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '2' },
+                    ];
+                default:
+                    return [];
+            }
+        };
+        setRules(getInitialRules());
+    }, [priceListId, cities]);
 
     const handleAddRule = () => {
         setRules(prev => [...prev, {

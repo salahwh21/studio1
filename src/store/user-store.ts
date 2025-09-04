@@ -16,7 +16,7 @@ export type User = {
 };
 
 const initialUsers: User[] = [
-    // Admins and Staff from image
+    // Admins and Staff
     { id: 'user-salahwh', name: 'Salah WH', email: 'admin@alwameed.com', roleId: 'admin', avatar: '', password: '123' },
     { id: 'user-rami', name: 'رامي عوده الله', email: '0790984807', roleId: 'supervisor', avatar: '', password: '123' },
     { id: 'user-moayad', name: 'مؤيد', email: '0096721759', roleId: 'customer_service', avatar: '', password: '123' },
@@ -24,16 +24,23 @@ const initialUsers: User[] = [
     { id: 'user-bahaa', name: 'bahaa', email: '0788741261', roleId: 'supervisor', avatar: '', password: '123' },
 
     // Drivers
-    { id: 'driver-1', name: 'ابو العبد', email: '0799754316', roleId: 'driver', avatar: '', password: '123456789' },
-    { id: 'driver-2', name: 'محمد سويد', email: '0799780790', roleId: 'driver', avatar: '', password: '123456789' },
-    { id: 'driver-3', name: 'احمد عزاوي', email: '0787085576', roleId: 'driver', avatar: '', password: '123456789' },
-    { id: 'driver-4', name: 'محافظات', email: '0778132881', roleId: 'driver', avatar: '', password: '123456789' },
-    { id: 'driver-5', name: 'Ebox', email: '0797953190', roleId: 'driver', avatar: '', password: '123456789' },
-    { id: 'driver-6', name: 'سامي سويد', email: '0797274740', roleId: 'driver', avatar: '', password: '123456789' },
-    { id: 'driver-7', name: 'مجد كميل', email: '0789358393', roleId: 'driver', avatar: '', password: '123456789' },
-    { id: 'driver-8', name: 'سامر الطباخي', email: '0790690353', roleId: 'driver', avatar: '', password: '123456789' },
-    { id: 'driver-9', name: 'فارس الأسمر', email: '0795365013', roleId: 'driver', avatar: '', password: '123456789' },
-    { id: 'driver-10', name: 'حسن زيغان', email: '0786112230', roleId: 'driver', avatar: '', password: '123456789' },
+    { id: 'driver-1', name: 'ابو العبد', email: '0799754316', roleId: 'driver', avatar: '', password: '123' },
+    { id: 'driver-2', name: 'محمد سويد', email: '0799780790', roleId: 'driver', avatar: '', password: '123' },
+    { id: 'driver-3', name: 'احمد عزاوي', email: '0787085576', roleId: 'driver', avatar: '', password: '123' },
+    { id: 'driver-4', name: 'محافظات', email: '0778132881', roleId: 'driver', avatar: '', password: '123' },
+    { id: 'driver-5', name: 'Ebox', email: '0797953190', roleId: 'driver', avatar: '', password: '123' },
+    { id: 'driver-6', name: 'سامي سويد', email: '0797274740', roleId: 'driver', avatar: '', password: '123' },
+    { id: 'driver-7', name: 'مجد كميل', email: '0789358393', roleId: 'driver', avatar: '', password: '123' },
+    { id: 'driver-8', name: 'سامر الطباخي', email: '0790690353', roleId: 'driver', avatar: '', password: '123' },
+    { id: 'driver-9', name: 'فارس الأسمر', email: '0795365013', roleId: 'driver', avatar: '', password: '123' },
+    { id: 'driver-10', name: 'حسن زيغان', email: '0786112230', roleId: 'driver', avatar: '', password: '123' },
+
+    // Merchants
+    { id: 'merchant-1', name: 'جنان صغيره', email: '0786633891', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-2', name: 'Brands of less', email: '0775343162', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-3', name: 'عسل', email: '0776807347', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-4', name: 'Roosh Cosmetics', email: '0782099324', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-5', name: 'SoundRush', email: '0788741262', roleId: 'merchant', avatar: '', password: '123' },
 ];
 
 
@@ -42,7 +49,7 @@ type UsersState = {
     addUser: (newUser: Omit<User, 'id' | 'password'>) => void;
     updateUser: (userId: string, updatedUser: Partial<Omit<User, 'id'>>) => void;
     updateCurrentUser: (updatedFields: Partial<Omit<User, 'id' | 'roleId'>>) => void;
-    deleteUser: (userId: string | string[]) => void;
+    deleteUser: (userIds: string[]) => void;
 };
 
 const generateId = () => `user-${Date.now()}-${Math.floor(Math.random() * 1000)}`;

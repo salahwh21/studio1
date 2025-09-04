@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -43,7 +44,9 @@ type PriceList = {
 };
 
 const initialPriceLists: PriceList[] = [
-  { id: 'pl_1', name: 'الأسعار الافتراضية', description: 'قائمة الأسعار الأساسية لجميع التجار الجدد.', merchantCount: 25 },
+  { id: 'pl_1', name: 'الأسعار الافتراضية', description: 'قائمة الأسعار الأساسية لجميع التجار الجدد (2 دينار عمان، 3 دنانير محافظات).', merchantCount: 25 },
+  { id: 'pl_brands_of_less', name: 'Brands of less', description: 'قائمة أسعار خاصة لـ Brands of less.', merchantCount: 1 },
+  { id: 'pl_soundrush', name: 'SoundRush', description: 'قائمة أسعار خاصة لـ SoundRush (1.5 دينار عمان، 2 دينار محافظات).', merchantCount: 1 },
   { id: 'pl_2', name: 'أسعار VIP', description: 'أسعار خاصة لكبار التجار.', merchantCount: 5 },
   { id: 'pl_3', name: 'أسعار المحافظات', description: 'قائمة أسعار خاصة للتوصيل خارج عمان.', merchantCount: 12 },
 ];
