@@ -18,7 +18,9 @@ const initialOrders = Array.from({ length: 85 }, (_, i) => ({
   cod: 35.50 + i * 5,
   itemPrice: 34.00 + i * 5,
   deliveryFee: 1.50,
+  additionalCost: i % 10 === 0 ? 0.5 : 0, // New field
   driverFee: 1.00,
+  driverAdditionalFare: i % 15 === 0 ? -0.25 : 0, // New field
   date: `2024-07-${(1 + i % 5).toString().padStart(2,'0')}`,
   notes: i % 3 === 0 ? 'اتصل قبل الوصول' : '',
 }));
@@ -84,11 +86,11 @@ export const useOrdersStore = create<OrdersState>()(immer((set, get) => ({
         const order = state.orders.find(o => o.id === orderId);
         if(order) {
             (order as any)[field] = value;
-            if(field === 'cod') {
-                const deliveryFee = order.city === 'عمان' ? 2.5 : 3.5;
-                order.itemPrice = value - deliveryFee;
-                order.deliveryFee = deliveryFee;
-                order.driverFee = order.city === 'عمان' ? 1.0 : 1.5;
+            if(field === 'cod' || field === 'deliveryFee' || field === 'additionalCost') {
+                const cod = typeof order.cod === 'number' ? order.cod : 0;
+                const deliveryFee = typeof order.deliveryFee === 'number' ? order.deliveryFee : 0;
+                const additionalCost = typeof order.additionalCost === 'number' ? order.additionalCost : 0;
+                order.itemPrice = cod - (deliveryFee + additionalCost);
             }
         }
     }),
@@ -107,6 +109,8 @@ export const useOrdersStore = create<OrdersState>()(immer((set, get) => ({
         
         newOrder = {
             ...orderData,
+            additionalCost: 0,
+            driverAdditionalFare: 0,
             driverFee: (orderData as any).city === 'عمان' ? 1.0 : 1.5,
             status: orderData.status || orderSettings.defaultStatus || 'بالانتظار',
             id: `${orderPrefix}${newOrderNumber}`,

@@ -77,19 +77,13 @@ export default function OrderDetailPage() {
         
         let newOrderState = { ...order, [field]: value };
 
-        // Auto-calculate financial fields if COD changes
-        if (field === 'cod') {
-            const codValue = parseFloat(value) || 0;
-            const deliveryFee = newOrderState.city === 'عمان' ? 2.5 : 3.5;
-            newOrderState = {
-                ...newOrderState,
-                cod: codValue,
-                deliveryFee: deliveryFee,
-                itemPrice: codValue - deliveryFee,
-                driverFee: newOrderState.city === 'عمان' ? 1.0 : 1.5,
-            };
-        }
-
+        // Auto-calculate financial fields
+        const cod = parseFloat(newOrderState.cod as any) || 0;
+        const deliveryFee = parseFloat(newOrderState.deliveryFee as any) || 0;
+        const additionalCost = parseFloat(newOrderState.additionalCost as any) || 0;
+        
+        newOrderState.itemPrice = cod - (deliveryFee + additionalCost);
+        
         setOrder(newOrderState);
     };
 
@@ -220,15 +214,23 @@ export default function OrderDetailPage() {
                             <Separator />
                             <div className="space-y-2">
                                <Label htmlFor="itemPrice">المستحق للتاجر</Label>
-                                <Input type="number" id="itemPrice" value={order.itemPrice} onChange={(e) => handleFieldChange('itemPrice', parseFloat(e.target.value) || 0)} />
+                               <Input type="number" id="itemPrice" value={order.itemPrice} disabled className="bg-muted" />
                             </div>
                              <div className="space-y-2">
                                <Label htmlFor="deliveryFee">أجور التوصيل</Label>
                                <Input type="number" id="deliveryFee" value={order.deliveryFee} onChange={(e) => handleFieldChange('deliveryFee', parseFloat(e.target.value) || 0)} />
                             </div>
+                            <div className="space-y-2">
+                               <Label htmlFor="additionalCost">تكلفة إضافية (+/-)</Label>
+                               <Input type="number" id="additionalCost" value={order.additionalCost} onChange={(e) => handleFieldChange('additionalCost', parseFloat(e.target.value) || 0)} />
+                            </div>
                              <div className="space-y-2">
                                <Label htmlFor="driverFee">أجور السائق</Label>
                                <Input type="number" id="driverFee" value={order.driverFee} onChange={(e) => handleFieldChange('driverFee', parseFloat(e.target.value) || 0)} />
+                            </div>
+                            <div className="space-y-2">
+                               <Label htmlFor="driverAdditionalFare">أجور إضافية للسائق (+/-)</Label>
+                               <Input type="number" id="driverAdditionalFare" value={order.driverAdditionalFare} onChange={(e) => handleFieldChange('driverAdditionalFare', parseFloat(e.target.value) || 0)} />
                             </div>
                         </CardContent>
                     </Card>

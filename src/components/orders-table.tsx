@@ -89,7 +89,7 @@ import Icon from '@/components/icon';
 
 
 type OrderSource = Order['source'];
-type ColumnConfig = { key: keyof Order | 'id-link' | 'notes'; label: string; type?: 'default' | 'financial'; sortable?: boolean };
+type ColumnConfig = { key: keyof Order | 'id-link' | 'notes'; label: string; type?: 'default' | 'financial' | 'admin_financial'; sortable?: boolean };
 type GroupByOption = keyof Order | null;
 
 
@@ -108,7 +108,9 @@ const ALL_COLUMNS: ColumnConfig[] = [
     { key: 'driver', label: 'السائق', sortable: true },
     { key: 'itemPrice', label: 'المستحق للتاجر', type: 'financial' },
     { key: 'deliveryFee', label: 'أجور التوصيل', type: 'financial' },
-    { key: 'driverFee', label: 'أجور السائق', type: 'financial' },
+    { key: 'additionalCost', label: 'تكلفة إضافية', type: 'admin_financial' },
+    { key: 'driverFee', label: 'أجور السائق', type: 'admin_financial' },
+    { key: 'driverAdditionalFare', label: 'أجور إضافية للسائق', type: 'admin_financial' },
     { key: 'cod', label: 'قيمة التحصيل', type: 'financial' },
     { key: 'date', label: 'التاريخ', sortable: true },
     { key: 'notes', label: 'ملاحظات' },
@@ -296,12 +298,13 @@ export function OrdersTable() {
             : (Array.isArray(paginatedOrders) ? paginatedOrders : []);
         
         return listForCalculation.reduce((acc, order) => {
-            acc.itemPrice += order.itemPrice;
-            acc.deliveryFee += order.deliveryFee;
-            acc.driverFee += order.driverFee;
-            acc.cod += order.cod;
+            acc.itemPrice += order.itemPrice || 0;
+            acc.deliveryFee += order.deliveryFee || 0;
+            acc.cod += order.cod || 0;
+            acc.driverFee += (order.driverFee || 0) + (order.driverAdditionalFare || 0);
+            acc.additionalCost += order.additionalCost || 0;
             return acc;
-        }, { itemPrice: 0, deliveryFee: 0, driverFee: 0, cod: 0 });
+        }, { itemPrice: 0, deliveryFee: 0, cod: 0, driverFee: 0, additionalCost: 0 });
     }, [orders, selectedRows, paginatedOrders]);
 
     const totalPages = groupBy ? Object.keys(groupedAndSortedOrders).length : Math.ceil(sortedOrders.length / rowsPerPage);
@@ -438,6 +441,8 @@ export function OrdersTable() {
                         case 'deliveryFee':
                         case 'driverFee':
                         case 'cod':
+                        case 'additionalCost':
+                        case 'driverAdditionalFare':
                             content = formatCurrency(value as number);
                             break;
                         default:
@@ -744,7 +749,7 @@ export function OrdersTable() {
                             </div>
                              <div className="flex items-center gap-1">
                                 <span className="text-muted-foreground">أجور التوصيل:</span>
-                                <span className="font-bold text-primary">{formatCurrency(footerTotals.deliveryFee)}</span>
+                                <span className="font-bold text-primary">{formatCurrency(footerTotals.deliveryFee + footerTotals.additionalCost)}</span>
                             </div>
                              <div className="flex items-center gap-1">
                                 <span className="text-muted-foreground">أجور السائق:</span>
