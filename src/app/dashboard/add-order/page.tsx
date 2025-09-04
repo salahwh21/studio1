@@ -364,6 +364,10 @@ const AddOrderPage = () => {
 
     <Dialog open={isMapOpen} onOpenChange={setIsMapOpen}>
         <DialogContent className="max-w-3xl h-[80vh] flex flex-col p-2">
+            <DialogHeader className="p-4 pb-0">
+              <DialogTitle>تحديد الموقع على الخريطة</DialogTitle>
+              <DialogDescription>انقر على الخريطة لتحديد الموقع الدقيق للعنوان.</DialogDescription>
+            </DialogHeader>
             <LocationPickerMap onLocationSelect={handleLocationSelect} />
         </DialogContent>
     </Dialog>
