@@ -67,6 +67,8 @@ export default function StatusEditPage() {
     const [status, setStatus] = useState<Status | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    
+    const [newReason, setNewReason] = useState('');
 
     useEffect(() => {
         const foundStatus = statuses.find(s => s.id === statusId);
@@ -103,6 +105,21 @@ export default function StatusEditPage() {
             return newState;
         });
     }
+
+    const handleAddReason = () => {
+        if (newReason.trim() && status) {
+            const updatedReasons = [...status.reasonCodes, newReason.trim()];
+            handleUpdate('reasonCodes', updatedReasons);
+            setNewReason('');
+        }
+    };
+
+    const handleRemoveReason = (reasonToRemove: string) => {
+        if(status) {
+            const updatedReasons = status.reasonCodes.filter(r => r !== reasonToRemove);
+            handleUpdate('reasonCodes', updatedReasons);
+        }
+    };
 
     const handleSave = () => {
         if (status) {
@@ -215,6 +232,41 @@ export default function StatusEditPage() {
                     <SwitchControl id="trigger-message" label="ترسل رسالة للعميل" checked={status.triggers.sendsCustomerMessage} onCheckedChange={(val) => handleUpdate('triggers', {...status.triggers, sendsCustomerMessage: val})} />
                 </CardContent>
             </Card>
+
+            {/* Reason Codes Management */}
+            {status.triggers.requiresReason && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>إدارة أسباب الحالة</CardTitle>
+                        <CardDescription>أضف الأسباب التي يمكن للمستخدمين اختيارها عند تعيين هذه الحالة.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex gap-2">
+                            <Input
+                                placeholder="اكتب سببًا جديدًا واضغط Enter أو زر الإضافة"
+                                value={newReason}
+                                onChange={(e) => setNewReason(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddReason(); } }}
+                            />
+                            <Button onClick={handleAddReason}><Icon name="Plus" className="h-4 w-4" /></Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {status.reasonCodes.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">لا توجد أسباب مضافة بعد.</p>
+                            ) : (
+                                status.reasonCodes.map((reason, index) => (
+                                    <div key={index} className="flex items-center gap-2 bg-muted rounded-full pl-3 pr-1 py-1 text-sm">
+                                        <span>{reason}</span>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => handleRemoveReason(reason)}>
+                                            <Icon name="X" className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
             
             <div className="flex justify-end">
                 <Button size="lg" onClick={handleSave}>
