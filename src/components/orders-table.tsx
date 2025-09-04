@@ -634,7 +634,7 @@ const OrdersTableComponent = () => {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="w-64 p-2 max-h-[400px] flex flex-col">
                                             <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
-                                            <div className='flex items-center gap-2 p-1'>
+                                             <div className='flex items-center gap-2 p-1'>
                                                 <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(ALL_COLUMNS.map(c => c.key))}>إظهار الكل</Button>
                                                 <Separator orientation="vertical" className="h-4" />
                                                 <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(['id', 'recipient', 'status'])}>إخفاء الكل</Button>
@@ -717,10 +717,15 @@ const OrdersTableComponent = () => {
                                                     <TableCell colSpan={visibleColumns.length + 1} className="p-0 border-none">
                                                         <div
                                                             onClick={() => setOpenGroups(prev => ({ ...prev, [groupKey]: !isGroupOpen }))}
-                                                            className="grid cursor-pointer bg-primary/90 text-primary-foreground font-bold rounded-md shadow-md m-1"
+                                                            className={cn(
+                                                                "grid items-center cursor-pointer font-bold rounded-md shadow-md m-1 px-4 py-3",
+                                                                groupIndex % 2 === 0
+                                                                ? "bg-gradient-to-r from-primary/70 via-primary/90 to-primary/70 text-primary-foreground"
+                                                                : "bg-gradient-to-r from-secondary/70 via-secondary/90 to-secondary/70 text-secondary-foreground"
+                                                            )}
                                                             style={{ gridTemplateColumns: `repeat(${visibleColumns.length + 1}, minmax(0, 1fr))` }}
                                                         >
-                                                            <div className="flex items-center gap-2 px-4 py-2">
+                                                            <div className="flex items-center gap-2">
                                                                 <ChevronDown
                                                                     className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")}
                                                                 />
@@ -731,18 +736,18 @@ const OrdersTableComponent = () => {
                                                                 if (col.type === "financial" || col.type === 'admin_financial') {
                                                                     const totalValue = groupOrders.reduce(
                                                                         (sum, order) => {
-                                                                        if (col.key === 'companyDue') {
-                                                                            return sum + ((order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0)));
-                                                                        }
-                                                                        return sum + (order[col.key as keyof Order] as number || 0);
+                                                                            if (col.key === 'companyDue') {
+                                                                                return sum + ((order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0)));
+                                                                            }
+                                                                            return sum + (order[col.key as keyof Order] as number || 0);
                                                                         }, 0);
                                                                     return (
-                                                                        <div key={col.key} className="px-4 py-2 text-right">
+                                                                        <div key={col.key} className="text-center font-semibold">
                                                                             {formatCurrency(totalValue)}
                                                                         </div>
                                                                     );
                                                                 }
-                                                                return <div key={col.key} className="px-4 py-2"></div>;
+                                                                return <div key={col.key}></div>;
                                                             })}
                                                         </div>
                                                     </TableCell>
