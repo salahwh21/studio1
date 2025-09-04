@@ -37,7 +37,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  allowedDevOrigins: ["https://*.web.app", "https://*.firebaseapp.com"],
   experimental: {
     // Other experimental features can go here if needed
   },
