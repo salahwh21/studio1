@@ -18,8 +18,112 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
 import chroma from 'chroma-js';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+
+
+const iconNames = [
+    'Clock', 'Truck', 'PackageCheck', 'CalendarClock', 'Undo2', 'XCircle', 
+    'HandCoins', 'CheckCheck', 'Repeat', 'ThumbsDown', 'Ban', 'Building', 
+    'Archive', 'PhoneOff'
+];
+
+const StatusDialog = ({
+    open,
+    onOpenChange,
+    onSave,
+    status,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSave: (data: Omit<Status, 'id'>) => void;
+    status: Partial<Status> | null;
+}) => {
+    const [name, setName] = useState('');
+    const [code, setCode] = useState('');
+    const [color, setColor] = useState('#607D8B');
+    const [icon, setIcon] = useState('Clock');
+
+    React.useEffect(() => {
+        if (status) {
+            setName(status.name || '');
+            setCode(status.code || '');
+            setColor(status.color || '#607D8B');
+            setIcon(status.icon || 'Clock');
+        } else {
+            setName('');
+            setCode('');
+            setColor('#607D8B');
+            setIcon('Clock');
+        }
+    }, [status, open]);
+
+    const handleSave = () => {
+        // A new status needs some default values.
+        const newStatusData: Omit<Status, 'id'> = {
+            name,
+            code,
+            color,
+            icon,
+            isActive: status?.isActive ?? true,
+            reasonCodes: status?.reasonCodes ?? [],
+            setByRoles: status?.setByRoles ?? ['admin'],
+            visibleTo: status?.visibleTo ?? { admin: true, driver: true, merchant: true },
+            permissions: status?.permissions ?? { 
+                driver: { canSet: true, requireProof: false, allowCODCollection: false },
+                merchant: { showInPortal: true, showInReports: true },
+                admin: { lockPriceEdit: false, lockAddressEdit: false }
+            },
+            flow: status?.flow ?? { isEntry: false, isFinal: false, nextCodes: [], blockedFrom: [] },
+            triggers: status?.triggers ?? { requiresReason: false, createsReturnTask: false, sendsCustomerMessage: false, updatesDriverAccount: false },
+        };
+        onSave(newStatusData);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{status ? 'تعديل الحالة' : 'إضافة حالة جديدة'}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">اسم الحالة</Label>
+                        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="code">الكود (انجليزي بدون مسافات)</Label>
+                        <Input id="code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/\s+/g, '_'))} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="color">اللون</Label>
+                        <Input id="color" type="color" value={color} onChange={(e) => setColor(e.target.value)} className="h-10 p-1" />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="icon">الأيقونة</Label>
+                         <div className="grid grid-cols-6 gap-2 border p-2 rounded-md">
+                            {iconNames.map(iconName => (
+                                <Button
+                                    key={iconName}
+                                    variant={icon === iconName ? 'secondary' : 'ghost'}
+                                    size="icon"
+                                    onClick={() => setIcon(iconName)}
+                                >
+                                    <Icon name={iconName as any} />
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                    <Button onClick={handleSave}>حفظ</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 
 const StatusCard = ({ status }: { status: Status; onDelete: (id: string) => void; }) => {
@@ -62,9 +166,12 @@ const StatusCard = ({ status }: { status: Status; onDelete: (id: string) => void
 
 export default function StatusesPage() {
   const { toast } = useToast();
-  const { statuses, setStatuses, deleteStatus } = useStatusesStore();
+  const { statuses, setStatuses, addStatus, deleteStatus } = useStatusesStore();
   const [statusToDelete, setStatusToDelete] = useState<Status | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+  
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<Partial<Status> | null>(null);
 
   const handleDeleteRequest = (id: string) => {
       const status = statuses.find(s => s.id === id);
@@ -79,6 +186,21 @@ export default function StatusesPage() {
           toast({ title: 'تم الحذف', description: `تم حذف حالة "${statusToDelete.name}".`});
           setStatusToDelete(null);
       }
+  }
+
+  const handleAddNew = () => {
+      setSelectedStatus(null);
+      setIsDialogOpen(true);
+  }
+  
+  const handleSave = (data: Omit<Status, 'id'>) => {
+      if(selectedStatus && 'id' in selectedStatus) {
+        // This is an edit, which we don't have a button for yet, but the logic is here
+      } else {
+        addStatus(data);
+        toast({ title: 'تمت الإضافة', description: `تمت إضافة حالة "${data.name}" بنجاح.` });
+      }
+      setIsDialogOpen(false);
   }
   
   const handleExport = useCallback(() => {
@@ -106,7 +228,6 @@ export default function StatusesPage() {
             
             const importedStatuses = JSON.parse(text);
             
-            // Add basic validation here if needed
             if (Array.isArray(importedStatuses)) {
                 setStatuses(importedStatuses);
                 toast({ title: 'تم الاستيراد بنجاح', description: `تم استيراد ${importedStatuses.length} حالات.` });
@@ -121,11 +242,6 @@ export default function StatusesPage() {
     event.target.value = ''; // Reset file input
   }, [setStatuses, toast]);
 
-
-  const handleSaveChanges = () => {
-    // Logic to persist all changes, e.g., to a backend
-    toast({ title: 'تم الحفظ', description: 'تم حفظ جميع التغييرات بنجاح.' });
-  };
 
   return (
     <>
@@ -144,7 +260,7 @@ export default function StatusesPage() {
             <Button variant="outline" onClick={() => importInputRef.current?.click()}><Icon name="Upload" className="mr-2 h-4 w-4" /> استيراد</Button>
             <input type="file" ref={importInputRef} className="hidden" accept=".json" onChange={handleImport} />
             <Button variant="outline" onClick={handleExport}><Icon name="Download" className="mr-2 h-4 w-4" /> تصدير</Button>
-            <Button><Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة حالة جديدة</Button>
+            <Button onClick={handleAddNew}><Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة حالة جديدة</Button>
             <Button variant="outline" size="icon" asChild>
                 <Link href="/dashboard/settings"><Icon name="ArrowLeft" className="h-4 w-4" /></Link>
             </Button>
@@ -157,14 +273,14 @@ export default function StatusesPage() {
           <StatusCard key={status.id} status={status} onDelete={handleDeleteRequest} />
         ))}
       </div>
-
-       <div className="flex justify-start pt-6 mt-6 border-t">
-         <Button size="lg" onClick={handleSaveChanges}>
-            <Icon name="Save" className="mr-2 h-4 w-4" />
-            حفظ كل التغييرات
-          </Button>
-      </div>
     </div>
+
+     <StatusDialog 
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSave={handleSave}
+        status={selectedStatus}
+     />
 
     <AlertDialog open={!!statusToDelete} onOpenChange={() => setStatusToDelete(null)}>
         <AlertDialogContent>
