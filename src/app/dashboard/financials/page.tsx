@@ -43,7 +43,7 @@ const DriverAccountingTab = () => {
     const driverAccountingData = useMemo(() => {
         const drivers = users.filter(u => u.roleId === 'driver');
         return drivers.map(driver => {
-            const driverOrders = orders.filter(o => o.driver === driver.name && o.status === 'تم التوصيل');
+            const driverOrders = orders.filter(o => o.driver === driver.name && (o.status === 'تم التوصيل' || o.status === 'رفض ودفع أجور'));
             const totalCollected = driverOrders.reduce((sum, order) => sum + order.cod, 0);
             const totalFees = driverOrders.reduce((sum, order) => sum + (order.driverFee || 0) + (order.driverAdditionalFare || 0), 0);
             const balance = totalCollected - totalFees; // Amount driver owes the company
@@ -105,12 +105,12 @@ const MerchantAccountingTab = () => {
     const merchantAccountingData = useMemo(() => {
         const merchants = users.filter(u => u.roleId === 'merchant');
         return merchants.map(merchant => {
-            const merchantOrders = orders.filter(o => o.merchant === merchant.name && o.status === 'تم التوصيل');
+            const merchantOrders = orders.filter(o => o.merchant === merchant.storeName && o.status === 'تم التوصيل');
             const amountDue = merchantOrders.reduce((sum, order) => sum + (order.itemPrice || 0), 0);
              
             return {
                 id: merchant.id,
-                name: merchant.name,
+                name: merchant.storeName || merchant.name,
                 balance: amountDue, // Amount the company owes the merchant
                 status: amountDue > 0 ? 'due' : 'paid',
             } as FinancialSummary;

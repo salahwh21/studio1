@@ -14,6 +14,8 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import Icon from '@/components/icon';
+import { useUsersStore } from '@/store/user-store';
+import { useOrdersStore } from '@/store/orders-store';
 
 const DriversMap = dynamic(() => import('@/components/drivers-map'), {
   ssr: false,
@@ -30,18 +32,25 @@ const statuses = [
   { label: 'تم استلام المال في الشركة', count: 2, color: 'bg-teal-400' },
 ];
 
-const drivers = [
-  { id: 1, name: 'ابو العبد', status: 'نشط', parcels: 5, avatar: '', position: [31.9539, 35.9106] },
-  { id: 2, name: 'محمد سويد', status: 'نشط', parcels: 1, avatar: '', position: [31.9632, 35.8423] },
-  { id: 3, name: 'احمد عزاوي', status: 'نشط', parcels: 1, avatar: '', position: [31.9754, 35.9354] },
-  { id: 4, name: 'علي جاسم', status: 'نشط', parcels: 8, avatar: '', position: [31.9454, 35.8614] },
-  { id: 5, name: 'سارة وليد', status: 'غير نشط', parcels: 0, avatar: '', position: [31.9566, 35.945] },
-];
-
 export default function DriversMapPage() {
-  const [selectedDriver, setSelectedDriver] = useState(drivers[0]);
-  const activeDrivers = drivers.filter(d => d.status === 'نشط');
-  const inactiveDrivers = drivers.filter(d => d.status === 'غير نشط');
+    const { users } = useUsersStore();
+    const { orders } = useOrdersStore();
+    
+    const drivers = users.filter(u => u.roleId === 'driver').map((driver, index) => {
+        const driverOrders = orders.filter(o => o.driver === driver.name);
+        return {
+            id: driver.id,
+            name: driver.name,
+            status: driverOrders.some(o => o.status === 'جاري التوصيل') ? 'نشط' : 'غير نشط',
+            parcels: driverOrders.filter(o => o.status === 'جاري التوصيل').length,
+            avatar: driver.avatar,
+            position: [31.9539 + (Math.random() - 0.5) * 0.1, 35.9106 + (Math.random() - 0.5) * 0.1] as [number, number],
+        };
+    });
+
+    const [selectedDriver, setSelectedDriver] = useState(drivers.length > 0 ? drivers[0] : null);
+    const activeDrivers = drivers.filter(d => d.status === 'نشط');
+    const inactiveDrivers = drivers.filter(d => d.status === 'غير نشط');
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col gap-4 text-sm">
@@ -96,11 +105,11 @@ export default function DriversMapPage() {
                  {[...activeDrivers, ...inactiveDrivers].map(driver => (
                     <Card
                       key={driver.id}
-                      className={`cursor-pointer transition-all ${selectedDriver.id === driver.id ? 'border-primary shadow-lg' : 'hover:bg-muted/50'}`}
+                      className={`cursor-pointer transition-all ${selectedDriver?.id === driver.id ? 'border-primary shadow-lg' : 'hover:bg-muted/50'}`}
                       onClick={() => setSelectedDriver(driver)}
                     >
                       <CardContent className="p-3 flex items-center gap-3">
-                         <div className={`w-1.5 h-16 rounded-full ${selectedDriver.id === driver.id ? 'bg-primary' : 'bg-transparent'}`}></div>
+                         <div className={`w-1.5 h-16 rounded-full ${selectedDriver?.id === driver.id ? 'bg-primary' : 'bg-transparent'}`}></div>
                          <div className="flex-1 flex items-center gap-3">
                             <Avatar className="h-12 w-12 border">
                                 <AvatarImage src={driver.avatar} alt={driver.name} />

@@ -244,7 +244,7 @@ const ProfilePanel = ({ merchant }: { merchant: any }) => (
         <CardContent className="space-y-4">
              <div className="space-y-2">
                 <Label htmlFor="businessName">اسم الشركة</Label>
-                <Input id="businessName" defaultValue={merchant.name} />
+                <Input id="businessName" defaultValue={merchant.storeName} />
             </div>
              <div className="space-y-2">
                 <Label htmlFor="contactName">اسم جهة الاتصال</Label>
@@ -270,7 +270,7 @@ export default function MerchantPage() {
     const { orders } = useOrdersStore();
 
     const merchant = useMemo(() => users.find(u => u.roleId === 'merchant'), [users]);
-    const merchantOrders = useMemo(() => merchant ? orders.filter(o => o.merchant === merchant.name) : [], [orders, merchant]);
+    const merchantOrders = useMemo(() => merchant ? orders.filter(o => o.merchant === merchant.storeName) : [], [orders, merchant]);
 
      if (!merchant) {
         return (
@@ -290,7 +290,7 @@ export default function MerchantPage() {
         <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">مرحباً, {merchant.name}</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">مرحباً, {merchant.storeName}</h1>
                     <p className="text-muted-foreground">هذه هي لوحة التحكم الخاصة بك.</p>
                 </div>
             </div>

@@ -28,6 +28,7 @@ import { optimizeRouteAction } from '@/app/actions/optimize-route';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/icon';
+import { useUsersStore } from '@/store/user-store';
 
 const routeOptimizationSchema = z.object({
   driverId: z.string().min(1, 'الرجاء اختيار سائق.'),
@@ -37,14 +38,11 @@ const routeOptimizationSchema = z.object({
 
 type RouteOptimizationForm = z.infer<typeof routeOptimizationSchema>;
 
-const drivers = [
-    { id: "1", name: "علي الأحمد" },
-    { id: "2", name: "محمد الخالد" },
-    { id: "3", name: "فاطمة الزهراء" },
-];
-
 export default function OptimizeRoutePage() {
     const { toast } = useToast();
+    const { users } = useUsersStore();
+    const drivers = users.filter(u => u.roleId === 'driver');
+    
     const [isPending, startTransition] = useTransition();
     const [optimizationResult, setOptimizationResult] = useState<string[]>([]);
     
