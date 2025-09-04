@@ -47,8 +47,6 @@ const initialPriceLists: PriceList[] = [
   { id: 'pl_1', name: 'الأسعار الافتراضية', description: 'قائمة الأسعار الأساسية لجميع التجار الجدد (2 دينار عمان، 3 دنانير محافظات).', merchantCount: 25 },
   { id: 'pl_brands_of_less', name: 'Brands of less', description: 'قائمة أسعار خاصة لـ Brands of less.', merchantCount: 1 },
   { id: 'pl_soundrush', name: 'SoundRush', description: 'قائمة أسعار خاصة لـ SoundRush (1.5 دينار عمان، 2 دينار محافظات).', merchantCount: 1 },
-  { id: 'pl_2', name: 'أسعار VIP', description: 'أسعار خاصة لكبار التجار.', merchantCount: 5 },
-  { id: 'pl_3', name: 'أسعار المحافظات', description: 'قائمة أسعار خاصة للتوصيل خارج عمان.', merchantCount: 12 },
   { id: 'pl_stress_killer', name: 'Stress Killer', description: 'قائمة أسعار خاصة لـ Stress Killer.', merchantCount: 1 },
   { id: 'pl_brandlet_outlet', name: 'Brandlet Outlet -1', description: 'قائمة أسعار خاصة لـ Brandlet Outlet -1.', merchantCount: 1 },
   { id: 'pl_nl_botique', name: 'N&L Botique', description: 'قائمة أسعار خاصة لـ N&L Botique.', merchantCount: 1 },
@@ -78,6 +76,9 @@ const initialPriceLists: PriceList[] = [
   { id: 'pl_arqia_perfumes', name: 'ارقية للبخور', description: 'قائمة أسعار خاصة لـ ارقية للبخور.', merchantCount: 1 },
   { id: 'pl_hodi_hodi', name: 'هودي هودي', description: 'قائمة أسعار خاصة لـ هودي هودي.', merchantCount: 1 },
   { id: 'pl_banan_khader', name: 'بنان خضر', description: 'قائمة أسعار خاصة لـ بنان خضر.', merchantCount: 1 },
+  { id: 'pl_k_by_women', name: 'k by women', description: 'قائمة أسعار خاصة لـ k by women', merchantCount: 1 },
+  { id: 'pl_memories_store', name: 'Memories Store', description: 'قائمة أسعار خاصة لـ Memories Store', merchantCount: 1 },
+  { id: 'pl_ro_designs', name: 'Ro Designs', description: 'قائمة أسعار خاصة لـ Ro Designs', merchantCount: 1 },
 ];
 
 const PriceListCard = ({ list, onEdit, onDelete }: { list: PriceList; onEdit: (list: PriceList) => void; onDelete: (list: PriceList) => void; }) => {
