@@ -37,13 +37,17 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Allow all cross-origin requests in development.
-  // This is required for the cloud-based development environment.
-  // Note: This does not affect production builds.
-  allowedDevOrigins: [
-      'https://*.web.app',         // نطاق Firebase Hosting
-      'https://*.firebaseapp.com'  // نطاق Firebase Studio
+  experimental: {
+    // Allow all cross-origin requests in development.
+    // This is required for the cloud-based development environment.
+    // Note: This does not affect production builds.
+    allowedDevOrigins: [
+      'http://localhost:3000',
+      'http://localhost:9002',
+      "https://*.web.app", 
+      "https://*.firebaseapp.com"
     ],
+  },
   turbopack: {
     // Example: adding an alias and custom file extension
     resolveAlias: {
