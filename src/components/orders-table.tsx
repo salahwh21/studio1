@@ -714,44 +714,40 @@ const OrdersTableComponent = () => {
                                         return (
                                             <React.Fragment key={groupKey}>
                                                 <TableRow>
-                                                  <TableCell colSpan={visibleColumns.length + 1} className="p-0 border-none">
-                                                    <div
-                                                      onClick={() => setOpenGroups(prev => ({ ...prev, [groupKey]: !isGroupOpen }))}
-                                                      className="flex items-center justify-between cursor-pointer
-                                                                 bg-primary/90 text-primary-foreground font-bold
-                                                                 rounded-md shadow-md px-4 py-2 m-1"
-                                                    >
-                                                      {/* اسم المجموعة */}
-                                                      <div className="flex items-center gap-2">
-                                                        <ChevronDown
-                                                          className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")}
-                                                        />
-                                                        {groupKey} ({groupOrders.length})
-                                                      </div>
-                                                
-                                                      {/* المجاميع */}
-                                                      <div className="flex gap-6">
-                                                        {visibleColumns.map(col => {
-                                                          if (col.type === "financial" || col.type === 'admin_financial') {
-                                                            const totalValue = groupOrders.reduce(
-                                                              (sum, order) => {
+                                                    <TableCell colSpan={visibleColumns.length + 1} className="p-0 border-none">
+                                                        <div
+                                                        onClick={() => setOpenGroups(prev => ({ ...prev, [groupKey]: !isGroupOpen }))}
+                                                        className="grid cursor-pointer bg-primary/90 text-primary-foreground font-bold rounded-md shadow-md m-1"
+                                                        style={{ gridTemplateColumns: `repeat(${visibleColumns.length + 1}, minmax(0, 1fr))` }}
+                                                        >
+                                                            {/* First column for group name and toggler */}
+                                                            <div className="flex items-center gap-2 px-4 py-2">
+                                                                <ChevronDown
+                                                                    className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")}
+                                                                />
+                                                                {groupKey} ({groupOrders.length})
+                                                            </div>
+
+                                                            {/* Subsequent columns for totals or empty space */}
+                                                            {visibleColumns.map(col => {
+                                                                if (col.type === "financial" || col.type === 'admin_financial') {
+                                                                const totalValue = groupOrders.reduce(
+                                                                    (sum, order) => {
                                                                     if (col.key === 'companyDue') {
                                                                         return sum + ((order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0)));
                                                                     }
                                                                     return sum + (order[col.key as keyof Order] as number || 0);
-                                                              }, 0);
-                                                            return (
-                                                              <div key={col.key} className="min-w-[100px] text-right flex flex-col items-end">
-                                                                <span className="text-xs font-normal opacity-80">{col.label}</span>
-                                                                <span className="font-semibold text-base">{formatCurrency(totalValue)}</span>
-                                                              </div>
-                                                            );
-                                                          }
-                                                          return null;
-                                                        })}
-                                                      </div>
-                                                    </div>
-                                                  </TableCell>
+                                                                    }, 0);
+                                                                return (
+                                                                    <div key={col.key} className="px-4 py-2 text-center font-semibold text-base">
+                                                                    {formatCurrency(totalValue)}
+                                                                    </div>
+                                                                );
+                                                                }
+                                                                return <div key={col.key} className="px-4 py-2"></div>;
+                                                            })}
+                                                        </div>
+                                                    </TableCell>
                                                 </TableRow>
                                                 
                                                 {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
