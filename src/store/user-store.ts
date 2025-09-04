@@ -16,10 +16,18 @@ export type User = {
 };
 
 const initialUsers: User[] = [
-    // Admins and Staff
+    // Admins and Staff from image
     { id: 'user-1', name: 'المدير المسؤول', email: 'admin@alwameed.com', roleId: 'admin', avatar: '', password: '123456789', whatsapp: '962791234567' },
-    { id: 'user-2', name: 'أحمد مشرف', email: 'ahmad@alwameed.com', roleId: 'supervisor', avatar: '', password: '123456789' },
-    { id: 'user-3', name: 'فاطمة خدمة عملاء', email: 'fatima@alwameed.com', roleId: 'customer_service', avatar: '', password: '123456789' },
+    { id: 'user-rami', name: 'رامي عوده الله', email: '0790984807', roleId: 'supervisor', avatar: '', password: '123' },
+    { id: 'user-moayad', name: 'مؤيد', email: '0096721759', roleId: 'customer_service', avatar: '', password: '123' }, // Assuming مندوب مبيعات is customer service for now
+    { id: 'user-razan', name: 'رزان', email: '0793204777', roleId: 'supervisor', avatar: '', password: '123' }, // Assuming مركز الاتصال is supervisor for now
+    { id: 'user-bahaa', name: 'bahaa', email: '0788741261', roleId: 'supervisor', avatar: '', password: '123' },
+    { id: 'user-salahwh', name: 'salahwh', email: '0790267503', roleId: 'supervisor', avatar: '', password: '123' },
+
+    // Integration Companies as merchants
+    { id: 'merchant-premium', name: 'Premium Delivery', email: 'premiumDel', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-nitrous', name: 'Nitrous Delivery', email: '0781890009', roleId: 'merchant', avatar: '', password: '123' },
+
     // Drivers
     { id: 'driver-1', name: 'ابو العبد', email: '0799754316', roleId: 'driver', avatar: '', password: '123456789' },
     { id: 'driver-2', name: 'محمد سويد', email: '0799780790', roleId: 'driver', avatar: '', password: '123456789' },
@@ -32,6 +40,7 @@ const initialUsers: User[] = [
     { id: 'driver-9', name: 'فارس الأسمر', email: '0795365013', roleId: 'driver', avatar: '', password: '123456789' },
     { id: 'driver-10', name: 'حسن زيغان', email: '0786112230', roleId: 'driver', avatar: '', password: '123456789' },
 ];
+
 
 type UsersState = {
     users: User[];
