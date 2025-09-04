@@ -34,13 +34,10 @@ const integrationsList = [
     { id: 'custom-api', name: 'Custom API', iconName: 'Code' as const }
 ];
 
-const mockConversation = [
+const initialConversation = [
     { from: 'ai', text: "مرحبًا! أنا هنا لمساعدتك في ربط متجرك على Shopify. للبدء، أحتاج منك إنشاء تطبيق مخصص (Custom App) داخل لوحة تحكم Shopify الخاصة بك. هل تريدني أن أرشدك للوصول إلى تلك الصفحة؟" },
-    { from: 'user', text: "نعم، أرشدني." },
-    { from: 'ai', text: "ممتاز. افتح لوحة تحكم Shopify، ثم اذهب إلى `Apps and sales channels` > `Develop apps` > `Create an app`. عندما تصل إلى هناك، أخبرني." },
-    { from: 'user', text: "لقد وصلت إلى الصفحة." },
-    { from: 'ai', text: "رائع. الآن، عند إعداد صلاحيات التطبيق، تأكد من منح الأذونات التالية: `read_orders`, `write_orders`, و `read_products`. هذه الصلاحيات ضرورية لجلب الطلبات وتحديث حالتها. بعد حفظ الأذونات، ستمنحك Shopify مفتاح وصول (API Access Token). يرجى لصق المفتاح هنا." },
 ];
+
 
 export default function ConnectIntegrationPage() {
     const params = useParams();
@@ -48,6 +45,9 @@ export default function ConnectIntegrationPage() {
     const { integrationId } = params;
     const [integrationInfo, setIntegrationInfo] = useState<{ id: string; name: string; iconName: any; } | null>(null);
     const { toast } = useToast();
+    
+    const [conversation, setConversation] = useState(initialConversation);
+    const [userMessage, setUserMessage] = useState('');
 
     useEffect(() => {
         const foundIntegration = integrationsList.find(i => i.id === integrationId);
@@ -57,6 +57,33 @@ export default function ConnectIntegrationPage() {
             router.push('/dashboard/settings/integrations');
         }
     }, [integrationId, router]);
+    
+    const handleSendMessage = () => {
+        if (!userMessage.trim()) return;
+
+        const newUserMsg = { from: 'user', text: userMessage };
+        
+        const nextAiResponses = [
+            { userTrigger: "نعم، أرشدني.", aiResponse: "ممتاز. افتح لوحة تحكم Shopify، ثم اذهب إلى `Apps and sales channels` > `Develop apps` > `Create an app`. عندما تصل إلى هناك، أخبرني." },
+            { userTrigger: "لقد وصلت إلى الصفحة.", aiResponse: "رائع. الآن، عند إعداد صلاحيات التطبيق، تأكد من منح الأذونات التالية: `read_orders`, `write_orders`, و `read_products`. هذه الصلاحيات ضرورية لجلب الطلبات وتحديث حالتها. بعد حفظ الأذونات، ستمنحك Shopify مفتاح وصول (API Access Token). يرجى لصق المفتاح هنا للانتقال إلى الخطوة التالية." },
+        ];
+        
+        let aiResponse = { from: 'ai', text: "شكراً لك. يرجى المتابعة حسب الإرشادات." }; // Default response
+        
+        const matchedResponse = nextAiResponses.find(r => userMessage.includes(r.userTrigger));
+        if (matchedResponse) {
+            aiResponse.text = matchedResponse.aiResponse;
+        } else if (userMessage.toLowerCase().includes('shpat_')) {
+             aiResponse.text = "رائع! تم التحقق من مفتاح الربط بنجاح. سيتم الآن نقلك إلى صفحة إعدادات التكامل لتخصيص المزامنة.";
+             toast({ title: 'تم الربط بنجاح', description: 'جاري تحويلك لصفحة الإعدادات...' });
+             setTimeout(() => {
+                 router.push(`/dashboard/settings/integrations/${integrationId}`);
+             }, 2000);
+        }
+        
+        setConversation(prev => [...prev, newUserMsg, aiResponse]);
+        setUserMessage('');
+    }
 
     if (!integrationInfo) {
         return <Skeleton className="h-screen w-full" />;
@@ -93,7 +120,7 @@ export default function ConnectIntegrationPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1 space-y-6 overflow-y-auto p-4">
-                   {mockConversation.map((msg, index) => (
+                   {conversation.map((msg, index) => (
                        <div key={index} className={`flex items-start gap-3 ${msg.from === 'user' ? 'justify-end' : ''}`}>
                             {msg.from === 'ai' && (
                                  <Avatar className="h-8 w-8 border-2 border-primary">
@@ -113,10 +140,21 @@ export default function ConnectIntegrationPage() {
                 </CardContent>
                 <CardFooter className="p-4 border-t">
                     <div className="relative w-full">
-                        <Textarea placeholder="اكتب ردك أو الصق مفتاح الربط هنا..." className="pr-20"/>
+                        <Textarea 
+                            placeholder="اكتب ردك أو الصق مفتاح الربط هنا..." 
+                            className="pr-20"
+                            value={userMessage}
+                            onChange={(e) => setUserMessage(e.target.value)}
+                             onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSendMessage();
+                                }
+                            }}
+                        />
                         <div className="absolute left-2 top-1/2 -translate-y-1/2 flex gap-2">
-                            <Button size="sm" onClick={() => toast({ title: 'تم الإرسال (تجريبي)' })}><Icon name="Send" className="h-4 w-4"/></Button>
-                            <Button size="sm" variant="outline" onClick={() => toast({ title: 'فتح مستعرض الملفات (تجريبي)' })}><Icon name="Paperclip" className="h-4 w-4"/></Button>
+                            <Button size="sm" onClick={handleSendMessage}><Icon name="Send" className="h-4 w-4"/></Button>
+                            <Button size="sm" variant="outline" onClick={() => toast({ title: 'ميزة قيد التطوير' })}><Icon name="Paperclip" className="h-4 w-4"/></Button>
                         </div>
                     </div>
                 </CardFooter>
