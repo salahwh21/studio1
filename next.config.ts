@@ -41,6 +41,13 @@ const nextConfig: NextConfig = {
   // This is required for the cloud-based development environment.
   // Note: This does not affect production builds.
   allowedDevOrigins: ['*'],
+  turbopack: {
+    // Example: adding an alias and custom file extension
+    resolveAlias: {
+      underscore: 'lodash',
+    },
+    resolveExtensions: ['.mdx', '.tsx', '.ts', '.jsx', '.js', '.json'],
+  },
 };
 
 export default nextConfig;
