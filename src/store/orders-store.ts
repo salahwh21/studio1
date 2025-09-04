@@ -24,6 +24,8 @@ const initialOrders = Array.from({ length: 85 }, (_, i) => ({
   driverAdditionalFare: i % 15 === 0 ? -0.25 : 0, 
   date: `2024-07-${(1 + i % 5).toString().padStart(2,'0')}`,
   notes: i % 3 === 0 ? 'اتصل قبل الوصول' : '',
+  lat: i % 10 === 0 ? 31.95 + (Math.random() - 0.5) * 0.1 : undefined,
+  lng: i % 10 === 0 ? 35.91 + (Math.random() - 0.5) * 0.1 : undefined,
 }));
 
 export type Order = typeof initialOrders[0] & { orderNumber: number };

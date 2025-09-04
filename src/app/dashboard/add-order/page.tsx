@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef }from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,9 +9,10 @@ import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore, Order } from '@/store/orders-store';
 import { useAreasStore } from '@/store/areas-store';
 import { useToast } from '@/hooks/use-toast';
-import { Check, ChevronsUpDown, Printer, Trash2, Package, Clock, MessageSquareWarning } from 'lucide-react';
+import { Check, ChevronsUpDown, Printer, Trash2, Package, Clock, MessageSquareWarning, MapPin } from 'lucide-react';
 import { useActionState } from 'react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
+import dynamic from 'next/dynamic';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { PrintablePolicy } from '@/components/printable-policy';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const LocationPickerMap = dynamic(() => import('@/components/location-picker-map'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-full w-full rounded-lg" />,
+});
+
 
 const orderSchema = z.object({
   recipientName: z.string().optional(),
@@ -48,6 +56,8 @@ const orderSchema = z.object({
   parcelCount: z.coerce.number().min(1, "يجب أن يكون طرد واحد على الأقل."),
   deliveryTimeType: z.enum(['any', 'fixed', 'before', 'after']).optional(),
   deliveryTime: z.string().optional(),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
 });
 
 type OrderFormValues = z.infer<typeof orderSchema>;
@@ -86,6 +96,7 @@ const AddOrderPage = () => {
   });
 
   const [isPrepaid, setIsPrepaid] = useState(false);
+  const [isMapOpen, setIsMapOpen] = useState(false);
   
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
@@ -97,6 +108,8 @@ const AddOrderPage = () => {
   const codValue = watch('cod');
   const selectedCity = watch('city');
   const deliveryTimeType = watch('deliveryTimeType');
+  const lat = watch('lat');
+  const lng = watch('lng');
 
   const merchantOptions = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
   const allRegions = useMemo(() => cities.flatMap(c => c.areas.map(a => ({ ...a, cityName: c.name }))).sort((a,b) => a.name.localeCompare(b.name)), [cities]);
@@ -198,6 +211,14 @@ const AddOrderPage = () => {
       const currentNotes = getValues('notes');
       setValue('notes', currentNotes ? `${currentNotes}\n- ${note}` : `- ${note}`);
   };
+
+    const handleLocationSelect = ({ lat, lng }: { lat: number; lng: number }) => {
+        setValue('lat', lat);
+        setValue('lng', lng);
+        setValue('address', `[GEO] ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        setIsMapOpen(false);
+        toast({ title: 'تم تحديد الموقع', description: 'تم حفظ الإحداثيات.' });
+    };
   
   const handleAddOrder = (data: OrderFormValues) => {
     const merchant = users.find(u => u.id === selectedMerchantId);
@@ -248,12 +269,14 @@ const AddOrderPage = () => {
       notes: finalNotes,
       // @ts-ignore
       parcelCount: data.parcelCount,
+      lat: data.lat,
+      lng: data.lng,
     };
     
     const addedOrder = addOrder(newOrder);
     setRecentlyAdded(prev => [addedOrder, ...prev]);
     toast({ title: 'تمت الإضافة', description: `تمت إضافة طلب "${data.recipientName}" بنجاح.` });
-    reset({ ...getValues(), recipientName: '', phone: '', whatsapp: '', cod: 0, notes: '', referenceNumber: '', address: '', parcelCount: 1, deliveryTimeType: 'any', deliveryTime: '' });
+    reset({ ...getValues(), recipientName: '', phone: '', whatsapp: '', cod: 0, notes: '', referenceNumber: '', address: '', parcelCount: 1, deliveryTimeType: 'any', deliveryTime: '', lat: undefined, lng: undefined });
     setIsPrepaid(false);
   };
 
@@ -338,6 +361,13 @@ const AddOrderPage = () => {
             </div>
         </DialogContent>
     </Dialog>
+
+    <Dialog open={isMapOpen} onOpenChange={setIsMapOpen}>
+        <DialogContent className="max-w-3xl h-[80vh] flex flex-col p-2">
+            <LocationPickerMap onLocationSelect={handleLocationSelect} />
+        </DialogContent>
+    </Dialog>
+
     <div className="space-y-6">
       <Card>
         <CardHeader>
@@ -478,7 +508,20 @@ const AddOrderPage = () => {
                         </FormItem> 
                     )} />
                      <FormField control={form.control} name="city" render={({ field }) => ( <FormItem><FormLabel>المدينة</FormLabel><FormControl><Input {...field} readOnly className="bg-muted" placeholder="سيتم تحديدها تلقائياً" /></FormControl><FormMessage /></FormItem> )} />
-                     <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان (اختياري)</FormLabel><FormControl><Input {...field} placeholder="اسم الشارع، رقم البناية..."/></FormControl><FormMessage /></FormItem> )} />
+                     <FormField control={form.control} name="address" render={({ field }) => (
+                         <FormItem>
+                             <FormLabel>العنوان (اختياري)</FormLabel>
+                             <div className="flex items-center gap-2">
+                                <FormControl>
+                                    <Input {...field} placeholder={lat && lng ? `تم تحديد الموقع على الخريطة` : "اسم الشارع، رقم البناية..."} />
+                                </FormControl>
+                                 <Button type="button" variant="outline" size="icon" onClick={() => setIsMapOpen(true)} className={cn(lat && lng && 'bg-green-100 border-green-400 text-green-700')}>
+                                    <MapPin className="h-4 w-4"/>
+                                 </Button>
+                             </div>
+                             <FormMessage />
+                         </FormItem> 
+                     )} />
                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                     <FormField control={form.control} name="cod" render={({ field }) => ( <FormItem className="md:col-span-1"><FormLabel>قيمة التحصيل (COD)</FormLabel><FormControl><Input type="number" {...field} disabled={isPrepaid} /></FormControl><FormMessage /></FormItem> )} />
