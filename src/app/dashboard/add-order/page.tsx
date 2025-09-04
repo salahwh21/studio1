@@ -9,7 +9,7 @@ import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore, Order } from '@/store/orders-store';
 import { useAreasStore } from '@/store/areas-store';
 import { useToast } from '@/hooks/use-toast';
-import { Check, ChevronsUpDown, Printer, Trash2 } from 'lucide-react';
+import { Check, ChevronsUpDown, Printer, Trash2, Package, Clock, MessageSquareWarning } from 'lucide-react';
 import { useActionState } from 'react';
 import { parseOrderFromRequest } from '@/app/actions/parse-order';
 
@@ -45,9 +45,19 @@ const orderSchema = z.object({
   cod: z.coerce.number(),
   notes: z.string().optional(),
   referenceNumber: z.string().optional(),
+  parcelCount: z.coerce.number().min(1, "يجب أن يكون طرد واحد على الأقل."),
+  deliveryTimeType: z.enum(['any', 'fixed', 'before', 'after']).optional(),
+  deliveryTime: z.string().optional(),
 });
 
 type OrderFormValues = z.infer<typeof orderSchema>;
+
+const predefinedNotes = [
+    { text: 'قابل للكسر', icon: 'GlassWater' as const },
+    { text: 'يرجى التواصل باكرًا', icon: 'Sunrise' as const },
+    { text: 'توصيل في الفترة المسائية', icon: 'Sunset' as const },
+    { text: 'هدية، يرجى عدم إظهار السعر', icon: 'Gift' as const },
+];
 
 const AddOrderPage = () => {
   const { toast } = useToast();
@@ -77,13 +87,14 @@ const AddOrderPage = () => {
   
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
-    defaultValues: { recipientName: '', phone: '', whatsapp: '', city: '', region: '', address: '', cod: 0, notes: '', referenceNumber: '' },
+    defaultValues: { recipientName: '', phone: '', whatsapp: '', city: '', region: '', address: '', cod: 0, notes: '', referenceNumber: '', parcelCount: 1, deliveryTimeType: 'any' },
   });
 
   const { watch, setValue, getValues, reset } = form;
   const selectedRegionValue = watch('region');
   const codValue = watch('cod');
   const selectedCity = watch('city');
+  const deliveryTimeType = watch('deliveryTimeType');
 
   const merchantOptions = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
   const allRegions = useMemo(() => cities.flatMap(c => c.areas.map(a => ({ ...a, cityName: c.name }))).sort((a,b) => a.name.localeCompare(b.name)), [cities]);
@@ -174,6 +185,11 @@ const AddOrderPage = () => {
         setRecentlyAdded(prev => prev.map(o => o.id === orderId ? {...o, [field]: value} : o));
     }
   };
+
+  const handleAddPredefinedNote = (note: string) => {
+      const currentNotes = getValues('notes');
+      setValue('notes', currentNotes ? `${currentNotes}\n- ${note}` : `- ${note}`);
+  };
   
   const handleAddOrder = (data: OrderFormValues) => {
     const merchant = users.find(u => u.id === selectedMerchantId);
@@ -188,6 +204,16 @@ const AddOrderPage = () => {
         toast({ variant: 'destructive', title: 'خطأ', description: 'الإعدادات لم تحمل بعد، يرجى المحاولة بعد لحظات.' });
         return;
     }
+
+    let finalNotes = data.notes || '';
+    if (data.deliveryTimeType && data.deliveryTimeType !== 'any') {
+        let timeNote = '';
+        if (data.deliveryTimeType === 'fixed') timeNote = `التوصيل الساعة ${data.deliveryTime} تمامًا.`;
+        if (data.deliveryTimeType === 'before') timeNote = `التوصيل قبل الساعة ${data.deliveryTime}.`;
+        if (data.deliveryTimeType === 'after') timeNote = `التوصيل بعد الساعة ${data.deliveryTime}.`;
+        finalNotes = `${timeNote}\n${finalNotes}`.trim();
+    }
+    finalNotes = `${finalNotes}\n(عدد الطرود: ${data.parcelCount})`.trim();
 
     const newOrder: Omit<Order, 'id' | 'orderNumber'> = {
       source: 'Manual',
@@ -205,13 +231,15 @@ const AddOrderPage = () => {
       itemPrice: calculatedFees.itemPrice,
       deliveryFee: calculatedFees.deliveryFee,
       date: new Date().toISOString().split('T')[0],
-      notes: data.notes || '',
+      notes: finalNotes,
+      // @ts-ignore
+      parcelCount: data.parcelCount,
     };
     
     const addedOrder = addOrder(newOrder);
     setRecentlyAdded(prev => [addedOrder, ...prev]);
     toast({ title: 'تمت الإضافة', description: `تمت إضافة طلب "${data.recipientName}" بنجاح.` });
-    reset({ ...getValues(), recipientName: '', phone: '', whatsapp: '', cod: 0, notes: '', referenceNumber: '', address: '' });
+    reset({ ...getValues(), recipientName: '', phone: '', whatsapp: '', cod: 0, notes: '', referenceNumber: '', address: '', parcelCount: 1, deliveryTimeType: 'any', deliveryTime: '' });
   };
 
   const handleSelectRecent = (id: string) => {
@@ -386,6 +414,7 @@ const AddOrderPage = () => {
                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField control={form.control} name="referenceNumber" render={({ field }) => ( <FormItem><FormLabel>رقم مرجعي (اختياري)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="parcelCount" render={({ field }) => ( <FormItem><FormLabel className='flex items-center gap-1'><Package className='h-4 w-4' /> عدد الطرود</FormLabel><FormControl><Input type="number" {...field} min={1}/></FormControl><FormMessage /></FormItem> )} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                      <FormField control={form.control} name="region" render={({ field }) => ( 
@@ -450,7 +479,53 @@ const AddOrderPage = () => {
                         </div>
                     </div>
                 </div>
-                 <FormField control={form.control} name="notes" render={({ field }) => ( <FormItem><FormLabel>ملاحظات</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )} />
+
+                {/* Delivery Time Scheduling */}
+                <div className="space-y-4 rounded-lg border p-4">
+                    <Label className="flex items-center gap-2 font-semibold"><Clock className="h-5 w-5" /> تفضيلات وقت التوصيل</Label>
+                    <FormField
+                        control={form.control}
+                        name="deliveryTimeType"
+                        render={({ field }) => (
+                            <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2"
+                            >
+                                <FormItem className="flex items-center space-x-2 space-x-reverse"><FormControl><RadioGroupItem value="any" /></FormControl><FormLabel className="font-normal">أي وقت</FormLabel></FormItem>
+                                <FormItem className="flex items-center space-x-2 space-x-reverse"><FormControl><RadioGroupItem value="fixed" /></FormControl><FormLabel className="font-normal">وقت محدد</FormLabel></FormItem>
+                                <FormItem className="flex items-center space-x-2 space-x-reverse"><FormControl><RadioGroupItem value="before" /></FormControl><FormLabel className="font-normal">قبل الساعة</FormLabel></FormItem>
+                                <FormItem className="flex items-center space-x-2 space-x-reverse"><FormControl><RadioGroupItem value="after" /></FormControl><FormLabel className="font-normal">بعد الساعة</FormLabel></FormItem>
+                            </RadioGroup>
+                        )}
+                    />
+                    {deliveryTimeType !== 'any' && (
+                        <FormField
+                            control={form.control}
+                            name="deliveryTime"
+                            render={({ field }) => (
+                                <FormItem className="animate-in fade-in">
+                                    <FormControl><Input type="time" {...field} className="max-w-xs" /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    )}
+                </div>
+
+                 {/* Notes */}
+                <div className="space-y-4">
+                    <Label className="flex items-center gap-2 font-semibold"><MessageSquareWarning className="h-5 w-5" /> ملاحظات الطلب</Label>
+                    <div className="flex flex-wrap gap-2">
+                        {predefinedNotes.map(note => (
+                            <Button key={note.text} type="button" variant="outline" size="sm" className="gap-2" onClick={() => handleAddPredefinedNote(note.text)}>
+                                <Icon name={note.icon} className="h-4 w-4" />
+                                {note.text}
+                            </Button>
+                        ))}
+                    </div>
+                     <FormField control={form.control} name="notes" render={({ field }) => ( <FormItem><FormControl><Textarea {...field} placeholder="أضف ملاحظات إضافية هنا..." /></FormControl><FormMessage /></FormItem> )} />
+                </div>
              </CardContent>
              <CardFooter>
                 <Button type="submit" size="lg" disabled={!selectedMerchantId} className="w-full"> 
