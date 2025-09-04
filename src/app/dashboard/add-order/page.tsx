@@ -84,6 +84,8 @@ const AddOrderPage = () => {
   const [aiState, formAction, isAiPending] = useActionState(parseOrderFromRequest, {
       data: null, error: null, message: ''
   });
+
+  const [isPrepaid, setIsPrepaid] = useState(false);
   
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
@@ -125,15 +127,21 @@ const AddOrderPage = () => {
     }
   }, [selectedRegionValue, allRegions, setValue]);
 
+  useEffect(() => {
+    if (isPrepaid) {
+        setValue('cod', 0);
+    }
+  }, [isPrepaid, setValue]);
+
 
   const calculatedFees = useMemo(() => {
     if (!selectedCity || codValue === undefined) {
       return { deliveryFee: 0, itemPrice: 0 };
     }
     const deliveryFee = selectedCity === 'عمان' ? 2.5 : 3.5;
-    const itemPrice = codValue - deliveryFee;
+    const itemPrice = isPrepaid ? 0 : (codValue - deliveryFee);
     return { deliveryFee, itemPrice };
-  }, [codValue, selectedCity]);
+  }, [codValue, selectedCity, isPrepaid]);
 
   // --- AI Logic ---
   useEffect(() => {
@@ -206,11 +214,17 @@ const AddOrderPage = () => {
     }
 
     let finalNotes = data.notes || '';
-    if (data.deliveryTimeType && data.deliveryTimeType !== 'any') {
+    if(isPrepaid) {
+        finalNotes = `الطلب مدفوع مسبقًا.\n${finalNotes}`.trim();
+    }
+    if (data.deliveryTimeType && data.deliveryTimeType !== 'any' && data.deliveryTime) {
         let timeNote = '';
-        if (data.deliveryTimeType === 'fixed') timeNote = `التوصيل الساعة ${data.deliveryTime} تمامًا.`;
-        if (data.deliveryTimeType === 'before') timeNote = `التوصيل قبل الساعة ${data.deliveryTime}.`;
-        if (data.deliveryTimeType === 'after') timeNote = `التوصيل بعد الساعة ${data.deliveryTime}.`;
+        try {
+            const timeString = new Date(`1970-01-01T${data.deliveryTime}`).toLocaleTimeString('ar-JO', { hour: 'numeric', minute: 'numeric', hour12: true });
+            if (data.deliveryTimeType === 'fixed') timeNote = `التوصيل الساعة ${timeString} تمامًا.`;
+            if (data.deliveryTimeType === 'before') timeNote = `التوصيل قبل الساعة ${timeString}.`;
+            if (data.deliveryTimeType === 'after') timeNote = `التوصيل بعد الساعة ${timeString}.`;
+        } catch(e) { /* ignore invalid time */ }
         finalNotes = `${timeNote}\n${finalNotes}`.trim();
     }
     finalNotes = `${finalNotes}\n(عدد الطرود: ${data.parcelCount})`.trim();
@@ -227,7 +241,7 @@ const AddOrderPage = () => {
       status: settings.orders.defaultStatus,
       driver: 'غير معين',
       merchant: merchant.name,
-      cod: data.cod,
+      cod: isPrepaid ? 0 : data.cod,
       itemPrice: calculatedFees.itemPrice,
       deliveryFee: calculatedFees.deliveryFee,
       date: new Date().toISOString().split('T')[0],
@@ -240,6 +254,7 @@ const AddOrderPage = () => {
     setRecentlyAdded(prev => [addedOrder, ...prev]);
     toast({ title: 'تمت الإضافة', description: `تمت إضافة طلب "${data.recipientName}" بنجاح.` });
     reset({ ...getValues(), recipientName: '', phone: '', whatsapp: '', cod: 0, notes: '', referenceNumber: '', address: '', parcelCount: 1, deliveryTimeType: 'any', deliveryTime: '' });
+    setIsPrepaid(false);
   };
 
   const handleSelectRecent = (id: string) => {
@@ -466,7 +481,7 @@ const AddOrderPage = () => {
                      <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>العنوان (اختياري)</FormLabel><FormControl><Input {...field} placeholder="اسم الشارع، رقم البناية..."/></FormControl><FormMessage /></FormItem> )} />
                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                    <FormField control={form.control} name="cod" render={({ field }) => ( <FormItem className="md:col-span-1"><FormLabel>قيمة التحصيل (COD)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="cod" render={({ field }) => ( <FormItem className="md:col-span-1"><FormLabel>قيمة التحصيل (COD)</FormLabel><FormControl><Input type="number" {...field} disabled={isPrepaid} /></FormControl><FormMessage /></FormItem> )} />
                     <div className="md:col-span-2 grid grid-cols-2 gap-4 rounded-lg border p-3 bg-muted h-fit">
                         <div>
                             <p className="text-xs text-muted-foreground">المستحق للتاجر</p>
@@ -479,6 +494,14 @@ const AddOrderPage = () => {
                         </div>
                     </div>
                 </div>
+
+                <div className="flex items-center space-x-2 space-x-reverse">
+                    <Checkbox id="isPrepaid" checked={isPrepaid} onCheckedChange={(checked) => setIsPrepaid(!!checked)} />
+                    <Label htmlFor="isPrepaid" className="font-medium cursor-pointer">
+                        الطلب مدفوع مسبقًا (أجور التوصيل تم دفعها من قبل التاجر)
+                    </Label>
+                </div>
+
 
                 {/* Delivery Time Scheduling */}
                 <div className="space-y-4 rounded-lg border p-4">
