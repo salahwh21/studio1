@@ -642,8 +642,8 @@ const OrdersTableComponent = () => {
                                             <DropdownMenuSeparator />
                                             <ScrollArea className="max-h-72">
                                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
-                                                    <SortableContext items={ALL_COLUMNS.map(c => c.key)} strategy={verticalListSortingStrategy}>
-                                                        {ALL_COLUMNS.map((column) => (
+                                                    <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
+                                                        {columns.map((column) => (
                                                             <SortableColumn
                                                                 key={column.key}
                                                                 id={column.key}
