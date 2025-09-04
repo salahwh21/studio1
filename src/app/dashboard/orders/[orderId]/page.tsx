@@ -81,16 +81,31 @@ export default function OrderDetailPage() {
 
     const handleFieldChange = (field: keyof Order, value: any) => {
         if (!order) return;
-        setOrder(prev => prev ? { ...prev, [field]: value } : null);
+        
+        let newOrderState = { ...order, [field]: value };
+
+        // Auto-calculate financial fields if COD changes
+        if (field === 'cod') {
+            const codValue = parseFloat(value) || 0;
+            const deliveryFee = newOrderState.city === 'عمان' ? 2.5 : 3.5;
+            newOrderState = {
+                ...newOrderState,
+                cod: codValue,
+                deliveryFee: deliveryFee,
+                itemPrice: codValue - deliveryFee,
+                driverFee: newOrderState.city === 'عمان' ? 1.0 : 1.5,
+            };
+        }
+
+        setOrder(newOrderState);
     };
 
     const handleSave = () => {
         if (!order) return;
-        updateOrderField(order.id, 'recipient', order.recipient);
-        updateOrderField(order.id, 'phone', order.phone);
-        updateOrderField(order.id, 'address', order.address);
-        updateOrderField(order.id, 'cod', order.cod);
-        updateOrderField(order.id, 'notes', order.notes);
+        // Batch update all fields that could have changed
+        Object.keys(order).forEach(key => {
+            updateOrderField(order.id, key as keyof Order, order[key as keyof Order]);
+        });
         toast({ title: "تم الحفظ بنجاح", description: "تم تحديث تفاصيل الطلب." });
     }
 
@@ -104,9 +119,12 @@ export default function OrderDetailPage() {
                 <h1 className="text-2xl font-bold flex items-center gap-2">
                     تفاصيل الطلب: <span className="font-mono text-primary">{order.id}</span>
                 </h1>
-                <Button variant="outline" size="icon" asChild>
-                    <Link href="/dashboard/orders"><Icon name="ArrowLeft" className="h-4 w-4" /></Link>
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button onClick={handleSave}><Icon name="Save" className="ml-2" /> حفظ التعديلات</Button>
+                    <Button variant="outline" size="icon" asChild>
+                        <Link href="/dashboard/orders"><Icon name="ArrowLeft" className="h-4 w-4" /></Link>
+                    </Button>
+                </div>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -140,25 +158,10 @@ export default function OrderDetailPage() {
                                 <Label htmlFor="address">العنوان الكامل</Label>
                                 <Input id="address" value={order.address} onChange={(e) => handleFieldChange('address', e.target.value)} />
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                               <div className="space-y-1 p-3 bg-muted/50 rounded-md">
-                                    <Label className="text-xs">المنطقة</Label>
-                                    <p className="font-semibold">{order.region}</p>
-                                </div>
-                                <div className="space-y-1 p-3 bg-muted/50 rounded-md">
-                                    <Label className="text-xs">المدينة</Label>
-                                    <p className="font-semibold">{order.city}</p>
-                                </div>
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="cod">قيمة التحصيل (COD)</Label>
-                                <Input type="number" id="cod" value={order.cod} onChange={(e) => handleFieldChange('cod', parseFloat(e.target.value) || 0)} />
-                            </div>
                              <div className="space-y-2">
                                 <Label htmlFor="notes">ملاحظات</Label>
                                 <Textarea id="notes" value={order.notes} onChange={(e) => handleFieldChange('notes', e.target.value)} />
                             </div>
-                            <Button onClick={handleSave}><Icon name="Save" className="ml-2" /> حفظ التعديلات</Button>
                         </CardContent>
                     </Card>
 
@@ -209,12 +212,24 @@ export default function OrderDetailPage() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Icon name="DollarSign" /> التفاصيل المالية</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-2">
-                            <div className="flex justify-between items-center"><span className="text-muted-foreground">قيمة المنتجات:</span> <span className="font-semibold">{formatCurrency(order.itemPrice)}</span></div>
-                            <div className="flex justify-between items-center"><span className="text-muted-foreground">أجور التوصيل:</span> <span className="font-semibold">{formatCurrency(order.deliveryFee)}</span></div>
-                            <div className="flex justify-between items-center"><span className="text-muted-foreground">أجور السائق:</span> <span className="font-semibold">{formatCurrency(order.driverFee)}</span></div>
+                         <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="cod">إجمالي التحصيل (COD)</Label>
+                                <Input type="number" id="cod" value={order.cod} onChange={(e) => handleFieldChange('cod', e.target.value)} />
+                            </div>
                             <Separator />
-                            <div className="flex justify-between items-center text-lg"><span className="font-bold">إجمالي التحصيل:</span> <span className="font-bold text-primary">{formatCurrency(order.cod)}</span></div>
+                            <div className="space-y-2">
+                               <Label htmlFor="itemPrice">المستحق للتاجر</Label>
+                                <Input type="number" id="itemPrice" value={order.itemPrice} onChange={(e) => handleFieldChange('itemPrice', parseFloat(e.target.value) || 0)} />
+                            </div>
+                             <div className="space-y-2">
+                               <Label htmlFor="deliveryFee">أجور التوصيل</Label>
+                               <Input type="number" id="deliveryFee" value={order.deliveryFee} onChange={(e) => handleFieldChange('deliveryFee', parseFloat(e.target.value) || 0)} />
+                            </div>
+                             <div className="space-y-2">
+                               <Label htmlFor="driverFee">أجور السائق</Label>
+                               <Input type="number" id="driverFee" value={order.driverFee} onChange={(e) => handleFieldChange('driverFee', parseFloat(e.target.value) || 0)} />
+                            </div>
                         </CardContent>
                     </Card>
                      <Card>
