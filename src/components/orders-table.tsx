@@ -424,7 +424,7 @@ export function OrdersTable() {
                     let content: React.ReactNode;
                     switch (col.key) {
                         case 'id':
-                            content = <Link href="#" className="text-primary">{value as string}</Link>;
+                            content = <Link href={`/dashboard/orders/${order.id}`} className="text-primary hover:underline font-medium">{value as string}</Link>;
                             break;
                         case 'source':
                             const Icon = sourceIcons[value as OrderSource] || LinkIcon;
@@ -519,7 +519,7 @@ export function OrdersTable() {
 
                                     {/* Spanning ID and Date */}
                                     <div className="col-start-2 col-end-4 flex justify-between text-xs text-muted-foreground">
-                                        <span className="font-mono text-primary">{order.id}</span>
+                                        <Link href={`/dashboard/orders/${order.id}`} className="font-mono text-primary hover:underline">{order.id}</Link>
                                         <span>{order.date}</span>
                                     </div>
                                 </div>
