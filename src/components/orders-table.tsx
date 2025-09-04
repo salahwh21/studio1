@@ -63,6 +63,7 @@ import { cn } from "@/lib/utils";
 import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useSettings, type SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
 import { PrintablePolicy } from '@/components/printable-policy';
+import { useStatusesStore } from '@/store/statuses-store';
 
 
 // ShadCN UI Components
@@ -150,19 +151,6 @@ const sourceIcons: Record<OrderSource, React.ElementType> = {
     API: FileText,
 };
 
-const statusOptions: {value: Order['status'], label: string, icon: React.ElementType, color: string, bgColor: string}[] = [
-    { value: 'تم التسليم', label: 'تم التسليم', icon: CheckCircle2, color: 'text-green-800', bgColor: 'bg-green-100' },
-    { value: 'تم استلام المال في الفرع', label: 'تم استلام المال في الفرع', icon: CheckCircle2, color: 'text-green-800', bgColor: 'bg-green-100' },
-    { value: 'جاري التوصيل', label: 'جاري التوصيل', icon: Truck, color: 'text-blue-800', bgColor: 'bg-blue-100' },
-    { value: 'بالانتظار', label: 'بالانتظار', icon: Clock, color: 'text-yellow-800', bgColor: 'bg-yellow-100' },
-    { value: 'راجع', label: 'راجع', icon: Undo2, color: 'text-red-800', bgColor: 'bg-red-100' },
-    { value: 'مؤجل', label: 'مؤجل', icon: Clock, color: 'text-orange-800', bgColor: 'bg-orange-100' },
-];
-
-const getStatusInfo = (statusValue: string) => {
-    return statusOptions.find(s => s.value === statusValue) || { label: statusValue, icon: Package, color: 'text-gray-800', bgColor: 'bg-gray-100' };
-};
-
 type ModalState = 
     | { type: 'none' }
     | { type: 'delete' }
@@ -199,6 +187,7 @@ export function OrdersTable() {
     const [isClient, setIsClient] = useState(false);
     const context = useSettings();
     const { settings: orderSettings, isHydrated: settingsHydrated, formatCurrency } = context;
+    const { statuses } = useStatusesStore();
     
     // Zustand store integration
     const { orders, setOrders, updateOrderStatus, deleteOrders, refreshOrders } = useOrdersStore();
@@ -410,6 +399,10 @@ export function OrdersTable() {
         setModalState({ type: 'print' });
     };
 
+    const getStatusInfo = (statusValue: string) => {
+        return statuses.find(s => s.name === statusValue) || { name: statusValue, icon: 'Package', color: '#808080' };
+    };
+
     const renderOrderRow = (order: Order, index: number) => {
         return (
             <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50">
@@ -430,12 +423,28 @@ export function OrdersTable() {
                             content = <Link href={`/dashboard/orders/${order.id}`} className="text-primary hover:underline font-medium">{value as string}</Link>;
                             break;
                         case 'source':
-                            const Icon = sourceIcons[value as OrderSource] || LinkIcon;
-                            content = <Badge variant="outline" className="gap-1.5 font-normal"><Icon className="h-3 w-3" />{value as string}</Badge>;
+                            const IconC = sourceIcons[value as OrderSource] || LinkIcon;
+                            content = <Badge variant="outline" className="gap-1.5 font-normal"><IconC className="h-3 w-3" />{value as string}</Badge>;
                             break;
                         case 'status':
                             const sInfo = getStatusInfo(value as string);
-                            content = <Select value={value as string} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus as Order['status'])}><SelectTrigger className={cn("border-0 h-8", sInfo.bgColor, sInfo.color)}><SelectValue placeholder="الحالة" /></SelectTrigger><SelectContent><SelectGroup>{statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectGroup></SelectContent></Select>;
+                            content = <Select value={value as string} onValueChange={(newStatus) => handleFieldChange(order.id, 'status', newStatus as Order['status'])}>
+                                <SelectTrigger className={cn("border-0 h-8")} style={{ backgroundColor: `${sInfo.color}20`, color: sInfo.color}}>
+                                    <SelectValue placeholder="الحالة" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        {statuses.filter(s => s.isActive).map(s => 
+                                            <SelectItem key={s.code} value={s.name}>
+                                                <div className="flex items-center gap-2">
+                                                    <Icon name={s.icon as any} style={{ color: s.color }} className="h-4 w-4" />
+                                                    {s.name}
+                                                </div>
+                                            </SelectItem>
+                                        )}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>;
                             break;
                         case 'itemPrice':
                         case 'deliveryFee':
@@ -493,7 +502,7 @@ export function OrdersTable() {
                             </div>
                         );
                         return (
-                             <Card key={order.id} className={cn('overflow-hidden border-r-4 shadow-sm bg-card', statusInfo.color.replace('text-','border-').replace('-800','-500'))}>
+                             <Card key={order.id} className={cn('overflow-hidden border-r-4 shadow-sm bg-card')} style={{borderRightColor: statusInfo.color}}>
                                 <div className='p-3 grid grid-cols-[auto_1fr_auto] gap-x-3 gap-y-2'>
                                     {/* Column 1: Checkbox */}
                                     <div className="row-span-3 flex items-center justify-center">
@@ -518,7 +527,7 @@ export function OrdersTable() {
                                     
                                     {/* Column 3: Status and Amount */}
                                     <div className="col-start-3 col-end-4 row-span-2 flex flex-col items-end justify-start gap-1">
-                                        <Badge className={cn("gap-1.5", statusInfo.bgColor, statusInfo.color)}>{statusInfo.label}</Badge>
+                                        <Badge className={cn("gap-1.5")} style={{backgroundColor: `${statusInfo.color}20`, color: statusInfo.color}}><Icon name={statusInfo.icon as any} className="h-3 w-3"/>{statusInfo.name}</Badge>
                                         <span className="text-lg font-bold text-primary">{formatCurrency(order.cod)}</span>
                                     </div>
 
@@ -842,8 +851,8 @@ export function OrdersTable() {
                                 <SelectValue placeholder={modalState.type === 'assignDriver' ? 'اختر سائق...' : 'اختر حالة...'} />
                             </SelectTrigger>
                             <SelectContent>
-                                { (modalState.type === 'assignDriver' ? ['علي الأحمد', 'محمد الخالد'] : statusOptions.map(s=>s.value)).map(item => (
-                                    <SelectItem key={item} value={item}>{modalState.type === 'changeStatus' ? getStatusInfo(item).label : item}</SelectItem>
+                                { (modalState.type === 'assignDriver' ? ['علي الأحمد', 'محمد الخالد'] : statuses.filter(s => s.isActive).map(s=>s.name)).map(item => (
+                                    <SelectItem key={item} value={item}>{item}</SelectItem>
                                 )) }
                             </SelectContent>
                         </Select>
