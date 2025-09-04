@@ -37,10 +37,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Allow all cross-origin requests in development.
-  // This is required for the cloud-based development environment.
-  // Note: This does not affect production builds.
-  allowedDevOrigins: ['*'],
+  experimental: {
+    // Allow all cross-origin requests in development.
+    // This is required for the cloud-based development environment.
+    // Note: This does not affect production builds.
+    allowedDevOrigins: ['*'],
+  },
   turbopack: {
     // Example: adding an alias and custom file extension
     resolveAlias: {
