@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -110,17 +109,20 @@ export default function UserEditPage() {
     const { roles } = useRolesStore();
     
     const user = users.find(u => u.id === userId);
-    const role = roles.find(r => r.id === user?.roleId);
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [userRoleId, setUserRoleId] = useState('');
     const [isActive, setIsActive] = useState(true);
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const [isLoading, setIsLoading] = useState(true);
+    
+    const role = roles.find(r => r.id === user?.roleId);
 
     useEffect(() => {
         if (user) {
@@ -136,13 +138,27 @@ export default function UserEditPage() {
 
     const handleSaveChanges = () => {
         if (!user) return;
+        
+        let passwordUpdate = {};
+        if (newPassword) {
+            if (newPassword !== confirmPassword) {
+                toast({ variant: 'destructive', title: 'خطأ', description: 'كلمتا المرور غير متطابقتين.' });
+                return;
+            }
+            passwordUpdate = { password: newPassword };
+        }
+
         updateUser(user.id, {
             name,
             email,
             roleId: userRoleId,
             avatar: user.avatar,
+            ...passwordUpdate,
         });
+
         toast({ title: 'تم الحفظ بنجاح', description: `تم تحديث بيانات ${name}.` });
+        setNewPassword('');
+        setConfirmPassword('');
     }
 
     if (isLoading) {
@@ -223,7 +239,7 @@ export default function UserEditPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="new-password">كلمة المرور الجديدة</Label>
                                 <div className="relative">
-                                    <Input id="new-password" type={showNewPassword ? 'text' : 'password'} placeholder="••••••••" />
+                                    <Input id="new-password" type={showNewPassword ? 'text' : 'password'} placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
                                     <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowNewPassword(prev => !prev)}>
                                         <Icon name={showNewPassword ? 'EyeOff' : 'Eye'} className="h-4 w-4" />
                                     </Button>
@@ -232,7 +248,7 @@ export default function UserEditPage() {
                              <div className="space-y-2">
                                 <Label htmlFor="confirm-password">تأكيد كلمة المرور</Label>
                                 <div className="relative">
-                                    <Input id="confirm-password" type={showConfirmPassword ? 'text' : 'password'} placeholder="••••••••" />
+                                    <Input id="confirm-password" type={showConfirmPassword ? 'text' : 'password'} placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                                      <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowConfirmPassword(prev => !prev)}>
                                         <Icon name={showConfirmPassword ? 'EyeOff' : 'Eye'} className="h-4 w-4" />
                                     </Button>

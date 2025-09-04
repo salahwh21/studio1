@@ -1,4 +1,3 @@
-
 'use client';
 
 import { create } from 'zustand';
@@ -137,14 +136,14 @@ const initialUsers: User[] = [
 type UsersState = {
     users: User[];
     addUser: (newUser: Omit<User, 'id' | 'password'>) => void;
-    updateUser: (userId: string, updatedUser: Omit<User, 'id'>) => void;
+    updateUser: (userId: string, updatedUser: Partial<Omit<User, 'id'>>) => void;
     updateCurrentUser: (updatedFields: Partial<Omit<User, 'id' | 'roleId'>>) => void;
-    deleteUser: (userId: string) => void;
+    deleteUser: (userId: string | string[]) => void;
 };
 
 const generateId = () => `user-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-export const useUsersStore = create<UsersState>()(immer((set) => ({
+export const useUsersStore = create<UsersState>()(immer((set, get) => ({
     users: initialUsers,
 
     addUser: (newUser) => {
@@ -160,13 +159,13 @@ export const useUsersStore = create<UsersState>()(immer((set) => ({
             if (userIndex !== -1) {
                 const oldRole = state.users[userIndex].roleId;
                 const newRole = updatedUser.roleId;
-                if (oldRole !== newRole) {
+
+                if (newRole && oldRole !== newRole) {
                     useRolesStore.getState().decrementUserCount(oldRole);
                     useRolesStore.getState().incrementUserCount(newRole);
                 }
-                // Preserve existing password if not provided in update
-                const existingPassword = state.users[userIndex].password;
-                state.users[userIndex] = { ...state.users[userIndex], ...updatedUser, password: updatedUser.password || existingPassword };
+                
+                state.users[userIndex] = { ...state.users[userIndex], ...updatedUser };
             }
         });
     },
@@ -180,13 +179,19 @@ export const useUsersStore = create<UsersState>()(immer((set) => ({
         });
     },
 
-    deleteUser: (userId) => {
-        const user = useUsersStore.getState().users.find(u => u.id === userId);
-        if (user) {
-            useRolesStore.getState().decrementUserCount(user.roleId);
-        }
+    deleteUser: (userIds) => {
+        const idsToDelete = Array.isArray(userIds) ? userIds : [userIds];
+        const users = get().users;
+        
+        idsToDelete.forEach(id => {
+            const user = users.find(u => u.id === id);
+            if (user) {
+                useRolesStore.getState().decrementUserCount(user.roleId);
+            }
+        });
+
         set(state => {
-            state.users = state.users.filter(u => u.id !== userId);
+            state.users = state.users.filter(u => !idsToDelete.includes(u.id));
         });
     },
 })));

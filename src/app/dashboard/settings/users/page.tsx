@@ -3,6 +3,8 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { nanoid } from 'nanoid';
+import Papa from 'papaparse';
 
 import {
   Card,
@@ -90,6 +92,7 @@ const UserDialog = ({
   isDriver?: boolean;
   isMerchant?: boolean;
 }) => {
+    const { toast } = useToast();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [roleId, setRoleId] = useState<Role['id'] | ''>('');
@@ -107,7 +110,14 @@ const UserDialog = ({
     }, [user, open, isDriver, isMerchant]);
 
     const handleSave = () => {
-        if (!name || !email || !roleId) return;
+        if (!name || !email || !roleId) {
+            toast({
+                variant: 'destructive',
+                title: "خطأ",
+                description: "الرجاء ملء جميع الحقول المطلوبة."
+            });
+            return;
+        }
         onSave({ name, email, roleId, avatar: user?.avatar || '' });
     }
     
@@ -224,9 +234,11 @@ const ChangeRoleDialog = ({ open, onOpenChange, onSave, roles, userCount }: { op
 };
 
 const UserList = ({ users, roles, isDriverTab, isMerchantTab, onAdd, onEdit, onDelete, onBulkUpdateRole, onImport }: { users: User[]; roles: Role[]; isDriverTab: boolean; isMerchantTab: boolean; onAdd: () => void; onEdit: (user: User) => void; onDelete: (users: User[]) => void; onBulkUpdateRole: (userIds: string[], roleId: string) => void; onImport: (data: any[]) => void; }) => {
+    const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
     const [changeRoleDialogOpen, setChangeRoleDialogOpen] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<User[] | null>(null);
     const importInputRef = React.useRef<HTMLInputElement>(null);
     
     const filteredUsers = useMemo(() => 
@@ -249,8 +261,11 @@ const UserList = ({ users, roles, isDriverTab, isMerchantTab, onAdd, onEdit, onD
     };
 
     const confirmDelete = () => {
-        onDelete(users.filter(u => selectedUserIds.includes(u.id)));
-        setSelectedUserIds([]);
+        if (userToDelete) {
+            onDelete(userToDelete);
+            setSelectedUserIds([]);
+            setUserToDelete(null);
+        }
     }
     
     const handleConfirmChangeRole = (newRoleId: string) => {
@@ -266,21 +281,17 @@ const UserList = ({ users, roles, isDriverTab, isMerchantTab, onAdd, onEdit, onD
         const file = event.target.files?.[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const text = e.target?.result as string;
-            const lines = text.split('\n').filter(line => line.trim() !== '');
-            const headers = lines[0].split(',').map(h => h.trim());
-            const data = lines.slice(1).map(line => {
-                const values = line.split(',').map(v => v.trim());
-                return headers.reduce((obj, header, index) => {
-                    (obj as any)[header] = values[index];
-                    return obj;
-                }, {});
-            });
-            onImport(data);
-        };
-        reader.readAsText(file);
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                onImport(results.data);
+            },
+            error: (error) => {
+                toast({ variant: 'destructive', title: 'فشل الاستيراد', description: error.message });
+            }
+        });
+
         event.target.value = ''; // Reset input
     };
 
@@ -297,10 +308,10 @@ const UserList = ({ users, roles, isDriverTab, isMerchantTab, onAdd, onEdit, onD
                                 <Button variant="outline" size="sm" onClick={() => onEdit(selectedUser!)} disabled={selectedUserIds.length !== 1}>
                                 <Icon name="Edit" className="ml-2" /> تعديل
                                 </Button>
-                                {!isDriverTab && <Button variant="outline" size="sm" onClick={() => setChangeRoleDialogOpen(true)}>
+                                {!isDriverTab && !isMerchantTab && <Button variant="outline" size="sm" onClick={() => setChangeRoleDialogOpen(true)}>
                                 <Icon name="UsersCog" className="ml-2" /> تغيير الدور
                                 </Button>}
-                                <Button variant="destructive" size="sm" onClick={confirmDelete}>
+                                <Button variant="destructive" size="sm" onClick={() => setUserToDelete(users.filter(u => selectedUserIds.includes(u.id)))}>
                                 <Icon name="Trash2" className="ml-2" /> حذف المحدد
                                 </Button>
                                 <div className="mr-auto">
@@ -340,8 +351,8 @@ const UserList = ({ users, roles, isDriverTab, isMerchantTab, onAdd, onEdit, onD
             </Card>
 
             <div className="flex items-center gap-4">
-                 <Checkbox id="select-all" checked={isAllFilteredSelected} onCheckedChange={handleSelectAll} />
-                <Label htmlFor="select-all">تحديد كل الظاهر ({filteredUsers.length})</Label>
+                 <Checkbox id={`select-all-${activeTab}`} checked={isAllFilteredSelected} onCheckedChange={handleSelectAll} />
+                <Label htmlFor={`select-all-${activeTab}`}>تحديد كل الظاهر ({filteredUsers.length})</Label>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -369,6 +380,21 @@ const UserList = ({ users, roles, isDriverTab, isMerchantTab, onAdd, onEdit, onD
                 roles={roles.filter(r => r.id !== 'driver' && r.id !== 'merchant')}
                 userCount={selectedUserIds.length}
             />
+
+            <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            هل أنت متأكد من حذف {userToDelete?.length} مستخدمين؟ لا يمكن التراجع عن هذا الإجراء.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">حذف</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };
@@ -380,8 +406,7 @@ export default function UsersPage() {
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [userToDelete, setUserToDelete] = useState<User[] | null>(null);
-  const [activeTab, setActiveTab] = useState('employees');
+  const [activeTab, setActiveTab] = useState('merchants');
 
   const employees = useMemo(() => users.filter(u => u.roleId !== 'driver' && u.roleId !== 'merchant'), [users]);
   const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
@@ -396,29 +421,7 @@ export default function UsersPage() {
       setSelectedUser(user);
       setDialogOpen(true);
   }
-
-  const handleDelete = (usersToDelete: User[]) => {
-      setUserToDelete(usersToDelete);
-  }
   
-  const confirmDelete = () => {
-    if (userToDelete) {
-        userToDelete.forEach(user => deleteUser(user.id));
-        toast({ title: "تم الحذف", description: `تم حذف ${userToDelete.length} مستخدمين بنجاح.`});
-        setUserToDelete(null);
-    }
-  }
-
-  const handleBulkUpdateRole = (userIds: string[], roleId: string) => {
-    userIds.forEach(id => {
-        const user = users.find(u => u.id === id);
-        if(user) {
-            updateUser(id, { ...user, roleId });
-        }
-    });
-    toast({ title: 'تم التحديث', description: `تم تغيير دور ${userIds.length} مستخدمين بنجاح.` });
-  }
-
   const handleSave = (data: Omit<User, 'id' | 'password'>) => {
       if (selectedUser) {
           updateUser(selectedUser.id, data);
@@ -433,11 +436,16 @@ export default function UsersPage() {
   const handleImport = (data: any[]) => {
       let addedCount = 0;
       data.forEach(item => {
-          if (item.name && item.email && item.roleId) {
+          if (item.name && item.email) {
+            let roleId = item.roleId;
+            if (activeTab === 'drivers') roleId = 'driver';
+            if (activeTab === 'merchants') roleId = 'merchant';
+            if (!roleId) return;
+
               addUser({
                   name: item.name,
                   email: item.email,
-                  roleId: item.roleId,
+                  roleId: roleId,
                   avatar: '',
               });
               addedCount++;
@@ -446,7 +454,7 @@ export default function UsersPage() {
       if (addedCount > 0) {
         toast({ title: "تم الاستيراد", description: `تمت إضافة ${addedCount} مستخدمين بنجاح.` });
       } else {
-        toast({ variant: 'destructive', title: 'فشل الاستيراد', description: 'لم يتم العثور على بيانات صالحة في الملف.' });
+        toast({ variant: 'destructive', title: 'فشل الاستيراد', description: 'تنسيق الملف غير صالح أو لم يتم العثور على بيانات صالحة. تأكد من وجود عمود `name` و `email`.' });
       }
   }
  
@@ -484,8 +492,8 @@ export default function UsersPage() {
                     isMerchantTab={false}
                     onAdd={handleAddNew}
                     onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onBulkUpdateRole={handleBulkUpdateRole}
+                    onDelete={deleteUser}
+                    onBulkUpdateRole={updateUser}
                     onImport={handleImport}
                 />
             </TabsContent>
@@ -497,8 +505,8 @@ export default function UsersPage() {
                     isMerchantTab={false}
                     onAdd={handleAddNew}
                     onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onBulkUpdateRole={handleBulkUpdateRole}
+                    onDelete={deleteUser}
+                    onBulkUpdateRole={updateUser}
                     onImport={handleImport}
                 />
             </TabsContent>
@@ -510,8 +518,8 @@ export default function UsersPage() {
                     isMerchantTab={true}
                     onAdd={handleAddNew}
                     onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onBulkUpdateRole={handleBulkUpdateRole}
+                    onDelete={deleteUser}
+                    onBulkUpdateRole={updateUser}
                     onImport={handleImport}
                 />
             </TabsContent>
@@ -527,22 +535,6 @@ export default function UsersPage() {
             isMerchant={activeTab === 'merchants'}
         />
         
-        <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        هل أنت متأكد من حذف {userToDelete?.length} مستخدمين؟ لا يمكن التراجع عن هذا الإجراء.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                    <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">حذف</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
       </div>
   );
 }
-
-    
