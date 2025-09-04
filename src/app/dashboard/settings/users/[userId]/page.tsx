@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -21,6 +22,39 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Icon from '@/components/icon';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+const mockPriceLists = [
+  { id: 'pl_1', name: 'الأسعار الافتراضية' },
+  { id: 'pl_brands_of_less', name: 'Brands of less' },
+  { id: 'pl_soundrush', name: 'SoundRush' },
+  { id: 'pl_stress_killer', name: 'Stress Killer' },
+  { id: 'pl_brandlet_outlet', name: 'Brandlet Outlet -1' },
+  { id: 'pl_nl_botique', name: 'N&L Botique' },
+  { id: 'pl_d_boutique', name: 'D boutique -1' },
+  { id: 'pl_macrame', name: 'Macrame -1' },
+  { id: 'pl_jacks_nyc', name: 'Jacks NYC-1' },
+  { id: 'pl_bader', name: 'بدر' },
+  { id: 'pl_oud_aljadail', name: 'عود الجدايل' },
+  { id: 'pl_luxury_baskets', name: 'Luxury Baskets - 1' },
+  { id: 'pl_malek_mobile', name: 'مالك موبايل - 1' },
+  { id: 'pl_oceansfounds', name: 'Oceansfounds -1' },
+  { id: 'pl_rubber_ducky', name: 'Rubber Ducky' },
+  { id: 'pl_travelers_cart', name: 'Travelers Cart' },
+  { id: 'pl_liali', name: 'ليالي' },
+  { id: 'pl_alsami_jadeed', name: 'السامي جديد' },
+  { id: 'pl_alsami', name: 'السامي' },
+  { id: 'pl_nitrous', name: 'Nitrous Delivery' },
+  { id: 'pl_majd', name: 'ماجد' },
+  { id: 'pl_abu_saif', name: 'ابو سيف' },
+  { id: 'pl_2_5_3', name: 'أسعار 2.5-3' },
+  { id: 'pl_1-5_2', name: 'أسعار 1.5-2' },
+  { id: 'pl_1-5_3', name: 'أسعار 1.5-3' },
+  { id: 'pl_2_5_3_5', name: 'أسعار 2.5-3.5' },
+  { id: 'pl_3_3_5', name: 'أسعار 3-3.5' },
+  { id: 'pl_2_5', name: 'أسعار 2.5' },
+  { id: 'pl_2_2_5', name: 'أسعار 2-2.5' },
+  { id: 'pl_2_3_5', name: 'أسعار 2-3.5' },
+];
 
 function UserEditPageSkeleton() {
     return (
@@ -58,14 +92,14 @@ function UserEditPageSkeleton() {
     )
 }
 
-const PricingPanel = ({ title }: { title: string }) => (
+const PricingPanel = ({ title, priceListId, onPriceListChange }: { title: string, priceListId: string | undefined, onPriceListChange: (id: string) => void }) => (
     <Card>
         <CardHeader>
             <CardTitle>{title}</CardTitle>
             <CardDescription>اختر طريقة حساب الأجور لطلبات هذا المستخدم.</CardDescription>
         </CardHeader>
         <CardContent>
-            <RadioGroup defaultValue="price_list" className="space-y-4">
+            <RadioGroup defaultValue={priceListId ? "price_list" : "fixed"} className="space-y-4">
                 <div className="space-y-2">
                     <div className="flex items-center space-x-2 space-x-reverse">
                         <RadioGroupItem value="fixed" id="fixed" />
@@ -80,14 +114,14 @@ const PricingPanel = ({ title }: { title: string }) => (
                         <Label htmlFor="price_list" className="font-bold">قائمة أسعار</Label>
                     </div>
                     <div className="mr-6">
-                        <Select>
+                        <Select value={priceListId} onValueChange={onPriceListChange}>
                             <SelectTrigger>
                                 <SelectValue placeholder="اختر قائمة أسعار..." />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="default">الأسعار الافتراضية</SelectItem>
-                                <SelectItem value="vip">أسعار VIP</SelectItem>
-                                <SelectItem value="provinces">أسعار المحافظات</SelectItem>
+                                {mockPriceLists.map(pl => (
+                                    <SelectItem key={pl.id} value={pl.id}>{pl.name}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
@@ -198,6 +232,7 @@ export default function UserEditPage() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [userRoleId, setUserRoleId] = useState('');
+    const [priceListId, setPriceListId] = useState<string | undefined>(undefined);
     const [isActive, setIsActive] = useState(true);
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -214,6 +249,7 @@ export default function UserEditPage() {
             setName(user.name);
             setEmail(user.email);
             setUserRoleId(user.roleId);
+            setPriceListId(user.priceListId);
             setIsLoading(false);
         } else if (users.length > 0) { // Check if users have loaded
             toast({ variant: 'destructive', title: 'خطأ', description: 'المستخدم غير موجود.' });
@@ -238,6 +274,7 @@ export default function UserEditPage() {
             email,
             roleId: userRoleId,
             avatar: user.avatar,
+            priceListId: priceListId,
             ...passwordUpdate,
         });
 
@@ -316,8 +353,8 @@ export default function UserEditPage() {
                         </CardContent>
                     </Card>
                     
-                    {role?.id === 'merchant' && <PricingPanel title="تسعير التوصيل للتاجر" />}
-                    {role?.id === 'driver' && <PricingPanel title="تسعير أجور السائق" />}
+                    {role?.id === 'merchant' && <PricingPanel title="تسعير التوصيل للتاجر" priceListId={priceListId} onPriceListChange={setPriceListId} />}
+                    {role?.id === 'driver' && <PricingPanel title="تسعير أجور السائق" priceListId={priceListId} onPriceListChange={setPriceListId} />}
                     {role?.id === 'driver' && <FareAdjustmentPanel />}
 
                     <Card>
@@ -352,3 +389,5 @@ export default function UserEditPage() {
         </div>
     );
 }
+
+    

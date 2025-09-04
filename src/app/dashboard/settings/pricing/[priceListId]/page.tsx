@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAreasStore, type City } from '@/store/areas-store';
@@ -16,38 +16,40 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { useUsersStore } from '@/store/user-store';
 
 // Mock data for price lists - replace with a store later
 const mockPriceLists = [
-    { id: 'pl_1', name: 'الأسعار الافتراضية' },
-    { id: 'pl_brands_of_less', name: 'Brands of less' },
-    { id: 'pl_soundrush', name: 'SoundRush' },
-    { id: 'pl_2', name: 'أسعار VIP' },
-    { id: 'pl_3', name: 'أسعار المحافظات' },
-    { id: 'pl_stress_killer', name: 'Stress Killer' },
-    { id: 'pl_brandlet_outlet', name: 'Brandlet Outlet -1' },
-    { id: 'pl_nl_botique', name: 'N&L Botique' },
-    { id: 'pl_d_boutique', name: 'D boutique -1' },
-    { id: 'pl_macrame', name: 'Macrame -1' },
-    { id: 'pl_jacks_nyc', name: 'Jacks NYC-1' },
-    { id: 'pl_bader', name: 'بدر' },
-    { id: 'pl_oud_aljadail', name: 'عود الجدايل' },
-    { id: 'pl_luxury_baskets', name: 'Luxury Baskets - 1' },
-    { id: 'pl_malek_mobile', name: 'مالك موبايل - 1' },
-    { id: 'pl_oceansfounds', name: 'Oceansfounds -1' },
-    { id: 'pl_rubber_ducky', name: 'Rubber Ducky' },
-    { id: 'pl_travelers_cart', name: 'Travelers Cart' },
-    { id: 'pl_liali', name: 'ليالي' },
-    { id: 'pl_alsami_jadeed', name: 'السامي جديد' },
-    { id: 'pl_watermelon', name: 'Watermelon' },
-    { id: 'pl_visionary_closet', name: 'Visionary Closet' },
-    { id: 'pl_the_beauty_spot', name: 'The beauty Spot' },
-    { id: 'pl_ibra_w_khayt', name: 'ابرة وخيط' },
-    { id: 'pl_mashghal_saif', name: 'مشغل سيف' },
-    { id: 'pl_vintromatica', name: 'Vintromatica' },
-    { id: 'pl_k_by_women', name: 'k by women' },
-    { id: 'pl_memories_store', name: 'Memories Store' },
-    { id: 'pl_ro_designs', name: 'Ro Designs' },
+  { id: 'pl_1', name: 'الأسعار الافتراضية' },
+  { id: 'pl_brands_of_less', name: 'Brands of less' },
+  { id: 'pl_soundrush', name: 'SoundRush' },
+  { id: 'pl_stress_killer', name: 'Stress Killer' },
+  { id: 'pl_brandlet_outlet', name: 'Brandlet Outlet -1' },
+  { id: 'pl_nl_botique', name: 'N&L Botique' },
+  { id: 'pl_d_boutique', name: 'D boutique -1' },
+  { id: 'pl_macrame', name: 'Macrame -1' },
+  { id: 'pl_jacks_nyc', name: 'Jacks NYC-1' },
+  { id: 'pl_bader', name: 'بدر' },
+  { id: 'pl_oud_aljadail', name: 'عود الجدايل' },
+  { id: 'pl_luxury_baskets', name: 'Luxury Baskets - 1' },
+  { id: 'pl_malek_mobile', name: 'مالك موبايل - 1' },
+  { id: 'pl_oceansfounds', name: 'Oceansfounds -1' },
+  { id: 'pl_rubber_ducky', name: 'Rubber Ducky' },
+  { id: 'pl_travelers_cart', name: 'Travelers Cart' },
+  { id: 'pl_liali', name: 'ليالي' },
+  { id: 'pl_alsami_jadeed', name: 'السامي جديد' },
+  { id: 'pl_alsami', name: 'السامي' },
+  { id: 'pl_nitrous', name: 'Nitrous Delivery' },
+  { id: 'pl_majd', name: 'ماجد' },
+  { id: 'pl_abu_saif', name: 'ابو سيف' },
+  { id: 'pl_2_5_3', name: 'أسعار 2.5-3' },
+  { id: 'pl_1-5_2', name: 'أسعار 1.5-2' },
+  { id: 'pl_1-5_3', name: 'أسعار 1.5-3' },
+  { id: 'pl_2_5_3_5', name: 'أسعار 2.5-3.5' },
+  { id: 'pl_3_3_5', name: 'أسعار 3-3.5' },
+  { id: 'pl_2_5', name: 'أسعار 2.5' },
+  { id: 'pl_2_2_5', name: 'أسعار 2-2.5' },
+  { id: 'pl_2_3_5', name: 'أسعار 2-3.5' },
 ];
 
 type PricingRule = {
@@ -134,10 +136,13 @@ export default function PriceListDetailPage() {
     const params = useParams();
     const { priceListId } = params;
     const { cities } = useAreasStore();
+    const { users } = useUsersStore();
     
     const [rules, setRules] = useState<PricingRule[]>([]);
     
-    const priceList = mockPriceLists.find(p => p.id === priceListId);
+    const priceList = useMemo(() => mockPriceLists.find(p => p.id === priceListId), [priceListId]);
+    const merchantsUsingList = useMemo(() => users.filter(u => u.roleId === 'merchant' && u.priceListId === priceListId), [users, priceListId]);
+
 
     // Populate initial rules based on priceListId
     useEffect(() => {
@@ -147,146 +152,27 @@ export default function PriceListDetailPage() {
             
             if (!ammanCity) return [];
 
+            const createRule = (ammanPrice: string, otherPrice: string): PricingRule[] => ([
+                { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: ammanPrice },
+                { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: otherPrice },
+            ]);
+            
+             const createSingleRule = (price: string): PricingRule[] => ([
+                { id: generateId(), name: 'سعر موحد', fromCities: cities.map(c => c.id), toCities: cities.map(c => c.id), price: price },
+            ]);
+
             const pricingRules: Record<string, PricingRule[]> = {
-                'pl_1': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
-                ],
-                'pl_brands_of_less': [],
-                'pl_soundrush': [
-                     { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '1.5' },
-                     { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '2' },
-                ],
-                'pl_stress_killer': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '1.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
-                ],
-                'pl_brandlet_outlet': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
-                ],
-                 'pl_nl_botique': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '2.5' },
-                ],
-                'pl_d_boutique': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
-                ],
-                 'pl_macrame': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
-                ],
-                 'pl_jacks_nyc': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
-                'pl_bader': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
-                ],
-                'pl_oud_aljadail': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '3' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
-                'pl_luxury_baskets': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
-                ],
-                'pl_malek_mobile': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
-                'pl_oceansfounds': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
-                ],
-                'pl_rubber_ducky': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
-                ],
-                'pl_travelers_cart': [
-                     { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
-                 'pl_liali': [
-                     { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
-                 'pl_alsami_jadeed': [],
-                 'pl_watermelon': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
-                ],
-                 'pl_visionary_closet': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
-                'pl_the_beauty_spot': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
-                'pl_ibra_w_khayt': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
-                'pl_mashghal_saif': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
-                'pl_vintromatica': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
-                'pl_k_by_women': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
-                'pl_memories_store': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
-                ],
-                'pl_mellow': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
-                 'pl_i_models': [],
-                'pl_huda_altarada': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
-                'pl_dot_dot': [
-                     { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2' },
-                     { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '2.5' },
-                ],
-                 'pl_fuaish': [
-                     { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                 ],
-                 'pl_tactical_tent-1': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
-                 ],
-                'pl_vamos-1': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
-                'pl_elegance_home-1': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
-                ],
-                'pl_sweet_candle-1': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
-                'pl_artfully_pieces': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3' },
-                ],
-                'pl_oof_lingerie': [
-                    { id: generateId(), name: 'توصيل داخل عمان', fromCities: [ammanCity.id], toCities: [ammanCity.id], price: '2.5' },
-                    { id: generateId(), name: 'توصيل للمحافظات', fromCities: [ammanCity.id], toCities: otherCities.map(c => c.id), price: '3.5' },
-                ],
+                'pl_1': createRule('2', '3'),
+                'pl_2-5_3': createRule('2.5', '3'),
+                'pl_1-5_2': createRule('1.5', '2'),
+                'pl_1-5_3': createRule('1.5', '3'),
+                'pl_2_5_3_5': createRule('2.5', '3.5'),
+                'pl_3_3_5': createRule('3', '3.5'),
+                'pl_2_5': createSingleRule('2.5'),
+                'pl_2_2_5': createRule('2', '2.5'),
+                'pl_2_3_5': createRule('2', '3.5'),
             };
+
             return pricingRules[priceListId as string] || [];
         };
         setRules(getInitialRules());
@@ -361,7 +247,7 @@ export default function PriceListDetailPage() {
                            <Icon name="DollarSign" /> إدارة أسعار: {priceList.name}
                         </CardTitle>
                          <CardDescription className="mt-1">
-                            إضافة وتعديل بنود التسعير لهذه القائمة.
+                            إضافة وتعديل بنود التسعير لهذه القائمة. هذه القائمة مستخدمة من قبل {merchantsUsingList.length} تجار.
                         </CardDescription>
                     </div>
                      <div className="flex items-center gap-2">
@@ -442,3 +328,5 @@ export default function PriceListDetailPage() {
         </div>
     );
 }
+
+    
