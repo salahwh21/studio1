@@ -21,7 +21,7 @@ export default function AccountSettingsPage() {
   const { theme, setTheme } = useTheme();
   
   const { users, updateCurrentUser } = useUsersStore();
-  const currentUser = users.find(u => u.id === 'user-1'); // Assuming admin is the current user
+  const currentUser = users.find(u => u.id === 'user-salahwh'); // Assuming admin is the current user
 
   // Local state for form fields
   const [name, setName] = useState('');

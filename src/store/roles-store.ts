@@ -138,7 +138,7 @@ const initialRoles: Role[] = [
 
 type RolesState = {
   roles: Role[];
-  addRole: (newRole: Omit<Role, 'id' | 'userCount'>) => void;
+  addRole: (newRole: Omit<Role, 'id' | 'permissions' | 'userCount'>) => void;
   updateRole: (roleId: string, updatedRole: Omit<Role, 'id' | 'permissions' | 'userCount'>) => void;
   updateRolePermissions: (roleId: string, permissions: string[]) => void;
   deleteRole: (roleId: string) => void;

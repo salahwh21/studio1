@@ -17,12 +17,11 @@ export type User = {
 
 const initialUsers: User[] = [
     // Admins and Staff from image
-    { id: 'user-1', name: 'المدير المسؤول', email: 'admin@alwameed.com', roleId: 'admin', avatar: '', password: '123456789', whatsapp: '962791234567' },
+    { id: 'user-salahwh', name: 'Salah WH', email: '0790267503', roleId: 'admin', avatar: '', password: '123' },
     { id: 'user-rami', name: 'رامي عوده الله', email: '0790984807', roleId: 'supervisor', avatar: '', password: '123' },
     { id: 'user-moayad', name: 'مؤيد', email: '0096721759', roleId: 'customer_service', avatar: '', password: '123' }, // Assuming مندوب مبيعات is customer service for now
     { id: 'user-razan', name: 'رزان', email: '0793204777', roleId: 'supervisor', avatar: '', password: '123' }, // Assuming مركز الاتصال is supervisor for now
     { id: 'user-bahaa', name: 'bahaa', email: '0788741261', roleId: 'supervisor', avatar: '', password: '123' },
-    { id: 'user-salahwh', name: 'salahwh', email: '0790267503', roleId: 'supervisor', avatar: '', password: '123' },
 
     // Integration Companies as merchants
     { id: 'merchant-premium', name: 'Premium Delivery', email: 'premiumDel', roleId: 'merchant', avatar: '', password: '123' },
@@ -81,7 +80,7 @@ export const useUsersStore = create<UsersState>()(immer((set, get) => ({
 
     updateCurrentUser: (updatedFields) => {
         set(state => {
-            const userIndex = state.users.findIndex(u => u.id === 'user-1'); // Hardcoded admin user ID
+            const userIndex = state.users.findIndex(u => u.id === 'user-salahwh'); // Hardcoded admin user ID
             if (userIndex !== -1) {
                 state.users[userIndex] = { ...state.users[userIndex], ...updatedFields };
             }
