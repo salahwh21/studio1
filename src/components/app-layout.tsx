@@ -62,8 +62,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     };
 
     const navItems = allNavItems.filter(item => hasPermission(item.permissionId) && visiblePermissionIds.includes(item.permissionId));
-    const mobileMoreItems = allNavItems.filter(
-        item => !mobileMainItems.some(main => main.permissionId === item.permissionId) && hasPermission(item.permissionId) && visiblePermissionIds.includes(item.permissionId)
+    const mobileMoreItems = navItems.filter(
+        item => !mobileMainItems.some(main => main.permissionId === item.permissionId)
     );
     // --- End RBAC Logic ---
 

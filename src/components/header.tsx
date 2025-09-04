@@ -85,7 +85,7 @@ export function AppHeader() {
   const { settings } = context;
   const headerLogo = settings.login.headerLogo;
   
-  // Determine which nav items to show
+  // Determine which nav items to show based on permissions AND visibility settings
   const visiblePermissionIds = settings.menuVisibility[currentUserRole] || allNavItems.map(item => item.permissionId);
   const navItems = allNavItems.filter(item => hasPermission(item.permissionId) && visiblePermissionIds.includes(item.permissionId));
 
