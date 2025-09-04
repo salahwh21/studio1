@@ -230,6 +230,7 @@ export default function StatusEditPage() {
                     <SwitchControl id="trigger-reason" label="تتطلب تحديد سبب" checked={status.triggers.requiresReason} onCheckedChange={(val) => handleUpdate('triggers', {...status.triggers, requiresReason: val})} />
                     <SwitchControl id="trigger-return" label="تنشئ مهمة مرتجع" checked={status.triggers.createsReturnTask} onCheckedChange={(val) => handleUpdate('triggers', {...status.triggers, createsReturnTask: val})} />
                     <SwitchControl id="trigger-message" label="ترسل رسالة للعميل" checked={status.triggers.sendsCustomerMessage} onCheckedChange={(val) => handleUpdate('triggers', {...status.triggers, sendsCustomerMessage: val})} />
+                    <SwitchControl id="trigger-driver-account" label="تحدث حساب السائق" checked={status.triggers.updatesDriverAccount} onCheckedChange={(val) => handleUpdate('triggers', {...status.triggers, updatesDriverAccount: val})} />
                 </CardContent>
             </Card>
 
