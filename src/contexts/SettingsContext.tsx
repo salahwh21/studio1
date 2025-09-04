@@ -275,15 +275,16 @@ const defaultSettingsData: ComprehensiveSettings = {
   }
 };
 
+const SETTINGS_KEY = 'comprehensiveAppSettings';
+
 // 5. Create the provider component
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<ComprehensiveSettings>(defaultSettingsData);
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Load settings from localStorage on initial client-side render
-  useEffect(() => {
+  const loadSettings = useCallback(() => {
     try {
-      const item = window.localStorage.getItem('comprehensiveAppSettings');
+      const item = window.localStorage.getItem(SETTINGS_KEY);
       if (item) {
         const savedSettings = JSON.parse(item);
         // Deep merge to ensure new default settings are not lost
@@ -324,11 +325,29 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // Load settings from localStorage on initial client-side render
+  useEffect(() => {
+    loadSettings();
+
+    // Add event listener for storage changes
+    const handleStorageChange = (event: StorageEvent) => {
+        if (event.key === SETTINGS_KEY) {
+            loadSettings();
+        }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+        window.removeEventListener('storage', handleStorageChange);
+    };
+
+  }, [loadSettings]);
+
   // Effect to save settings to localStorage whenever they change
   useEffect(() => {
     if (isHydrated) {
         try {
-            window.localStorage.setItem('comprehensiveAppSettings', JSON.stringify(settings));
+            window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
         } catch (error) {
             console.error("Failed to save settings to localStorage", error);
         }

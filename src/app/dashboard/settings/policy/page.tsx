@@ -287,29 +287,26 @@ export default function PolicyEditorPage() {
     
     const loadTemplatesFromStorage = useCallback(() => {
         const savedTemplatesJson = localStorage.getItem('policyTemplates');
-        if (savedTemplatesJson) {
-            setTemplates(JSON.parse(savedTemplatesJson));
-        } else {
-            setTemplates(readyTemplates);
+        const userTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
+
+        // Check if localStorage has been initialized
+        const isInitialized = localStorage.getItem('policyTemplatesInitialized');
+
+        if (!isInitialized && userTemplates.length === 0) {
+            // First time load: initialize with ready-made templates
             localStorage.setItem('policyTemplates', JSON.stringify(readyTemplates));
+            setTemplates(readyTemplates);
+            localStorage.setItem('policyTemplatesInitialized', 'true');
+        } else {
+            setTemplates(userTemplates);
         }
     }, []);
 
     // Load templates from localStorage on mount and listen for changes
     useEffect(() => {
         loadTemplatesFromStorage();
-
-        const handleStorageChange = (event: StorageEvent) => {
-            if (event.key === 'policyTemplates') {
-                loadTemplatesFromStorage();
-            }
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-        return () => {
-            window.removeEventListener('storage', handleStorageChange);
-        };
     }, [loadTemplatesFromStorage]);
+    
 
     const paperDimensions = useMemo(() => {
         if (paperSize === 'custom') return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
@@ -516,6 +513,11 @@ export default function PolicyEditorPage() {
         customDimensions,
         margins,
       }), [elements, paperSize, customDimensions, margins]);
+      
+    const handleRestoreDefaults = () => {
+        saveTemplatesToStorage(readyTemplates);
+        toast({ title: "تمت الاستعادة", description: "تم استعادة القوالب الافتراضية بنجاح." });
+    };
 
   return (
     <div className="space-y-6">
@@ -674,6 +676,10 @@ export default function PolicyEditorPage() {
                         </div>
                         ))}
                         </ScrollArea>
+                        <Separator className="my-2"/>
+                         <Button variant="outline" size="sm" className="w-full" onClick={handleRestoreDefaults}>
+                            <Icon name="RefreshCcw" className="w-4 h-4 ml-2"/> استعادة القوالب الافتراضية
+                         </Button>
                     </CardContent>
                 </Card>
             </div>
