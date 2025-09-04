@@ -30,6 +30,8 @@ const integrationsList = [
     { id: 'dhl', name: 'DHL', iconName: 'Globe' as const, description: 'إدارة شحناتك الدولية والمحلية عبر DHL.', category: 'shipping', type: 'standard' },
     { id: 'smsa-express', name: 'SMSA Express', iconName: 'Truck' as const, description: 'مزامنة الشحنات مباشرة مع نظام شركة سمسا للشحن.', category: 'shipping', type: 'standard' },
     { id: 'fedex', name: 'FedEx', iconName: 'Globe' as const, description: 'ربط وتتبع الشحنات مع شركة فيديكس.', category: 'shipping', type: 'standard' },
+    { id: 'premium-delivery', name: 'Premium Delivery', iconName: 'Truck' as const, description: 'ربط وتتبع الشحنات مع شركة بريميوم.', category: 'shipping', type: 'standard' },
+    { id: 'nitrous-delivery', name: 'Nitrous Delivery', iconName: 'Truck' as const, description: 'ربط وتتبع الشحنات مع شركة نيتروس.', category: 'shipping', type: 'standard' },
     { id: 'odoo', name: 'Odoo', iconName: 'Briefcase' as const, description: 'مزامنة الطلبات والفواتير مع نظام Odoo ERP الخاص بك.', category: 'erp', type: 'standard' },
     { id: 'quickbooks', name: 'QuickBooks', iconName: 'Briefcase' as const, description: 'مزامنة الفواتير والمصروفات تلقائيًا مع QuickBooks.', category: 'erp', type: 'standard' },
     { id: 'zoho-books', name: 'Zoho Books', iconName: 'Briefcase' as const, description: 'ربط النظام مع Zoho Books لإدارة محاسبية متكاملة.', category: 'erp', type: 'standard' },
