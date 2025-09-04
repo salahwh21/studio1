@@ -718,7 +718,9 @@ const OrdersTableComponent = () => {
                                                             onClick={() => setOpenGroups(prev => ({ ...prev, [groupKey]: !isGroupOpen }))}
                                                             className={cn(
                                                                 "cursor-pointer font-bold rounded-md shadow-md m-1 px-4 py-3 transition-all duration-300",
-                                                                "bg-gradient-to-r from-primary/70 via-primary/90 to-primary/70 text-primary-foreground"
+                                                                groupIndex % 2 === 0
+                                                                    ? "bg-gradient-to-b from-primary/70 to-primary/90 text-primary-foreground"
+                                                                    : "bg-slate-800 text-slate-50"
                                                             )}
                                                         >
                                                             <div className="flex items-center gap-2 mb-2">
@@ -732,27 +734,27 @@ const OrdersTableComponent = () => {
                                                                 className="grid gap-x-2"
                                                                 style={{ gridTemplateColumns: `repeat(${visibleColumns.length + 1}, minmax(0, 1fr))` }}
                                                             >
-                                                                <div className="text-left font-semibold">المجاميع</div>
+                                                                <div className="text-left font-semibold"></div>
                                                                 {visibleColumns.map(col => {
-                                                                if (col.type === "financial" || col.type === "admin_financial") {
-                                                                    const totalValue = groupOrders.reduce(
-                                                                    (sum, order) => {
-                                                                        if (col.key === 'companyDue') {
-                                                                            return sum + ((order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0)));
-                                                                        }
-                                                                        return sum + (order[col.key as keyof Order] as number || 0);
-                                                                    }, 0
-                                                                    );
-                                                                    return (
-                                                                    <div
-                                                                        key={col.key}
-                                                                        className="text-right font-bold border-l border-white/20 pr-2"
-                                                                    >
-                                                                        {formatCurrency(totalValue)}
-                                                                    </div>
-                                                                    );
-                                                                }
-                                                                return <div key={col.key}></div>;
+                                                                    if (col.type === "financial" || col.type === "admin_financial") {
+                                                                        const totalValue = groupOrders.reduce(
+                                                                        (sum, order) => {
+                                                                            if (col.key === 'companyDue') {
+                                                                                return sum + ((order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0)));
+                                                                            }
+                                                                            return sum + (order[col.key as keyof Order] as number || 0);
+                                                                        }, 0
+                                                                        );
+                                                                        return (
+                                                                        <div
+                                                                            key={col.key}
+                                                                            className="text-right font-bold border-l border-white/20 pr-2"
+                                                                        >
+                                                                            {formatCurrency(totalValue)}
+                                                                        </div>
+                                                                        );
+                                                                    }
+                                                                    return <div key={col.key}></div>;
                                                                 })}
                                                             </div>
                                                         </div>
