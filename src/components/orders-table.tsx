@@ -633,7 +633,7 @@ const OrdersTableComponent = () => {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="w-64 p-2">
-                                            <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
+                                            <DropdownMenuLabel>إظهار/إخفاء الأعمدة لا تظهر كل اعمدة الجدول في القائمة</DropdownMenuLabel>
                                             <div className='flex items-center gap-2 p-1'>
                                                 <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(ALL_COLUMNS.map(c => c.key))}>إظهار الكل</Button>
                                                 <Separator orientation="vertical" className="h-4" />
@@ -889,4 +889,3 @@ export function OrdersTable() {
         </React.Suspense>
     );
 }
-
