@@ -11,7 +11,7 @@ const initialOrders = Array.from({ length: 85 }, (_, i) => ({
   address: `${['الصويفية', 'تلاع العلي', 'تلاع العلي', 'حي معصوم', 'الجبيهة', 'الحي الشرقي', 'العبدلي'][i % 7]}`,
   city: ['عمان', 'الزرقاء', 'إربد'][i % 3],
   region: ['الصويفية', 'خلدا', 'تلاع العلي', 'حي معصوم', 'الجبيهة', 'الحي الشرقي', 'العبدلي'][i % 7],
-  status: (['تم التسليم', 'جاري التوصيل', 'بالانتظار', 'راجع', 'مؤجل', 'تم استلام المال في الفرع'] as const)[i % 6],
+  status: (['تم التوصيل', 'جاري التوصيل', 'بالانتظار', 'راجع', 'مؤجل', 'تم استلام المال في الفرع'] as const)[i % 6],
   driver: ['علي الأحمد', 'ابو العبد', 'محمد الخالد', 'يوسف إبراهيم', 'عائشة بكر', 'غير معين'][i % 6],
   merchant: ['تاجر أ', 'متجر العامري', 'تاجر ج', 'تاجر د'][i % 4],
   cod: 35.50 + i * 5,
@@ -42,18 +42,18 @@ type OrdersState = {
   refreshOrders: () => void;
 };
 
-const getOrderPrefix = () => {
+const getSettings = () => {
     if (typeof window !== 'undefined') {
         try {
             const settings = localStorage.getItem('comprehensiveAppSettings');
             if (settings) {
-                return JSON.parse(settings).orders.orderPrefix || 'ORD-';
+                return JSON.parse(settings).orders;
             }
         } catch (e) {
-            console.error("Failed to parse settings from localStorage for order prefix", e);
+            console.error("Failed to parse settings from localStorage for order store", e);
         }
     }
-    return 'ORD-';
+    return { orderPrefix: 'ORD-', defaultStatus: 'بالانتظار' };
 };
 
 
@@ -98,13 +98,17 @@ export const useOrdersStore = create<OrdersState>()(immer((set, get) => ({
   addOrder: (orderData) => {
     let newOrder: Order | null = null;
     set((state) => {
-        const orderPrefix = getOrderPrefix();
+        const orderSettings = getSettings();
+        const orderPrefix = orderSettings.orderPrefix || 'ORD-';
         const newOrderNumber = state.nextOrderNumber;
+        
         newOrder = {
             ...orderData,
+            status: orderData.status || orderSettings.defaultStatus || 'بالانتظار',
             id: `${orderPrefix}${newOrderNumber}`,
             orderNumber: newOrderNumber,
         };
+        
         state.orders.unshift(newOrder);
         state.nextOrderNumber = newOrderNumber + 1;
     });

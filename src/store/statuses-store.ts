@@ -97,7 +97,7 @@ const initialStatuses: Status[] = [
       merchant: { showInPortal: true, showInReports: true },
       admin: { lockPriceEdit: true, lockAddressEdit: true },
     },
-    flow: { isEntry: false, isFinal: false, nextCodes: ["MONEY_RECEIVED"], blockedFrom: [] },
+    flow: { isEntry: false, isFinal: true, nextCodes: ["MONEY_RECEIVED"], blockedFrom: [] },
     triggers: { requiresReason: false, createsReturnTask: false, sendsCustomerMessage: true, updatesDriverAccount: false },
   },
   {
@@ -133,7 +133,7 @@ const initialStatuses: Status[] = [
       merchant: { showInPortal: true, showInReports: true },
       admin: { lockPriceEdit: false, lockAddressEdit: true },
     },
-    flow: { isEntry: false, isFinal: false, nextCodes: ["BRANCH_RETURNED"], blockedFrom: [] },
+    flow: { isEntry: false, isFinal: true, nextCodes: ["BRANCH_RETURNED"], blockedFrom: [] },
     triggers: { requiresReason: true, createsReturnTask: true, sendsCustomerMessage: true, updatesDriverAccount: false },
   },
   {
@@ -169,7 +169,7 @@ const initialStatuses: Status[] = [
       merchant: { showInPortal: true, showInReports: true },
       admin: { lockPriceEdit: true, lockAddressEdit: true },
     },
-    flow: { isEntry: false, isFinal: false, nextCodes: ["COMPLETED"], blockedFrom: [] },
+    flow: { isEntry: false, isFinal: true, nextCodes: ["COMPLETED"], blockedFrom: [] },
     triggers: { requiresReason: false, createsReturnTask: false, sendsCustomerMessage: false, updatesDriverAccount: true },
   },
   {
@@ -223,7 +223,7 @@ const initialStatuses: Status[] = [
       merchant: { showInPortal: true, showInReports: true },
       admin: { lockPriceEdit: true, lockAddressEdit: true },
     },
-    flow: { isEntry: false, isFinal: false, nextCodes: ["BRANCH_RETURNED"], blockedFrom: [] },
+    flow: { isEntry: false, isFinal: true, nextCodes: ["BRANCH_RETURNED"], blockedFrom: [] },
     triggers: { requiresReason: true, createsReturnTask: true, sendsCustomerMessage: true, updatesDriverAccount: true },
   },
   {
@@ -241,7 +241,7 @@ const initialStatuses: Status[] = [
       merchant: { showInPortal: true, showInReports: true },
       admin: { lockPriceEdit: true, lockAddressEdit: true },
     },
-    flow: { isEntry: false, isFinal: false, nextCodes: ["BRANCH_RETURNED"], blockedFrom: [] },
+    flow: { isEntry: false, isFinal: true, nextCodes: ["BRANCH_RETURNED"], blockedFrom: [] },
     triggers: { requiresReason: true, createsReturnTask: true, sendsCustomerMessage: true, updatesDriverAccount: false },
   },
   {
@@ -259,7 +259,7 @@ const initialStatuses: Status[] = [
       merchant: { showInPortal: true, showInReports: true },
       admin: { lockPriceEdit: true, lockAddressEdit: true },
     },
-    flow: { isEntry: false, isFinal: false, nextCodes: ["MERCHANT_RETURNED"], blockedFrom: [] },
+    flow: { isEntry: false, isFinal: true, nextCodes: ["MERCHANT_RETURNED"], blockedFrom: [] },
     triggers: { requiresReason: false, createsReturnTask: false, sendsCustomerMessage: false, updatesDriverAccount: false },
   },
   {
