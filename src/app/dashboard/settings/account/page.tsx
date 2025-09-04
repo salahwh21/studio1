@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
@@ -13,21 +13,41 @@ import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/icon';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { useUsersStore } from '@/store/user-store';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AccountSettingsPage() {
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
-
-  // Mock user data
-  const [name, setName] = useState('المدير المسؤول');
-  const [phone, setPhone] = useState('0790267503');
-  const [email, setEmail] = useState('admin@example.com');
-  const [whatsapp, setWhatsapp] = useState('962790267503');
-  const [avatar, setAvatar] = useState<string | null>('https://i.pravatar.cc/150?u=admin');
   
+  const { users, updateCurrentUser } = useUsersStore();
+  const currentUser = users.find(u => u.id === 'user-1'); // Assuming admin is the current user
+
+  // Local state for form fields
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [avatar, setAvatar] = useState<string | null>(null);
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  useEffect(() => {
+    if (currentUser) {
+      setName(currentUser.name);
+      setPhone(currentUser.email); // Assuming email field holds the phone number for login
+      setEmail(currentUser.email); // You might want a separate email field in your user model later
+      setWhatsapp(currentUser.whatsapp || '');
+      setAvatar(currentUser.avatar || null);
+    }
+  }, [currentUser]);
+  
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -40,13 +60,47 @@ export default function AccountSettingsPage() {
   };
 
   const handleProfileSave = () => {
+    if (!currentUser) return;
+    updateCurrentUser({
+        name,
+        email, // This would update the login phone/email
+        whatsapp,
+        avatar: avatar || '',
+    });
     toast({ title: "تم الحفظ", description: "تم تحديث معلومات ملفك الشخصي بنجاح." });
   };
   
   const handlePasswordSave = () => {
-    // Add validation logic here
+     if (!currentUser) return;
+    // Basic validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast({ variant: 'destructive', title: "خطأ", description: "الرجاء ملء جميع حقول كلمة المرور." });
+      return;
+    }
+    if (currentPassword !== currentUser.password) {
+        toast({ variant: 'destructive', title: "خطأ", description: "كلمة المرور الحالية غير صحيحة." });
+        return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ variant: 'destructive', title: "خطأ", description: "كلمتا المرور الجديدتان غير متطابقتين." });
+      return;
+    }
+
+    updateCurrentUser({ password: newPassword });
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
     toast({ title: "تم التغيير", description: "تم تحديث كلمة المرور بنجاح." });
   };
+
+  if (!currentUser) {
+    return (
+        <div className="space-y-6">
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-96 w-full" />
+        </div>
+    );
+  }
 
 
   return (
@@ -124,7 +178,7 @@ export default function AccountSettingsPage() {
                     <div className="space-y-2">
                         <Label htmlFor="current-password">كلمة المرور الحالية</Label>
                         <div className="relative">
-                            <Input id="current-password" type={showCurrentPassword ? 'text' : 'password'} />
+                            <Input id="current-password" type={showCurrentPassword ? 'text' : 'password'} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}/>
                             <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowCurrentPassword(prev => !prev)}>
                                 <Icon name={showCurrentPassword ? 'EyeOff' : 'Eye'} className="h-4 w-4" />
                             </Button>
@@ -133,7 +187,7 @@ export default function AccountSettingsPage() {
                     <div className="space-y-2">
                         <Label htmlFor="new-password">كلمة المرور الجديدة</Label>
                          <div className="relative">
-                            <Input id="new-password" type={showNewPassword ? 'text' : 'password'} />
+                            <Input id="new-password" type={showNewPassword ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
                             <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowNewPassword(prev => !prev)}>
                                 <Icon name={showNewPassword ? 'EyeOff' : 'Eye'} className="h-4 w-4" />
                             </Button>
@@ -142,7 +196,7 @@ export default function AccountSettingsPage() {
                     <div className="space-y-2">
                         <Label htmlFor="confirm-password">تأكيد كلمة المرور الجديدة</Label>
                         <div className="relative">
-                            <Input id="confirm-password" type={showConfirmPassword ? 'text' : 'password'} />
+                            <Input id="confirm-password" type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                             <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowConfirmPassword(prev => !prev)}>
                                 <Icon name={showConfirmPassword ? 'EyeOff' : 'Eye'} className="h-4 w-4" />
                             </Button>

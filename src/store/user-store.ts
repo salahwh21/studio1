@@ -12,10 +12,11 @@ export type User = {
     roleId: string;
     avatar: string;
     password?: string;
+    whatsapp?: string; // Added for account settings
 };
 
 const initialUsers: User[] = [
-    { id: 'user-1', name: 'المدير المسؤول', email: 'admin@alwameed.com', roleId: 'admin', avatar: '', password: '123456789' },
+    { id: 'user-1', name: 'المدير المسؤول', email: 'admin@alwameed.com', roleId: 'admin', avatar: '', password: '123456789', whatsapp: '962791234567' },
     { id: 'user-2', name: 'أحمد مشرف', email: 'ahmad@alwameed.com', roleId: 'supervisor', avatar: '', password: '123456789' },
     { id: 'user-3', name: 'فاطمة خدمة عملاء', email: 'fatima@alwameed.com', roleId: 'customer_service', avatar: '', password: '123456789' },
     // Drivers from image
@@ -137,6 +138,7 @@ type UsersState = {
     users: User[];
     addUser: (newUser: Omit<User, 'id' | 'password'>) => void;
     updateUser: (userId: string, updatedUser: Omit<User, 'id'>) => void;
+    updateCurrentUser: (updatedFields: Partial<Omit<User, 'id' | 'roleId'>>) => void;
     deleteUser: (userId: string) => void;
 };
 
@@ -169,6 +171,15 @@ export const useUsersStore = create<UsersState>()(immer((set) => ({
         });
     },
 
+    updateCurrentUser: (updatedFields) => {
+        set(state => {
+            const userIndex = state.users.findIndex(u => u.id === 'user-1'); // Hardcoded admin user ID
+            if (userIndex !== -1) {
+                state.users[userIndex] = { ...state.users[userIndex], ...updatedFields };
+            }
+        });
+    },
+
     deleteUser: (userId) => {
         const user = useUsersStore.getState().users.find(u => u.id === userId);
         if (user) {
@@ -179,5 +190,3 @@ export const useUsersStore = create<UsersState>()(immer((set) => ({
         });
     },
 })));
-
-    
