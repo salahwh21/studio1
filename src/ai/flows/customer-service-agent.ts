@@ -19,7 +19,7 @@ const OrderDetailsSchema = z.object({
   expectedDeliveryDate: z.string().optional().describe("تاريخ التوصيل المتوقع"),
 });
 
-export const GenerateResponseInputSchema = z.object({
+const GenerateResponseInputSchema = z.object({
   orderDetails: OrderDetailsSchema,
   query: z.string().describe("استفسار العميل, مثال: 'وين طلبي؟' أو 'متى بوصل الطلب؟'"),
 });
