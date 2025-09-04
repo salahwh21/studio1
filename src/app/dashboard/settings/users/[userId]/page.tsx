@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,6 +6,7 @@ import Link from 'next/link';
 
 import { useUsersStore } from '@/store/user-store';
 import { useRolesStore } from '@/store/roles-store';
+import { useAreasStore, type City } from '@/store/areas-store';
 import { useToast } from '@/hooks/use-toast';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,7 +20,7 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import Icon from '@/components/icon';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 function UserEditPageSkeleton() {
     return (
@@ -99,6 +99,90 @@ const PricingPanel = ({ title }: { title: string }) => (
         </CardFooter>
     </Card>
 );
+
+type FareAdjustmentRule = {
+    id: string;
+    merchantId: string;
+    cityId: string;
+    adjustment: string;
+}
+
+const FareAdjustmentPanel = () => {
+    const { users } = useUsersStore();
+    const { cities } = useAreasStore();
+    const [rules, setRules] = useState<FareAdjustmentRule[]>([]);
+
+    const merchants = users.filter(u => u.roleId === 'merchant');
+
+    const handleAddRule = () => {
+        setRules(prev => [...prev, { id: `rule_${Date.now()}`, merchantId: 'any', cityId: 'any', adjustment: '0' }]);
+    };
+
+    const handleRuleChange = (id: string, field: keyof FareAdjustmentRule, value: any) => {
+        setRules(prev => prev.map(rule => rule.id === id ? { ...rule, [field]: value } : rule));
+    };
+
+    const handleRemoveRule = (id: string) => {
+        setRules(prev => prev.filter(rule => rule.id !== id));
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>تعديلات أجرة السائق الخاصة</CardTitle>
+                <CardDescription>إضافة أو خصم مبلغ على أجرة السائق لتاجر أو وجهة معينة.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>التاجر</TableHead>
+                            <TableHead>الوجهة (المدينة)</TableHead>
+                            <TableHead>قيمة التعديل (د.أ)</TableHead>
+                            <TableHead>إجراء</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {rules.map(rule => (
+                            <TableRow key={rule.id}>
+                                <TableCell>
+                                    <Select value={rule.merchantId} onValueChange={(value) => handleRuleChange(rule.id, 'merchantId', value)}>
+                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="any">أي تاجر</SelectItem>
+                                            {merchants.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </TableCell>
+                                <TableCell>
+                                     <Select value={rule.cityId} onValueChange={(value) => handleRuleChange(rule.id, 'cityId', value)}>
+                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="any">أي مدينة</SelectItem>
+                                            {cities.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </TableCell>
+                                <TableCell>
+                                    <Input type="number" step="0.1" value={rule.adjustment} onChange={(e) => handleRuleChange(rule.id, 'adjustment', e.target.value)} />
+                                </TableCell>
+                                <TableCell>
+                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveRule(rule.id)}>
+                                        <Icon name="Trash2" className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+                <Button variant="outline" onClick={handleAddRule} className="mt-4 w-full">
+                    <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة تعديل جديد
+                </Button>
+            </CardContent>
+        </Card>
+    );
+};
+
 
 export default function UserEditPage() {
     const router = useRouter();
@@ -234,6 +318,7 @@ export default function UserEditPage() {
                     
                     {role?.id === 'merchant' && <PricingPanel title="تسعير التوصيل للتاجر" />}
                     {role?.id === 'driver' && <PricingPanel title="تسعير أجور السائق" />}
+                    {role?.id === 'driver' && <FareAdjustmentPanel />}
 
                     <Card>
                         <CardHeader><CardTitle className="flex items-center gap-2"><Icon name="KeyRound" /> تغيير كلمة المرور</CardTitle></CardHeader>

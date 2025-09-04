@@ -38,8 +38,89 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useAreasStore } from '@/store/areas-store';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 
 const CSVLink = dynamic(() => import('react-csv').then(mod => mod.CSVLink), { ssr: false });
+
+type FareAdjustmentRule = {
+    id: string;
+    merchantId: string;
+    cityId: string;
+    adjustment: string;
+}
+
+const FareAdjustmentPanelDialog = () => {
+    const { users } = useUsersStore();
+    const { cities } = useAreasStore();
+    const [rules, setRules] = useState<FareAdjustmentRule[]>([]);
+
+    const merchants = users.filter(u => u.roleId === 'merchant');
+
+    const handleAddRule = () => {
+        setRules(prev => [...prev, { id: `rule_${Date.now()}`, merchantId: 'any', cityId: 'any', adjustment: '0' }]);
+    };
+
+    const handleRuleChange = (id: string, field: keyof FareAdjustmentRule, value: any) => {
+        setRules(prev => prev.map(rule => rule.id === id ? { ...rule, [field]: value } : rule));
+    };
+
+    const handleRemoveRule = (id: string) => {
+        setRules(prev => prev.filter(rule => rule.id !== id));
+    };
+
+    return (
+         <div className='space-y-4 pt-4 border-t'>
+            <Label>تعديلات أجرة السائق الخاصة</Label>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="px-1">التاجر</TableHead>
+                            <TableHead className="px-1">الوجهة</TableHead>
+                            <TableHead className="px-1">التعديل</TableHead>
+                            <TableHead className="px-1"></TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {rules.map(rule => (
+                            <TableRow key={rule.id}>
+                                <TableCell className="px-1">
+                                    <Select value={rule.merchantId} onValueChange={(value) => handleRuleChange(rule.id, 'merchantId', value)}>
+                                        <SelectTrigger className="h-8"><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="any">أي تاجر</SelectItem>
+                                            {merchants.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </TableCell>
+                                <TableCell className="px-1">
+                                     <Select value={rule.cityId} onValueChange={(value) => handleRuleChange(rule.id, 'cityId', value)}>
+                                        <SelectTrigger className="h-8"><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="any">أي مدينة</SelectItem>
+                                            {cities.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </TableCell>
+                                <TableCell className="px-1">
+                                    <Input type="number" className="h-8" step="0.1" value={rule.adjustment} onChange={(e) => handleRuleChange(rule.id, 'adjustment', e.target.value)} />
+                                </TableCell>
+                                <TableCell className="px-1">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveRule(rule.id)}>
+                                        <Icon name="Trash2" className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+                <Button variant="outline" onClick={handleAddRule} className="w-full">
+                    <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة تعديل
+                </Button>
+        </div>
+    )
+}
 
 const PricingFields = () => (
     <div className='space-y-4 pt-4 border-t'>
@@ -155,6 +236,7 @@ const UserDialog = ({
                         </div>
                      )}
                      {isMerchant && <PricingFields />}
+                     {isDriver && <FareAdjustmentPanelDialog />}
                 </div>
                 <DialogFooter>
                     <DialogClose asChild>
@@ -233,7 +315,7 @@ const ChangeRoleDialog = ({ open, onOpenChange, onSave, roles, userCount }: { op
     )
 };
 
-const UserList = ({ users, roles, isDriverTab, isMerchantTab, onAdd, onEdit, onDelete, onBulkUpdateRole, onImport }: { users: User[]; roles: Role[]; isDriverTab: boolean; isMerchantTab: boolean; onAdd: () => void; onEdit: (user: User) => void; onDelete: (users: User[]) => void; onBulkUpdateRole: (userIds: string[], roleId: string) => void; onImport: (data: any[]) => void; }) => {
+const UserList = ({ users, roles, isDriverTab, isMerchantTab, activeTab, onAdd, onEdit, onDelete, onBulkUpdateRole, onImport }: { users: User[]; roles: Role[]; isDriverTab: boolean; isMerchantTab: boolean; activeTab: string; onAdd: () => void; onEdit: (user: User) => void; onDelete: (users: User[]) => void; onBulkUpdateRole: (userIds: string[], roleId: string) => void; onImport: (data: any[]) => void; }) => {
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
@@ -490,6 +572,7 @@ export default function UsersPage() {
                     roles={roles}
                     isDriverTab={false}
                     isMerchantTab={false}
+                    activeTab={activeTab}
                     onAdd={handleAddNew}
                     onEdit={handleEdit}
                     onDelete={deleteUser}
@@ -503,6 +586,7 @@ export default function UsersPage() {
                     roles={roles}
                     isDriverTab={true}
                     isMerchantTab={false}
+                    activeTab={activeTab}
                     onAdd={handleAddNew}
                     onEdit={handleEdit}
                     onDelete={deleteUser}
@@ -516,6 +600,7 @@ export default function UsersPage() {
                     roles={roles}
                     isDriverTab={false}
                     isMerchantTab={true}
+                    activeTab={activeTab}
                     onAdd={handleAddNew}
                     onEdit={handleEdit}
                     onDelete={deleteUser}
