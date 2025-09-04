@@ -23,6 +23,8 @@ import Icon from '@/components/icon';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
+// This is now defined in the pricing page, but we'll keep a local copy for now
+// In a real app, this would be a shared resource.
 const mockPriceLists = [
   { id: 'pl_1', name: 'الأسعار الافتراضية' },
   { id: 'pl_brands_of_less', name: 'Brands of less' },
@@ -99,38 +101,22 @@ const PricingPanel = ({ title, priceListId, onPriceListChange }: { title: string
             <CardDescription>اختر طريقة حساب الأجور لطلبات هذا المستخدم.</CardDescription>
         </CardHeader>
         <CardContent>
-            <RadioGroup defaultValue={priceListId ? "price_list" : "fixed"} className="space-y-4">
-                <div className="space-y-2">
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                        <RadioGroupItem value="fixed" id="fixed" />
-                        <Label htmlFor="fixed" className="font-bold">مبلغ ثابت</Label>
-                    </div>
-                    <Input type="number" placeholder="أدخل المبلغ الثابت..." className="mr-6" />
+             <div className="space-y-2">
+                <Label htmlFor="price_list" className="font-bold">قائمة أسعار</Label>
+                <div className="mr-6">
+                    <Select value={priceListId} onValueChange={onPriceListChange}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="اختر قائمة أسعار..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {mockPriceLists.map(pl => (
+                                <SelectItem key={pl.id} value={pl.id}>{pl.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
-
-                <div className="space-y-2">
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                        <RadioGroupItem value="price_list" id="price_list" />
-                        <Label htmlFor="price_list" className="font-bold">قائمة أسعار</Label>
-                    </div>
-                    <div className="mr-6">
-                        <Select value={priceListId} onValueChange={onPriceListChange}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="اختر قائمة أسعار..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {mockPriceLists.map(pl => (
-                                    <SelectItem key={pl.id} value={pl.id}>{pl.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-            </RadioGroup>
+            </div>
         </CardContent>
-        <CardFooter>
-            <Button>حفظ إعدادات التسعير</Button>
-        </CardFooter>
     </Card>
 );
 
@@ -389,5 +375,7 @@ export default function UserEditPage() {
         </div>
     );
 }
+
+    
 
     

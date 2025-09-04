@@ -34,6 +34,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useUsersStore } from '@/store/user-store';
 
 // Mock data, to be replaced with a Zustand store
 type PriceList = {
@@ -44,7 +45,7 @@ type PriceList = {
 };
 
 const initialPriceLists: PriceList[] = [
-  { id: 'pl_1', name: 'الأسعار الافتراضية', description: 'قائمة الأسعار الأساسية لجميع التجار الجدد (2 دينار عمان، 3 دنانير محافظات).', merchantCount: 25 },
+  { id: 'pl_1', name: 'الأسعار الافتراضية', description: 'قائمة الأسعار الأساسية لجميع التجار الجدد (2 دينار عمان، 3 دنانير محافظات).', merchantCount: 0 },
   { id: 'pl_brands_of_less', name: 'Brands of less', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
   { id: 'pl_soundrush', name: 'SoundRush', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
   { id: 'pl_stress_killer', name: 'Stress Killer', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
@@ -78,6 +79,8 @@ const initialPriceLists: PriceList[] = [
 
 const PriceListCard = ({ list, onEdit, onDelete }: { list: PriceList; onEdit: (list: PriceList) => void; onDelete: (list: PriceList) => void; }) => {
     const router = useRouter();
+    const { users } = useUsersStore();
+    const merchantCount = users.filter(u => u.priceListId === list.id).length;
 
     return (
         <Card className="hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out flex flex-col">
@@ -103,7 +106,7 @@ const PriceListCard = ({ list, onEdit, onDelete }: { list: PriceList; onEdit: (l
                 <div className="flex justify-between items-center text-sm text-muted-foreground border-t pt-4">
                     <div className="flex items-center gap-2">
                         <Icon name="Users" className="h-4 w-4"/>
-                        <span>{list.merchantCount} تجار</span>
+                        <span>{merchantCount} تجار</span>
                     </div>
                      <Button variant="secondary" onClick={() => router.push(`/dashboard/settings/pricing/${list.id}`)}>
                         <Icon name="Settings" className="mr-2 h-4 w-4" />
@@ -258,6 +261,8 @@ export default function PricingPage() {
         </div>
     );
 }
+
+    
 
     
 
