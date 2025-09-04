@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -57,20 +58,20 @@ function UserEditPageSkeleton() {
     )
 }
 
-const PricingPanel = () => (
+const PricingPanel = ({ title }: { title: string }) => (
     <Card>
         <CardHeader>
-            <CardTitle>تسعير التوصيل</CardTitle>
-            <CardDescription>اختر طريقة حساب سعر التوصيل لطلبات هذا التاجر.</CardDescription>
+            <CardTitle>{title}</CardTitle>
+            <CardDescription>اختر طريقة حساب الأجور لطلبات هذا المستخدم.</CardDescription>
         </CardHeader>
         <CardContent>
             <RadioGroup defaultValue="price_list" className="space-y-4">
                 <div className="space-y-2">
                     <div className="flex items-center space-x-2 space-x-reverse">
                         <RadioGroupItem value="fixed" id="fixed" />
-                        <Label htmlFor="fixed" className="font-bold">سعر ثابت</Label>
+                        <Label htmlFor="fixed" className="font-bold">مبلغ ثابت</Label>
                     </div>
-                    <Input type="number" placeholder="أدخل السعر الثابت..." className="mr-6" />
+                    <Input type="number" placeholder="أدخل المبلغ الثابت..." className="mr-6" />
                 </div>
 
                 <div className="space-y-2">
@@ -231,7 +232,8 @@ export default function UserEditPage() {
                         </CardContent>
                     </Card>
                     
-                    {role?.id === 'merchant' && <PricingPanel />}
+                    {role?.id === 'merchant' && <PricingPanel title="تسعير التوصيل للتاجر" />}
+                    {role?.id === 'driver' && <PricingPanel title="تسعير أجور السائق" />}
 
                     <Card>
                         <CardHeader><CardTitle className="flex items-center gap-2"><Icon name="KeyRound" /> تغيير كلمة المرور</CardTitle></CardHeader>

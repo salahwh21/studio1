@@ -108,6 +108,7 @@ const ALL_COLUMNS: ColumnConfig[] = [
     { key: 'driver', label: 'السائق', sortable: true },
     { key: 'itemPrice', label: 'المستحق للتاجر', type: 'financial' },
     { key: 'deliveryFee', label: 'أجور التوصيل', type: 'financial' },
+    { key: 'driverFee', label: 'أجور السائق', type: 'financial' },
     { key: 'cod', label: 'قيمة التحصيل', type: 'financial' },
     { key: 'date', label: 'التاريخ', sortable: true },
     { key: 'notes', label: 'ملاحظات' },
@@ -297,9 +298,10 @@ export function OrdersTable() {
         return listForCalculation.reduce((acc, order) => {
             acc.itemPrice += order.itemPrice;
             acc.deliveryFee += order.deliveryFee;
+            acc.driverFee += order.driverFee;
             acc.cod += order.cod;
             return acc;
-        }, { itemPrice: 0, deliveryFee: 0, cod: 0 });
+        }, { itemPrice: 0, deliveryFee: 0, driverFee: 0, cod: 0 });
     }, [orders, selectedRows, paginatedOrders]);
 
     const totalPages = groupBy ? Object.keys(groupedAndSortedOrders).length : Math.ceil(sortedOrders.length / rowsPerPage);
@@ -434,6 +436,7 @@ export function OrdersTable() {
                             break;
                         case 'itemPrice':
                         case 'deliveryFee':
+                        case 'driverFee':
                         case 'cod':
                             content = formatCurrency(value as number);
                             break;
@@ -742,6 +745,10 @@ export function OrdersTable() {
                              <div className="flex items-center gap-1">
                                 <span className="text-muted-foreground">أجور التوصيل:</span>
                                 <span className="font-bold text-primary">{formatCurrency(footerTotals.deliveryFee)}</span>
+                            </div>
+                             <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">أجور السائق:</span>
+                                <span className="font-bold text-primary">{formatCurrency(footerTotals.driverFee)}</span>
                             </div>
                              <div className="flex items-center gap-1">
                                 <span className="text-muted-foreground">قيمة التحصيل:</span>
