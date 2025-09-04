@@ -79,8 +79,18 @@ const initialPriceLists: PriceList[] = [
   { id: 'pl_k_by_women', name: 'k by women', description: 'قائمة أسعار خاصة لـ k by women', merchantCount: 1 },
   { id: 'pl_memories_store', name: 'Memories Store', description: 'قائمة أسعار خاصة لـ Memories Store', merchantCount: 1 },
   { id: 'pl_ro_designs', name: 'Ro Designs', description: 'قائمة أسعار خاصة لـ Ro Designs', merchantCount: 1 },
-  { id: 'pl_2_5-3', name: 'أسعار 2.5-3', description: 'قائمة أسعار مخصصة (2.5 دينار عمان، 3 دنانير محافظات).', merchantCount: 2 },
-  { id: 'pl_2-2_5', name: 'أسعار 2-2.5', description: 'قائمة أسعار مخصصة (2 دينار عمان، 2.5 دنانير محافظات).', merchantCount: 1 },
+  { id: 'pl_2-5_3', name: 'أسعار 2.5-3', description: 'قائمة أسعار مخصصة (2.5 دينار عمان، 3 دنانير محافظات).', merchantCount: 1},
+  { id: 'pl_1-5_2', name: 'أسعار 1.5-2', description: 'قائمة أسعار مخصصة (1.5 دينار عمان، 2 دينار محافظات).', merchantCount: 1},
+  { id: 'pl_1-5_3', name: 'أسعار 1.5-3', description: 'قائمة أسعار مخصصة (1.5 دينار عمان، 3 دنانير محافظات).', merchantCount: 1},
+  { id: 'pl_2_5_3_5', name: 'أسعار 2.5-3.5', description: 'قائمة أسعار مخصصة (2.5 دينار عمان، 3.5 دنانير محافظات).', merchantCount: 1},
+  { id: 'pl_3_3_5', name: 'أسعار 3-3.5', description: 'قائمة أسعار مخصصة (3 دينار عمان، 3.5 دنانير محافظات).', merchantCount: 1},
+  { id: 'pl_2_5', name: 'أسعار 2.5', description: 'قائمة أسعار مخصصة (2.5 دينار لكل المناطق).', merchantCount: 1},
+  { id: 'pl_2_2_5', name: 'أسعار 2-2.5', description: 'قائمة أسعار مخصصة (2 دينار عمان، 2.5 دنانير محافظات).', merchantCount: 1},
+  { id: 'pl_alsami', name: 'السامي', description: 'قائمة أسعار خاصة لـ السامي.', merchantCount: 1},
+  { id: 'pl_nitrous', name: 'Nitrous Delivery', description: 'قائمة أسعار خاصة بشركة Nitrous Delivery.', merchantCount: 1},
+  { id: 'pl_majed', name: 'ماجد', description: 'قائمة أسعار خاصة لـ ماجد.', merchantCount: 1},
+  { id: 'pl_2_3_5', name: 'أسعار 2-3.5', description: 'قائمة أسعار مخصصة (2 دينار عمان، 3.5 دنانير محافظات).', merchantCount: 1},
+  { id: 'pl_abu_saif', name: 'ابو سيف', description: 'قائمة أسعار خاصة لـ ابو سيف.', merchantCount: 1},
 ];
 
 const PriceListCard = ({ list, onEdit, onDelete }: { list: PriceList; onEdit: (list: PriceList) => void; onDelete: (list: PriceList) => void; }) => {
@@ -265,3 +275,5 @@ export default function PricingPage() {
         </div>
     );
 }
+
+    
