@@ -713,32 +713,45 @@ const OrdersTableComponent = () => {
                                         
                                         return (
                                             <React.Fragment key={groupKey}>
-                                                <TableRow
-                                                    onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
-                                                    className="font-bold cursor-pointer border-b-2 bg-muted/50"
-                                                >
-                                                    <TableCell className="p-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
-                                                            {groupKey} ({groupOrders.length})
-                                                        </div>
-                                                    </TableCell>
-                                                     {visibleColumns.map(col => {
-                                                        if (col.type === 'financial' || col.type === 'admin_financial') {
-                                                        const totalValue = groupOrders.reduce((sum, order) => {
-                                                            let value = 0;
-                                                            if (col.key === 'companyDue') {
-                                                                value = (order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0));
-                                                            } else {
-                                                                value = order[col.key as keyof Order] as number || 0;
-                                                            }
-                                                            return sum + value;
-                                                        }, 0);
-                                                        return <TableCell key={col.key} className="text-primary text-center font-bold">{formatCurrency(totalValue)}</TableCell>
-                                                        } else {
-                                                        return <TableCell key={col.key}></TableCell>
-                                                        }
-                                                    })}
+                                                <TableRow>
+                                                  <TableCell colSpan={visibleColumns.length + 1} className="p-0 border-none">
+                                                    <div
+                                                      onClick={() => setOpenGroups(prev => ({ ...prev, [groupKey]: !isGroupOpen }))}
+                                                      className="flex items-center justify-between cursor-pointer
+                                                                 bg-primary/90 text-primary-foreground font-bold
+                                                                 rounded-md shadow-md px-4 py-2 m-1"
+                                                    >
+                                                      {/* اسم المجموعة */}
+                                                      <div className="flex items-center gap-2">
+                                                        <ChevronDown
+                                                          className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")}
+                                                        />
+                                                        {groupKey} ({groupOrders.length})
+                                                      </div>
+                                                
+                                                      {/* المجاميع */}
+                                                      <div className="flex gap-6">
+                                                        {visibleColumns.map(col => {
+                                                          if (col.type === "financial" || col.type === 'admin_financial') {
+                                                            const totalValue = groupOrders.reduce(
+                                                              (sum, order) => {
+                                                                    if (col.key === 'companyDue') {
+                                                                        return sum + ((order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0)));
+                                                                    }
+                                                                    return sum + (order[col.key as keyof Order] as number || 0);
+                                                              }, 0);
+                                                            return (
+                                                              <div key={col.key} className="min-w-[100px] text-right flex flex-col items-end">
+                                                                <span className="text-xs font-normal opacity-80">{col.label}</span>
+                                                                <span className="font-semibold text-base">{formatCurrency(totalValue)}</span>
+                                                              </div>
+                                                            );
+                                                          }
+                                                          return null;
+                                                        })}
+                                                      </div>
+                                                    </div>
+                                                  </TableCell>
                                                 </TableRow>
                                                 
                                                 {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
