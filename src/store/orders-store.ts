@@ -13,14 +13,15 @@ const initialOrders = Array.from({ length: 85 }, (_, i) => ({
   city: ['عمان', 'الزرقاء', 'إربد'][i % 3],
   region: ['الصويفية', 'خلدا', 'تلاع العلي', 'حي معصوم', 'الجبيهة', 'الحي الشرقي', 'العبدلي'][i % 7],
   status: (['تم التوصيل', 'جاري التوصيل', 'بالانتظار', 'راجع', 'مؤجل', 'تم استلام المال في الفرع'] as const)[i % 6],
+  previousStatus: (['بالانتظار', 'جاري التوصيل', 'بالانتظار', 'جاري التوصيل', 'جاري التوصيل', 'تم التوصيل'] as const)[i % 6],
   driver: ['علي الأحمد', 'ابو العبد', 'محمد الخالد', 'يوسف إبراهيم', 'عائشة بكر', 'غير معين'][i % 6],
   merchant: ['تاجر أ', 'متجر العامري', 'تاجر ج', 'تاجر د'][i % 4],
   cod: 35.50 + i * 5,
   itemPrice: 34.00 + i * 5,
   deliveryFee: 1.50,
-  additionalCost: i % 10 === 0 ? 0.5 : 0, // New field
+  additionalCost: i % 10 === 0 ? 0.5 : 0, 
   driverFee: 1.00,
-  driverAdditionalFare: i % 15 === 0 ? -0.25 : 0, // New field
+  driverAdditionalFare: i % 15 === 0 ? -0.25 : 0, 
   date: `2024-07-${(1 + i % 5).toString().padStart(2,'0')}`,
   notes: i % 3 === 0 ? 'اتصل قبل الوصول' : '',
 }));
@@ -42,7 +43,7 @@ type OrdersState = {
   updateOrderStatus: (orderId: string, newStatus: Order['status']) => void;
   updateOrderField: (orderId: string, field: keyof Order, value: any) => void;
   deleteOrders: (orderIds: string[]) => void;
-  addOrder: (order: Omit<Order, 'id' | 'orderNumber'>) => Order;
+  addOrder: (order: Omit<Order, 'id' | 'orderNumber' | 'previousStatus'>) => Order;
   refreshOrders: () => void;
 };
 
@@ -77,6 +78,7 @@ export const useOrdersStore = create<OrdersState>()(immer((set, get) => ({
     set((state) => {
       const order = state.orders.find(o => o.id === orderId);
       if (order) {
+        order.previousStatus = order.status;
         order.status = newStatus;
       }
     }),
@@ -85,6 +87,9 @@ export const useOrdersStore = create<OrdersState>()(immer((set, get) => ({
     set((state) => {
         const order = state.orders.find(o => o.id === orderId);
         if(order) {
+            if (field === 'status') {
+                order.previousStatus = order.status;
+            }
             (order as any)[field] = value;
             if(field === 'cod' || field === 'deliveryFee' || field === 'additionalCost') {
                 const cod = typeof order.cod === 'number' ? order.cod : 0;
@@ -108,11 +113,12 @@ export const useOrdersStore = create<OrdersState>()(immer((set, get) => ({
         const newOrderNumber = state.nextOrderNumber;
         
         newOrder = {
-            ...orderData,
+            ...(orderData as any),
             additionalCost: 0,
             driverAdditionalFare: 0,
             driverFee: (orderData as any).city === 'عمان' ? 1.0 : 1.5,
             status: orderData.status || orderSettings.defaultStatus || 'بالانتظار',
+            previousStatus: '',
             id: `${orderPrefix}${newOrderNumber}`,
             orderNumber: newOrderNumber,
         };

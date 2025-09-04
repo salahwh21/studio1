@@ -90,7 +90,7 @@ import Icon from '@/components/icon';
 
 
 type OrderSource = Order['source'];
-type ColumnConfig = { key: keyof Order | 'id-link' | 'notes'; label: string; type?: 'default' | 'financial' | 'admin_financial'; sortable?: boolean };
+type ColumnConfig = { key: keyof Order | 'id-link' | 'notes' | 'companyDue'; label: string; type?: 'default' | 'financial' | 'admin_financial'; sortable?: boolean };
 type GroupByOption = keyof Order | null;
 
 
@@ -104,14 +104,16 @@ const ALL_COLUMNS: ColumnConfig[] = [
     { key: 'address', label: 'العنوان' },
     { key: 'region', label: 'المنطقة', sortable: true },
     { key: 'city', label: 'المدينة', sortable: true },
-    { key: 'merchant', label: 'المتجر', sortable: true },
+    { key: 'merchant', label: 'التاجر', sortable: true },
     { key: 'status', label: 'الحالة', sortable: true },
+    { key: 'previousStatus', label: 'الحالة السابقة', sortable: true },
     { key: 'driver', label: 'السائق', sortable: true },
     { key: 'itemPrice', label: 'المستحق للتاجر', type: 'financial' },
     { key: 'deliveryFee', label: 'أجور التوصيل', type: 'financial' },
     { key: 'additionalCost', label: 'تكلفة إضافية', type: 'admin_financial' },
     { key: 'driverFee', label: 'أجور السائق', type: 'admin_financial' },
     { key: 'driverAdditionalFare', label: 'أجور إضافية للسائق', type: 'admin_financial' },
+    { key: 'companyDue', label: 'المطلوب للشركة', type: 'admin_financial' },
     { key: 'cod', label: 'قيمة التحصيل', type: 'financial' },
     { key: 'date', label: 'التاريخ', sortable: true },
     { key: 'notes', label: 'ملاحظات' },
@@ -190,7 +192,7 @@ export function OrdersTable() {
     const { statuses } = useStatusesStore();
     
     // Zustand store integration
-    const { orders, setOrders, updateOrderStatus, deleteOrders, refreshOrders } = useOrdersStore();
+    const { orders, setOrders, updateOrderStatus, deleteOrders, refreshOrders, updateOrderField } = useOrdersStore();
     
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
     const [modalState, setModalState] = useState<ModalState>({ type: 'none' });
@@ -292,8 +294,9 @@ export function OrdersTable() {
             acc.cod += order.cod || 0;
             acc.driverFee += (order.driverFee || 0) + (order.driverAdditionalFare || 0);
             acc.additionalCost += order.additionalCost || 0;
+            acc.companyDue += (order.deliveryFee + order.additionalCost) - (order.driverFee + order.driverAdditionalFare);
             return acc;
-        }, { itemPrice: 0, deliveryFee: 0, cod: 0, driverFee: 0, additionalCost: 0 });
+        }, { itemPrice: 0, deliveryFee: 0, cod: 0, driverFee: 0, additionalCost: 0, companyDue: 0 });
     }, [orders, selectedRows, paginatedOrders]);
 
     const totalPages = groupBy ? Object.keys(groupedAndSortedOrders).length : Math.ceil(sortedOrders.length / rowsPerPage);
@@ -341,9 +344,7 @@ export function OrdersTable() {
     };
 
     const handleFieldChange = (orderId: string, field: keyof Order, value: any) => {
-        if (field === 'status') {
-            updateOrderStatus(orderId, value);
-        }
+        updateOrderField(orderId, field, value);
     };
 
     const handleDeleteSelected = () => {
@@ -355,9 +356,7 @@ export function OrdersTable() {
 
     const handleBulkUpdate = (field: keyof Order, value: any) => {
         selectedRows.forEach(id => {
-            if (field === 'status') {
-                updateOrderStatus(id, value);
-            }
+            updateOrderField(id, field, value);
         });
 
         toast({ title: `تم تحديث ${selectedRows.length} طلبات` });
@@ -446,6 +445,12 @@ export function OrdersTable() {
                                 </SelectContent>
                             </Select>;
                             break;
+                        case 'previousStatus':
+                            content = value ? <Badge variant="secondary">{value as string}</Badge> : '-';
+                            break;
+                        case 'companyDue':
+                             content = formatCurrency((order.deliveryFee + order.additionalCost) - (order.driverFee + order.driverAdditionalFare));
+                             break;
                         case 'itemPrice':
                         case 'deliveryFee':
                         case 'driverFee':
@@ -763,6 +768,10 @@ export function OrdersTable() {
                              <div className="flex items-center gap-1">
                                 <span className="text-muted-foreground">أجور السائق:</span>
                                 <span className="font-bold text-primary">{formatCurrency(footerTotals.driverFee)}</span>
+                            </div>
+                             <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">المطلوب للشركة:</span>
+                                <span className="font-bold text-primary">{formatCurrency(footerTotals.companyDue)}</span>
                             </div>
                              <div className="flex items-center gap-1">
                                 <span className="text-muted-foreground">قيمة التحصيل:</span>
