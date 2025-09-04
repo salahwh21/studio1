@@ -24,13 +24,20 @@ import {
     Bar,
     BarChart,
     CartesianGrid,
+    Line,
+    LineChart,
     Legend,
+    Pie,
+    PieChart,
+    ResponsiveContainer,
     Tooltip,
     XAxis,
     YAxis,
+    TrendingUp
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import Icon from '@/components/icon';
+import { useSettings } from '@/contexts/SettingsContext';
 
 const topDrivers = [
     { id: 1, name: "علي الأحمد", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d", phone: '07912345678', status: 'نشط', completed: 125, postponed: 5, returned: 2, total: 132 },
@@ -48,18 +55,38 @@ const orderStatusData = [
     { name: 'مرتجعة', value: 124, color: 'border-red-500/50 hover:bg-red-50' },
 ];
 
-const chartConfig = {
-  delivered: { label: 'تم التوصيل', color: 'hsl(var(--chart-2))' },
-  postponed: { label: 'مؤجلة', color: 'hsl(var(--chart-4))' },
-  returned: { label: 'ملغية/مرتجعة', color: 'hsl(var(--chart-3))' },
-};
-
 const chartData = topDrivers.map(d => ({
     name: d.name,
     delivered: d.completed,
     postponed: d.postponed,
     returned: d.returned
 }));
+
+const profitChartData = [
+  { date: "2023-08-01", profit: 450 },
+  { date: "2023-08-02", profit: 480 },
+  { date: "2023-08-03", profit: 520 },
+  { date: "2023-08-04", profit: 470 },
+  { date: "2023-08-05", profit: 550 },
+  { date: "2023-08-06", profit: 600 },
+  { date: "2023-08-07", profit: 580 },
+];
+
+const ordersStatusPieData = [
+    { name: 'مكتملة', value: 1980, fill: 'hsl(var(--chart-2))' },
+    { name: 'قيد التوصيل', value: 400, fill: 'hsl(var(--chart-1))' },
+    { name: 'مرتجعة', value: 124, fill: 'hsl(var(--chart-3))' },
+];
+
+const chartConfig = {
+  delivered: { label: 'تم التوصيل', color: 'hsl(var(--chart-2))' },
+  postponed: { label: 'مؤجلة', color: 'hsl(var(--chart-4))' },
+  returned: { label: 'ملغية/مرتجعة', color: 'hsl(var(--chart-3))' },
+  profit: { label: 'الربح', color: 'hsl(var(--primary))' },
+  مكتملة: { label: 'مكتملة', color: 'hsl(var(--chart-2))' },
+  'قيد التوصيل': { label: 'قيد التوصيل', color: 'hsl(var(--chart-1))' },
+  مرتجعة: { label: 'مرتجعة', color: 'hsl(var(--chart-3))' },
+};
 
 
 const RevenueCard = ({ title, value, iconName, color = 'text-green-500' }: { title: string, value: string | number, iconName: any, color?: string }) => (
@@ -76,6 +103,7 @@ const RevenueCard = ({ title, value, iconName, color = 'text-green-500' }: { tit
 
 export default function DashboardPage() {
     const [selectedDriver, setSelectedDriver] = useState('all');
+    const { formatCurrency } = useSettings();
 
     const filteredDriverStats = selectedDriver === 'all'
         ? topDrivers
@@ -197,33 +225,65 @@ export default function DashboardPage() {
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>أداء السائقين (مقارنة)</CardTitle>
-                    <CardDescription>مقارنة بين عدد الشحنات المسلمة، المؤجلة، والملغية لكل سائق.</CardDescription>
-                </CardHeader>
-                <CardContent className="h-[350px]">
-                   <ChartContainer config={chartConfig} className="h-full w-full">
-                        <BarChart data={chartData} accessibilityLayer margin={{ top: 20, right: 20, bottom: 40, left: -10 }}>
-                            <CartesianGrid vertical={false} />
-                            <XAxis
-                                dataKey="name"
-                                tickLine={false}
-                                axisLine={false}
-                                tickMargin={10}
-                                angle={-45}
-                                textAnchor="end"
-                            />
-                            <YAxis />
-                            <Tooltip content={<ChartTooltipContent />} />
-                            <Legend />
-                            <Bar dataKey="delivered" name="تم التوصيل" fill="var(--color-delivered)" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="postponed" name="مؤجلة" fill="var(--color-postponed)" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="returned" name="ملغية/مرتجعة" fill="var(--color-returned)" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ChartContainer>
-                </CardContent>
-            </Card>
+            <div className="grid gap-8 lg:grid-cols-2">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>أداء السائقين (مقارنة)</CardTitle>
+                        <CardDescription>مقارنة بين عدد الشحنات المسلمة، المؤجلة، والملغية لكل سائق.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[350px]">
+                       <ChartContainer config={chartConfig} className="h-full w-full">
+                            <BarChart data={chartData} accessibilityLayer margin={{ top: 20, right: 20, bottom: 40, left: -10 }}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis
+                                    dataKey="name"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickMargin={10}
+                                    angle={-45}
+                                    textAnchor="end"
+                                />
+                                <YAxis />
+                                <Tooltip content={<ChartTooltipContent />} />
+                                <Legend />
+                                <Bar dataKey="delivered" name="تم التوصيل" fill="var(--color-delivered)" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="postponed" name="مؤجلة" fill="var(--color-postponed)" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="returned" name="ملغية/مرتجعة" fill="var(--color-returned)" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ChartContainer>
+                    </CardContent>
+                </Card>
+                 <div className="space-y-8">
+                     <Card>
+                         <CardHeader>
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <CardTitle>تقرير الأرباح اليومي</CardTitle>
+                                    <CardDescription>نظرة على الأرباح المحققة خلال الأسبوع الماضي.</CardDescription>
+                                </div>
+                                <Button variant="outline" size="sm" className="gap-1">
+                                    <Icon name="Download" className="h-4 w-4" />
+                                    تصدير
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="h-[350px] -mt-6">
+                            <ChartContainer config={chartConfig} className="w-full h-full">
+                                <LineChart data={profitChartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+                                    <CartesianGrid vertical={false} />
+                                     <XAxis dataKey="date" tickFormatter={(value) => new Date(value).toLocaleDateString('ar-JO', {day: 'numeric', month: 'short'})} />
+                                     <YAxis tickFormatter={(value) => `${(value)}`} />
+                                    <Tooltip
+                                        content={<ChartTooltipContent formatter={(value) => formatCurrency(value as number)} />}
+                                    />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="profit" stroke="var(--color-profit)" strokeWidth={2} name="الربح" />
+                                </LineChart>
+                            </ChartContainer>
+                        </CardContent>
+                    </Card>
+                 </div>
+            </div>
         </div>
     )
 }

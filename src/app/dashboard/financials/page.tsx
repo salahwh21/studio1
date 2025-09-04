@@ -2,9 +2,6 @@
 'use client';
 
 import {
-  TrendingUp,
-} from 'lucide-react';
-import {
   Card,
   CardContent,
   CardDescription,
@@ -22,23 +19,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie
-} from 'recharts';
 import Icon from '@/components/icon';
 import { useSettings } from '@/contexts/SettingsContext';
 
@@ -56,29 +36,6 @@ const merchantAccountingData = [
     { id: 2, name: 'تاجر ب', amountDue: 0, status: 'paid', lastPayment: '2023-08-14' },
     { id: 3, name: 'تاجر ج', amountDue: 1200, status: 'overdue', lastPayment: '2023-07-10' },
 ];
-
-const profitChartData = [
-  { date: "2023-08-01", profit: 450 },
-  { date: "2023-08-02", profit: 480 },
-  { date: "2023-08-03", profit: 520 },
-  { date: "2023-08-04", profit: 470 },
-  { date: "2023-08-05", profit: 550 },
-  { date: "2023-08-06", profit: 600 },
-  { date: "2023-08-07", profit: 580 },
-];
-
-const ordersStatusData = [
-    { name: 'مكتملة', value: 1980, fill: 'hsl(var(--chart-2))' },
-    { name: 'قيد التوصيل', value: 400, fill: 'hsl(var(--chart-1))' },
-    { name: 'مرتجعة', value: 124, fill: 'hsl(var(--chart-3))' },
-];
-
-const chartConfig = {
-  profit: { label: 'الربح', color: 'hsl(var(--primary))' },
-  مكتملة: { label: 'مكتملة', color: 'hsl(var(--chart-2))' },
-  'قيد التوصيل': { label: 'قيد التوصيل', color: 'hsl(var(--chart-1))' },
-  مرتجعة: { label: 'مرتجعة', color: 'hsl(var(--chart-3))' },
-};
 
 
 // --- Components ---
@@ -165,111 +122,21 @@ const MerchantAccountingTab = () => {
     );
 };
 
-const ProfitReportsTab = () => {
-    const { formatCurrency } = useSettings();
-    return (
-     <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-            <Card>
-                 <CardHeader>
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <CardTitle>تقرير الأرباح اليومي</CardTitle>
-                            <CardDescription>نظرة على الأرباح المحققة خلال الأسبوع الماضي.</CardDescription>
-                        </div>
-                        <Button variant="outline" size="sm" className="gap-1">
-                            <Icon name="Download" className="h-4 w-4" />
-                            تصدير
-                        </Button>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
-                        <LineChart data={profitChartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                            <CartesianGrid vertical={false} />
-                             <XAxis dataKey="date" tickFormatter={(value) => new Date(value).toLocaleDateString('ar-JO', {day: 'numeric', month: 'short'})} />
-                             <YAxis tickFormatter={(value) => `${(value)}`} />
-                            <Tooltip
-                                content={<ChartTooltipContent formatter={(value) => formatCurrency(value as number)} />}
-                            />
-                            <Legend />
-                            <Line type="monotone" dataKey="profit" stroke="var(--color-profit)" strokeWidth={2} name="الربح" />
-                        </LineChart>
-                    </ChartContainer>
-                </CardContent>
-            </Card>
-        </div>
-        <div className="lg:col-span-1 space-y-6">
-             <Card>
-                <CardHeader>
-                    <CardTitle>ملخص الإيرادات</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                     <div className="flex items-center">
-                        <Icon name="DollarSign" className="h-6 w-6 text-muted-foreground mr-4" />
-                        <div>
-                            <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
-                            <p className="text-2xl font-bold">{formatCurrency(4523)}</p>
-                        </div>
-                    </div>
-                     <div className="flex items-center">
-                        <TrendingUp className="h-6 w-6 text-muted-foreground mr-4" />
-                        <div>
-                            <p className="text-sm text-muted-foreground">متوسط رسوم التوصيل</p>
-                            <p className="text-2xl font-bold">{formatCurrency(6.25)}</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle>توزيع الطلبات</CardTitle>
-                </CardHeader>
-                <CardContent>
-                     <ChartContainer config={chartConfig} className="min-h-[150px] w-full">
-                        <ResponsiveContainer width="100%" height={150}>
-                             <PieChart>
-                                <Tooltip content={<ChartTooltipContent hideLabel />} />
-                                <Pie data={ordersStatusData} dataKey="value" nameKey="name" innerRadius="40%" />
-                                <Legend content={({ payload }) => (
-                                    <ul className="flex flex-wrap gap-x-4 justify-center text-xs mt-2">
-                                    {payload?.map((entry, index) => (
-                                        <li key={`item-${index}`} className="flex items-center gap-1">
-                                        <span className="w-2 h-2 rounded-full" style={{backgroundColor: entry.color}}></span>
-                                        {entry.value}
-                                        </li>
-                                    ))}
-                                    </ul>
-                                )} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </ChartContainer>
-                </CardContent>
-            </Card>
-        </div>
-     </div>
-    );
-};
-
 
 export default function FinancialsPage() {
   return (
-    <Tabs defaultValue="reports" className="w-full space-y-6">
+    <Tabs defaultValue="drivers" className="w-full space-y-6">
       <div className="flex items-center justify-between">
          <div>
-            <h1 className="text-3xl font-bold tracking-tight">الإدارة المالية</h1>
+            <h1 className="text-3xl font-bold tracking-tight">المحاسبة</h1>
             <p className="text-muted-foreground">تتبع الإيرادات والمصروفات والأرباح بدقة.</p>
         </div>
-        <TabsList className="grid grid-cols-3 w-auto">
-            <TabsTrigger value="reports"><Icon name="TrendingUp" className="h-4 w-4 mr-1"/> تقارير الأرباح</TabsTrigger>
+        <TabsList className="grid grid-cols-2 w-auto">
             <TabsTrigger value="drivers"><Icon name="Users" className="h-4 w-4 mr-1"/> محاسبة السائقين</TabsTrigger>
             <TabsTrigger value="merchants"><Icon name="Store" className="h-4 w-4 mr-1"/> محاسبة التجار</TabsTrigger>
         </TabsList>
       </div>
 
-      <TabsContent value="reports">
-        <ProfitReportsTab />
-      </TabsContent>
       <TabsContent value="drivers">
         <DriverAccountingTab />
       </TabsContent>
