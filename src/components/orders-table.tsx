@@ -61,7 +61,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 import { useOrdersStore, type Order } from '@/store/orders-store';
-import { useSettings, type PolicySettings, type PolicyElement, type SavedTemplate } from '@/contexts/SettingsContext';
+import { useSettings, type SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
+import { PrintablePolicy } from '@/components/printable-policy';
 
 
 // ShadCN UI Components
@@ -84,6 +85,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/comp
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import Icon from '@/components/icon';
 
 
 type OrderSource = Order['source'];
@@ -165,7 +167,8 @@ type ModalState =
     | { type: 'whatsapp', order: Order }
     | { type: 'barcode', order: Order }
     | { type: 'assignDriver' }
-    | { type: 'changeStatus' };
+    | { type: 'changeStatus' }
+    | { type: 'print' };
 
 type SortConfig = { key: keyof Order; direction: 'ascending' | 'descending' };
 
@@ -212,8 +215,20 @@ export function OrdersTable() {
     const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[]>(ALL_COLUMNS.map(c => c.key));
     const sensors = useSensors(useSensor(PointerSensor));
 
+    const [availableTemplates, setAvailableTemplates] = useState<SavedTemplate[]>([]);
+    const [selectedTemplate, setSelectedTemplate] = useState<SavedTemplate | null>(null);
+    const printablePolicyRef = useRef<{ handleExport: () => void; handleDirectPrint: (order: any, type: 'zpl' | 'escpos') => Promise<void> }>(null);
+
+
     useEffect(() => { 
-        setIsClient(true); 
+        setIsClient(true);
+        try {
+            const savedTemplatesJson = localStorage.getItem('policyTemplates');
+            const savedTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
+            setAvailableTemplates([...readyTemplates, ...savedTemplates]);
+        } catch (e) {
+            setAvailableTemplates(readyTemplates);
+        }
     }, []);
 
     // Reset open groups when groupBy changes
@@ -381,12 +396,13 @@ export function OrdersTable() {
         })
     }
 
-    const handlePrint = () => {
+    const handlePrintClick = () => {
         if (selectedRows.length === 0) {
-            toast({ variant: "destructive", title: "لا توجد طلبات محددة", description: "الرجاء تحديد طلب واحد على الأقل للطباعة." });
+            toast({ variant: 'destructive', title: 'لا توجد طلبات محددة', description: 'الرجاء تحديد طلب واحد على الأقل للطباعة.' });
             return;
         }
-        window.print();
+        setSelectedTemplate(availableTemplates.length > 0 ? availableTemplates[0] : null);
+        setModalState({ type: 'print' });
     };
 
     const renderOrderRow = (order: Order, index: number) => {
@@ -453,7 +469,7 @@ export function OrdersTable() {
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem><PlusCircle className="ml-2 h-4 w-4" /> إضافة طلب</DropdownMenuItem>
                                 <DropdownMenuItem><FileDown className="ml-2 h-4 w-4" /> تصدير</DropdownMenuItem>
-                                <DropdownMenuItem><Printer className="ml-2 h-4 w-4" /> طباعة</DropdownMenuItem>
+                                <DropdownMenuItem onClick={handlePrintClick}><Printer className="ml-2 h-4 w-4" /> طباعة</DropdownMenuItem>
                                 <DropdownMenuItem><Trash2 className="ml-2 h-4 w-4" /> حذف المحدد</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -542,7 +558,7 @@ export function OrdersTable() {
                                 <Separator orientation="vertical" className="h-6 mx-1" />
                                  <Button variant="outline" size="sm" onClick={() => setModalState({ type: 'assignDriver' })}><UserCheck className="ml-2 h-4 w-4" /> تعيين سائق</Button>
                                 <Button variant="outline" size="sm" onClick={() => setModalState({ type: 'changeStatus' })}><RefreshCw className="ml-2 h-4 w-4" /> تغيير الحالة</Button>
-                                <Button variant="outline" size="sm" onClick={handlePrint}><Printer className="ml-2 h-4 w-4" /> طباعة</Button>
+                                <Button variant="outline" size="sm" onClick={handlePrintClick}><Printer className="ml-2 h-4 w-4" /> طباعة</Button>
                                 <Button variant="destructive" size="sm" onClick={() => setModalState({ type: 'delete' })}><Trash2 className="ml-2 h-4 w-4" /> حذف</Button>
                                 <Button variant="ghost" size="icon" onClick={() => setSelectedRows([])}><X className="h-4 w-4" /></Button>
                             </div>
@@ -623,7 +639,7 @@ export function OrdersTable() {
                                         <DropdownMenuItem>تصدير كـ PDF</DropdownMenuItem>
                                     </DropdownMenuContent>
                                     </DropdownMenu>
-                                    <Button variant="outline" size="sm" onClick={handlePrint}><Printer /></Button>
+                                    <Button variant="outline" size="sm" onClick={handlePrintClick}><Printer /></Button>
                                     <Button variant="outline" size="sm" onClick={handleRefresh}><RefreshCw className="h-4 w-4"/></Button>
                                 </div>
                             </>
@@ -750,6 +766,58 @@ export function OrdersTable() {
                     <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={handleDeleteSelected}>حذف</AlertDialogAction></AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+             <Dialog open={modalState.type === 'print'} onOpenChange={(open) => !open && setModalState({type: 'none'})}>
+                <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>طباعة البوالص</DialogTitle>
+                        <DialogDescription>اختر القالب وقم بمعاينة البوالص قبل الطباعة النهائية.</DialogDescription>
+                    </DialogHeader>
+                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 min-h-0">
+                        <div className="md:col-span-1 flex flex-col gap-4">
+                            <Card>
+                                <CardHeader className='p-4'><CardTitle className='text-base'>1. اختر القالب</CardTitle></CardHeader>
+                                <CardContent className='p-4'>
+                                    <RadioGroup
+                                        value={selectedTemplate?.id}
+                                        onValueChange={(id) => setSelectedTemplate(availableTemplates.find(t => t.id === id) || null)}
+                                    >
+                                        {availableTemplates.map(template => (
+                                            <div key={template.id} className="flex items-center space-x-2 space-x-reverse">
+                                                <RadioGroupItem value={template.id} id={`tpl-${template.id}`} />
+                                                <Label htmlFor={`tpl-${template.id}`}>{template.name}</Label>
+                                            </div>
+                                        ))}
+                                    </RadioGroup>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader className='p-4'><CardTitle className='text-base'>2. إجراء الطباعة</CardTitle></CardHeader>
+                                <CardContent className='p-4 flex flex-col gap-2'>
+                                    <Button onClick={() => printablePolicyRef.current?.handleExport()} className="w-full">
+                                        <Icon name="Save" className="ml-2 h-4 w-4 inline" /> طباعة PDF
+                                    </Button>
+                                    <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(orders.find(o => o.id === selectedRows[0]), 'zpl')}>
+                                        <Icon name="Printer" className="ml-2 h-4 w-4 inline" /> طباعة ZPL (أول طلب)
+                                    </Button>
+                                    <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(orders.find(o => o.id === selectedRows[0]), 'escpos')}>
+                                        <Icon name="Printer" className="ml-2 h-4 w-4 inline" /> طباعة ESC/POS (أول طلب)
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </div>
+                        <div className="md:col-span-3 bg-muted rounded-md flex items-center justify-center overflow-hidden">
+                            <ScrollArea className="h-full w-full">
+                                <div className="p-4 flex items-center justify-center">
+                                    {selectedTemplate && (
+                                        <PrintablePolicy ref={printablePolicyRef} orders={orders.filter(o => selectedRows.includes(o.id))} template={selectedTemplate} />
+                                    )}
+                                </div>
+                            </ScrollArea>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={modalState.type === 'assignDriver' || modalState.type === 'changeStatus'} onOpenChange={(open) => !open && setModalState({ type: 'none' })}>
                 <DialogContent>

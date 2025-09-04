@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -30,10 +29,11 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStatusesStore } from '@/store/statuses-store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettings, SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-
+import { PrintablePolicy } from '@/components/printable-policy';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const orderSchema = z.object({
   recipientName: z.string().optional(),
@@ -56,7 +56,7 @@ const AddOrderPage = () => {
   const { cities } = useAreasStore();
   const { statuses } = useStatusesStore();
   const context = useSettings();
-  const { settings: orderSettings, formatCurrency, isHydrated: settingsHydrated } = context;
+  const { settings, formatCurrency, isHydrated: settingsHydrated } = context;
 
   const [selectedMerchantId, setSelectedMerchantId] = useState<string>('');
   
@@ -88,6 +88,21 @@ const AddOrderPage = () => {
   const merchantOptions = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
   const allRegions = useMemo(() => cities.flatMap(c => c.areas.map(a => ({ ...a, cityName: c.name }))).sort((a,b) => a.name.localeCompare(b.name)), [cities]);
   
+  
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [availableTemplates, setAvailableTemplates] = useState<SavedTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<SavedTemplate | null>(null);
+  const printablePolicyRef = useRef<{ handleExport: () => void; handleDirectPrint: (order: any, type: 'zpl' | 'escpos') => Promise<void> }>(null);
+
+  useEffect(() => {
+    try {
+        const savedTemplatesJson = localStorage.getItem('policyTemplates');
+        const savedTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
+        setAvailableTemplates([...readyTemplates, ...savedTemplates]);
+    } catch (e) {
+        setAvailableTemplates(readyTemplates);
+    }
+  }, []);
   
   useEffect(() => {
     if (selectedRegionValue) {
@@ -183,7 +198,7 @@ const AddOrderPage = () => {
       address: `${data.address ? `${data.address}, ` : ''}${regionName}, ${data.city}`,
       city: data.city || '',
       region: regionName,
-      status: orderSettings.orders.defaultStatus,
+      status: settings.orders.defaultStatus,
       driver: 'غير معين',
       merchant: merchant.name,
       cod: data.cod,
@@ -215,14 +230,71 @@ const AddOrderPage = () => {
   }
 
   const handlePrintClick = () => {
-    toast({
-        variant: 'destructive',
-        title: 'ميزة معطلة',
-        description: 'تم تعطيل طباعة البوالص لأنه تم حذف صفحة إعدادات البوليصة.',
-      });
+    if (selectedRecent.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "لم يتم تحديد طلبات",
+            description: "الرجاء تحديد طلب واحد على الأقل للطباعة."
+        });
+        return;
+    }
+    setSelectedTemplate(availableTemplates.length > 0 ? availableTemplates[0] : null);
+    setIsPrintDialogOpen(true);
   };
   
   return (
+    <>
+    <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+            <DialogHeader>
+            <DialogTitle>طباعة البوالص</DialogTitle>
+            <DialogDescription>اختر القالب وقم بمعاينة البوالص قبل الطباعة النهائية.</DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 min-h-0">
+                <div className="md:col-span-1 flex flex-col gap-4">
+                    <Card>
+                        <CardHeader className='p-4'><CardTitle className='text-base'>1. اختر القالب</CardTitle></CardHeader>
+                        <CardContent className='p-4'>
+                            <RadioGroup
+                                value={selectedTemplate?.id}
+                                onValueChange={(id) => setSelectedTemplate(availableTemplates.find(t => t.id === id) || null)}
+                            >
+                                {availableTemplates.map(template => (
+                                    <div key={template.id} className="flex items-center space-x-2 space-x-reverse">
+                                        <RadioGroupItem value={template.id} id={template.id} />
+                                        <Label htmlFor={template.id}>{template.name}</Label>
+                                    </div>
+                                ))}
+                            </RadioGroup>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader className='p-4'><CardTitle className='text-base'>2. إجراء الطباعة</CardTitle></CardHeader>
+                        <CardContent className='p-4 flex flex-col gap-2'>
+                             <Button onClick={() => printablePolicyRef.current?.handleExport()} className="w-full">
+                                <Icon name="Save" className="ml-2 h-4 w-4 inline" /> طباعة PDF
+                            </Button>
+                            <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(recentlyAdded.find(o => o.id === selectedRecent[0]), 'zpl')}>
+                                <Icon name="Printer" className="ml-2 h-4 w-4 inline" /> طباعة ZPL (أول طلب)
+                            </Button>
+                             <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(recentlyAdded.find(o => o.id === selectedRecent[0]), 'escpos')}>
+                                <Icon name="Printer" className="ml-2 h-4 w-4 inline" /> طباعة ESC/POS (أول طلب)
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+                 <div className="md:col-span-3 bg-muted rounded-md flex items-center justify-center overflow-hidden">
+                    <ScrollArea className="h-full w-full">
+                        <div className="p-4 flex items-center justify-center">
+                            {selectedTemplate && (
+                                <PrintablePolicy ref={printablePolicyRef} orders={recentlyAdded.filter(o => selectedRecent.includes(o.id))} template={selectedTemplate} />
+                            )}
+                        </div>
+                    </ScrollArea>
+                </div>
+            </div>
+        </DialogContent>
+    </Dialog>
     <div className="space-y-6">
       <Card>
         <CardHeader>
@@ -396,7 +468,7 @@ const AddOrderPage = () => {
                 <div className="flex items-center justify-between">
                     <CardTitle>طلبات مضافة حديثاً ({recentlyAdded.length})</CardTitle>
                     <div className="flex items-center gap-2">
-                         <Button variant="outline" size="sm" onClick={handlePrintClick} disabled><Printer className="h-4 w-4 ml-2"/>طباعة بوليصة</Button>
+                         <Button variant="outline" size="sm" onClick={handlePrintClick} disabled={selectedRecent.length === 0}><Printer className="h-4 w-4 ml-2"/>طباعة بوليصة</Button>
                          <Button variant="destructive" size="sm" disabled={selectedRecent.length === 0} onClick={handleDeleteSelected}><Trash2 className="h-4 w-4 ml-2"/>حذف المحدد</Button>
                     </div>
                 </div>
@@ -539,8 +611,8 @@ const AddOrderPage = () => {
             </CardContent>
          </Card>
       )}
-
     </div>
+    </>
   );
 };
 
