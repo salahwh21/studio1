@@ -110,8 +110,8 @@ export default function IntegrationsPage() {
         localStorage.setItem('user-integrations', JSON.stringify(newConnections));
     };
 
-    const handleActionClick = (integration: any) => {
-        router.push(`/dashboard/settings/integrations/connect/${integration.id}`);
+    const handleActionClick = (integrationId: string) => {
+        router.push(`/dashboard/settings/integrations/connect/${integrationId}`);
     };
     
      const handleToggleConnection = (connectionId: string, enabled: boolean) => {
@@ -192,7 +192,7 @@ export default function IntegrationsPage() {
                 <CardContent className="mt-auto">
                     <Separator className="my-2" />
                     <div className="flex justify-end gap-2 pt-2">
-                         <Button size="sm" onClick={() => handleActionClick(integration)}>
+                         <Button size="sm" onClick={() => handleActionClick(integration.id)}>
                             <Icon name="PlusCircle" className="ml-2" />
                             {integration.type === 'factory' ? 'إضافة' : 'اتصال'}
                          </Button>
