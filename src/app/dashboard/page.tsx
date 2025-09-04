@@ -74,6 +74,15 @@ const RevenueCard = ({ title, value, iconName, color = 'text-green-500' }: { tit
     </Card>
 );
 
+const QuickActionButton = ({ href, iconName, label }: { href: string; iconName: any; label: string; }) => (
+    <Button asChild variant="outline" className="h-20 flex-col gap-2 text-base">
+        <Link href={href}>
+            <Icon name={iconName} className="h-6 w-6" />
+            {label}
+        </Link>
+    </Button>
+);
+
 
 export default function DashboardPage() {
     const [selectedDriver, setSelectedDriver] = useState('all');
@@ -85,6 +94,18 @@ export default function DashboardPage() {
     return (
         <div className="flex flex-col gap-8">
             <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
+
+             <Card>
+                <CardHeader>
+                    <CardTitle>إجراءات سريعة</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <QuickActionButton href="/dashboard/add-order" iconName="PackagePlus" label="إضافة طلب جديد" />
+                    <QuickActionButton href="/dashboard/optimize" iconName="Wand2" label="تحسين مسار" />
+                    <QuickActionButton href="/dashboard/returns" iconName="Undo2" label="إدارة المرتجعات" />
+                    <QuickActionButton href="/dashboard/financials" iconName="Calculator" label="التقارير المالية" />
+                </CardContent>
+            </Card>
             
             <Card>
                 <CardHeader>
