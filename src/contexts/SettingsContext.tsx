@@ -86,6 +86,11 @@ interface UiSettings {
   iconLibrary: string;
 }
 
+// AI Agent Settings
+interface AiAgentSettings {
+    enabled: boolean;
+}
+
 // Policy
 export type ElementType = 'text' | 'barcode' | 'image' | 'shape';
 export type PolicyElement = {
@@ -254,6 +259,7 @@ interface ComprehensiveSettings {
   ui: UiSettings;
   policy: PolicySettings;
   menuVisibility: MenuVisibilitySettings;
+  aiAgent: AiAgentSettings;
 }
 
 // 2. Define the context shape
@@ -267,6 +273,7 @@ interface SettingsContextType {
   updateUiSetting: <K extends keyof UiSettings>(key: K, value: UiSettings[K]) => void;
   updatePolicySetting: <K extends keyof PolicySettings>(key: K, value: PolicySettings[K]) => void;
   updateMenuVisibility: (roleId: string, permissionId: string, checked: boolean) => void;
+  updateAiAgentSetting: <K extends keyof AiAgentSettings>(key: K, value: AiAgentSettings[K]) => void;
   formatCurrency: (amount: number) => string;
   isHydrated: boolean;
 }
@@ -342,6 +349,9 @@ const defaultSettingsData: ComprehensiveSettings = {
     merchant: ['dashboard:view', 'orders:view', 'financials:view', 'merchant-portal:use'],
     driver: ['driver-app:use'],
   },
+  aiAgent: {
+    enabled: true,
+  },
 };
 
 const SETTINGS_KEY = 'comprehensiveAppSettings';
@@ -387,6 +397,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           menuVisibility: {
             ...defaultSettingsData.menuVisibility,
             ...(savedSettings.menuVisibility || {}),
+          },
+          aiAgent: {
+            ...defaultSettingsData.aiAgent,
+            ...(savedSettings.aiAgent || {}),
           }
         };
         setSettings(mergedSettings);
@@ -454,6 +468,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const updateRegionalSetting = (key: keyof RegionalSettings, value: any) => updateNestedSetting('regional', key, value);
   const updateUiSetting = (key: keyof UiSettings, value: any) => updateNestedSetting('ui', key, value);
   const updatePolicySetting = (key: keyof PolicySettings, value: any) => updateNestedSetting('policy', key, value);
+  const updateAiAgentSetting = (key: keyof AiAgentSettings, value: any) => updateNestedSetting('aiAgent', key, value);
 
   const updateSocialLink = (key: keyof SocialLinks, value: string) => {
       setSettings(prev => ({
@@ -499,7 +514,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     return `${formattedNumber} ${currencySymbol}`;
   }, [settings.regional]);
 
-  const value = { settings, setSetting, updateOrderSetting, updateLoginSetting, updateSocialLink, updateRegionalSetting, updateUiSetting, formatCurrency, isHydrated, updatePolicySetting, updateMenuVisibility };
+  const value = { settings, setSetting, updateOrderSetting, updateLoginSetting, updateSocialLink, updateRegionalSetting, updateUiSetting, formatCurrency, isHydrated, updatePolicySetting, updateMenuVisibility, updateAiAgentSetting };
 
   return (
     <SettingsContext.Provider value={value}>
