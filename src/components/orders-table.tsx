@@ -373,7 +373,7 @@ const OrdersTableComponent = () => {
 
     const handleColumnVisibilityChange = (key: string, checked: boolean) => {
         setVisibleColumnKeys(prev => 
-            checked ? [...prev, key] : prev.filter(k => k !== key)
+            checked ? [...new Set([...prev, key])] : prev.filter(k => k !== key)
         );
     };
 
@@ -640,10 +640,10 @@ const OrdersTableComponent = () => {
                                                 <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(['id', 'recipient', 'status'])}>إخفاء الكل</Button>
                                             </div>
                                             <DropdownMenuSeparator />
-                                            <ScrollArea className="max-h-72">
+                                             <ScrollArea className="max-h-96">
                                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
                                                     <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
-                                                        {columns.map((column) => (
+                                                        {ALL_COLUMNS.map((column) => (
                                                             <SortableColumn
                                                                 key={column.key}
                                                                 id={column.key}
