@@ -151,6 +151,34 @@ export const readyTemplates: SavedTemplate[] = [
             { id: 'el-r3-7', type: 'text', x: 10, y: 95, width: 115, height: 20, content: 'COD: {{cod}}', zIndex: 6, fontSize: 14, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'right', borderRadius: 0, },
             { id: 'el-r3-8', type: 'text', x: 10, y: 120, width: 265, height: 40, content: 'ملاحظات: {{notes}}', zIndex: 7, fontSize: 11, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#333333', borderColor: '#dddddd', borderWidth: 1, opacity: 1, backgroundColor: '#f9f9f9', textAlign: 'right', borderRadius: 4, },
         ]
+    },
+    {
+        id: 'ready-4', name: 'قالب بسيط مع فاصل', isReadyMade: true,
+        paperSize: 'custom', customDimensions: { width: 75, height: 45 }, margins: { top: 2, right: 2, bottom: 2, left: 2 },
+        elements: [
+            { id: 'el-r4-1', type: 'text', x: 130, y: 10, width: 145, height: 20, content: 'إلى: {{recipient}}', zIndex: 0, fontSize: 12, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'right', borderRadius: 0, },
+            { id: 'el-r4-2', type: 'text', x: 130, y: 30, width: 145, height: 40, content: '{{address}}', zIndex: 1, fontSize: 10, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#333333', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'right', borderRadius: 0, },
+            { id: 'el-r4-3', type: 'text', x: 130, y: 75, width: 145, height: 20, content: 'الهاتف: {{phone}}', zIndex: 2, fontSize: 10, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'right', borderRadius: 0, },
+            { id: 'el-r4-4', type: 'shape', x: 120, y: 10, width: 1, height: 145, content: '', zIndex: 3, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#cccccc', textAlign: 'center', borderRadius: 0, },
+            { id: 'el-r4-5', type: 'image', x: 10, y: 10, width: 100, height: 30, content: '{{company_logo}}', zIndex: 4, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0, },
+            { id: 'el-r4-6', type: 'barcode', x: 10, y: 45, width: 100, height: 45, content: '{{orderId}}', zIndex: 5, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0, },
+            { id: 'el-r4-7', type: 'text', x: 10, y: 100, width: 100, height: 20, content: 'المبلغ: {{cod}}', zIndex: 6, fontSize: 12, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0, },
+            { id: 'el-r4-8', type: 'text', x: 10, y: 130, width: 100, height: 20, content: 'المرجع: {{referenceNumber}}', zIndex: 7, fontSize: 10, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#555555', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0, },
+        ]
+    },
+    {
+        id: 'ready-5', name: 'قالب عصري بخلفية', isReadyMade: true,
+        paperSize: 'custom', customDimensions: { width: 75, height: 45 }, margins: { top: 2, right: 2, bottom: 2, left: 2 },
+        elements: [
+            { id: 'el-r5-1', type: 'shape', x: 0, y: 0, width: 283, height: 45, content: '', zIndex: 0, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#f3f4f6', textAlign: 'center', borderRadius: 0, },
+            { id: 'el-r5-2', type: 'image', x: 200, y: 8, width: 75, height: 30, content: '{{company_logo}}', zIndex: 1, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0, },
+            { id: 'el-r5-3', type: 'text', x: 10, y: 15, width: 180, height: 20, content: 'من: {{merchant}}', zIndex: 2, fontSize: 12, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#1f2937', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'right', borderRadius: 0, },
+            { id: 'el-r5-4', type: 'text', x: 140, y: 55, width: 135, height: 20, content: 'المستلم: {{recipient}}', zIndex: 3, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'right', borderRadius: 0, },
+            { id: 'el-r5-5', type: 'text', x: 10, y: 55, width: 120, height: 20, content: 'الهاتف: {{phone}}', zIndex: 4, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'right', borderRadius: 0, },
+            { id: 'el-r5-6', type: 'text', x: 10, y: 80, width: 265, height: 35, content: '{{address}}', zIndex: 5, fontSize: 10, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#333333', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'right', borderRadius: 0, },
+            { id: 'el-r5-7', type: 'barcode', x: 10, y: 120, width: 150, height: 40, content: '{{orderId}}', zIndex: 6, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0, },
+            { id: 'el-r5-8', type: 'text', x: 170, y: 125, width: 105, height: 30, content: 'COD\n{{cod}}', zIndex: 7, fontSize: 14, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 4, },
+        ]
     }
 ];
 
