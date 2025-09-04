@@ -18,14 +18,11 @@ const mmToPt = (mm: number) => mm * 2.83465;
 const replacePlaceholders = (text: string, order: Order, logos: { companyLogo?: string | null }): string => {
     if (!text) return '';
 
-    // A more robust, dynamic placeholder replacement function.
     return text.replace(/\{\{([\w\d._]+)\}\}/g, (match, key) => {
-        // Special cases for logos
         if (key === 'company_logo' || key === 'header_logo') {
             return logos.companyLogo || '';
         }
 
-        // Access nested properties if any (e.g., order.customer.name)
         const keys = key.split('.');
         let value: any = order;
 
@@ -33,17 +30,14 @@ const replacePlaceholders = (text: string, order: Order, logos: { companyLogo?: 
             if (value && typeof value === 'object' && k in value) {
                 value = value[k];
             } else {
-                // If at any point the key is not found, return the original placeholder
-                return match;
+                return match; // Return the original placeholder if key not found
             }
         }
         
-        // If the final value is an object (shouldn't happen for simple text), return placeholder
         if (typeof value === 'object' && value !== null) {
             return match;
         }
 
-        // Return the found value, or an empty string if it's null/undefined
         return value !== null && value !== undefined ? String(value) : '';
     });
 };
@@ -123,7 +117,7 @@ const PolicyContent = ({ order, template }: { order: Order; template: SavedTempl
 
 type PrintablePolicyProps = {
     orders: Order[];
-    template: SavedTemplate;
+    template: SavedTemplate | null; // Allow template to be null initially
 };
 
 export const PrintablePolicy = forwardRef(({ orders, template }: PrintablePolicyProps, ref) => {
@@ -141,15 +135,19 @@ export const PrintablePolicy = forwardRef(({ orders, template }: PrintablePolicy
     }];
     
     const paperDimensions = useMemo(() => {
+        // Safeguard: Return a default if template is not available
+        if (!template) {
+            return { width: 101.6, height: 152.4 }; // Default to 4x6 inch
+        }
         const paperSizes = { a4: { width: 210, height: 297 }, a5: { width: 148, height: 210 }, a6: { width: 105, height: 148 }, '4x6': { width: 101.6, height: 152.4 } };
         if (template.paperSize === 'custom') return template.customDimensions;
-        return paperSizes[template.paperSize];
-    }, [template.paperSize, template.customDimensions]);
+        return paperSizes[template.paperSize] || { width: 101.6, height: 152.4 };
+    }, [template]);
 
 
     const handleExport = async () => {
-        if (!printAreaRef.current) {
-            toast({ variant: "destructive", title: "خطأ", description: "لا يمكن العثور على منطقة الطباعة." });
+        if (!printAreaRef.current || !template) {
+            toast({ variant: "destructive", title: "خطأ", description: "لا يمكن العثور على منطقة الطباعة أو القالب." });
             return;
         }
         
@@ -186,8 +184,8 @@ export const PrintablePolicy = forwardRef(({ orders, template }: PrintablePolicy
     };
 
     const handleDirectPrint = async (order: Order | null, type: 'zpl' | 'escpos') => {
-        if (!order) {
-            toast({ variant: 'destructive', title: 'خطأ', description: 'لا يوجد طلب لطباعته' });
+        if (!order || !template) {
+            toast({ variant: 'destructive', title: 'خطأ', description: 'لا يوجد طلب أو قالب لطباعته' });
             return;
         }
 
@@ -225,6 +223,15 @@ export const PrintablePolicy = forwardRef(({ orders, template }: PrintablePolicy
         handleExport,
         handleDirectPrint,
     }));
+    
+    // Safeguard rendering
+    if (!template) {
+        return (
+            <div className="text-center text-muted-foreground p-8">
+                الرجاء اختيار قالب لعرض المعاينة.
+            </div>
+        );
+    }
     
     return (
         <div className="w-full">
