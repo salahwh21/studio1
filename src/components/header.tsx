@@ -58,7 +58,7 @@ export function AppHeader() {
   const currentUserRole = 'admin'; 
   const userRole = roles.find(r => r.id === currentUserRole);
   const userPermissions = userRole?.permissions || [];
-
+  
   const hasPermission = (permissionId: string) => {
       if (!userPermissions) return false;
       if (userPermissions.includes('all')) return true;
@@ -84,7 +84,7 @@ export function AppHeader() {
 
   const { settings } = context;
   const headerLogo = settings.login.headerLogo;
-
+  
   // Determine which nav items to show
   const visiblePermissionIds = settings.menuVisibility[currentUserRole] || allNavItems.map(item => item.permissionId);
   const navItems = allNavItems.filter(item => hasPermission(item.permissionId) && visiblePermissionIds.includes(item.permissionId));

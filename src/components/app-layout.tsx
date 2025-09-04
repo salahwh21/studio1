@@ -50,6 +50,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     const currentUserRole = 'admin'; 
     const userRole = roles.find(r => r.id === currentUserRole);
     const userPermissions = userRole?.permissions || [];
+    const visiblePermissionIds = settingsContext?.settings.menuVisibility[currentUserRole] || allNavItems.map(item => item.permissionId);
 
     const hasPermission = (permissionId: string) => {
         if (!userPermissions) return false;
@@ -60,9 +61,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         return userPermissions.includes(permissionId);
     };
 
-    const navItems = allNavItems.filter(item => hasPermission(item.permissionId));
+    const navItems = allNavItems.filter(item => hasPermission(item.permissionId) && visiblePermissionIds.includes(item.permissionId));
     const mobileMoreItems = allNavItems.filter(
-        item => !mobileMainItems.some(main => main.permissionId === item.permissionId) && hasPermission(item.permissionId)
+        item => !mobileMainItems.some(main => main.permissionId === item.permissionId) && hasPermission(item.permissionId) && visiblePermissionIds.includes(item.permissionId)
     );
     // --- End RBAC Logic ---
 
@@ -106,7 +107,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Bottom Navigation for Mobile */}
       <footer className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-card">
           <div className="grid h-16 grid-cols-5 items-center justify-items-center gap-1">
-              {mobileMainItems.filter(item => hasPermission(item.permissionId)).map((item) => (
+              {mobileMainItems.filter(item => hasPermission(item.permissionId) && visiblePermissionIds.includes(item.permissionId)).map((item) => (
                   <Link 
                       key={item.href} 
                       href={item.href} 
