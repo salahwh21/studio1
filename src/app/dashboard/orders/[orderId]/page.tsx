@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useStatusesStore } from '@/store/statuses-store';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,15 +20,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-
-const statusOptions: {value: Order['status'], label: string}[] = [
-    { value: 'تم التسليم', label: 'تم التسليم'},
-    { value: 'تم استلام المال في الفرع', label: 'تم استلام المال في الفرع'},
-    { value: 'جاري التوصيل', label: 'جاري التوصيل'},
-    { value: 'بالانتظار', label: 'بالانتظار'},
-    { value: 'راجع', label: 'راجع'},
-    { value: 'مؤجل', label: 'مؤجل'},
-];
 
 const mockHistory = [
     { timestamp: '2023-09-05 10:00:15', event: 'تم إنشاء الطلب بواسطة المدير', user: 'أحمد مشرف' },
@@ -62,6 +54,7 @@ export default function OrderDetailPage() {
     const params = useParams();
     const { orderId } = params;
     const { orders, updateOrderField } = useOrdersStore();
+    const { statuses } = useStatusesStore();
     const { toast } = useToast();
     const { formatCurrency } = useSettings();
 
@@ -198,7 +191,14 @@ export default function OrderDetailPage() {
                                 <Select value={order.status} onValueChange={(val) => handleFieldChange('status', val)}>
                                     <SelectTrigger id="status"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {statusOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                                        {statuses.filter(s => s.isActive).map(status => (
+                                            <SelectItem key={status.code} value={status.name}>
+                                                <div className="flex items-center gap-2">
+                                                    <Icon name={status.icon as any} style={{ color: status.color }} className="h-4 w-4" />
+                                                    {status.name}
+                                                </div>
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
