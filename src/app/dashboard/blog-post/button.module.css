@@ -1,0 +1,13 @@
+.primary {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.primary:hover {
+  background-color: hsl(var(--primary) / 0.9);
+}
