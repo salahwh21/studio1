@@ -23,7 +23,7 @@ const settingsItems: {
   { href: '/dashboard/settings/statuses', iconName: 'ListChecks', title: 'حالات التوصيل', description: 'تخصيص مراحل وحالات دورة حياة الطلب.' },
   { href: '/dashboard/settings/notifications', iconName: 'Bell', title: 'الإشعارات', description: 'التحكم في قوالب الرسائل والإشعارات التلقائية.' },
   { href: '/dashboard/settings/integrations', iconName: 'Share2', title: 'التكاملات', description: 'ربط النظام مع خدمات وتطبيقات خارجية.' },
-  { href: '/dashboard/settings/ai-agent', iconName: 'Bot', title: 'The AI Agent', description: 'بناء وتخصيص مهام وكيل الذكاء الاصطناعي.' },
+  { href: '/dashboard/settings/ai-agent', iconName: 'Bot', title: 'وكيل خدمة العملاء الذكي', description: 'توليد ردود احترافية لاستفسارات العملاء.' },
   { href: '#', iconName: 'MessageSquareQuote', title: 'الدعم الفني', description: 'الحصول على مساعدة أو طلب ميزات جديدة.' },
 ];
 
