@@ -285,16 +285,31 @@ export default function PolicyEditorPage() {
     const [isPrintSampleDialogOpen, setIsPrintSampleDialogOpen] = useState(false);
     const printablePolicyRef = useRef<{ handleExport: () => void; handleDirectPrint: (order: any, type: 'zpl' | 'escpos') => Promise<void> }>(null);
     
-    // Load from localStorage
-    useEffect(() => {
+    const loadTemplatesFromStorage = useCallback(() => {
         const savedTemplatesJson = localStorage.getItem('policyTemplates');
         if (savedTemplatesJson) {
             setTemplates(JSON.parse(savedTemplatesJson));
         } else {
-            // First time load, populate from ready templates
             setTemplates(readyTemplates);
+            localStorage.setItem('policyTemplates', JSON.stringify(readyTemplates));
         }
     }, []);
+
+    // Load templates from localStorage on mount and listen for changes
+    useEffect(() => {
+        loadTemplatesFromStorage();
+
+        const handleStorageChange = (event: StorageEvent) => {
+            if (event.key === 'policyTemplates') {
+                loadTemplatesFromStorage();
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, [loadTemplatesFromStorage]);
 
     const paperDimensions = useMemo(() => {
         if (paperSize === 'custom') return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
