@@ -16,7 +16,9 @@ import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { Facebook } from 'lucide-react';
+import { useUsersStore } from '@/store/user-store';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 
 const LoginPageSkeleton = () => (
@@ -55,6 +57,29 @@ const LoginPageSkeleton = () => (
 export default function LoginPageClient() {
   const router = useRouter();
   const context = useSettings();
+  const { users } = useUsersStore();
+  const { toast } = useToast();
+
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+
+  const handleLogin = () => {
+    // This is a simplified login for demonstration. 
+    // In a real app, you'd use a proper authentication library.
+    const adminUser = users.find(u => u.roleId === 'admin');
+    
+    if (adminUser && username === adminUser.email && password === adminUser.password) {
+        toast({ title: "تم تسجيل الدخول بنجاح", description: `مرحباً بعودتك, ${adminUser.name}` });
+        router.push('/dashboard');
+    } else {
+        toast({
+            variant: 'destructive',
+            title: "فشل تسجيل الدخول",
+            description: "الرجاء التحقق من اسم المستخدم وكلمة المرور.",
+        });
+    }
+  };
 
   if (!context || !context.isHydrated) {
     return <LoginPageSkeleton />;
@@ -95,14 +120,14 @@ export default function LoginPageClient() {
         <CardContent>
           <div className="flex flex-col gap-4">
             <div className="space-y-2">
-              <Label htmlFor="username">رقم الهاتف</Label>
-              <Input id="username" type="tel" placeholder="079xxxxxxx" />
+              <Label htmlFor="username">رقم الهاتف أو البريد الإلكتروني</Label>
+              <Input id="username" type="text" placeholder="admin@alwameed.com" value={username} onChange={e => setUsername(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">كلمة المرور</Label>
-              <Input id="password" type="password" placeholder="كلمة المرور" />
+              <Input id="password" type="password" placeholder="كلمة المرور" value={password} onChange={e => setPassword(e.target.value)} />
             </div>
-            <Button onClick={() => router.push('/dashboard')} size="lg" className="w-full">
+            <Button onClick={handleLogin} size="lg" className="w-full">
               تسجيل الدخول
             </Button>
           </div>

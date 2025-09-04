@@ -191,7 +191,6 @@ export function OrdersTable() {
     const { settings: orderSettings, isHydrated: settingsHydrated, formatCurrency } = context;
     const { statuses } = useStatusesStore();
     
-    // Zustand store integration
     const { orders, setOrders, updateOrderStatus, deleteOrders, refreshOrders, updateOrderField } = useOrdersStore();
     
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -204,7 +203,6 @@ export function OrdersTable() {
     const [groupBy, setGroupBy] = useState<GroupByOption>(null);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-    // State for column management
     const [columns, setColumns] = useState<ColumnConfig[]>(ALL_COLUMNS);
     const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[]>(ALL_COLUMNS.map(c => c.key));
     const sensors = useSensors(useSensor(PointerSensor));
@@ -225,7 +223,6 @@ export function OrdersTable() {
         }
     }, []);
 
-    // Reset open groups when groupBy changes
     useEffect(() => {
         setOpenGroups({});
     }, [groupBy]);
@@ -240,7 +237,7 @@ export function OrdersTable() {
                 order.phone.includes(searchQuery) ||
                 order.id.toLowerCase().includes(searchLower) ||
                 order.merchant.toLowerCase().includes(searchLower) ||
-                order.referenceNumber.toLowerCase().includes(searchLower);
+                (order.referenceNumber && order.referenceNumber.toLowerCase().includes(searchLower));
         });
     }, [orders, searchQuery]);
     
@@ -294,7 +291,7 @@ export function OrdersTable() {
             acc.cod += order.cod || 0;
             acc.driverFee += (order.driverFee || 0) + (order.driverAdditionalFare || 0);
             acc.additionalCost += order.additionalCost || 0;
-            acc.companyDue += (order.deliveryFee + order.additionalCost) - (order.driverFee + order.driverAdditionalFare);
+            acc.companyDue += (order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0));
             return acc;
         }, { itemPrice: 0, deliveryFee: 0, cod: 0, driverFee: 0, additionalCost: 0, companyDue: 0 });
     }, [orders, selectedRows, paginatedOrders]);
@@ -449,7 +446,7 @@ export function OrdersTable() {
                             content = value ? <Badge variant="secondary">{value as string}</Badge> : '-';
                             break;
                         case 'companyDue':
-                             content = formatCurrency((order.deliveryFee + order.additionalCost) - (order.driverFee + order.driverAdditionalFare));
+                             content = formatCurrency((order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0)));
                              break;
                         case 'itemPrice':
                         case 'deliveryFee':
@@ -860,7 +857,7 @@ export function OrdersTable() {
                                 <SelectValue placeholder={modalState.type === 'assignDriver' ? 'اختر سائق...' : 'اختر حالة...'} />
                             </SelectTrigger>
                             <SelectContent>
-                                { (modalState.type === 'assignDriver' ? ['علي الأحمد', 'محمد الخالد'] : statuses.filter(s => s.isActive).map(s=>s.name)).map(item => (
+                                { (modalState.type === 'assignDriver' ? ['علي الأحمد', 'ابو العبد', 'محمد الخالد'] : statuses.filter(s => s.isActive).map(s=>s.name)).map(item => (
                                     <SelectItem key={item} value={item}>{item}</SelectItem>
                                 )) }
                             </SelectContent>
