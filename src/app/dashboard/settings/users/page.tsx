@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -175,16 +176,19 @@ const UserDialog = ({
 }) => {
     const { toast } = useToast();
     const [name, setName] = useState('');
+    const [storeName, setStoreName] = useState('');
     const [email, setEmail] = useState('');
     const [roleId, setRoleId] = useState<Role['id'] | ''>('');
 
     React.useEffect(() => {
         if(user) {
             setName(user.name);
+            setStoreName(user.storeName || '');
             setEmail(user.email);
             setRoleId(user.roleId);
         } else {
             setName('');
+            setStoreName('');
             setEmail('');
             setRoleId(isDriver ? 'driver' : (isMerchant ? 'merchant' : ''));
         }
@@ -199,7 +203,7 @@ const UserDialog = ({
             });
             return;
         }
-        onSave({ name, email, roleId, avatar: user?.avatar || '' });
+        onSave({ name, storeName, email, roleId, avatar: user?.avatar || '' });
     }
     
     return (
@@ -213,9 +217,15 @@ const UserDialog = ({
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label htmlFor="name">اسم المستخدم</Label>
+                        <Label htmlFor="name">اسم التاجر/المستخدم</Label>
                         <Input id="name" placeholder="أدخل الاسم..." value={name} onChange={(e) => setName(e.target.value)} />
                     </div>
+                     {isMerchant && (
+                        <div className="space-y-2">
+                            <Label htmlFor="storeName">اسم المتجر</Label>
+                            <Input id="storeName" placeholder="أدخل اسم المتجر..." value={storeName} onChange={(e) => setStoreName(e.target.value)} />
+                        </div>
+                     )}
                      <div className="space-y-2">
                         <Label htmlFor="email">البريد الإلكتروني / رقم الهاتف</Label>
                         <Input id="email" type="text" placeholder="أدخل البريد الإلكتروني أو رقم الهاتف..." value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -270,11 +280,11 @@ const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; r
                 }}>
                     <Avatar className="h-12 w-12 border">
                         <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                        <AvatarFallback>{(user.storeName || user.name).slice(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div className="space-y-1 text-right">
-                        <h3 className="font-semibold">{user.name}</h3>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        <h3 className="font-semibold">{user.storeName || user.name}</h3>
+                        <p className="text-sm text-muted-foreground">{user.roleId === 'merchant' ? user.name : user.email}</p>
                         {role && <Badge variant="secondary">{role.name}</Badge>}
                     </div>
                 </Link>
@@ -325,7 +335,8 @@ const UserList = ({ users, roles, isDriverTab, isMerchantTab, activeTab, onAdd, 
     
     const filteredUsers = useMemo(() => 
         users.filter(user => 
-            user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (user.storeName && user.storeName.toLowerCase().includes(searchQuery.toLowerCase())) || 
             user.email.toLowerCase().includes(searchQuery.toLowerCase())
         ), [users, searchQuery]
     );
@@ -526,6 +537,7 @@ export default function UsersPage() {
 
               addUser({
                   name: item.name,
+                  storeName: item.storeName || item.name,
                   email: item.email,
                   roleId: roleId,
                   avatar: '',

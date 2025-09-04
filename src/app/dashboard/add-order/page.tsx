@@ -261,7 +261,7 @@ const AddOrderPage = () => {
       region: regionName,
       status: settings.orders.defaultStatus,
       driver: 'غير معين',
-      merchant: merchant.name,
+      merchant: merchant.storeName || merchant.name,
       cod: isPrepaid ? 0 : data.cod,
       itemPrice: calculatedFees.itemPrice,
       deliveryFee: calculatedFees.deliveryFee,
@@ -390,7 +390,7 @@ const AddOrderPage = () => {
                           aria-expanded={merchantPopoverOpen}
                           className="w-full justify-between"
                       >
-                          {selectedMerchantId ? merchantOptions.find(m => m.id === selectedMerchantId)?.name : "اختر متجرًا..."}
+                          {selectedMerchantId ? (merchantOptions.find(m => m.id === selectedMerchantId)?.storeName || merchantOptions.find(m => m.id === selectedMerchantId)?.name) : "اختر متجرًا..."}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                   </PopoverTrigger>
@@ -403,7 +403,7 @@ const AddOrderPage = () => {
                                 {merchantOptions.map(m => (
                                     <CommandItem
                                         key={m.id}
-                                        value={m.name}
+                                        value={m.storeName || m.name}
                                         onSelect={() => {
                                             setSelectedMerchantId(m.id);
                                             setRecentlyAdded([]);
@@ -412,7 +412,7 @@ const AddOrderPage = () => {
                                         }}
                                     >
                                         <Check className={cn("mr-2 h-4 w-4", selectedMerchantId === m.id ? "opacity-100" : "opacity-0")} />
-                                        {m.name}
+                                        {m.storeName || m.name}
                                     </CommandItem>
                                 ))}
                             </CommandGroup>
@@ -657,14 +657,14 @@ const AddOrderPage = () => {
                                               {merchantOptions.map(m => (
                                                 <CommandItem
                                                   key={m.id}
-                                                  value={m.name}
+                                                  value={m.storeName || m.name}
                                                   onSelect={() => {
-                                                    handleUpdateRecentlyAdded(order.id, 'merchant', m.name);
+                                                    handleUpdateRecentlyAdded(order.id, 'merchant', m.storeName || m.name);
                                                     togglePopover(`merchant-${order.id}`);
                                                   }}
                                                 >
-                                                  <Check className={cn("mr-2 h-4 w-4", order.merchant === m.name ? "opacity-100" : "opacity-0")} />
-                                                  {m.name}
+                                                  <Check className={cn("mr-2 h-4 w-4", order.merchant === (m.storeName || m.name) ? "opacity-100" : "opacity-0")} />
+                                                  {m.storeName || m.name}
                                                 </CommandItem>
                                               ))}
                                             </CommandGroup>
