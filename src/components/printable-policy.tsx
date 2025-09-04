@@ -17,31 +17,37 @@ const mmToPt = (mm: number) => mm * 2.83465;
 
 const replacePlaceholders = (text: string, order: Order, logos: { companyLogo?: string | null }): string => {
     if (!text) return '';
-    
-    let processedText = text
-        .replace(/\{\{recipient\}\}/g, order.recipient)
-        .replace(/\{\{phone\}\}/g, order.phone)
-        .replace(/\{\{address\}\}/g, order.address)
-        .replace(/\{\{city\}\}/g, order.city)
-        .replace(/\{\{region\}\}/g, order.region || '')
-        .replace(/\{\{cod\}\}/g, String(order.cod))
-        .replace(/\{\{merchant\}\}/g, order.merchant)
-        .replace(/\{\{date\}\}/g, order.date)
-        .replace(/\{\{orderId\}\}/g, order.id)
-        .replace(/\{\{referenceNumber\}\}/g, order.referenceNumber || '')
-        .replace(/\{\{source\}\}/g, order.source)
-        .replace(/\{\{driver\}\}/g, order.driver)
-        // Assume items is an array in the future; for now, join if it exists
-        .replace(/\{\{items\}\}/g, Array.isArray((order as any).items) ? (order as any).items.join(', ') : '')
-        .replace(/\{\{notes\}\}/g, order.notes || '');
 
-    if (logos.companyLogo) {
-        processedText = processedText.replace(/\{\{company_logo\}\}/g, logos.companyLogo);
-        processedText = processedText.replace(/\{\{header_logo\}\}/g, logos.companyLogo);
-    }
+    // A more robust, dynamic placeholder replacement function.
+    return text.replace(/\{\{([\w\d._]+)\}\}/g, (match, key) => {
+        // Special cases for logos
+        if (key === 'company_logo' || key === 'header_logo') {
+            return logos.companyLogo || '';
+        }
+
+        // Access nested properties if any (e.g., order.customer.name)
+        const keys = key.split('.');
+        let value: any = order;
+
+        for (const k of keys) {
+            if (value && typeof value === 'object' && k in value) {
+                value = value[k];
+            } else {
+                // If at any point the key is not found, return the original placeholder
+                return match;
+            }
+        }
         
-    return processedText;
+        // If the final value is an object (shouldn't happen for simple text), return placeholder
+        if (typeof value === 'object' && value !== null) {
+            return match;
+        }
+
+        // Return the found value, or an empty string if it's null/undefined
+        return value !== null && value !== undefined ? String(value) : '';
+    });
 };
+
 
 const renderElement = (element: PolicyElement, order: Order, logos: { companyLogo?: string | null }) => {
     const style: React.CSSProperties = {
