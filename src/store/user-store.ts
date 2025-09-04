@@ -31,22 +31,6 @@ const initialUsers: User[] = [
     { id: 'driver-8', name: 'سامر الطباخي', email: '0790690353', roleId: 'driver', avatar: '', password: '123456789' },
     { id: 'driver-9', name: 'فارس الأسمر', email: '0795365013', roleId: 'driver', avatar: '', password: '123456789' },
     { id: 'driver-10', name: 'حسن زيغان', email: '0786112230', roleId: 'driver', avatar: '', password: '123456789' },
-    // Merchants (The user's correct list)
-    { id: "merchant-1", name: "السامي", email: "alsami@example.com", roleId: "merchant", avatar: "", password: "123" },
-    { id: "merchant-2", name: "جنان صغيرة", email: "jinan@example.com", roleId: "merchant", avatar: "", password: "123" },
-    { id: "merchant-3", name: "Brands of less", email: "brands@example.com", roleId: "merchant", avatar: "", password: "123" },
-    { id: "merchant-4", name: "عسل", email: "asal@example.com", roleId: "merchant", avatar: "", password: "123" },
-    { id: "merchant-5", name: "Roosh Cosmetics", email: "roosh@example.com", roleId: "merchant", avatar: "", password: "123" },
-    { id: "merchant-6", name: "SoundRush", email: "soundrush@example.com", roleId: "merchant", avatar: "", password: "123" },
-    { id: "merchant-7", name: "Stress Killer", email: "stresskiller@example.com", roleId: "merchant", avatar: "", password: "123" },
-    { id: "merchant-8", name: "Brandlet Outlet", email: "brandlet@example.com", roleId: "merchant", avatar: "", password: "123" },
-    { id: "merchant-9", name: "دولي", email: "dooli@example.com", roleId: "merchant", avatar: "", password: "123" },
-    { id: "merchant-10", name: "زينة بوتيك", email: "zeina@example.com", roleId: "merchant", avatar: "", password: "123" },
-    { id: "merchant-11", name: "Fares Store", email: "fares@example.com", roleId: "merchant", avatar: "", password: "123" },
-    { id: "merchant-12", name: "مكتبة قرطبة", email: "qurtuba@example.com", roleId: "merchant", avatar: "", password: "123" },
-    { id: "merchant-13", name: "مروة حماد", email: "marwa@example.com", roleId: "merchant", avatar: "", password: "123" },
-    { id: "merchant-14", name: "اميرة ابو الرب", email: "ameera.ar@example.com", roleId: "merchant", avatar: "", password: "123" },
-    { id: "merchant-15", name: "اميرة عبد النبي", email: "ameera.an@example.com", roleId: "merchant", avatar: "", password: "123" }
 ];
 
 type UsersState = {
