@@ -322,6 +322,44 @@ export default function PolicyEditorPage() {
         };
     }, [margins, paperDimensions]);
 
+    // Keyboard movement handler
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (selectedIds.length === 0) return;
+            
+            const isArrowKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
+            if (!isArrowKey) return;
+
+            e.preventDefault();
+
+            const moveAmount = e.shiftKey ? GRID_SIZE : 1;
+            let dx = 0;
+            let dy = 0;
+
+            if (e.key === 'ArrowLeft') dx = -moveAmount;
+            if (e.key === 'ArrowRight') dx = moveAmount;
+            if (e.key === 'ArrowUp') dy = -moveAmount;
+            if (e.key === 'ArrowDown') dy = moveAmount;
+
+            setElements(prevElements => 
+                prevElements.map(el => {
+                    if (selectedIds.includes(el.id)) {
+                        const newX = el.x + dx;
+                        const newY = el.y + dy;
+                        // Optional: Add boundary checks here if needed
+                        return { ...el, x: newX, y: newY };
+                    }
+                    return el;
+                })
+            );
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [selectedIds]);
+
 
     // ----------- Element Management -----------
     const addElement = useCallback((tool: typeof toolboxItems[0]) => {
@@ -683,9 +721,9 @@ export default function PolicyEditorPage() {
             </CardHeader>
         </Card>
         
-        <Card>
+         <Card>
             <CardContent className="p-2">
-                 <div className="flex items-center gap-4">
+                 <div className="flex items-center flex-wrap gap-x-4 gap-y-2">
                     <div className="flex items-center gap-2">
                         <Label className="text-sm font-medium whitespace-nowrap">إضافة:</Label>
                         {toolboxItems.map(tool => (
@@ -846,7 +884,7 @@ export default function PolicyEditorPage() {
                                                 ...position,
                                             });
                                         }}
-                                        onClick={(e) => handleSelect(el.id, e)}
+                                        onClick={(e) => handleSelect(el.id, e as React.MouseEvent<HTMLDivElement>)}
                                         className={selectedIds.includes(el.id) ? 'border-2 border-dashed border-primary z-40' : 'z-30'}
                                         bounds="parent"
                                      >
