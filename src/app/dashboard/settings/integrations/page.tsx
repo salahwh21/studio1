@@ -111,7 +111,17 @@ export default function IntegrationsPage() {
     };
 
     const handleActionClick = (integrationId: string) => {
-        router.push(`/dashboard/settings/integrations/connect/${integrationId}`);
+        const newConnection: Connection = {
+            id: nanoid(),
+            integrationId: integrationId,
+            name: integrationsList.find(i => i.id === integrationId)?.name || 'تكامل جديد',
+            enabled: true,
+            health: 'healthy',
+            lastSync: new Date().toISOString(),
+        };
+        const newConnections = [...connections, newConnection];
+        saveConnections(newConnections);
+        router.push(`/dashboard/settings/integrations/${newConnection.id}`);
     };
     
      const handleToggleConnection = (connectionId: string, enabled: boolean) => {
