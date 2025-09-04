@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/icon';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsTrigger, TabsList, TabsContent } from '@/components/ui/tabs';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 // This list can be expanded and moved to a shared file later
@@ -75,6 +77,89 @@ const initialRules = [
     { id: 1, conditionField: 'city', conditionOperator: 'equals', conditionValue: 'إربد', action: 'assign_driver', actionValue: 'فريق المحافظات', enabled: true },
     { id: 2, conditionField: 'tags', conditionOperator: 'contains', conditionValue: 'VIP', action: 'set_price_list', actionValue: 'أسعار VIP', enabled: true },
 ];
+
+const AgentMessage = ({ sender, children }: { sender: 'user' | 'agent', children: React.ReactNode }) => {
+    const isUser = sender === 'user';
+    return (
+      <div className={`flex items-start gap-3 ${isUser ? 'justify-end' : ''}`}>
+        {!isUser && (
+          <Avatar className="h-8 w-8">
+            <AvatarImage src="/placeholder.svg?text=AI" alt="AI Agent" />
+            <AvatarFallback>AI</AvatarFallback>
+          </Avatar>
+        )}
+        <div
+          className={`max-w-xs rounded-2xl p-3 ${isUser
+              ? 'rounded-br-none bg-primary text-primary-foreground'
+              : 'rounded-bl-none bg-muted'
+            }`}
+        >
+          {children}
+        </div>
+        {isUser && (
+           <Avatar className="h-8 w-8">
+            <AvatarImage src="/placeholder.svg?text=You" alt="User" />
+            <AvatarFallback>U</AvatarFallback>
+          </Avatar>
+        )}
+      </div>
+    );
+};
+
+const IntegrationAgent = ({ integrationName }: { integrationName: string }) => {
+    const { toast } = useToast();
+    const handleSend = () => {
+        toast({ title: "تم الإرسال (تجريبي)", description: "في التطبيق الفعلي، سيتم التحقق من المفتاح." });
+    }
+    const handleFileUpload = () => {
+        toast({ title: "تم الإرفاق (تجريبي)" });
+    }
+    return (
+        <Card className="bg-muted/50">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Icon name="Wand2" /> مساعد الإعداد (Agent)</CardTitle>
+                <CardDescription>
+                    استخدم هذا المساعد التفاعلي لإرشادك خلال عملية الربط مع {integrationName}.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex h-[400px] flex-col rounded-lg border bg-background p-4">
+                    <ScrollArea className="flex-1 space-y-4 pr-4">
+                        <AgentMessage sender="agent">
+                            <p className="text-sm">
+                                أهلاً بك! أنا هنا لمساعدتك في الربط مع {integrationName}. للحصول على مفتاح الربط (API Token)، يرجى اتباع الخطوات التالية في لوحة تحكم {integrationName}:
+                                <br />
+                                1. اذهب إلى قسم التطبيقات (Apps).
+                                <br />
+                                2. اختر "تطوير التطبيقات" (Develop apps).
+                                <br />
+                                3. أنشئ تطبيقاً جديداً وامنحه صلاحيات القراءة والكتابة للطلبات (read/write orders).
+                                <br />
+                                4. انسخ مفتاح الوصول (API access token) والصقه هنا.
+                            </p>
+                        </AgentMessage>
+                         <AgentMessage sender="agent">
+                            <p className="text-sm">
+                                يمكنك أيضاً إرفاق ملف CSV أو JSON يحتوي على بيانات الربط إذا كان لديك.
+                            </p>
+                        </AgentMessage>
+                    </ScrollArea>
+                    <div className="mt-4 flex items-center gap-2 border-t pt-4">
+                        <Input
+                            placeholder="الصق مفتاح الربط هنا..."
+                            className="flex-1"
+                        />
+                        <Button onClick={handleSend}>إرسال</Button>
+                        <Button variant="outline" size="icon" onClick={handleFileUpload}>
+                            <Icon name="Paperclip" className="h-4 w-4" />
+                            <span className="sr-only">إرفاق ملف</span>
+                        </Button>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
 
 export default function IntegrationDetailPage() {
     const params = useParams();
@@ -153,9 +238,11 @@ export default function IntegrationDetailPage() {
                 </CardHeader>
             </Card>
             
+            <IntegrationAgent integrationName={integrationInfo.name} />
+
             <Tabs defaultValue="main-settings">
                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="main-settings"><Icon name="Settings" className="ml-2"/>الإعدادات الرئيسية</TabsTrigger>
+                    <TabsTrigger value="main-settings"><Icon name="Settings" className="ml-2"/>الإعدادات اليدوية</TabsTrigger>
                     <TabsTrigger value="sync-center"><Icon name="RefreshCw" className="ml-2"/>مركز المزامنة</TabsTrigger>
                 </TabsList>
                 
