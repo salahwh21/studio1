@@ -640,7 +640,7 @@ const OrdersTableComponent = () => {
                                                 <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(['id', 'recipient', 'status'])}>إخفاء الكل</Button>
                                             </div>
                                             <DropdownMenuSeparator />
-                                             <ScrollArea className="max-h-96">
+                                             <ScrollArea className="max-h-[400px]">
                                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
                                                     <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
                                                         {ALL_COLUMNS.map((column) => (
