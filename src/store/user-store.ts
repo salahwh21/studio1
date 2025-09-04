@@ -59,6 +59,7 @@ const initialUsers: User[] = [
     { id: 'merchant-layali', name: 'ليالي', email: '0796779264', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-alsami-jadeed', name: 'السامي جديد', email: '0795595544', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-alsami', name: 'السامي', email: '0795032558', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-alsami-unique', name: 'السامي', email: '0795032559', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-watermelon', name: 'Watermelon', email: '0799996991', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-visionary-closet', name: 'Visionary Closet', email: '0507963858', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-the-beauty-spot', name: 'The beauty Spot', email: '0799996991', roleId: 'merchant', avatar: '', password: '123' },
@@ -110,6 +111,13 @@ const initialUsers: User[] = [
     { id: 'merchant-artfullypieces', name: 'artfully pieces', email: '0799965664', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-ooflingerie', name: 'OOF lingerie - مجدولين مجدولين', email: '0796446987', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-danahawamdeh', name: 'دانا الحوامدة', email: '0777055604', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-brands-of-less', name: 'Brands of less', email: '0781399935', roleId: 'merchant', avatar: '', password: '123'},
+    { id: 'merchant-soundrush', name: 'SoundRush', email: '0799780790', roleId: 'merchant', avatar: '', password: '123'},
+    { id: 'merchant-hedoomcom', name: 'هدومكم', email: '0777055604', roleId: 'merchant', avatar: '', password: '123'},
+    { id: 'merchant-attara_zaloom', name: 'عطارة زلوم', email: '0790965593', roleId: 'merchant', avatar: '', password: '123'},
+    { id: 'merchant-arqia_perfumes', name: 'ارقية للبخور', email: '0790989646', roleId: 'merchant', avatar: '', password: '123'},
+    { id: 'merchant-hodi_hodi', name: 'هودي هودي', email: '0796365702', roleId: 'merchant', avatar: '', password: '123'},
+    { id: 'merchant-banan_khader', name: 'بنان خضر', email: '0778877889', roleId: 'merchant', avatar: '', password: '123'},
 ];
 
 
@@ -175,3 +183,4 @@ export const useUsersStore = create<UsersState>()(immer((set, get) => ({
         });
     },
 })));
+

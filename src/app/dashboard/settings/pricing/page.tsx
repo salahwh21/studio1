@@ -79,6 +79,8 @@ const initialPriceLists: PriceList[] = [
   { id: 'pl_k_by_women', name: 'k by women', description: 'قائمة أسعار خاصة لـ k by women', merchantCount: 1 },
   { id: 'pl_memories_store', name: 'Memories Store', description: 'قائمة أسعار خاصة لـ Memories Store', merchantCount: 1 },
   { id: 'pl_ro_designs', name: 'Ro Designs', description: 'قائمة أسعار خاصة لـ Ro Designs', merchantCount: 1 },
+  { id: 'pl_2_5-3', name: 'أسعار 2.5-3', description: 'قائمة أسعار مخصصة (2.5 دينار عمان، 3 دنانير محافظات).', merchantCount: 2 },
+  { id: 'pl_2-2_5', name: 'أسعار 2-2.5', description: 'قائمة أسعار مخصصة (2 دينار عمان، 2.5 دنانير محافظات).', merchantCount: 1 },
 ];
 
 const PriceListCard = ({ list, onEdit, onDelete }: { list: PriceList; onEdit: (list: PriceList) => void; onDelete: (list: PriceList) => void; }) => {
