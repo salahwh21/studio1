@@ -267,17 +267,14 @@ export default function PolicyEditorPage() {
     
     const { settings: policySettings, isHydrated, updatePolicySetting } = context;
 
-    const [elements, setElements] = useState<PolicyElement[]>(policySettings?.policy.elements || []);
-    const [paperSize, setPaperSize] = useState<PolicySettings['paperSize']>(policySettings?.policy.paperSize || 'custom');
-    const [customDimensions, setCustomDimensions] = useState(policySettings?.policy.customDimensions || { width: 100, height: 150 });
-    const [margins, setMargins] = useState(policySettings?.policy.margins || { top: 2, right: 2, bottom: 2, left: 2 });
+    const [elements, setElements] = useState<PolicyElement[]>([]);
+    const [paperSize, setPaperSize] = useState<PolicySettings['paperSize']>('custom');
+    const [customDimensions, setCustomDimensions] = useState({ width: 100, height: 150 });
+    const [margins, setMargins] = useState({ top: 2, right: 2, bottom: 2, left: 2 });
     const [zoomLevel, setZoomLevel] = useState(0.8);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [isDragging, setIsDragging] = useState(false);
-    const [smartGuides, setSmartGuides] = useState<{ x: number[], y: number[] }>({ x: [], y: [] });
+    
     const canvasRef = useRef<HTMLDivElement>(null);
-    const importTemplateInputRef = useRef<HTMLInputElement>(null);
-    const dragStartPositions = useRef<Record<string, {x: number, y: number}>>({});
 
     const [templates, setTemplates] = useState<SavedTemplate[]>([]);
     
@@ -290,33 +287,21 @@ export default function PolicyEditorPage() {
     
     // Load from localStorage
     useEffect(() => {
-        if (isHydrated && policySettings) {
-            setElements(policySettings.policy.elements);
-            setPaperSize(policySettings.policy.paperSize);
-            setCustomDimensions(policySettings.policy.customDimensions);
-            setMargins(policySettings.policy.margins);
-        }
-        try {
-            const savedTemplatesJson = localStorage.getItem('policyTemplates');
-            const userTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
-             // Combine ready-made with user-saved, giving priority to user-saved if names conflict
-            const userTemplateMap = new Map(userTemplates.map((t: SavedTemplate) => [t.name, t]));
-            const combined = [...readyTemplates.filter(rt => !userTemplateMap.has(rt.name)), ...userTemplates];
-            setTemplates(combined);
-
-        } catch (e) {
-            console.error("Failed to load templates from localStorage", e);
+        const savedTemplatesJson = localStorage.getItem('policyTemplates');
+        if (savedTemplatesJson) {
+            setTemplates(JSON.parse(savedTemplatesJson));
+        } else {
+            // First time load, populate from ready templates
             setTemplates(readyTemplates);
         }
-    }, [isHydrated, policySettings]);
+    }, []);
 
     const paperDimensions = useMemo(() => {
-        if (!isHydrated || !customDimensions) return { width: mmToPx(100), height: mmToPx(150) };
         if (paperSize === 'custom') return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
         const size = paperSizes[paperSize];
-        if (!size) return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) }; // Fallback
+        if (!size) return { width: mmToPx(100), height: mmToPx(150) }; // Fallback
         return { width: mmToPx(size.width), height: mmToPx(size.height) };
-    }, [paperSize, customDimensions, isHydrated]);
+    }, [paperSize, customDimensions]);
     
     const canvasBounds = useMemo(() => {
         return {
@@ -351,7 +336,6 @@ export default function PolicyEditorPage() {
                     if (selectedIds.includes(el.id)) {
                         const newX = el.x + dx;
                         const newY = el.y + dy;
-                        // Optional: Add boundary checks here if needed
                         return { ...el, x: newX, y: newY };
                     }
                     return el;
@@ -369,7 +353,6 @@ export default function PolicyEditorPage() {
     // ----------- Element Management -----------
     const addElement = useCallback((tool: typeof toolboxItems[0]) => {
         if (!canvasRef.current) return;
-        const canvasRect = canvasRef.current.getBoundingClientRect();
         const centerX = paperDimensions.width / 2;
         const centerY = paperDimensions.height / 2;
 
@@ -460,109 +443,12 @@ export default function PolicyEditorPage() {
         }
     };
     
-    // --- Smart Guides and Snapping Logic ---
-    const generateSmartGuides = (draggingElement: PolicyElement) => {
-        const guides: {x: number[], y: number[]} = { x: [], y: [] };
-        const otherElements = elements.filter(el => !selectedIds.includes(el.id));
-        
-        const canvasGuideBounds = {
-            x: mmToPx(margins.left),
-            y: mmToPx(margins.top),
-            width: paperDimensions.width - mmToPx(margins.left) - mmToPx(margins.right),
-            height: paperDimensions.height - mmToPx(margins.top) - mmToPx(margins.bottom)
-        };
-        
-        const elBounds = {
-            left: draggingElement.x, right: draggingElement.x + draggingElement.width,
-            top: draggingElement.y, bottom: draggingElement.y + draggingElement.height,
-            cx: draggingElement.x + draggingElement.width / 2, cy: draggingElement.y + draggingElement.height / 2
-        };
-        const targets = [...otherElements.map(el => ({
-            left: el.x, right: el.x + el.width, top: el.y, bottom: el.y + el.height,
-            cx: el.x + el.width / 2, cy: el.y + el.height / 2
-        })), {
-            left: canvasGuideBounds.x, right: canvasGuideBounds.x + canvasGuideBounds.width,
-            top: canvasGuideBounds.y, bottom: canvasGuideBounds.y + canvasGuideBounds.height,
-            cx: canvasGuideBounds.x + canvasGuideBounds.width / 2,
-            cy: canvasGuideBounds.y + canvasGuideBounds.height / 2
-        }];
-
-        let newX = elBounds.left, newY = elBounds.top;
-
-        targets.forEach(target => {
-            ['left', 'cx', 'right'].forEach(p => {
-                const prop = p as 'left' | 'cx' | 'right';
-                if (Math.abs(elBounds[prop] - target[prop]) < SNAP_THRESHOLD) { newX += target[prop] - elBounds[prop]; guides.x.push(target[prop]); }
-            });
-            ['top', 'cy', 'bottom'].forEach(p => {
-                const prop = p as 'top' | 'cy' | 'bottom';
-                if (Math.abs(elBounds[prop] - target[prop]) < SNAP_THRESHOLD) { newY += target[prop] - elBounds[prop]; guides.y.push(target[prop]); }
-            });
-        });
-
-        return { newX: snapToGrid(newX), newY: snapToGrid(newY), guides };
-    };
-
-    const handleDragStart = (id: string) => {
-        setIsDragging(true);
-        const startPositions: Record<string, {x: number, y: number}> = {};
-        selectedIds.forEach(selectedId => {
-            const el = elements.find(e => e.id === selectedId);
-            if (el) startPositions[selectedId] = { x: el.x, y: el.y };
-        });
-        dragStartPositions.current = startPositions;
-    };
-    
-    const handleDragStop = () => {
-        setIsDragging(false);
-        setSmartGuides({ x: [], y: [] });
-    };
-
-    const handleDrag = (id: string, d: {x: number, y: number, width: number, height: number}) => {
-        const mainElement = elements.find(el => el.id === id);
-        if (!mainElement) return;
-
-        const mainElementStartPos = dragStartPositions.current[id];
-        if (!mainElementStartPos) return;
-
-        const deltaX = d.x - mainElementStartPos.x;
-        const deltaY = d.y - mainElementStartPos.y;
-
-        let movedElements = elements.map(el => {
-            if (selectedIds.includes(el.id)) {
-                const startPos = dragStartPositions.current[el.id];
-                if (startPos) {
-                    return { ...el, x: startPos.x + deltaX, y: startPos.y + deltaY };
-                }
-            }
-            return el;
-        });
-        
-        const mainMovedElement = movedElements.find(el => el.id === id);
-        if(!mainMovedElement) return;
-
-        const { newX, newY, guides } = generateSmartGuides(mainMovedElement);
-        setSmartGuides(guides);
-
-        const snapDeltaX = newX - mainMovedElement.x;
-        const snapDeltaY = newY - mainMovedElement.y;
-        
-        movedElements = movedElements.map(el => {
-            if (selectedIds.includes(el.id)) {
-                return { ...el, x: snapToGrid(el.x + snapDeltaX), y: snapToGrid(el.y + snapDeltaY) };
-            }
-            return el;
-        });
-
-        setElements(movedElements);
-    };
-
     // --- Template Management ---
     const saveTemplatesToStorage = (newTemplates: SavedTemplate[]) => {
         localStorage.setItem('policyTemplates', JSON.stringify(newTemplates));
         setTemplates(newTemplates);
     };
-
+    
     const handleSaveTemplate = () => {
         if (!templateName) {
             toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء إدخال اسم للقالب.' });
@@ -574,21 +460,22 @@ export default function PolicyEditorPage() {
             elements, paperSize, customDimensions, margins
         };
 
-        let newTemplates;
         if(editingTemplateId) {
-             newTemplates = templates.map(t => t.id === editingTemplateId ? { ...templateData, id: editingTemplateId } : t);
+             const newTemplates = templates.map(t => t.id === editingTemplateId ? { ...templateData, id: editingTemplateId, isReadyMade: false } : t);
+             saveTemplatesToStorage(newTemplates);
+             toast({ title: "تم حفظ التعديل", description: `تم تحديث قالب "${templateName}" بنجاح.` });
         } else {
             const newTemplate: SavedTemplate = { ...templateData, id: nanoid() };
-            newTemplates = [...templates, newTemplate];
+            const newTemplates = [...templates, newTemplate];
+            saveTemplatesToStorage(newTemplates);
+            toast({ title: "تم إنشاء قالب جديد", description: `تم حفظ قالب "${templateName}" بنجاح.` });
         }
         
-        saveTemplatesToStorage(newTemplates);
-        toast({ title: "تم الحفظ", description: "تم حفظ القالب بنجاح." });
         setIsSaveDialogOpen(false);
         setTemplateName('');
         setEditingTemplateId(null);
     };
-    
+
     const handleLoadTemplate = (template: SavedTemplate) => {
         setElements(template.elements);
         setPaperSize(template.paperSize);
@@ -606,52 +493,6 @@ export default function PolicyEditorPage() {
         }
     };
     
-    const handleExportTemplate = () => {
-        const currentDesign: SavedTemplate = {
-            id: 'exported-template', name: 'قالب مُصَدَّر', elements, paperSize, customDimensions, margins
-        };
-
-        const dataStr = JSON.stringify(currentDesign, null, 2);
-        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-        const exportFileDefaultName = `template_${Date.now()}.json`;
-        
-        const linkElement = document.createElement('a');
-        linkElement.setAttribute('href', dataUri);
-        linkElement.setAttribute('download', exportFileDefaultName);
-        linkElement.click();
-    };
-    
-    const handleImportTemplate = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const text = e.target?.result;
-                if (typeof text !== 'string') throw new Error("File could not be read.");
-
-                const importedTemplate: SavedTemplate = JSON.parse(text);
-                if (importedTemplate.elements && importedTemplate.paperSize) {
-                    handleLoadTemplate(importedTemplate);
-                    toast({ title: 'تم استيراد القالب بنجاح' });
-                } else {
-                    throw new Error("Invalid template format.");
-                }
-            } catch (err) {
-                 toast({ variant: 'destructive', title: 'فشل الاستيراد', description: 'الملف غير صالح أو تالف.' });
-            }
-        };
-        reader.readAsText(file);
-    };
-    
-    const handleRestoreDefaults = () => {
-        saveTemplatesToStorage(readyTemplates);
-        toast({ title: "تمت الاستعادة", description: "تم استعادة القوالب الافتراضية بنجاح." });
-    };
-
-    if (!isHydrated) return null;
-    
     const currentTemplate: SavedTemplate = useMemo(() => ({
         id: 'current_design',
         name: 'Current Design',
@@ -666,7 +507,7 @@ export default function PolicyEditorPage() {
         <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
             <DialogContent>
                 <DialogHeader>
-                <DialogTitle>{editingTemplateId ? 'تحديث القالب' : 'حفظ قالب جديد'}</DialogTitle>
+                <DialogTitle>{editingTemplateId ? 'حفظ التعديل' : 'حفظ كقالب جديد'}</DialogTitle>
                 <DialogDescription>أدخل اسمًا مميزًا لهذا القالب.</DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
@@ -675,7 +516,9 @@ export default function PolicyEditorPage() {
                 </div>
                 <DialogFooter>
                 <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
-                <Button onClick={handleSaveTemplate}>حفظ القالب</Button>
+                <Button onClick={handleSaveTemplate}>
+                    {editingTemplateId ? 'حفظ التعديل' : 'حفظ'}
+                </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -791,39 +634,26 @@ export default function PolicyEditorPage() {
                     onMarginChange={(margin, val) => setMargins(prev => ({...prev, [margin]: val}))}
                 />
                 <Card>
-                    <CardHeader><CardTitle className='text-base'>القوالب</CardTitle></CardHeader>
+                    <CardHeader><CardTitle className='text-base'>إدارة القوالب</CardTitle></CardHeader>
                     <CardContent>
-                        <div className="flex items-center gap-2 mb-2">
-                            <Button size="sm" variant="secondary" onClick={() => { setEditingTemplateId(null); setTemplateName(''); setIsSaveDialogOpen(true); }}>حفظ الحالي</Button>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button size="sm" variant="outline"><MoreVertical className="w-4 h-4"/></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onSelect={() => importTemplateInputRef.current?.click()}>
-                                        <Upload className="ml-2 h-4 w-4"/> استيراد قالب
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={handleExportTemplate}>
-                                        <Download className="ml-2 h-4 w-4"/> تصدير الحالي
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onSelect={handleRestoreDefaults}>
-                                        <RefreshCcw className="ml-2 h-4 w-4"/> استعادة الافتراضي
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <input id="import-template-input" ref={importTemplateInputRef} type="file" accept=".json" onChange={handleImportTemplate} className="hidden" />
+                        <div className="flex items-center gap-2 mb-4">
+                            <Button className="flex-1" size="sm" onClick={() => { setEditingTemplateId(null); setTemplateName(''); setIsSaveDialogOpen(true); }}>
+                                <PlusCircle className="w-4 h-4 ml-2"/> إنشاء قالب جديد
+                            </Button>
+                            <Button className="flex-1" size="sm" variant="secondary" onClick={() => { if(editingTemplateId){setIsSaveDialogOpen(true)} }} disabled={!editingTemplateId}>
+                                <Save className="w-4 h-4 ml-2"/> حفظ التعديل
+                            </Button>
                         </div>
-                        <ScrollArea className="h-48">
+                        <Separator />
+                        <ScrollArea className="h-48 mt-4">
                         {templates.map(template => (
                         <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                            <Button variant="link" className="p-0 h-auto" onClick={() => handleLoadTemplate(template)}>{template.name}</Button>
+                            <Button variant="link" className="p-0 h-auto text-right" onClick={() => handleLoadTemplate(template)}>{template.name}</Button>
                             <DropdownMenu>
                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical /></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem onSelect={() => {setEditingTemplateId(template.id); setTemplateName(template.name); handleLoadTemplate(template); setIsSaveDialogOpen(true); }}>تحديث</DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => setTemplateToDelete(template)} className="text-destructive">حذف</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => {setEditingTemplateId(template.id); setTemplateName(template.name); handleLoadTemplate(template); }}>تعديل</DropdownMenuItem>
+                                {!template.isReadyMade && <DropdownMenuItem onSelect={() => setTemplateToDelete(template)} className="text-destructive">حذف</DropdownMenuItem>}
                             </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
@@ -859,23 +689,6 @@ export default function PolicyEditorPage() {
                                     }
                                 }}
                             >
-                                {isDragging && smartGuides.x.map((x, i) => <div key={`sgx-${i}`} className="absolute top-0 h-full w-px bg-red-500 z-50" style={{ left: x }} />)}
-                                {isDragging && smartGuides.y.map((y, i) => <div key={`sgy-${i}`} className="absolute left-0 w-full h-px bg-red-500 z-50" style={{ top: y }} />)}
-
-
-                                <div 
-                                    aria-hidden 
-                                    className="absolute inset-0 pointer-events-none" 
-                                    style={{
-                                        borderStyle: 'dashed',
-                                        borderWidth: '1px',
-                                        borderColor: '#cccccc',
-                                        top: `${mmToPx(margins.top)}px`,
-                                        left: `${mmToPx(margins.left)}px`,
-                                        bottom: `${mmToPx(margins.bottom)}px`,
-                                        right: `${mmToPx(margins.right)}px`,
-                                    }} 
-                                />
                                 <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
                                     backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
                                     backgroundImage: `linear-gradient(to right, #e5e5e5 1px, transparent 1px), linear-gradient(to bottom, #e5e5e5 1px, transparent 1px)`
@@ -885,17 +698,13 @@ export default function PolicyEditorPage() {
                                         key={el.id}
                                         size={{ width: el.width, height: el.height }}
                                         position={{ x: el.x, y: el.y }}
-                                        onDragStart={() => handleDragStart(el.id)}
-                                        onDrag={(e, d) => handleDrag(el.id, {x: d.x, y: d.y, width: el.width, height: el.height})}
-                                        onDragStop={(e, d) => {
-                                            handleDragStop();
-                                            handleUpdateElement(el.id, { x: d.x, y: d.y });
-                                        }}
+                                        onDragStop={(e, d) => handleUpdateElement(el.id, { x: snapToGrid(d.x), y: snapToGrid(d.y) })}
                                         onResizeStop={(e, direction, ref, delta, position) => {
                                             handleUpdateElement(el.id, {
-                                                width: parseInt(ref.style.width, 10),
-                                                height: parseInt(ref.style.height, 10),
-                                                ...position,
+                                                width: snapToGrid(parseInt(ref.style.width, 10)),
+                                                height: snapToGrid(parseInt(ref.style.height, 10)),
+                                                x: snapToGrid(position.x),
+                                                y: snapToGrid(position.y),
                                             });
                                         }}
                                         onClick={(e) => handleSelect(el.id, e as React.MouseEvent<HTMLDivElement>)}
