@@ -725,7 +725,7 @@ const OrdersTableComponent = () => {
                                                         >
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <ChevronDown
-                                                                className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")}
+                                                                    className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")}
                                                                 />
                                                                 <span>{groupKey}</span>
                                                                 <span className="text-sm opacity-90">({groupOrders.length})</span>
@@ -738,20 +738,17 @@ const OrdersTableComponent = () => {
                                                                 {visibleColumns.map(col => {
                                                                     if (col.type === "financial" || col.type === "admin_financial") {
                                                                         const totalValue = groupOrders.reduce(
-                                                                        (sum, order) => {
-                                                                            if (col.key === 'companyDue') {
-                                                                                return sum + ((order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0)));
-                                                                            }
-                                                                            return sum + (order[col.key as keyof Order] as number || 0);
-                                                                        }, 0
+                                                                            (sum, order) => {
+                                                                                if (col.key === 'companyDue') {
+                                                                                    return sum + ((order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0)));
+                                                                                }
+                                                                                return sum + (order[col.key as keyof Order] as number || 0);
+                                                                            }, 0
                                                                         );
                                                                         return (
-                                                                        <div
-                                                                            key={col.key}
-                                                                            className="text-right font-bold border-l border-white/20 pr-2"
-                                                                        >
-                                                                            {formatCurrency(totalValue)}
-                                                                        </div>
+                                                                            <div key={col.key} className="text-right font-bold border-l border-white/20 pr-2">
+                                                                                {formatCurrency(totalValue)}
+                                                                            </div>
                                                                         );
                                                                     }
                                                                     return <div key={col.key}></div>;
