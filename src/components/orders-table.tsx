@@ -632,7 +632,7 @@ const OrdersTableComponent = () => {
                                             <span>الأعمدة</span>
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-64 p-2 max-h-[400px] flex flex-col">
+                                        <DropdownMenuContent align="end" className="w-64 p-2 flex flex-col">
                                             <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
                                             <div className='flex items-center gap-2 p-1'>
                                                 <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(ALL_COLUMNS.map(c => c.key))}>إظهار الكل</Button>
@@ -640,7 +640,7 @@ const OrdersTableComponent = () => {
                                                 <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(['id', 'recipient', 'status'])}>إخفاء الكل</Button>
                                             </div>
                                             <DropdownMenuSeparator />
-                                            <ScrollArea className="flex-1 min-h-0">
+                                            <ScrollArea className='max-h-96'>
                                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
                                                     <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
                                                         {ALL_COLUMNS.map((column) => (
@@ -717,7 +717,7 @@ const OrdersTableComponent = () => {
                                                     onClick={() => setOpenGroups(prev => ({...prev, [groupKey]: !isGroupOpen}))}
                                                     className="font-bold text-base w-full bg-muted/50 hover:bg-muted/70 cursor-pointer border-b-2 border-border"
                                                 >
-                                                    <TableCell className="p-4 border-l">
+                                                    <TableCell className="p-4">
                                                         <div className="flex items-center gap-2">
                                                             <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
                                                             <span>{groupKey} ({groupOrders.length})</span>
@@ -735,9 +735,9 @@ const OrdersTableComponent = () => {
                                                                 }
                                                                 return sum + value;
                                                             }, 0);
-                                                            return <TableCell key={col.key} className="p-5 text-center whitespace-nowrap border-l text-primary font-bold">{formatCurrency(totalValue)}</TableCell>
+                                                            return <TableCell key={col.key} className="p-5 text-center whitespace-nowrap text-primary font-bold">{formatCurrency(totalValue)}</TableCell>
                                                         }
-                                                        return <TableCell key={col.key} className="p-5 text-center whitespace-nowrap border-l"></TableCell>
+                                                        return <TableCell key={col.key} className="p-5 text-center whitespace-nowrap"></TableCell>
                                                     })}
                                                 </TableRow>
                                                 
