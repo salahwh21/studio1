@@ -99,7 +99,7 @@ const initialUsers: User[] = [
     { id: 'merchant-rodesigns', name: 'Ro Designs', email: '0798156099', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-onlyshirts', name: 'Only Shirts', email: '0798482623', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-tacticaltent', name: 'Tactical tent-1', email: '0799887458', roleId: 'merchant', avatar: '', password: '123' },
-    { id: 'merchant-alsami', name: 'السامي للمستلزمات الطبية - خالد ش', email: '0795595545', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-alsami-medical', name: 'السامي للمستلزمات الطبية - خالد ش', email: '0795595545', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-majd', name: 'ماجد - جواد العبادي', email: '0785000035', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-maaldamask', name: 'معا لدمسك بيدهم', email: '0798150153', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-basmetics', name: 'basmetics - عاري المر', email: '0797907918', roleId: 'merchant', avatar: '', password: '123' },
