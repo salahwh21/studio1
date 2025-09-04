@@ -312,6 +312,16 @@ export default function PolicyEditorPage() {
         if (!size) return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) }; // Fallback
         return { width: mmToPx(size.width), height: mmToPx(size.height) };
     }, [paperSize, customDimensions, isHydrated]);
+    
+    const canvasBounds = useMemo(() => {
+        return {
+            left: mmToPx(margins.left),
+            top: mmToPx(margins.top),
+            right: paperDimensions.width - mmToPx(margins.right),
+            bottom: paperDimensions.height - mmToPx(margins.bottom),
+        };
+    }, [margins, paperDimensions]);
+
 
     // ----------- Element Management -----------
     const addElement = useCallback((tool: typeof toolboxItems[0]) => {
@@ -397,7 +407,6 @@ export default function PolicyEditorPage() {
     };
     
     const selectedElement = useMemo(() => elements.find(el => el.id === selectedIds[0]), [elements, selectedIds]);
-    const elementRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
     const handleSelect = (id: string, e: React.MouseEvent<HTMLDivElement>) => {
         e.stopPropagation();
@@ -412,8 +421,14 @@ export default function PolicyEditorPage() {
     const generateSmartGuides = (draggingElement: PolicyElement) => {
         const guides: {x: number[], y: number[]} = { x: [], y: [] };
         const otherElements = elements.filter(el => !selectedIds.includes(el.id));
-        const canvasBounds = { x: 0, y: 0, width: paperDimensions.width, height: paperDimensions.height };
-
+        
+        const canvasGuideBounds = {
+            x: mmToPx(margins.left),
+            y: mmToPx(margins.top),
+            width: paperDimensions.width - mmToPx(margins.left) - mmToPx(margins.right),
+            height: paperDimensions.height - mmToPx(margins.top) - mmToPx(margins.bottom)
+        };
+        
         const elBounds = {
             left: draggingElement.x, right: draggingElement.x + draggingElement.width,
             top: draggingElement.y, bottom: draggingElement.y + draggingElement.height,
@@ -423,8 +438,10 @@ export default function PolicyEditorPage() {
             left: el.x, right: el.x + el.width, top: el.y, bottom: el.y + el.height,
             cx: el.x + el.width / 2, cy: el.y + el.height / 2
         })), {
-            left: canvasBounds.x, right: canvasBounds.width, top: canvasBounds.y, bottom: canvasBounds.height,
-            cx: canvasBounds.width / 2, cy: canvasBounds.height / 2
+            left: canvasGuideBounds.x, right: canvasGuideBounds.x + canvasGuideBounds.width,
+            top: canvasGuideBounds.y, bottom: canvasGuideBounds.y + canvasGuideBounds.height,
+            cx: canvasGuideBounds.x + canvasGuideBounds.width / 2,
+            cy: canvasGuideBounds.y + canvasGuideBounds.height / 2
         }];
 
         let newX = elBounds.left, newY = elBounds.top;
@@ -453,12 +470,12 @@ export default function PolicyEditorPage() {
         dragStartPositions.current = startPositions;
     };
     
-    const handleDragStop = (id: string, d: {x: number, y: number}) => {
+    const handleDragStop = () => {
         setIsDragging(false);
         setSmartGuides({ x: [], y: [] });
     };
 
-    const handleDrag = (id: string, d: {x: number, y: number}) => {
+    const handleDrag = (id: string, d: {x: number, y: number, width: number, height: number}) => {
         const mainElement = elements.find(el => el.id === id);
         if (!mainElement) return;
 
@@ -478,15 +495,18 @@ export default function PolicyEditorPage() {
             return el;
         });
         
-        const { newX, newY, guides } = generateSmartGuides({ ...mainElement, x: d.x, y: d.y });
+        const mainMovedElement = movedElements.find(el => el.id === id);
+        if(!mainMovedElement) return;
+
+        const { newX, newY, guides } = generateSmartGuides(mainMovedElement);
         setSmartGuides(guides);
 
-        const snapDeltaX = newX - d.x;
-        const snapDeltaY = newY - d.y;
+        const snapDeltaX = newX - mainMovedElement.x;
+        const snapDeltaY = newY - mainMovedElement.y;
         
         movedElements = movedElements.map(el => {
             if (selectedIds.includes(el.id)) {
-                return { ...el, x: el.x + snapDeltaX, y: el.y + snapDeltaY };
+                return { ...el, x: snapToGrid(el.x + snapDeltaX), y: snapToGrid(el.y + snapDeltaY) };
             }
             return el;
         });
@@ -648,16 +668,18 @@ export default function PolicyEditorPage() {
         </AlertDialog>
       
         <Card>
-            <CardHeader className="flex-row justify-between items-start">
-                <div>
-                    <CardTitle className="text-2xl font-bold tracking-tight">محرر البوليصة</CardTitle>
-                    <CardDescription className="mt-1">اسحب وأفلت العناصر لتصميم البوليصة. انقر على عنصر لتعديل خصائصه.</CardDescription>
+            <CardHeader>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle className="text-2xl font-bold tracking-tight">محرر البوليصة</CardTitle>
+                        <CardDescription className="mt-1">اسحب وأفلت العناصر لتصميم البوليصة. انقر على عنصر لتعديل خصائصه.</CardDescription>
+                    </div>
+                    <Button variant="outline" size="icon" asChild>
+                        <Link href="/dashboard/settings/general">
+                            <ArrowLeft className="h-4 w-4" />
+                        </Link>
+                    </Button>
                 </div>
-                <Button variant="outline" size="icon" asChild>
-                    <Link href="/dashboard/settings/general">
-                        <ArrowLeft className="h-4 w-4" />
-                    </Link>
-                </Button>
             </CardHeader>
         </Card>
         
@@ -812,10 +834,10 @@ export default function PolicyEditorPage() {
                                         size={{ width: el.width, height: el.height }}
                                         position={{ x: el.x, y: el.y }}
                                         onDragStart={() => handleDragStart(el.id)}
-                                        onDrag={(e, d) => handleDrag(el.id, d)}
+                                        onDrag={(e, d) => handleDrag(el.id, {x: d.x, y: d.y, width: el.width, height: el.height})}
                                         onDragStop={(e, d) => {
+                                            handleDragStop();
                                             handleUpdateElement(el.id, { x: d.x, y: d.y });
-                                            handleDragStop(el.id, d);
                                         }}
                                         onResizeStop={(e, direction, ref, delta, position) => {
                                             handleUpdateElement(el.id, {
@@ -828,7 +850,7 @@ export default function PolicyEditorPage() {
                                         className={selectedIds.includes(el.id) ? 'border-2 border-dashed border-primary z-40' : 'z-30'}
                                         bounds="parent"
                                      >
-                                        <PolicyElementComponent element={el} ref={(node) => (elementRefs.current[el.id] = node)} />
+                                        <PolicyElementComponent element={el}/>
                                      </Rnd>
                                 ))}
                             </div>
