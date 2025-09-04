@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
@@ -10,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 
 const integrationsList = [
     { id: 'shopify', name: 'Shopify', iconName: 'ShoppingCart' as const },
@@ -47,6 +47,7 @@ export default function ConnectIntegrationPage() {
     const router = useRouter();
     const { integrationId } = params;
     const [integrationInfo, setIntegrationInfo] = useState<{ id: string; name: string; iconName: any; } | null>(null);
+    const { toast } = useToast();
 
     useEffect(() => {
         const foundIntegration = integrationsList.find(i => i.id === integrationId);
@@ -114,8 +115,8 @@ export default function ConnectIntegrationPage() {
                     <div className="relative w-full">
                         <Textarea placeholder="اكتب ردك أو الصق مفتاح الربط هنا..." className="pr-20"/>
                         <div className="absolute left-2 top-1/2 -translate-y-1/2 flex gap-2">
-                            <Button size="sm"><Icon name="Send" className="h-4 w-4"/></Button>
-                             <Button size="sm" variant="outline"><Icon name="Paperclip" className="h-4 w-4"/></Button>
+                            <Button size="sm" onClick={() => toast({ title: 'تم الإرسال (تجريبي)' })}><Icon name="Send" className="h-4 w-4"/></Button>
+                            <Button size="sm" variant="outline" onClick={() => toast({ title: 'فتح مستعرض الملفات (تجريبي)' })}><Icon name="Paperclip" className="h-4 w-4"/></Button>
                         </div>
                     </div>
                 </CardFooter>
