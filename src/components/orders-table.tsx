@@ -708,7 +708,7 @@ const OrdersTableComponent = () => {
                             </TableHeader>
                             <TableBody>
                                 {groupBy && !Array.isArray(groupedAndSortedOrders) ? (
-                                    Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders]) => {
+                                    Object.entries(groupedAndSortedOrders).map(([groupKey, groupOrders], groupIndex) => {
                                         const isGroupOpen = openGroups[groupKey] ?? false;
                                         
                                         return (
@@ -716,11 +716,10 @@ const OrdersTableComponent = () => {
                                                 <TableRow>
                                                     <TableCell colSpan={visibleColumns.length + 1} className="p-0 border-none">
                                                         <div
-                                                        onClick={() => setOpenGroups(prev => ({ ...prev, [groupKey]: !isGroupOpen }))}
-                                                        className="grid cursor-pointer bg-primary/90 text-primary-foreground font-bold rounded-md shadow-md m-1"
-                                                        style={{ gridTemplateColumns: `repeat(${visibleColumns.length + 1}, minmax(0, 1fr))` }}
+                                                            onClick={() => setOpenGroups(prev => ({ ...prev, [groupKey]: !isGroupOpen }))}
+                                                            className="grid cursor-pointer bg-primary/90 text-primary-foreground font-bold rounded-md shadow-md m-1"
+                                                            style={{ gridTemplateColumns: `repeat(${visibleColumns.length + 1}, minmax(0, 1fr))` }}
                                                         >
-                                                            {/* First column for group name and toggler */}
                                                             <div className="flex items-center gap-2 px-4 py-2">
                                                                 <ChevronDown
                                                                     className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")}
@@ -728,21 +727,20 @@ const OrdersTableComponent = () => {
                                                                 {groupKey} ({groupOrders.length})
                                                             </div>
 
-                                                            {/* Subsequent columns for totals or empty space */}
                                                             {visibleColumns.map(col => {
                                                                 if (col.type === "financial" || col.type === 'admin_financial') {
-                                                                const totalValue = groupOrders.reduce(
-                                                                    (sum, order) => {
-                                                                    if (col.key === 'companyDue') {
-                                                                        return sum + ((order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0)));
-                                                                    }
-                                                                    return sum + (order[col.key as keyof Order] as number || 0);
-                                                                    }, 0);
-                                                                return (
-                                                                    <div key={col.key} className="px-4 py-2 text-center font-semibold text-base">
-                                                                    {formatCurrency(totalValue)}
-                                                                    </div>
-                                                                );
+                                                                    const totalValue = groupOrders.reduce(
+                                                                        (sum, order) => {
+                                                                        if (col.key === 'companyDue') {
+                                                                            return sum + ((order.deliveryFee + (order.additionalCost || 0)) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0)));
+                                                                        }
+                                                                        return sum + (order[col.key as keyof Order] as number || 0);
+                                                                        }, 0);
+                                                                    return (
+                                                                        <div key={col.key} className="px-4 py-2 text-right">
+                                                                            {formatCurrency(totalValue)}
+                                                                        </div>
+                                                                    );
                                                                 }
                                                                 return <div key={col.key} className="px-4 py-2"></div>;
                                                             })}
