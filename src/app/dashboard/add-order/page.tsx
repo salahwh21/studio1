@@ -56,8 +56,8 @@ const orderSchema = z.object({
   parcelCount: z.coerce.number().min(1, "يجب أن يكون طرد واحد على الأقل."),
   deliveryTimeType: z.enum(['any', 'fixed', 'before', 'after']).optional(),
   deliveryTime: z.string().optional(),
-  lat: z.number().optional(),
-  lng: z.number().optional(),
+  lat: z.number().optional().nullable(),
+  lng: z.number().optional().nullable(),
 });
 
 type OrderFormValues = z.infer<typeof orderSchema>;
@@ -100,7 +100,7 @@ const AddOrderPage = () => {
   
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
-    defaultValues: { recipientName: '', phone: '', whatsapp: '', city: '', region: '', address: '', cod: 0, notes: '', referenceNumber: '', parcelCount: 1, deliveryTimeType: 'any' },
+    defaultValues: { recipientName: '', phone: '', whatsapp: '', city: '', region: '', address: '', cod: 0, notes: '', referenceNumber: '', parcelCount: 1, deliveryTimeType: 'any', lat: null, lng: null },
   });
 
   const { watch, setValue, getValues, reset } = form;
@@ -276,7 +276,7 @@ const AddOrderPage = () => {
     const addedOrder = addOrder(newOrder);
     setRecentlyAdded(prev => [addedOrder, ...prev]);
     toast({ title: 'تمت الإضافة', description: `تمت إضافة طلب "${data.recipientName}" بنجاح.` });
-    reset({ ...getValues(), recipientName: '', phone: '', whatsapp: '', cod: 0, notes: '', referenceNumber: '', address: '', parcelCount: 1, deliveryTimeType: 'any', deliveryTime: '', lat: undefined, lng: undefined });
+    reset({ ...getValues(), recipientName: '', phone: '', whatsapp: '', cod: 0, notes: '', referenceNumber: '', address: '', parcelCount: 1, deliveryTimeType: 'any', deliveryTime: '', lat: null, lng: null });
     setIsPrepaid(false);
   };
 
