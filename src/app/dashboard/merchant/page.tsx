@@ -1,6 +1,10 @@
 
 'use client';
 
+import { useMemo } from 'react';
+import { useUsersStore } from '@/store/user-store';
+import { useOrdersStore } from '@/store/orders-store';
+
 import {
   ResponsiveContainer,
   PieChart,
@@ -48,44 +52,52 @@ import {
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import Icon from '@/components/icon';
 import { useSettings } from '@/contexts/SettingsContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
-
-const summaryData = {
-    totalParcels: 125,
-    amountReadyForCollection: 3500,
-    ordersByStatus: [
-        { name: 'قيد التوصيل', value: 40, fill: 'hsl(var(--chart-1))' },
-        { name: 'مكتملة', value: 75, fill: 'hsl(var(--chart-2))' },
-        { name: 'مرتجعة', value: 10, fill: 'hsl(var(--chart-3))' },
-    ]
-};
-
-const ordersData = [
-  { id: '#M3210', customer: 'محمد جاسم', phone: '07701112233', status: 'delivered', fee: 5, date: '2023-08-15', notes: 'اتصل قبل الوصول' },
-  { id: '#M3211', customer: 'سارة كريم', phone: '07802223344', status: 'in_delivery', fee: 5, date: '2023-08-15', notes: '' },
-  { id: '#M3213', customer: 'فاطمة علي', phone: '07714445566', status: 'returned', fee: 8, date: '2023-08-14', notes: 'العميل رفض الاستلام'},
-  { id: '#M3214', customer: 'حسن محمود', phone: '07815556677', status: 'delayed', fee: 6, date: '2023-08-13', notes: 'تأخير بسبب الازدحام' },
-];
 
 const getStatusBadge = (status: string) => {
   switch (status) {
-    case 'delivered': return <Badge variant="default" className="bg-green-100 text-green-800">تم التوصيل</Badge>;
-    case 'in_delivery': return <Badge variant="secondary" className="bg-blue-100 text-blue-800">قيد التوصيل</Badge>;
-    case 'returned': return <Badge variant="destructive">مرتجع</Badge>;
-    case 'delayed': return <Badge variant="destructive" className="bg-red-200 text-red-900">متأخر</Badge>;
-    default: return <Badge variant="outline">غير معروف</Badge>;
+    case 'تم التوصيل': return <Badge variant="default" className="bg-green-100 text-green-800">تم التوصيل</Badge>;
+    case 'جاري التوصيل': return <Badge variant="secondary" className="bg-blue-100 text-blue-800">قيد التوصيل</Badge>;
+    case 'راجع': return <Badge variant="destructive">مرتجع</Badge>;
+    case 'مؤجل': return <Badge variant="destructive" className="bg-yellow-200 text-yellow-900">مؤجل</Badge>;
+    default: return <Badge variant="outline">{status}</Badge>;
   }
 };
 
 const chartConfig = {
-  'قيد التوصيل': { label: 'قيد التوصيل', color: 'hsl(var(--chart-1))' },
-  'مكتملة': { label: 'مكتملة', color: 'hsl(var(--chart-2))' },
-  'مرتجعة': { label: 'مرتجعة', color: 'hsl(var(--chart-3))' },
+  'جاري التوصيل': { label: 'جاري التوصيل', color: 'hsl(var(--chart-1))' },
+  'تم التوصيل': { label: 'مكتملة', color: 'hsl(var(--chart-2))' },
+  'راجع': { label: 'مرتجعة', color: 'hsl(var(--chart-3))' },
 };
 
 
-const SummaryDashboard = () => {
+const SummaryDashboard = ({ merchantOrders, merchant }: { merchantOrders: any[], merchant: any }) => {
     const { formatCurrency } = useSettings();
+    
+    const summaryData = useMemo(() => {
+        const totalParcels = merchantOrders.length;
+        const amountReadyForCollection = merchantOrders
+            .filter(o => o.status === 'تم التوصيل')
+            .reduce((sum, o) => sum + o.itemPrice, 0);
+        
+        const ordersByStatus = merchantOrders.reduce((acc, order) => {
+            const status = order.status;
+            if (chartConfig[status as keyof typeof chartConfig]) {
+                const key = chartConfig[status as keyof typeof chartConfig].label;
+                acc[key] = (acc[key] || 0) + 1;
+            }
+            return acc;
+        }, {} as Record<string, number>);
+
+        return {
+            totalParcels,
+            amountReadyForCollection,
+            ordersByStatus: Object.entries(ordersByStatus).map(([name, value]) => ({ name, value }))
+        };
+
+    }, [merchantOrders]);
+
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
@@ -123,12 +135,15 @@ const SummaryDashboard = () => {
                           </Pie>
                           <Legend content={({ payload }) => (
                                 <ul className="flex flex-wrap gap-x-4 justify-center text-xs mt-2">
-                                {payload?.map((entry, index) => (
-                                    <li key={`item-${index}`} className="flex items-center gap-1">
-                                    <span className="w-2 h-2 rounded-full" style={{backgroundColor: entry.color}}></span>
-                                    {entry.value} ({summaryData.ordersByStatus.find(d => d.name === entry.value)?.value})
-                                    </li>
-                                ))}
+                                {payload?.map((entry, index) => {
+                                    const dataItem = summaryData.ordersByStatus.find(d => d.name === entry.value);
+                                    return (
+                                        <li key={`item-${index}`} className="flex items-center gap-1">
+                                        <span className="w-2 h-2 rounded-full" style={{backgroundColor: entry.color}}></span>
+                                        {entry.value} ({dataItem?.value || 0})
+                                        </li>
+                                    )
+                                })}
                                 </ul>
                             )} />
                         </PieChart>
@@ -140,7 +155,7 @@ const SummaryDashboard = () => {
     );
 }
 
-const OrdersManagement = () => {
+const OrdersManagement = ({ merchantOrders }: { merchantOrders: any[] }) => {
     const { formatCurrency } = useSettings();
     return (
         <Card>
@@ -181,13 +196,13 @@ const OrdersManagement = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {ordersData.map((order) => (
-                        <TableRow key={order.id} className={order.status === 'delayed' ? 'bg-red-50 dark:bg-red-900/20' : ''}>
+                      {merchantOrders.map((order) => (
+                        <TableRow key={order.id} className={order.status === 'مؤجل' ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}>
                           <TableCell className="font-medium text-center whitespace-nowrap">{order.id}</TableCell>
-                          <TableCell className="text-center whitespace-nowrap">{order.customer}</TableCell>
+                          <TableCell className="text-center whitespace-nowrap">{order.recipient}</TableCell>
                           <TableCell className="text-center whitespace-nowrap">{order.phone}</TableCell>
                           <TableCell className="text-center whitespace-nowrap">{getStatusBadge(order.status)}</TableCell>
-                          <TableCell className="text-center whitespace-nowrap">{formatCurrency(order.fee)}</TableCell>
+                          <TableCell className="text-center whitespace-nowrap">{formatCurrency(order.deliveryFee)}</TableCell>
                           <TableCell className="text-center whitespace-nowrap">{order.date}</TableCell>
                           <TableCell className="text-center whitespace-nowrap">{order.notes}</TableCell>
                           <TableCell className="text-center whitespace-nowrap">
@@ -212,7 +227,7 @@ const OrdersManagement = () => {
             </CardContent>
              <CardFooter>
                 <div className="text-xs text-muted-foreground">
-                  عرض <strong>{ordersData.length}</strong> من <strong>{ordersData.length}</strong> طلبات
+                  عرض <strong>{merchantOrders.length}</strong> من <strong>{merchantOrders.length}</strong> طلبات
                 </div>
             </CardFooter>
         </Card>
@@ -220,7 +235,7 @@ const OrdersManagement = () => {
 };
 
 
-const ProfilePanel = () => (
+const ProfilePanel = ({ merchant }: { merchant: any }) => (
     <Card>
         <CardHeader>
             <CardTitle>الملف الشخصي</CardTitle>
@@ -229,15 +244,15 @@ const ProfilePanel = () => (
         <CardContent className="space-y-4">
              <div className="space-y-2">
                 <Label htmlFor="businessName">اسم الشركة</Label>
-                <Input id="businessName" defaultValue="تاجر أ" />
+                <Input id="businessName" defaultValue={merchant.name} />
             </div>
              <div className="space-y-2">
                 <Label htmlFor="contactName">اسم جهة الاتصال</Label>
-                <Input id="contactName" defaultValue="أحمد التاجر" />
+                <Input id="contactName" defaultValue={merchant.name} />
             </div>
              <div className="space-y-2">
                 <Label htmlFor="phone">رقم الهاتف</Label>
-                <Input id="phone" defaultValue="07909876543" />
+                <Input id="phone" defaultValue={merchant.email} />
             </div>
              <div className="space-y-2">
                 <Label htmlFor="address">العنوان</Label>
@@ -248,27 +263,34 @@ const ProfilePanel = () => (
     </Card>
 );
 
-const SettingsPanel = () => (
-    <Card>
-        <CardHeader>
-            <CardTitle>الإعدادات</CardTitle>
-             <CardDescription>إدارة إعدادات حسابك.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            {/* Settings content will go here */}
-             <p className="text-muted-foreground">قيد الإنشاء...</p>
-        </CardContent>
-    </Card>
-);
-
 
 export default function MerchantPage() {
     const { formatCurrency } = useSettings();
+    const { users } = useUsersStore();
+    const { orders } = useOrdersStore();
+
+    const merchant = useMemo(() => users.find(u => u.roleId === 'merchant'), [users]);
+    const merchantOrders = useMemo(() => merchant ? orders.filter(o => o.merchant === merchant.name) : [], [orders, merchant]);
+
+     if (!merchant) {
+        return (
+            <Card>
+                <CardHeader>
+                <CardTitle>لا يوجد تاجر</CardTitle>
+                <CardDescription>لم يتم العثور على أي مستخدم بدور "تاجر" للمحاكاة.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                <Skeleton className="w-full h-64" />
+                </CardContent>
+            </Card>
+        );
+    }
+    
     return (
         <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">مرحباً, تاجر أ</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">مرحباً, {merchant.name}</h1>
                     <p className="text-muted-foreground">هذه هي لوحة التحكم الخاصة بك.</p>
                 </div>
             </div>
@@ -276,13 +298,13 @@ export default function MerchantPage() {
             {/* Desktop View */}
             <div className="hidden md:grid md:grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-3">
-                    <SummaryDashboard/>
+                    <SummaryDashboard merchantOrders={merchantOrders} merchant={merchant} />
                 </div>
                  <div className="lg:col-span-2">
-                    <OrdersManagement/>
+                    <OrdersManagement merchantOrders={merchantOrders} />
                 </div>
                  <div className="lg:col-span-1 space-y-6">
-                    <ProfilePanel/>
+                    <ProfilePanel merchant={merchant}/>
                 </div>
             </div>
 
@@ -295,20 +317,20 @@ export default function MerchantPage() {
                         <TabsTrigger value="profile">الملف الشخصي</TabsTrigger>
                     </TabsList>
                     <TabsContent value="dashboard" className="mt-4">
-                        <SummaryDashboard/>
+                        <SummaryDashboard merchantOrders={merchantOrders} merchant={merchant}/>
                     </TabsContent>
                     <TabsContent value="orders" className="mt-4">
                         <div className="space-y-4">
-                            {ordersData.map(order => (
-                                <Card key={order.id} className={`overflow-hidden ${order.status === 'delayed' ? "bg-red-50" : ""}`}>
+                            {merchantOrders.map(order => (
+                                <Card key={order.id} className={`overflow-hidden ${order.status === 'مؤجل' ? "bg-yellow-50" : ""}`}>
                                     <CardHeader className="flex flex-row items-center justify-between p-4">
                                         <div>
                                             <CardTitle className="text-base">{order.id}</CardTitle>
-                                            <CardDescription>{order.customer}</CardDescription>
+                                            <CardDescription>{order.recipient}</CardDescription>
                                         </div>
                                         <div className="text-left">
                                             {getStatusBadge(order.status)}
-                                            <p className="font-semibold text-sm mt-1">{formatCurrency(order.fee)}</p>
+                                            <p className="font-semibold text-sm mt-1">{formatCurrency(order.deliveryFee)}</p>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
@@ -322,7 +344,7 @@ export default function MerchantPage() {
                         </div>
                     </TabsContent>
                      <TabsContent value="profile" className="mt-4">
-                        <ProfilePanel/>
+                        <ProfilePanel merchant={merchant}/>
                     </TabsContent>
                 </Tabs>
             </div>

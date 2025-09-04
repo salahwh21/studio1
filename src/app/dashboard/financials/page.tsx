@@ -1,6 +1,10 @@
 
 'use client';
 
+import { useMemo } from 'react';
+import { useOrdersStore, type Order } from '@/store/orders-store';
+import { useUsersStore, type User } from '@/store/user-store';
+
 import {
   Card,
   CardContent,
@@ -22,26 +26,37 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/icon';
 import { useSettings } from '@/contexts/SettingsContext';
 
-
-// --- Data ---
-
-const driverAccountingData = [
-    { id: 1, name: 'علي الأحمد', balance: 150, status: 'due', lastPayout: '2023-08-10' },
-    { id: 2, name: 'محمد الخالد', balance: -25, status: 'paid', lastPayout: '2023-08-15' },
-    { id: 3, name: 'فاطمة الزهراء', balance: 75, status: 'due', lastPayout: '2023-08-09' },
-];
-
-const merchantAccountingData = [
-    { id: 1, name: 'تاجر أ', amountDue: 5500, status: 'due', lastPayment: '2023-07-25' },
-    { id: 2, name: 'تاجر ب', amountDue: 0, status: 'paid', lastPayment: '2023-08-14' },
-    { id: 3, name: 'تاجر ج', amountDue: 1200, status: 'overdue', lastPayment: '2023-07-10' },
-];
-
+type FinancialSummary = {
+  id: string;
+  name: string;
+  balance: number;
+  status: 'due' | 'paid' | 'overdue';
+};
 
 // --- Components ---
 
 const DriverAccountingTab = () => {
     const { formatCurrency } = useSettings();
+    const { orders } = useOrdersStore();
+    const { users } = useUsersStore();
+
+    const driverAccountingData = useMemo(() => {
+        const drivers = users.filter(u => u.roleId === 'driver');
+        return drivers.map(driver => {
+            const driverOrders = orders.filter(o => o.driver === driver.name && o.status === 'تم التوصيل');
+            const totalCollected = driverOrders.reduce((sum, order) => sum + order.cod, 0);
+            const totalFees = driverOrders.reduce((sum, order) => sum + (order.driverFee || 0) + (order.driverAdditionalFare || 0), 0);
+            const balance = totalCollected - totalFees; // Amount driver owes the company
+            
+            return {
+                id: driver.id,
+                name: driver.name,
+                balance: balance,
+                status: balance > 0 ? 'due' : 'paid',
+            } as FinancialSummary;
+        });
+    }, [orders, users]);
+
     return (
         <Card>
             <CardHeader>
@@ -53,7 +68,7 @@ const DriverAccountingTab = () => {
                     <TableHeader>
                         <TableRow>
                             <TableHead className="text-center whitespace-nowrap">اسم السائق</TableHead>
-                            <TableHead className="text-center whitespace-nowrap">الرصيد المستحق</TableHead>
+                            <TableHead className="text-center whitespace-nowrap">الرصيد المستحق (ذمم)</TableHead>
                             <TableHead className="text-center whitespace-nowrap">الحالة</TableHead>
                             <TableHead className="text-center whitespace-nowrap">إجراء</TableHead>
                         </TableRow>
@@ -67,7 +82,7 @@ const DriverAccountingTab = () => {
                                 </TableCell>
                                 <TableCell className="text-center whitespace-nowrap">
                                     <Badge variant={driver.status === 'due' ? 'secondary' : 'default'} className={driver.status === 'due' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}>
-                                        {driver.status === 'due' ? 'مستحق' : 'مدفوع'}
+                                        {driver.status === 'due' ? 'مستحق للدفع' : 'تم التسوية'}
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="text-center whitespace-nowrap">
@@ -84,6 +99,24 @@ const DriverAccountingTab = () => {
 
 const MerchantAccountingTab = () => {
     const { formatCurrency } = useSettings();
+    const { orders } = useOrdersStore();
+    const { users } = useUsersStore();
+
+    const merchantAccountingData = useMemo(() => {
+        const merchants = users.filter(u => u.roleId === 'merchant');
+        return merchants.map(merchant => {
+            const merchantOrders = orders.filter(o => o.merchant === merchant.name && o.status === 'تم التوصيل');
+            const amountDue = merchantOrders.reduce((sum, order) => sum + (order.itemPrice || 0), 0);
+             
+            return {
+                id: merchant.id,
+                name: merchant.name,
+                balance: amountDue, // Amount the company owes the merchant
+                status: amountDue > 0 ? 'due' : 'paid',
+            } as FinancialSummary;
+        });
+    }, [orders, users]);
+
     return (
         <Card>
             <CardHeader>
@@ -104,7 +137,7 @@ const MerchantAccountingTab = () => {
                         {merchantAccountingData.map(merchant => (
                             <TableRow key={merchant.id} className={merchant.status === 'overdue' ? 'bg-red-50 dark:bg-red-900/20' : ''}>
                                 <TableCell className="font-medium text-center whitespace-nowrap">{merchant.name}</TableCell>
-                                <TableCell className="text-center whitespace-nowrap">{formatCurrency(merchant.amountDue)}</TableCell>
+                                <TableCell className="text-center whitespace-nowrap">{formatCurrency(merchant.balance)}</TableCell>
                                 <TableCell className="text-center whitespace-nowrap">
                                      <Badge variant={merchant.status === 'paid' ? 'default' : (merchant.status === 'due' ? 'secondary' : 'destructive')} className={merchant.status === 'paid' ? 'bg-green-100 text-green-800' : (merchant.status === 'due' ? 'bg-yellow-100 text-yellow-800' : '')}>
                                         {merchant.status === 'paid' ? 'مدفوع' : (merchant.status === 'due' ? 'مستحق' : 'متأخر')}

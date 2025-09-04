@@ -1,8 +1,11 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useUsersStore } from '@/store/user-store';
+import { useOrdersStore } from '@/store/orders-store';
+
 import {
   Card,
   CardContent,
@@ -33,59 +36,20 @@ import {
     Tooltip,
     XAxis,
     YAxis,
-    TrendingUp
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import Icon from '@/components/icon';
 import { useSettings } from '@/contexts/SettingsContext';
 
-const topDrivers = [
-    { id: 1, name: "علي الأحمد", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d", phone: '07912345678', status: 'نشط', completed: 125, postponed: 5, returned: 2, total: 132 },
-    { id: 2, name: "محمد الخالد", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026705d", phone: '07812345678', status: 'نشط', completed: 110, postponed: 8, returned: 3, total: 121 },
-    { id: 3, name: "فاطمة الزهراء", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026706d", phone: '07712345678', status: 'نشط', completed: 98, postponed: 2, returned: 1, total: 101 },
-    { id: 4, name: "يوسف إبراهيم", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026707d", phone: '07923456789', status: 'إجازة', completed: 95, postponed: 10, returned: 5, total: 110 },
-    { id: 5, name: "عائشة بكر", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026708d", phone: '07823456789', status: 'نشط', completed: 90, postponed: 4, returned: 6, total: 100 },
-];
-
-const orderStatusData = [
-    { name: 'مكتملة', value: 1980, color: 'border-green-500/50 hover:bg-green-50' },
-    { name: 'قيد التوصيل', value: 400, color: 'border-blue-500/50 hover:bg-blue-50' },
-    { name: 'قيد الانتظار', value: 210, color: 'border-yellow-500/50 hover:bg-yellow-50' },
-    { name: 'متأخرة', value: 35, color: 'border-orange-500/50 hover:bg-orange-50' },
-    { name: 'مرتجعة', value: 124, color: 'border-red-500/50 hover:bg-red-50' },
-];
-
-const chartData = topDrivers.map(d => ({
-    name: d.name,
-    delivered: d.completed,
-    postponed: d.postponed,
-    returned: d.returned
-}));
-
-const profitChartData = [
-  { date: "2023-08-01", profit: 450 },
-  { date: "2023-08-02", profit: 480 },
-  { date: "2023-08-03", profit: 520 },
-  { date: "2023-08-04", profit: 470 },
-  { date: "2023-08-05", profit: 550 },
-  { date: "2023-08-06", profit: 600 },
-  { date: "2023-08-07", profit: 580 },
-];
-
-const ordersStatusPieData = [
-    { name: 'مكتملة', value: 1980, fill: 'hsl(var(--chart-2))' },
-    { name: 'قيد التوصيل', value: 400, fill: 'hsl(var(--chart-1))' },
-    { name: 'مرتجعة', value: 124, fill: 'hsl(var(--chart-3))' },
-];
 
 const chartConfig = {
   delivered: { label: 'تم التوصيل', color: 'hsl(var(--chart-2))' },
   postponed: { label: 'مؤجلة', color: 'hsl(var(--chart-4))' },
-  returned: { label: 'ملغية/مرتجعة', color: 'hsl(var(--chart-3))' },
+  returned: { label: 'مرتجعة', color: 'hsl(var(--chart-3))' },
   profit: { label: 'الربح', color: 'hsl(var(--primary))' },
-  مكتملة: { label: 'مكتملة', color: 'hsl(var(--chart-2))' },
-  'قيد التوصيل': { label: 'قيد التوصيل', color: 'hsl(var(--chart-1))' },
-  مرتجعة: { label: 'مرتجعة', color: 'hsl(var(--chart-3))' },
+  'تم التوصيل': { label: 'مكتملة', color: 'hsl(var(--chart-2))' },
+  'جاري التوصيل': { label: 'قيد التوصيل', color: 'hsl(var(--chart-1))' },
+  'راجع': { label: 'مرتجعة', color: 'hsl(var(--chart-3))' },
 };
 
 
@@ -104,10 +68,70 @@ const RevenueCard = ({ title, value, iconName, color = 'text-green-500' }: { tit
 export default function DashboardPage() {
     const [selectedDriver, setSelectedDriver] = useState('all');
     const { formatCurrency } = useSettings();
+    const { users } = useUsersStore();
+    const { orders } = useOrdersStore();
+
+    const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
+
+    const driverStats = useMemo(() => {
+        return drivers.map(driver => {
+            const driverOrders = orders.filter(o => o.driver === driver.name);
+            const completed = driverOrders.filter(o => o.status === 'تم التوصيل').length;
+            const postponed = driverOrders.filter(o => o.status === 'مؤجل').length;
+            const returned = driverOrders.filter(o => o.status === 'راجع').length;
+            const total = driverOrders.length;
+            return {
+                id: driver.id,
+                name: driver.name,
+                avatar: driver.avatar,
+                phone: driver.email,
+                status: 'نشط', // Placeholder
+                completed,
+                postponed,
+                returned,
+                total
+            };
+        });
+    }, [drivers, orders]);
+
+    const orderStatusData = useMemo(() => {
+        return orders.reduce((acc, order) => {
+            const status = order.status;
+            if (!acc[status]) {
+                acc[status] = { name: status, value: 0 };
+            }
+            acc[status].value++;
+            return acc;
+        }, {} as Record<string, {name: string, value: number}>);
+    }, [orders]);
+
+    const profitChartData = useMemo(() => {
+        const dataByDate = orders.reduce((acc, order) => {
+            if (order.status === 'تم التوصيل') {
+                const date = order.date;
+                if (!acc[date]) {
+                    acc[date] = 0;
+                }
+                acc[date] += (order.deliveryFee + (order.additionalCost || 0)) - (order.driverFee || 0);
+            }
+            return acc;
+        }, {} as Record<string, number>);
+
+        return Object.entries(dataByDate)
+            .map(([date, profit]) => ({ date, profit }))
+            .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }, [orders]);
 
     const filteredDriverStats = selectedDriver === 'all'
-        ? topDrivers
-        : topDrivers.filter(driver => driver.name === selectedDriver);
+        ? driverStats
+        : driverStats.filter(driver => driver.name === selectedDriver);
+
+    const barChartData = driverStats.map(d => ({
+        name: d.name,
+        delivered: d.completed,
+        postponed: d.postponed,
+        returned: d.returned
+    }));
 
     return (
         <div className="flex flex-col gap-8">
@@ -119,14 +143,14 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        <RevenueCard title="إجمالي الإيرادات" value={`4,523 د.أ`} iconName="TrendingUp" />
-                         <RevenueCard title="إجمالي الطلبات" value="2,350" iconName="ShoppingCart" color="text-blue-500" />
-                        {orderStatusData.map((stat) => (
+                        <RevenueCard title="إجمالي الإيرادات" value={formatCurrency(profitChartData.reduce((sum, item) => sum + item.profit, 0))} iconName="TrendingUp" />
+                         <RevenueCard title="إجمالي الطلبات" value={orders.length} iconName="ShoppingCart" color="text-blue-500" />
+                        {Object.values(orderStatusData).map((stat) => (
                              <Button
                                 key={stat.name}
                                 asChild
                                 variant="outline"
-                                className={`h-auto flex-col items-center justify-center p-4 transition-colors ${stat.color}`}
+                                className={`h-auto flex-col items-center justify-center p-4 transition-colors`}
                             >
                                 <Link href={`/dashboard/orders?status=${encodeURIComponent(stat.name)}`}>
                                     <p className="text-2xl font-bold">{stat.value}</p>
@@ -151,7 +175,7 @@ export default function DashboardPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">كل السائقين</SelectItem>
-                                {topDrivers.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
+                                {drivers.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
@@ -163,9 +187,9 @@ export default function DashboardPage() {
                             const progressValue = total > 0 ? (completed / total) * 100 : 0;
 
                             const statsList = [
-                                { label: 'تم التوصيل', value: completed, color: 'text-green-500', filter: 'delivered', iconName: 'PackageCheck' as const },
-                                { label: 'مؤجلة', value: postponed, color: 'text-orange-500', filter: 'postponed', iconName: 'RefreshCw' as const },
-                                { label: 'ملغية/مرتجعة', value: returned, color: 'text-red-500', filter: 'returned', iconName: 'XCircle' as const },
+                                { label: 'تم التوصيل', value: completed, color: 'text-green-500', filter: 'تم التوصيل', iconName: 'PackageCheck' as const },
+                                { label: 'مؤجلة', value: postponed, color: 'text-orange-500', filter: 'مؤجل', iconName: 'RefreshCw' as const },
+                                { label: 'مرتجعة', value: returned, color: 'text-red-500', filter: 'راجع', iconName: 'XCircle' as const },
                             ];
 
                             return (
@@ -233,7 +257,7 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent className="h-[350px]">
                        <ChartContainer config={chartConfig} className="h-full w-full">
-                            <BarChart data={chartData} accessibilityLayer margin={{ top: 20, right: 20, bottom: 40, left: -10 }}>
+                            <BarChart data={barChartData} accessibilityLayer margin={{ top: 20, right: 20, bottom: 40, left: -10 }}>
                                 <CartesianGrid vertical={false} />
                                 <XAxis
                                     dataKey="name"
@@ -248,7 +272,7 @@ export default function DashboardPage() {
                                 <Legend />
                                 <Bar dataKey="delivered" name="تم التوصيل" fill="var(--color-delivered)" radius={[4, 4, 0, 0]} />
                                 <Bar dataKey="postponed" name="مؤجلة" fill="var(--color-postponed)" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="returned" name="ملغية/مرتجعة" fill="var(--color-returned)" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="returned" name="مرتجعة" fill="var(--color-returned)" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ChartContainer>
                     </CardContent>

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   MoreHorizontal,
 } from 'lucide-react';
@@ -35,28 +35,37 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import Icon from '@/components/icon';
+import { useOrdersStore, type Order } from '@/store/orders-store';
+import { useStatusesStore } from '@/store/statuses-store';
 
-const returnsData = [
-  { id: '#R3213', orderId: '#3213', customer: 'فاطمة علي', merchant: 'تاجر ج', driver: 'يوسف إبراهيم', status: 'at_warehouse', date: '2023-08-14', reason: 'العميل رفض الاستلام' },
-  { id: '#R3214', orderId: '#3214', customer: 'حسن محمود', merchant: 'تاجر ب', driver: 'محمد الخالد', status: 'pending_collection', date: '2023-08-13', reason: 'لم يتم الرد على الهاتف' },
-  { id: '#R3209', orderId: '#3209', customer: 'علي حسين', merchant: 'تاجر أ', driver: 'علي الأحمد', status: 'delivered_to_merchant', date: '2023-08-12', reason: 'المنتج غير مطابق' },
-  { id: '#R3208', orderId: '#3208', customer: 'مريم أحمد', merchant: 'تاجر د', driver: 'عائشة بكر', status: 'at_warehouse', date: '2023-08-15', reason: 'عنوان غير واضح' },
-  { id: '#R3207', orderId: '#3207', customer: 'زينب عامر', merchant: 'تاجر ج', driver: 'فاطمة الزهراء', status: 'pending_collection', date: '2023-08-14', reason: 'طلب العميل الإلغاء' },
-  { id: '#R3206', orderId: '#3206', customer: 'خالد وليد', merchant: 'تاجر د', driver: 'عائشة بكر', status: 'delivered_to_merchant', date: '2023-08-15', reason: 'العميل خارج التغطية' },
-];
-
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case 'pending_collection': return <Badge variant="secondary" className="bg-orange-100 text-orange-800">بانتظار التحصيل</Badge>;
-    case 'at_warehouse': return <Badge variant="secondary" className="bg-blue-100 text-blue-800">في المستودع</Badge>;
-    case 'pending_delivery': return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">بانتظار التسليم</Badge>;
-    case 'delivered_to_merchant': return <Badge variant="default" className="bg-green-100 text-green-800">تم التسليم للتاجر</Badge>;
-    default: return <Badge variant="outline">غير معروف</Badge>;
+const getStatusBadge = (status: string, allStatuses: any[]) => {
+  const statusInfo = allStatuses.find(s => s.name === status);
+  if (statusInfo) {
+      return (
+          <Badge variant="secondary" style={{backgroundColor: `${statusInfo.color}20`, color: statusInfo.color}}>
+              <Icon name={statusInfo.icon as any} className="h-3 w-3 ml-1" />
+              {statusInfo.name}
+          </Badge>
+      );
   }
+  return <Badge variant="outline">{status}</Badge>;
 };
 
 export default function ReturnsManagementPage() {
+  const { orders } = useOrdersStore();
+  const { statuses } = useStatusesStore();
+  
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
+
+  const returnsData = useMemo(() => {
+    return orders
+      .filter(order => order.status === 'راجع' || order.status.includes('مرتجع'))
+      .map(order => ({
+        ...order,
+        reason: 'سبب المرتجع', // Placeholder, you might want to add this to your Order model
+      }));
+  }, [orders]);
+
 
   const handleSelectAll = (checked: boolean | 'indeterminate') => {
     if (checked === true) {
@@ -133,7 +142,7 @@ export default function ReturnsManagementPage() {
                 <TableHead padding="checkbox">
                   <Checkbox onCheckedChange={handleSelectAll} checked={isAllSelected || isIndeterminate} aria-label="Select all rows" />
                 </TableHead>
-                <TableHead className="text-center whitespace-nowrap">رقم المرتجع</TableHead>
+                <TableHead className="text-center whitespace-nowrap">رقم الطلب</TableHead>
                 <TableHead className="text-center whitespace-nowrap">العميل</TableHead>
                 <TableHead className="text-center whitespace-nowrap">التاجر</TableHead>
                 <TableHead className="text-center whitespace-nowrap">السائق</TableHead>
@@ -149,12 +158,12 @@ export default function ReturnsManagementPage() {
                   <TableCell padding="checkbox">
                     <Checkbox onCheckedChange={(checked) => handleSelectRow(item.id, !!checked)} checked={selectedRows.includes(item.id)} aria-label={`Select row ${item.id}`} />
                   </TableCell>
-                  <TableCell className="font-medium text-center whitespace-nowrap">{item.orderId}</TableCell>
-                  <TableCell className="text-center whitespace-nowrap">{item.customer}</TableCell>
+                  <TableCell className="font-medium text-center whitespace-nowrap">{item.id}</TableCell>
+                  <TableCell className="text-center whitespace-nowrap">{item.recipient}</TableCell>
                   <TableCell className="text-center whitespace-nowrap">{item.merchant}</TableCell>
                   <TableCell className="text-center whitespace-nowrap">{item.driver}</TableCell>
                   <TableCell className="text-center whitespace-nowrap">{item.date}</TableCell>
-                  <TableCell className="text-center whitespace-nowrap">{getStatusBadge(item.status)}</TableCell>
+                  <TableCell className="text-center whitespace-nowrap">{getStatusBadge(item.status, statuses)}</TableCell>
                   <TableCell className="text-center whitespace-nowrap">{item.reason}</TableCell>
                   <TableCell className="text-center whitespace-nowrap">
                     <DropdownMenu>
