@@ -632,7 +632,7 @@ const OrdersTableComponent = () => {
                                             <span>الأعمدة</span>
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-64 p-2">
+                                        <DropdownMenuContent align="end" className="w-64 p-2 max-h-[400px] flex flex-col">
                                             <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
                                             <div className='flex items-center gap-2 p-1'>
                                                 <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(ALL_COLUMNS.map(c => c.key))}>إظهار الكل</Button>
@@ -640,7 +640,9 @@ const OrdersTableComponent = () => {
                                                 <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(['id', 'recipient', 'status'])}>إخفاء الكل</Button>
                                             </div>
                                             <DropdownMenuSeparator />
-                                             <ScrollArea className="max-h-[400px]">
+
+                                            {/* Scrollable area */}
+                                            <div className="flex-1 min-h-0 overflow-auto">
                                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
                                                     <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
                                                         {ALL_COLUMNS.map((column) => (
@@ -654,7 +656,7 @@ const OrdersTableComponent = () => {
                                                         ))}
                                                     </SortableContext>
                                                 </DndContext>
-                                            </ScrollArea>
+                                            </div>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                     <DropdownMenu>
