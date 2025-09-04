@@ -34,6 +34,7 @@ import {
   ChevronsDown,
   ArrowLeft,
   MousePointerSquare,
+  RefreshCcw,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { Rnd } from 'react-rnd';
@@ -297,12 +298,16 @@ export default function PolicyEditorPage() {
         }
         try {
             const savedTemplatesJson = localStorage.getItem('policyTemplates');
-            if (savedTemplatesJson) {
-                setTemplates(JSON.parse(savedTemplatesJson));
-            } else {
-                 setTemplates(readyTemplates); // Initialize with default if nothing is saved
-            }
-        } catch {}
+            const userTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
+             // Combine ready-made with user-saved, giving priority to user-saved if names conflict
+            const userTemplateMap = new Map(userTemplates.map((t: SavedTemplate) => [t.name, t]));
+            const combined = [...readyTemplates.filter(rt => !userTemplateMap.has(rt.name)), ...userTemplates];
+            setTemplates(combined);
+
+        } catch (e) {
+            console.error("Failed to load templates from localStorage", e);
+            setTemplates(readyTemplates);
+        }
     }, [isHydrated, policySettings]);
 
     const paperDimensions = useMemo(() => {
@@ -438,7 +443,7 @@ export default function PolicyEditorPage() {
                 case 'front': sorted.push(item); break;
                 case 'back': sorted.unshift(item); break;
                 case 'forward': sorted.splice(Math.min(index + 1, sorted.length), 0, item); break;
-                case 'backward': sorted.splice(Math.max(index - 1, 0), 0, item); break;
+                case 'backward': sorted.splice(Math.max(index - 1, 0), item); break;
             }
             return sorted.map((el, i) => ({ ...el, zIndex: i }));
         });
@@ -639,6 +644,11 @@ export default function PolicyEditorPage() {
         };
         reader.readAsText(file);
     };
+    
+    const handleRestoreDefaults = () => {
+        saveTemplatesToStorage(readyTemplates);
+        toast({ title: "تمت الاستعادة", description: "تم استعادة القوالب الافتراضية بنجاح." });
+    };
 
     if (!isHydrated) return null;
     
@@ -795,6 +805,10 @@ export default function PolicyEditorPage() {
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onSelect={handleExportTemplate}>
                                         <Download className="ml-2 h-4 w-4"/> تصدير الحالي
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onSelect={handleRestoreDefaults}>
+                                        <RefreshCcw className="ml-2 h-4 w-4"/> استعادة الافتراضي
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
