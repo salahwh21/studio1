@@ -17,7 +17,7 @@ export type User = {
 
 const initialUsers: User[] = [
     // Admins and Staff
-    { id: 'user-salahwh', name: 'Salah WH', email: 'admin@alwameed.com', roleId: 'admin', avatar: '', password: '123' },
+    { id: 'user-salahwh', name: 'salahwh', email: 'admin@alwameed.com', roleId: 'admin', avatar: '', password: '123' },
     { id: 'user-rami', name: 'رامي عوده الله', email: '0790984807', roleId: 'supervisor', avatar: '', password: '123' },
     { id: 'user-moayad', name: 'مؤيد', email: '0096721759', roleId: 'customer_service', avatar: '', password: '123' },
     { id: 'user-razan', name: 'رزان', email: '0793204777', roleId: 'supervisor', avatar: '', password: '123' },
@@ -36,7 +36,6 @@ const initialUsers: User[] = [
     { id: 'driver-10', name: 'حسن زيغان', email: '0786112230', roleId: 'driver', avatar: '', password: '123' },
 
     // Merchants
-    { id: 'merchant-5', name: 'SoundRush', email: '0788741262', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-stress-killer', name: 'Stress Killer', email: '0790690352', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-brandlet-outlet', name: 'Brandlet Outlet -1', email: '0781399935', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-nl-botique', name: 'N&L Botique', email: '0781223373', roleId: 'merchant', avatar: '', password: '123' },
@@ -66,6 +65,21 @@ const initialUsers: User[] = [
     { id: 'merchant-ibra-w-khayt', name: 'ابرة وخيط', email: '0791751140', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-mashghal-saif', name: 'مشغل سيف', email: '0796157766', roleId: 'merchant', avatar: '', password: '123' },
     { id: 'merchant-vintromatica', name: 'Vintromatica', email: '0790719429', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-salaty', name: 'صلاتي صلاتي', email: '0799059050', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-yari-jewelry', name: 'Yari Jewelry', email: '0792856814', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-uniart', name: 'Uniart', email: '0798975131', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-sneaker-fever', name: 'sneaker fever', email: '0795593048', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-lucky-pads', name: 'Lucky pads', email: '0792002676', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-shein-mediator', name: 'Shein Mediator', email: '0796447494', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-ootd', name: 'OOTD', email: '0775165727', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-sunglasses', name: 'Sunglasses', email: '0789499940', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-aleph', name: 'aleph', email: '0788784211', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-jules-thrift', name: 'Jules thrift', email: '0796148776', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-yasmeen-shop', name: 'Yasmeen\'s Shop', email: '0798891541', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-beauty-home', name: 'Beauty Home', email: '0790989675', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-waves-sport', name: 'Waves sport', email: '0790212227', roleId: 'merchant', avatar: '', password: '123' },
+    { id: 'merchant-we-brand', name: 'we brand', email: '0780858758', roleId: 'merchant', avatar: '', password: '123' },
+
 ];
 
 

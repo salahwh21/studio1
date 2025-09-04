@@ -70,6 +70,14 @@ const initialPriceLists: PriceList[] = [
   { id: 'pl_ibra_w_khayt', name: 'ابرة وخيط', description: 'قائمة أسعار خاصة لـ ابرة وخيط.', merchantCount: 1 },
   { id: 'pl_mashghal_saif', name: 'مشغل سيف', description: 'قائمة أسعار خاصة لـ مشغل سيف.', merchantCount: 1 },
   { id: 'pl_vintromatica', name: 'Vintromatica', description: 'قائمة أسعار خاصة لـ Vintromatica.', merchantCount: 1 },
+  { id: 'pl_yari_jewelry', name: 'Yari Jewelry', description: 'قائمة أسعار خاصة لـ Yari Jewelry.', merchantCount: 1 },
+  { id: 'pl_uniart', name: 'Uniart', description: 'قائمة أسعار خاصة لـ Uniart.', merchantCount: 1 },
+  { id: 'pl_salat', name: 'Salat', description: 'قائمة أسعار خاصة لـ Salat.', merchantCount: 1 },
+  { id: 'pl_hedoomcom', name: 'هدومكم', description: 'قائمة أسعار خاصة لـ هدومكم.', merchantCount: 1 },
+  { id: 'pl_attara_zaloom', name: 'عطارة زلوم', description: 'قائمة أسعار خاصة لـ عطارة زلوم.', merchantCount: 1 },
+  { id: 'pl_arqia_perfumes', name: 'ارقية للبخور', description: 'قائمة أسعار خاصة لـ ارقية للبخور.', merchantCount: 1 },
+  { id: 'pl_hodi_hodi', name: 'هودي هودي', description: 'قائمة أسعار خاصة لـ هودي هودي.', merchantCount: 1 },
+  { id: 'pl_banan_khader', name: 'بنان خضر', description: 'قائمة أسعار خاصة لـ بنان خضر.', merchantCount: 1 },
 ];
 
 const PriceListCard = ({ list, onEdit, onDelete }: { list: PriceList; onEdit: (list: PriceList) => void; onDelete: (list: PriceList) => void; }) => {
