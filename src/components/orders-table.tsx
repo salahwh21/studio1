@@ -240,6 +240,7 @@ const OrdersTableComponent = () => {
     const [selectedTemplate, setSelectedTemplate] = useState<SavedTemplate | null>(null);
     const printablePolicyRef = useRef<{ handleExport: () => void; handleDirectPrint: (order: any, type: 'zpl' | 'escpos') => Promise<void> }>(null);
 
+    const COLUMN_SETTINGS_KEY = 'ordersTableColumnSettings';
 
     useEffect(() => { 
         setIsClient(true);
@@ -247,10 +248,29 @@ const OrdersTableComponent = () => {
             const savedTemplatesJson = localStorage.getItem('policyTemplates');
             const savedTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
             setAvailableTemplates([...readyTemplates, ...savedTemplates]);
+
+            const savedColumnSettings = localStorage.getItem(COLUMN_SETTINGS_KEY);
+            if (savedColumnSettings) {
+                const { savedColumns, savedVisibleKeys } = JSON.parse(savedColumnSettings);
+                // Validate saved settings before applying
+                if (Array.isArray(savedColumns) && Array.isArray(savedVisibleKeys)) {
+                    setColumns(savedColumns);
+                    setVisibleColumnKeys(savedVisibleKeys);
+                }
+            }
+
         } catch (e) {
             setAvailableTemplates(readyTemplates);
         }
     }, []);
+
+    // Save column settings to localStorage whenever they change
+    useEffect(() => {
+        if (isClient) {
+            const settingsToSave = JSON.stringify({ savedColumns: columns, savedVisibleKeys: visibleColumnKeys });
+            localStorage.setItem(COLUMN_SETTINGS_KEY, settingsToSave);
+        }
+    }, [columns, visibleColumnKeys, isClient]);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -654,7 +674,7 @@ const OrdersTableComponent = () => {
                             <TableHeader className="sticky top-0 z-20 bg-slate-800 text-white">
                                 <TableRow className="hover:bg-transparent">
                                     <TableHead className="sticky right-0 z-30 p-2 text-center border-l w-20 bg-slate-800 text-white"><div className="flex items-center justify-center gap-2"><span className="text-sm font-bold">#</span><Checkbox onCheckedChange={handleSelectAll} checked={isAllSelected} indeterminate={isIndeterminate} aria-label="Select all rows" className='border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-800 data-[state=indeterminate]:bg-white data-[state=indeterminate]:text-slate-800' /></div></TableHead>
-                                    {visibleColumns.map((col) => (<TableHead key={col.key} className="p-2 text-center whitespace-nowrap border-b border-l hover:bg-slate-700 transition-colors duration-200 text-white">{col.sortable ? (<Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-transparent hover:text-white w-full p-0 h-auto">{col.label}<ArrowUpDown className="mr-2 h-3 w-3" /></Button>) : (col.label)}</TableHead>))}
+                                    {visibleColumns.map((col) => (<TableHead key={col.key} className="p-2 text-center whitespace-nowrap border-b border-l hover:bg-slate-700 transition-colors duration-200 text-white">{col.sortable ? (<Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-transparent hover:text-white w-full p-0 h-auto">{col.label}<ArrowUpDown className="mr-2 h-3 w-3" /></Button>) : (<span className='text-white'>{col.label}</span>)}</TableHead>))}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
