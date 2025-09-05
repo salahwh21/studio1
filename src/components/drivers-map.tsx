@@ -76,5 +76,21 @@ const MapView = memo(function MapView({ drivers, selectedDriver }: DriversMapPro
 
 
 export default function DriversMap({ drivers, selectedDriver }: DriversMapProps) {
-    return <MapView drivers={drivers} selectedDriver={selectedDriver} />;
+    const [isClient, setIsClient] = React.useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    return (
+        <>
+            {isClient ? (
+                <MapView drivers={drivers} selectedDriver={selectedDriver} />
+            ) : (
+                <div className="w-full h-full bg-muted rounded-lg flex items-center justify-center">
+                    <p className="text-muted-foreground">جاري تحميل الخريطة...</p>
+                </div>
+            )}
+        </>
+    );
 }
