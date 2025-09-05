@@ -1,5 +1,4 @@
-
-import { create, StoreApi, UseBoundStore } from 'zustand';
+import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { usersStore } from './user-store';
 
