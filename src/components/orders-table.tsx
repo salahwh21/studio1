@@ -319,7 +319,7 @@ const OrdersTableComponent = () => {
     const visibleOrdersInOpenGroups = useMemo(() => {
         if (!groupBy || !groupedOrders) return [];
         return Object.entries(groupedOrders).reduce((acc: Order[], [groupKey, groupOrders]) => {
-            const isGroupOpen = openGroups[groupKey] ?? true;
+            const isGroupOpen = openGroups[groupKey] ?? false; // Changed default to false
             if (isGroupOpen) {
                 return [...acc, ...groupOrders];
             }
@@ -452,9 +452,11 @@ const OrdersTableComponent = () => {
                                 <Select value={value as string} onValueChange={(newValue) => handleUpdateField(order.id, 'status', newValue)}>
                                     <SelectTrigger className="bg-transparent border-0 focus:ring-0 focus:ring-offset-0 h-8 p-0 w-[180px]">
                                         <SelectValue asChild>
-                                             <div className="flex items-center justify-center font-semibold text-xs px-2.5 py-0.5 rounded-sm w-full h-full gap-2" style={{ backgroundColor: `${sInfo.color}20`, color: sInfo.color }}>
-                                                <Icon name={sInfo.icon as any} className="h-3 w-3"/>
-                                                {sInfo.name}
+                                            <div className="flex items-center justify-center font-semibold text-xs px-2.5 py-0.5 rounded-sm w-full h-full" style={{ backgroundColor: `${sInfo.color}20`, color: sInfo.color }}>
+                                                <div className="flex items-center justify-center w-full gap-2">
+                                                    <Icon name={sInfo.icon as any} className="h-3 w-3 ml-1.5"/>
+                                                    <span>{sInfo.name}</span>
+                                                </div>
                                             </div>
                                         </SelectValue>
                                     </SelectTrigger>
@@ -665,7 +667,7 @@ const OrdersTableComponent = () => {
                                     ))
                                 ) : groupedOrders ? (
                                     Object.entries(groupedOrders).map(([groupKey, groupOrders], groupIndex) => {
-                                        const isGroupOpen = openGroups[groupKey] ?? true;
+                                        const isGroupOpen = openGroups[groupKey] ?? false; // Default to collapsed
                                         const groupTotals = groupOrders.reduce((acc, order) => {
                                             acc.itemPrice += order.itemPrice || 0;
                                             acc.deliveryFee += (order.deliveryFee || 0) + (order.additionalCost || 0);
@@ -673,23 +675,35 @@ const OrdersTableComponent = () => {
                                             acc.companyDue += (order.deliveryFee || 0) + (order.additionalCost || 0) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0));
                                             return acc;
                                         }, { itemPrice: 0, deliveryFee: 0, cod: 0, companyDue: 0 });
+
+                                        // Calculate the colspan for the group title cell
+                                        const nonFinancialCols = visibleColumns.filter(c => !c.type || c.type === 'default').length;
+                                        const firstFinancialIndex = visibleColumns.findIndex(c => c.type && c.type.includes('financial'));
+                                        const colSpan = firstFinancialIndex !== -1 ? firstFinancialIndex : visibleColumns.length;
+
                                         return (
                                             <React.Fragment key={groupKey}>
-                                                <TableRow onClick={() => setOpenGroups(prev => ({ ...prev, [groupKey]: !isGroupOpen }))} className={cn("cursor-pointer font-bold transition-all duration-300", groupIndex % 2 === 0 ? "bg-gradient-to-b from-primary/70 to-primary/90 text-primary-foreground" : "bg-slate-800 text-slate-50")}>
-                                                    <TableCell colSpan={visibleColumns.length + 1} className="p-0 border-none">
-                                                         <div className="flex items-center justify-between px-4 py-3">
-                                                            <div className="flex items-center gap-2">
-                                                                <ChevronDown className={cn("h-5 w-5 transition-transform", !isGroupOpen && "-rotate-90")} />
-                                                                <span>{groupKey}</span><span className="text-sm opacity-90">({groupOrders.length})</span>
-                                                            </div>
-                                                            <div className="grid grid-cols-4 gap-x-8 text-sm">
-                                                                {visibleColumns.some(c => c.key === 'itemPrice') && <div className="text-right">المستحق: {formatCurrency(groupTotals.itemPrice)}</div>}
-                                                                {visibleColumns.some(c => c.key === 'deliveryFee') && <div className="text-right">الأجور: {formatCurrency(groupTotals.deliveryFee)}</div>}
-                                                                {visibleColumns.some(c => c.key === 'companyDue') && <div className="text-right">للشركة: {formatCurrency(groupTotals.companyDue)}</div>}
-                                                                {visibleColumns.some(c => c.key === 'cod') && <div className="text-right">التحصيل: {formatCurrency(groupTotals.cod)}</div>}
-                                                            </div>
+                                                <TableRow onClick={() => setOpenGroups(prev => ({ ...prev, [groupKey]: !isGroupOpen }))} className={cn("cursor-pointer font-bold transition-all duration-300", groupIndex % 2 === 0 ? "bg-primary/80 hover:bg-primary/90 text-primary-foreground" : "bg-slate-800 hover:bg-slate-700 text-slate-50")}>
+                                                    <TableCell colSpan={colSpan + 1} className="p-0 border-l">
+                                                         <div className="flex items-center px-4 py-3">
+                                                            <ChevronDown className={cn("h-5 w-5 transition-transform ml-2", !isGroupOpen && "-rotate-90")} />
+                                                            <span>{groupKey || 'غير محدد'}</span><span className="text-sm opacity-90 mr-1">({groupOrders.length})</span>
                                                          </div>
                                                     </TableCell>
+                                                    {visibleColumns.slice(colSpan).map(col => {
+                                                        let totalValue = '';
+                                                        switch(col.key) {
+                                                            case 'itemPrice': totalValue = formatCurrency(groupTotals.itemPrice); break;
+                                                            case 'deliveryFee': totalValue = formatCurrency(groupOrders.reduce((s, o) => s + (o.deliveryFee || 0), 0)); break;
+                                                            case 'additionalCost': totalValue = formatCurrency(groupOrders.reduce((s, o) => s + (o.additionalCost || 0), 0)); break;
+                                                            case 'driverFee': totalValue = formatCurrency(groupOrders.reduce((s, o) => s + (o.driverFee || 0), 0)); break;
+                                                            case 'driverAdditionalFare': totalValue = formatCurrency(groupOrders.reduce((s, o) => s + (o.driverAdditionalFare || 0), 0)); break;
+                                                            case 'companyDue': totalValue = formatCurrency(groupTotals.companyDue); break;
+                                                            case 'cod': totalValue = formatCurrency(groupTotals.cod); break;
+                                                            default: totalValue = '';
+                                                        }
+                                                        return <TableCell key={col.key} className="p-3 text-center border-l">{totalValue}</TableCell>
+                                                    })}
                                                 </TableRow>
                                                 {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
                                             </React.Fragment>
