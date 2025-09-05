@@ -1,8 +1,7 @@
-'use client';
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { useRolesStore } from './roles-store';
+import { useRolesStore, rolesStore } from './roles-store';
 
 export type User = {
     id: string;
@@ -146,7 +145,6 @@ type UsersState = {
 
 const generateId = () => `user-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-// Note: The store definition is now separated from the hook export
 const createUserStore = () => create<UsersState>()(immer((set, get) => ({
     users: initialUsers,
 
@@ -200,8 +198,5 @@ const createUserStore = () => create<UsersState>()(immer((set, get) => ({
     },
 })));
 
-// This is the store instance for use in non-React files
 export const usersStore = createUserStore();
-
-// This is the hook for use in React components
-export const useUsersStore: UseBoundStore<StoreApi<UsersState>> = usersStore;
+export const useUsersStore = usersStore;
