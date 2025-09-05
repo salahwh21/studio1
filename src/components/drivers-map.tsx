@@ -43,7 +43,8 @@ const MapUpdater = ({ center, zoom }: { center: [number, number]; zoom: number }
   return null;
 };
 
-export default function DriversMap({ drivers, selectedDriver }: DriversMapProps) {
+// This component will contain the map logic and will not re-render unnecessarily
+const MapView = ({ drivers, selectedDriver }: DriversMapProps) => {
     const defaultPosition: [number, number] = [31.9539, 35.9106]; // Amman, Jordan
     const displayCenter = selectedDriver ? selectedDriver.position : defaultPosition;
     const displayZoom = selectedDriver ? 14 : 11;
@@ -71,4 +72,9 @@ export default function DriversMap({ drivers, selectedDriver }: DriversMapProps)
             ))}
         </MapContainer>
     );
+};
+
+
+export default function DriversMap({ drivers, selectedDriver }: DriversMapProps) {
+    return <MapView drivers={drivers} selectedDriver={selectedDriver} />;
 }
