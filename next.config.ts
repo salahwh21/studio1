@@ -46,10 +46,7 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    // Allow all cross-origin requests in development.
-    // This is required for the cloud-based development environment.
-    // Note: This does not affect production builds.
-    allowedDevOrigins: ["https://*.web.app", "https://*.firebaseapp.com"],
+    // Other experimental features can go here if needed
   },
   turbopack: {
     // Example: adding an alias and custom file extension

@@ -1,5 +1,5 @@
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from 'next-themes';
@@ -23,6 +23,9 @@ export const metadata: Metadata = {
   description:
     'حل شامل لإدارة تسجيل الطلبات والشؤون المالية والسائقين لشركة الوميض.',
   manifest: '/manifest.json',
+};
+
+export const viewport: Viewport = {
   themeColor: '#ffffff',
 };
 
