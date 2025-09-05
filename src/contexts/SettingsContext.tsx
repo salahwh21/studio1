@@ -274,7 +274,7 @@ interface SettingsContextType {
   updatePolicySetting: <K extends keyof PolicySettings>(key: K, value: PolicySettings[K]) => void;
   updateMenuVisibility: (roleId: string, permissionId: string, checked: boolean) => void;
   updateAiAgentSetting: <K extends keyof AiAgentSettings>(key: K, value: AiAgentSettings[K]) => void;
-  formatCurrency: (amount: number) => string;
+  formatCurrency: (amount: number | undefined | null) => string;
   isHydrated: boolean;
 }
 
@@ -499,9 +499,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     });
   };
   
-  const formatCurrency = useCallback((amount: number): string => {
+  const formatCurrency = useCallback((amount: number | undefined | null): string => {
+    const safeAmount = amount ?? 0;
     const { currencySymbol, currencySymbolPosition, thousandsSeparator, decimalSeparator } = settings.regional;
-    const fixedAmount = amount.toFixed(2);
+    const fixedAmount = safeAmount.toFixed(2);
     let [integerPart, decimalPart] = fixedAmount.split('.');
 
     integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSeparator);
@@ -531,3 +532,5 @@ export const useSettings = () => {
     }
     return context;
 }
+
+    
