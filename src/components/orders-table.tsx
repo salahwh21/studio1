@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -446,18 +447,18 @@ const OrdersTableComponent = () => {
                             content = <Badge variant="outline" className="gap-1.5 font-normal"><IconC className="h-3 w-3" />{value as string}</Badge>;
                             break;
                         case 'status':
-                             const sInfo = getStatusInfo(value as string);
-                             content = (
-                                 <Select value={value as string} onValueChange={(newValue) => handleUpdateField(order.id, 'status', newValue)}>
-                                     <SelectTrigger className="bg-transparent border-0 focus:ring-0 focus:ring-offset-0 h-8 p-0">
-                                         <SelectValue asChild>
-                                             <div className="flex items-center justify-center font-semibold text-xs px-2.5 py-0.5 rounded-sm h-full" style={{ width: 'max-content', margin: 'auto', backgroundColor: `${sInfo.color}20`, color: sInfo.color }}>
-                                                 <Icon name={sInfo.icon as any} className="h-3 w-3 ml-1.5"/>
-                                                 {sInfo.name}
-                                             </div>
-                                         </SelectValue>
-                                     </SelectTrigger>
-                                     <SelectContent>
+                            const sInfo = getStatusInfo(value as string);
+                            content = (
+                                <Select value={value as string} onValueChange={(newValue) => handleUpdateField(order.id, 'status', newValue)}>
+                                    <SelectTrigger className="bg-transparent border-0 focus:ring-0 focus:ring-offset-0 h-8 p-0">
+                                        <SelectValue asChild>
+                                             <div className="flex items-center justify-center font-semibold text-xs px-2.5 py-0.5 rounded-sm h-full w-[180px]" style={{ backgroundColor: `${sInfo.color}20`, color: sInfo.color }}>
+                                                <Icon name={sInfo.icon as any} className="h-3 w-3 ml-1.5"/>
+                                                {sInfo.name}
+                                            </div>
+                                        </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
                                         {statuses.filter(s => s.isActive).map(status => (
                                             <SelectItem key={status.id} value={status.name}>
                                                 <div className="flex items-center gap-2">
@@ -466,10 +467,10 @@ const OrdersTableComponent = () => {
                                                 </div>
                                             </SelectItem>
                                         ))}
-                                     </SelectContent>
-                                 </Select>
-                             );
-                             break;
+                                    </SelectContent>
+                                </Select>
+                            );
+                            break;
                         case 'merchant':
                         case 'driver':
                             const options = col.key === 'merchant' ? merchants : drivers;
