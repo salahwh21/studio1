@@ -4,7 +4,7 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 
 // Fix for default icon issue with webpack
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -44,7 +44,7 @@ const MapUpdater = ({ center, zoom }: { center: [number, number]; zoom: number }
 };
 
 // This component will contain the map logic and will not re-render unnecessarily
-const MapView = ({ drivers, selectedDriver }: DriversMapProps) => {
+const MapView = memo(function MapView({ drivers, selectedDriver }: DriversMapProps) {
     const defaultPosition: [number, number] = [31.9539, 35.9106]; // Amman, Jordan
     const displayCenter = selectedDriver ? selectedDriver.position : defaultPosition;
     const displayZoom = selectedDriver ? 14 : 11;
@@ -72,7 +72,7 @@ const MapView = ({ drivers, selectedDriver }: DriversMapProps) => {
             ))}
         </MapContainer>
     );
-};
+});
 
 
 export default function DriversMap({ drivers, selectedDriver }: DriversMapProps) {
