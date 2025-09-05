@@ -16,7 +16,7 @@ L.Icon.Default.mergeOptions({
 });
 
 interface Driver {
-    id: string; // Changed to string to match user store
+    id: string;
     name: string;
     status: string;
     parcels: number;
@@ -30,7 +30,7 @@ interface DriversMapProps {
 }
 
 // Custom component to handle map view changes dynamically
-const MapViewUpdater = ({ center, zoom }: { center: [number, number]; zoom: number }) => {
+const MapUpdater = ({ center, zoom }: { center: [number, number]; zoom: number }) => {
   const map = useMap();
   useEffect(() => {
     map.setView(center, zoom, {
@@ -59,7 +59,7 @@ export default function DriversMap({ drivers, selectedDriver }: DriversMapProps)
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <MapViewUpdater center={displayCenter} zoom={displayZoom} />
+            <MapUpdater center={displayCenter} zoom={displayZoom} />
             {drivers.map(driver => (
                 <Marker key={driver.id} position={driver.position}>
                 <Popup>
