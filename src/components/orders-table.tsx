@@ -452,7 +452,7 @@ const OrdersTableComponent = () => {
                                 <Select value={value as string} onValueChange={(newValue) => handleUpdateField(order.id, 'status', newValue)}>
                                     <SelectTrigger className="bg-transparent border-0 focus:ring-0 focus:ring-offset-0 h-8 p-0 w-full">
                                         <SelectValue asChild>
-                                             <div className="flex items-center justify-center font-semibold text-xs px-2.5 py-0.5 rounded-sm h-full w-[180px]" style={{ backgroundColor: `${sInfo.color}20`, color: sInfo.color }}>
+                                             <div className="flex items-center justify-center font-semibold text-xs px-2.5 py-0.5 rounded-sm w-[180px] h-full" style={{ backgroundColor: `${sInfo.color}20`, color: sInfo.color }}>
                                                 <Icon name={sInfo.icon as any} className="h-3 w-3 ml-2"/>
                                                 {sInfo.name}
                                             </div>
