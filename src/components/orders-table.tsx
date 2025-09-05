@@ -449,14 +449,12 @@ const OrdersTableComponent = () => {
                              const sInfo = getStatusInfo(value as string);
                              content = (
                                  <Select value={value as string} onValueChange={(newValue) => handleUpdateField(order.id, 'status', newValue)}>
-                                     <SelectTrigger className="bg-transparent border-0 focus:ring-0 focus:ring-offset-0 h-8">
+                                     <SelectTrigger className="bg-transparent border-0 focus:ring-0 focus:ring-offset-0 h-8 p-0">
                                          <SelectValue>
-                                            <div className="flex items-center justify-center">
-                                                <Badge className="gap-1.5" style={{ backgroundColor: `${sInfo.color}20`, color: sInfo.color }}>
-                                                    <Icon name={sInfo.icon as any} className="h-3 w-3"/>
-                                                    {sInfo.name}
-                                                </Badge>
-                                            </div>
+                                             <div className="flex items-center justify-center font-semibold text-xs px-2.5 py-0.5 rounded-sm w-full h-full" style={{ backgroundColor: `${sInfo.color}20`, color: sInfo.color }}>
+                                                 <Icon name={sInfo.icon as any} className="h-3 w-3 ml-1.5"/>
+                                                 {sInfo.name}
+                                             </div>
                                          </SelectValue>
                                      </SelectTrigger>
                                      <SelectContent>
