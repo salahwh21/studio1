@@ -3,8 +3,8 @@
 
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import { useEffect } from 'react';
+import L, { Map } from 'leaflet';
+import { useEffect, useState } from 'react';
 
 // Fix for default icon issue with webpack
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -40,15 +40,23 @@ const ChangeView = ({ center, zoom }: { center: [number, number]; zoom: number }
 
 export default function DriversMap({ drivers, selectedDriver }: DriversMapProps) {
     const defaultPosition: [number, number] = [31.9539, 35.9106]; // Amman, Jordan
+    const [map, setMap] = useState<Map | null>(null);
+    const displayCenter = selectedDriver ? selectedDriver.position : defaultPosition;
+
+    useEffect(() => {
+        if (map) {
+            map.setView(displayCenter, selectedDriver ? 14 : 12);
+        }
+    }, [selectedDriver, displayCenter, map]);
 
     return (
         <MapContainer
-            center={selectedDriver ? selectedDriver.position : defaultPosition}
-            zoom={12}
+            center={displayCenter}
+            zoom={selectedDriver ? 14 : 12}
             scrollWheelZoom={true}
             style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
+            whenCreated={setMap}
         >
-            <ChangeView center={selectedDriver ? selectedDriver.position : defaultPosition} zoom={selectedDriver ? 14 : 12} />
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
