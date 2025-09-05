@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -43,6 +42,8 @@ import {
   Upload,
   Download,
   Loader2,
+  ChevronsRight,
+  ChevronsLeft,
 } from 'lucide-react';
 import {
   DndContext,
@@ -67,7 +68,7 @@ import { useSettings, type SavedTemplate, readyTemplates } from '@/contexts/Sett
 import { PrintablePolicy } from '@/components/printable-policy';
 import { useStatusesStore } from '@/store/statuses-store';
 import { useUsersStore } from '@/store/user-store';
-import { getOrders, type OrderSortConfig } from '@/app/actions/get-orders';
+import { getOrders, type OrderSortConfig, type FilterDefinition } from '@/app/actions/get-orders';
 import { updateOrderAction } from '@/app/actions/update-order';
 
 
@@ -98,7 +99,6 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 type OrderSource = Order['source'];
 type ColumnConfig = { key: keyof Order | 'id-link' | 'notes' | 'companyDue'; label: string; type?: 'default' | 'financial' | 'admin_financial'; sortable?: boolean };
 type GroupByOption = keyof Order | null;
-
 
 // Initial columns configuration
 const ALL_COLUMNS: ColumnConfig[] = [
@@ -188,18 +188,6 @@ const SortableColumn = ({ id, label, onToggle, isVisible }: { id: string; label:
     );
 };
 
-const useDebounce = (value: string, delay: number) => {
-    const [debouncedValue, setDebouncedValue] = useState(value);
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setDebouncedValue(value);
-        }, delay);
-        return () => clearTimeout(handler);
-    }, [value, delay]);
-    return debouncedValue;
-};
-
-
 const OrdersTableComponent = () => {
     const { toast } = useToast();
     const router = useRouter();
@@ -223,8 +211,7 @@ const OrdersTableComponent = () => {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(100);
     const [sortConfig, setSortConfig] = useState<OrderSortConfig | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const debouncedSearchQuery = useDebounce(searchQuery, 300);
+    const [filters, setFilters] = useState<FilterDefinition[]>([]);
 
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
     const [modalState, setModalState] = useState<ModalState>({ type: 'none' });
@@ -252,7 +239,6 @@ const OrdersTableComponent = () => {
             const savedColumnSettings = localStorage.getItem(COLUMN_SETTINGS_KEY);
             if (savedColumnSettings) {
                 const { savedColumns, savedVisibleKeys } = JSON.parse(savedColumnSettings);
-                // Validate saved settings before applying
                 if (Array.isArray(savedColumns) && Array.isArray(savedVisibleKeys)) {
                     setColumns(savedColumns);
                     setVisibleColumnKeys(savedVisibleKeys);
@@ -264,7 +250,6 @@ const OrdersTableComponent = () => {
         }
     }, []);
 
-    // Save column settings to localStorage whenever they change
     useEffect(() => {
         if (isClient) {
             const settingsToSave = JSON.stringify({ savedColumns: columns, savedVisibleKeys: visibleColumnKeys });
@@ -278,15 +263,15 @@ const OrdersTableComponent = () => {
             const statusFilter = searchParams.get('status');
             const driverFilter = searchParams.get('driver');
 
+            let allFilters = [...filters];
+            if (statusFilter) allFilters.push({ field: 'status', operator: 'equals', value: statusFilter });
+            if (driverFilter) allFilters.push({ field: 'driver', operator: 'equals', value: driverFilter });
+
             const result = await getOrders({
                 page: groupBy ? 0 : page,
                 rowsPerPage: groupBy ? 9999 : rowsPerPage,
-                searchQuery: debouncedSearchQuery,
                 sortConfig,
-                filters: {
-                    status: statusFilter,
-                    driver: driverFilter,
-                }
+                filters: allFilters,
             });
             setOrders(result.orders);
             setTotalCount(result.totalCount);
@@ -296,7 +281,7 @@ const OrdersTableComponent = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [page, rowsPerPage, debouncedSearchQuery, sortConfig, searchParams, groupBy, toast]);
+    }, [page, rowsPerPage, filters, sortConfig, searchParams, groupBy, toast]);
 
     useEffect(() => {
         fetchData();
@@ -339,7 +324,7 @@ const OrdersTableComponent = () => {
     const visibleOrdersInOpenGroups = useMemo(() => {
         if (!groupBy || !groupedOrders) return [];
         return Object.entries(groupedOrders).reduce((acc: Order[], [groupKey, groupOrders]) => {
-            const isGroupOpen = openGroups[groupKey] ?? false; // Changed default to false
+            const isGroupOpen = openGroups[groupKey] ?? false; 
             if (isGroupOpen) {
                 return [...acc, ...groupOrders];
             }
@@ -417,14 +402,12 @@ const OrdersTableComponent = () => {
         startTransition(async () => {
             const originalOrders = [...orders];
             
-            // Optimistic update
             const updatedOrders = orders.map(o => o.id === orderId ? { ...o, [field]: value } : o);
             setOrders(updatedOrders);
 
             const result = await updateOrderAction({ orderId, field, value });
             
             if (!result.success) {
-                // Revert on failure
                 setOrders(originalOrders);
                 toast({
                     variant: 'destructive',
@@ -441,6 +424,138 @@ const OrdersTableComponent = () => {
 
     const getStatusInfo = (statusValue: string) => {
         return statuses.find(s => s.name === statusValue) || { name: statusValue, icon: 'Package', color: '#808080' };
+    };
+    
+    const SEARCHABLE_FIELDS: { key: keyof Order; label: string; type: 'text' | 'select', options?: string[] }[] = [
+        { key: 'id', label: 'رقم الطلب', type: 'text' },
+        { key: 'referenceNumber', label: 'الرقم المرجعي', type: 'text' },
+        { key: 'recipient', label: 'المستلم', type: 'text' },
+        { key: 'phone', label: 'الهاتف', type: 'text' },
+        { key: 'address', label: 'العنوان', type: 'text' },
+        { key: 'status', label: 'الحالة', type: 'select', options: statuses.map(s => s.name) },
+        { key: 'driver', label: 'السائق', type: 'select', options: drivers.map(d => d.name) },
+        { key: 'merchant', label: 'التاجر', type: 'select', options: merchants.map(m => m.name) },
+        { key: 'city', label: 'المدينة', type: 'text' },
+        { key: 'region', label: 'المنطقة', type: 'text' },
+        { key: 'date', label: 'التاريخ', type: 'text' },
+    ];
+    
+    const AdvancedSearch = ({
+      filters,
+      onAddFilter,
+      onRemoveFilter,
+    }: {
+      filters: FilterDefinition[];
+      onAddFilter: (filter: FilterDefinition) => void;
+      onRemoveFilter: (index: number) => void;
+    }) => {
+      const [popoverOpen, setPopoverOpen] = useState(false);
+      const [inputValue, setInputValue] = useState('');
+      const [currentField, setCurrentField] = useState<(typeof SEARCHABLE_FIELDS)[number] | null>(null);
+      const inputRef = useRef<HTMLInputElement>(null);
+    
+      useEffect(() => {
+        if (currentField && currentField.type === 'text' && inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, [currentField]);
+    
+      const handleSelectField = (fieldKey: string) => {
+        const field = SEARCHABLE_FIELDS.find(f => f.key === fieldKey);
+        if (field) {
+          setCurrentField(field);
+          setPopoverOpen(false);
+        }
+      };
+    
+      const handleAddTextFilter = () => {
+        if (currentField && inputValue) {
+          onAddFilter({
+            field: currentField.key,
+            operator: 'contains', // Simplified for now
+            value: inputValue,
+          });
+          setCurrentField(null);
+          setInputValue('');
+        }
+      };
+    
+      const handleAddSelectFilter = (value: string) => {
+        if (currentField) {
+          onAddFilter({
+              field: currentField.key,
+              operator: 'equals',
+              value: value,
+          });
+          setCurrentField(null);
+          setInputValue('');
+        }
+      };
+      
+    
+      return (
+        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+          <div className="flex items-center gap-2 flex-wrap border rounded-lg p-1.5 min-h-[40px] w-full max-w-lg bg-background">
+            <Search className="h-4 w-4 text-muted-foreground ml-1" />
+            {filters.map((filter, index) => (
+              <Badge key={index} variant="secondary" className="gap-1.5">
+                {SEARCHABLE_FIELDS.find(f => f.key === filter.field)?.label || filter.field}: {filter.value}
+                <button onClick={() => onRemoveFilter(index)} className="rounded-full hover:bg-background/50">
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+            <PopoverTrigger asChild>
+                <div className="flex-1 min-w-[150px]">
+                    {currentField ? (
+                        <div className="flex items-center gap-1">
+                            <span className="text-sm text-muted-foreground">{currentField.label}:</span>
+                            {currentField.type === 'text' ? (
+                                <Input
+                                    ref={inputRef}
+                                    value={inputValue}
+                                    onChange={(e) => setInputValue(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleAddTextFilter()}
+                                    onBlur={() => { if (!inputValue) setCurrentField(null); }}
+                                    className="h-7 border-none focus-visible:ring-0 p-1"
+                                    placeholder="أدخل قيمة..."
+                                />
+                            ) : (
+                                 <Select onValueChange={handleAddSelectFilter}>
+                                    <SelectTrigger className="h-7 border-none focus:ring-0 p-1 w-auto text-muted-foreground">
+                                        <SelectValue placeholder="اختر قيمة..."/>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {currentField.options?.map(opt => (
+                                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        </div>
+                    ) : (
+                        <button className="text-sm text-muted-foreground hover:text-foreground">إضافة فلتر...</button>
+                    )}
+                </div>
+            </PopoverTrigger>
+          </div>
+          <PopoverContent className="w-[250px] p-0" align="start">
+             <Command>
+                <CommandInput placeholder="ابحث عن حقل..." />
+                <CommandList>
+                    <CommandEmpty>لم يتم العثور على حقل.</CommandEmpty>
+                    <CommandGroup>
+                        {SEARCHABLE_FIELDS.map(field => (
+                            <CommandItem key={field.key} onSelect={() => handleSelectField(field.key)}>
+                                {field.label}
+                            </CommandItem>
+                        ))}
+                    </CommandGroup>
+                </CommandList>
+             </Command>
+          </PopoverContent>
+        </Popover>
+      );
     };
 
     const renderOrderRow = (order: Order, index: number) => {
@@ -474,7 +589,7 @@ const OrdersTableComponent = () => {
                                         <SelectValue asChild>
                                             <div className="flex items-center justify-center font-semibold text-xs px-2.5 py-0.5 rounded-sm w-[180px] mx-auto h-full" style={{ backgroundColor: `${sInfo.color}20`, color: sInfo.color }}>
                                                 <div className="flex items-center justify-center w-full gap-2">
-                                                    <Icon name={sInfo.icon as any} className="h-4 w-4 ml-1.5"/>
+                                                    <Icon name={sInfo.icon as any} className="h-4 w-4 ml-2"/>
                                                     <span>{sInfo.name}</span>
                                                 </div>
                                             </div>
@@ -563,7 +678,7 @@ const OrdersTableComponent = () => {
                 <div className="flex-none p-4 flex-row items-center justify-between flex flex-wrap gap-2 border-b bg-background">
                      <div className="relative w-full max-w-xs">
                         <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="بحث شامل..." className="pr-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                        <Input placeholder="بحث شامل..." className="pr-8" />
                     </div>
                     <div className="flex items-center gap-2">
                          <DropdownMenu>
@@ -648,10 +763,11 @@ const OrdersTableComponent = () => {
                             </div>
                         ) : (
                             <>
-                                <div className="relative w-full max-w-xs">
-                                    <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                    <Input placeholder="بحث شامل..." className="pr-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                                </div>
+                                <AdvancedSearch
+                                    filters={filters}
+                                    onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
+                                    onRemoveFilter={(index) => setFilters(prev => prev.filter((_, i) => i !== index))}
+                                />
                                 <div className="flex items-center gap-2">
                                      <DropdownMenu>
                                         <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="gap-1"><ListTree className="h-4 w-4" /><span>التجميع حسب</span>{groupBy && <Badge variant="secondary" className='mr-1'>{GROUP_BY_OPTIONS.find(o => o.value === groupBy)?.label}</Badge>}</Button></DropdownMenuTrigger>
@@ -674,7 +790,7 @@ const OrdersTableComponent = () => {
                             <TableHeader className="sticky top-0 z-20 bg-slate-800 text-white">
                                 <TableRow className="hover:bg-transparent">
                                     <TableHead className="sticky right-0 z-30 p-2 text-center border-l w-20 bg-slate-800 text-white"><div className="flex items-center justify-center gap-2"><span className="text-sm font-bold">#</span><Checkbox onCheckedChange={handleSelectAll} checked={isAllSelected} indeterminate={isIndeterminate} aria-label="Select all rows" className='border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-800 data-[state=indeterminate]:bg-white data-[state=indeterminate]:text-slate-800' /></div></TableHead>
-                                    {visibleColumns.map((col) => (<TableHead key={col.key} className="p-2 text-center whitespace-nowrap border-b border-l text-white hover:bg-slate-700 transition-colors duration-200">{col.sortable ? (<Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-transparent hover:text-white w-full p-0 h-auto">{col.label}<ArrowUpDown className="mr-2 h-3 w-3" /></Button>) : (<span className='text-white'>{col.label}</span>)}</TableHead>))}
+                                    {visibleColumns.map((col) => (<TableHead key={col.key} className="p-2 text-center whitespace-nowrap border-b border-l text-white hover:bg-slate-700 transition-colors duration-200">{col.sortable ? (<Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-transparent hover:text-white w-full p-0 h-auto">{col.label}<ArrowUpDown className="mr-2 h-3 w-3 text-white" /></Button>) : (<span className='text-white'>{col.label}</span>)}</TableHead>))}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -687,7 +803,7 @@ const OrdersTableComponent = () => {
                                     ))
                                 ) : groupedOrders ? (
                                     Object.entries(groupedOrders).map(([groupKey, groupOrders], groupIndex) => {
-                                        const isGroupOpen = openGroups[groupKey] ?? false; // Default to collapsed
+                                        const isGroupOpen = openGroups[groupKey] ?? false; 
                                         const groupTotals = groupOrders.reduce((acc, order) => {
                                             acc.itemPrice += order.itemPrice || 0;
                                             acc.deliveryFee += (order.deliveryFee || 0) + (order.additionalCost || 0);
@@ -696,20 +812,18 @@ const OrdersTableComponent = () => {
                                             return acc;
                                         }, { itemPrice: 0, deliveryFee: 0, cod: 0, companyDue: 0 });
 
-                                        // Calculate the colspan for the group title cell
-                                        const nonFinancialCols = visibleColumns.filter(c => !c.type || c.type === 'default').length;
                                         const firstFinancialIndex = visibleColumns.findIndex(c => c.type && c.type.includes('financial'));
                                         const colSpan = firstFinancialIndex !== -1 ? firstFinancialIndex : visibleColumns.length;
 
                                         return (
                                             <React.Fragment key={groupKey}>
                                                 <TableRow onClick={() => setOpenGroups(prev => ({ ...prev, [groupKey]: !isGroupOpen }))} className={cn("cursor-pointer font-bold transition-all duration-300", groupIndex % 2 === 0 ? "bg-primary/80 hover:bg-primary/90 text-primary-foreground" : "bg-slate-800 hover:bg-slate-700 text-slate-50")}>
-                                                    <TableCell colSpan={colSpan + 1} className="p-0 border-l">
-                                                         <div className="flex items-center px-4 py-3">
+                                                     <TableCell className="p-0 border-l" colSpan={colSpan + 1}>
+                                                        <div className="flex items-center px-4 py-3">
                                                             <ChevronDown className={cn("h-5 w-5 transition-transform ml-2", !isGroupOpen && "-rotate-90")} />
                                                             <span>{groupKey || 'غير محدد'}</span><span className="text-sm opacity-90 mr-1">({groupOrders.length})</span>
-                                                         </div>
-                                                    </TableCell>
+                                                        </div>
+                                                     </TableCell>
                                                     {visibleColumns.slice(colSpan).map(col => {
                                                         let totalValue = '';
                                                         switch(col.key) {
@@ -783,7 +897,7 @@ const OrdersTableComponent = () => {
                                     disabled={page === 0}
                                     >
                                     <span className="sr-only">Go to first page</span>
-                                    <Icon name="ChevronsRight" className="h-4 w-4" />
+                                    <ChevronsRight className="h-4 w-4" />
                                     </Button>
                                     <Button
                                     variant="outline"
@@ -810,7 +924,7 @@ const OrdersTableComponent = () => {
                                     disabled={page >= totalPages - 1}
                                     >
                                     <span className="sr-only">Go to last page</span>
-                                    <Icon name="ChevronsLeft" className="h-4 w-4" />
+                                    <ChevronsLeft className="h-4 w-4" />
                                     </Button>
                                 </div>
                             </div>
@@ -837,4 +951,3 @@ export function OrdersTable() {
         </React.Suspense>
     );
 }
-

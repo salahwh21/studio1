@@ -8,39 +8,48 @@ export type OrderSortConfig = {
   direction: 'ascending' | 'descending';
 };
 
+export type FilterDefinition = {
+  field: string;
+  operator: 'contains' | 'equals';
+  value: string;
+}
+
 type GetOrdersParams = {
   page: number;
   rowsPerPage: number;
-  searchQuery?: string;
   sortConfig?: OrderSortConfig | null;
-  filters?: {
-    status?: string | null;
-    driver?: string | null;
-  };
+  filters?: FilterDefinition[];
 };
 
 export async function getOrders(params: GetOrdersParams): Promise<{ orders: Order[], totalCount: number }> {
-  const { page, rowsPerPage, searchQuery, sortConfig, filters } = params;
+  const { page, rowsPerPage, sortConfig, filters } = params;
 
   // In a real app, this data would come from a database.
   // For now, we're using the Zustand store as a mock database.
   const allOrders = ordersStore.getState().orders;
 
   // 1. Filtering
-  let filteredOrders = allOrders.filter(order => {
-    const searchLower = searchQuery?.toLowerCase() ?? '';
-    const searchMatch = !searchQuery ||
-        order.recipient.toLowerCase().includes(searchLower) ||
-        order.phone.includes(searchQuery) ||
-        order.id.toLowerCase().includes(searchLower) ||
-        order.merchant.toLowerCase().includes(searchLower) ||
-        (order.referenceNumber && order.referenceNumber.toLowerCase().includes(searchLower));
-    
-    const statusMatch = !filters?.status || order.status === filters.status;
-    const driverMatch = !filters?.driver || order.driver === filters.driver;
+  let filteredOrders = allOrders;
 
-    return searchMatch && statusMatch && driverMatch;
-  });
+  if (filters && filters.length > 0) {
+    filteredOrders = allOrders.filter(order => {
+      return filters.every(filter => {
+        const orderValue = order[filter.field as keyof Order] as string | undefined;
+        if (orderValue === undefined) return false;
+
+        const filterValueLower = filter.value.toLowerCase();
+        const orderValueLower = String(orderValue).toLowerCase();
+
+        if (filter.operator === 'contains') {
+          return orderValueLower.includes(filterValueLower);
+        }
+        if (filter.operator === 'equals') {
+          return orderValueLower === filterValueLower;
+        }
+        return true;
+      });
+    });
+  }
 
   // 2. Sorting
   if (sortConfig) {
