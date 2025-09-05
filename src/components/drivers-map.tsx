@@ -43,8 +43,14 @@ export default function DriversMap({ drivers, selectedDriver }: DriversMapProps)
     const displayCenter = selectedDriver ? selectedDriver.position : defaultPosition;
     const displayZoom = selectedDriver ? 14 : 11;
 
+    // Use a key to force re-render of the map container only when necessary,
+    // though the MapViewUpdater should handle most updates. The key is a simple
+    // way to avoid complex state management for the map instance itself.
+    const mapKey = selectedDriver ? selectedDriver.id : 'default';
+
     return (
         <MapContainer
+            key={mapKey}
             center={displayCenter}
             zoom={displayZoom}
             scrollWheelZoom={true}
