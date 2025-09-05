@@ -3,8 +3,8 @@
 
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L, { Map } from 'leaflet';
-import { useEffect, useState } from 'react';
+import L from 'leaflet';
+import { useEffect } from 'react';
 
 // Fix for default icon issue with webpack
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -16,7 +16,7 @@ L.Icon.Default.mergeOptions({
 });
 
 interface Driver {
-    id: number;
+    id: string; // Changed to string to match user store
     name: string;
     status: string;
     parcels: number;
@@ -29,8 +29,8 @@ interface DriversMapProps {
     selectedDriver: Driver | null;
 }
 
-// Custom component to handle map view changes
-const ChangeView = ({ center, zoom }: { center: [number, number]; zoom: number }) => {
+// Custom component to handle map view changes dynamically
+const MapViewUpdater = ({ center, zoom }: { center: [number, number]; zoom: number }) => {
   const map = useMap();
   useEffect(() => {
     map.setView(center, zoom);
@@ -40,27 +40,21 @@ const ChangeView = ({ center, zoom }: { center: [number, number]; zoom: number }
 
 export default function DriversMap({ drivers, selectedDriver }: DriversMapProps) {
     const defaultPosition: [number, number] = [31.9539, 35.9106]; // Amman, Jordan
-    const [map, setMap] = useState<Map | null>(null);
     const displayCenter = selectedDriver ? selectedDriver.position : defaultPosition;
-
-    useEffect(() => {
-        if (map) {
-            map.setView(displayCenter, selectedDriver ? 14 : 12);
-        }
-    }, [selectedDriver, displayCenter, map]);
+    const displayZoom = selectedDriver ? 14 : 11;
 
     return (
         <MapContainer
             center={displayCenter}
-            zoom={selectedDriver ? 14 : 12}
+            zoom={displayZoom}
             scrollWheelZoom={true}
             style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
-            whenCreated={setMap}
         >
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
+            <MapViewUpdater center={displayCenter} zoom={displayZoom} />
             {drivers.map(driver => (
                 <Marker key={driver.id} position={driver.position}>
                 <Popup>
