@@ -221,7 +221,7 @@ const OrdersTableComponent = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(15);
+    const [rowsPerPage, setRowsPerPage] = useState(100);
     const [sortConfig, setSortConfig] = useState<OrderSortConfig | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -474,7 +474,7 @@ const OrdersTableComponent = () => {
                                         <SelectValue asChild>
                                             <div className="flex items-center justify-center font-semibold text-xs px-2.5 py-0.5 rounded-sm w-[180px] mx-auto h-full" style={{ backgroundColor: `${sInfo.color}20`, color: sInfo.color }}>
                                                 <div className="flex items-center justify-center w-full gap-2">
-                                                    <Icon name={sInfo.icon as any} className="h-3 w-3 ml-2"/>
+                                                    <Icon name={sInfo.icon as any} className="h-4 w-4 ml-1.5"/>
                                                     <span>{sInfo.name}</span>
                                                 </div>
                                             </div>
@@ -674,7 +674,7 @@ const OrdersTableComponent = () => {
                             <TableHeader className="sticky top-0 z-20 bg-slate-800 text-white">
                                 <TableRow className="hover:bg-transparent">
                                     <TableHead className="sticky right-0 z-30 p-2 text-center border-l w-20 bg-slate-800 text-white"><div className="flex items-center justify-center gap-2"><span className="text-sm font-bold">#</span><Checkbox onCheckedChange={handleSelectAll} checked={isAllSelected} indeterminate={isIndeterminate} aria-label="Select all rows" className='border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-800 data-[state=indeterminate]:bg-white data-[state=indeterminate]:text-slate-800' /></div></TableHead>
-                                    {visibleColumns.map((col) => (<TableHead key={col.key} className="p-2 text-center whitespace-nowrap border-b border-l hover:bg-slate-700 transition-colors duration-200 text-white">{col.sortable ? (<Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-transparent hover:text-white w-full p-0 h-auto">{col.label}<ArrowUpDown className="mr-2 h-3 w-3" /></Button>) : (<span className='text-white'>{col.label}</span>)}</TableHead>))}
+                                    {visibleColumns.map((col) => (<TableHead key={col.key} className="p-2 text-center whitespace-nowrap border-b border-l text-white hover:bg-slate-700 transition-colors duration-200">{col.sortable ? (<Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-transparent hover:text-white w-full p-0 h-auto">{col.label}<ArrowUpDown className="mr-2 h-3 w-3" /></Button>) : (<span className='text-white'>{col.label}</span>)}</TableHead>))}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -746,7 +746,75 @@ const OrdersTableComponent = () => {
                             <div className="flex items-center gap-1"><span className="text-muted-foreground">المطلوب للشركة:</span><span className="font-bold text-primary">{formatCurrency(footerTotals.companyDue)}</span></div>
                             <div className="flex items-center gap-1"><span className="text-muted-foreground">قيمة التحصيل:</span><span className="font-bold text-primary">{formatCurrency(footerTotals.cod)}</span></div>
                         </div>
-                        {!groupBy && (<div className="flex items-center gap-1"><Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>السابق</Button><span className="text-xs p-2">صفحة {page + 1} من {totalPages}</span><Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>التالي</Button></div>)}
+                        {!groupBy && (
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium">صفوف الصفحة:</p>
+                                    <Select
+                                        value={`${rowsPerPage}`}
+                                        onValueChange={(value) => {
+                                            setRowsPerPage(Number(value));
+                                            setPage(0);
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-8 w-[70px]">
+                                            <SelectValue placeholder={rowsPerPage} />
+                                        </SelectTrigger>
+                                        <SelectContent side="top">
+                                            {[100, 250, 500].map((pageSize) => (
+                                                <SelectItem key={pageSize} value={`${pageSize}`}>
+                                                    {pageSize}
+                                                </SelectItem>
+                                            ))}
+                                             <SelectItem value={`${totalCount}`}>
+                                                    الكل
+                                                </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="text-sm font-medium">
+                                    صفحة {page + 1} من {totalPages}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Button
+                                    variant="outline"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => setPage(0)}
+                                    disabled={page === 0}
+                                    >
+                                    <span className="sr-only">Go to first page</span>
+                                    <Icon name="ChevronsRight" className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                    variant="outline"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => setPage(page - 1)}
+                                    disabled={page === 0}
+                                    >
+                                    <span className="sr-only">Go to previous page</span>
+                                    <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                    variant="outline"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => setPage(page + 1)}
+                                    disabled={page >= totalPages - 1}
+                                    >
+                                    <span className="sr-only">Go to next page</span>
+                                    <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                     <Button
+                                    variant="outline"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => setPage(totalPages - 1)}
+                                    disabled={page >= totalPages - 1}
+                                    >
+                                    <span className="sr-only">Go to last page</span>
+                                    <Icon name="ChevronsLeft" className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </CardFooter>
                 </Card>
             </TooltipProvider>
@@ -769,3 +837,4 @@ export function OrdersTable() {
         </React.Suspense>
     );
 }
+
