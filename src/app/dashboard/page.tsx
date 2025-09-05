@@ -112,7 +112,7 @@ export default function DashboardPage() {
                 if (!acc[date]) {
                     acc[date] = 0;
                 }
-                acc[date] += (order.deliveryFee + (order.additionalCost || 0)) - (order.driverFee || 0);
+                acc[date] += (order.deliveryFee || 0) + (order.additionalCost || 0) - (order.driverFee || 0);
             }
             return acc;
         }, {} as Record<string, number>);

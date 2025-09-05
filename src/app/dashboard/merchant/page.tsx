@@ -79,7 +79,7 @@ const SummaryDashboard = ({ merchantOrders, merchant }: { merchantOrders: any[],
         const totalParcels = merchantOrders.length;
         const amountReadyForCollection = merchantOrders
             .filter(o => o.status === 'تم التوصيل')
-            .reduce((sum, o) => sum + o.itemPrice, 0);
+            .reduce((sum, o) => sum + (o.itemPrice || 0), 0);
         
         const ordersByStatus = merchantOrders.reduce((acc, order) => {
             const status = order.status;

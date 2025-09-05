@@ -44,7 +44,7 @@ const DriverAccountingTab = () => {
         const drivers = users.filter(u => u.roleId === 'driver');
         return drivers.map(driver => {
             const driverOrders = orders.filter(o => o.driver === driver.name && (o.status === 'تم التوصيل' || o.status === 'رفض ودفع أجور'));
-            const totalCollected = driverOrders.reduce((sum, order) => sum + order.cod, 0);
+            const totalCollected = driverOrders.reduce((sum, order) => sum + (order.cod || 0), 0);
             const totalFees = driverOrders.reduce((sum, order) => sum + (order.driverFee || 0) + (order.driverAdditionalFare || 0), 0);
             const balance = totalCollected - totalFees; // Amount driver owes the company
             

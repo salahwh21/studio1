@@ -1,5 +1,5 @@
 
-import { create } from 'zustand';
+import { create, StoreApi, UseBoundStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { useUsersStore } from './user-store';
 
@@ -72,7 +72,7 @@ const getSettings = () => {
 };
 
 
-export const useOrdersStore = create<OrdersState>()(immer((set, get) => {
+export const ordersStore = create<OrdersState>()(immer((set, get) => {
     const initialOrders = createInitialOrders();
     const initialOrdersWithNumbers = initialOrders.map((o, i) => ({...o, orderNumber: i + 1}));
     const initialOrderNumber = getHighestOrderNumber(initialOrdersWithNumbers);
@@ -152,3 +152,7 @@ export const useOrdersStore = create<OrdersState>()(immer((set, get) => {
         }),
     }
 }));
+
+
+// Correctly define the hook for React components
+export const useOrdersStore: UseBoundStore<StoreApi<OrdersState>> = ordersStore;

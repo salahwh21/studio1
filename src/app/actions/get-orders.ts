@@ -1,7 +1,7 @@
 
 'use server';
 
-import { useOrdersStore, type Order } from '@/store/orders-store';
+import { ordersStore, type Order } from '@/store/orders-store';
 
 export type OrderSortConfig = {
   key: keyof Order;
@@ -24,7 +24,7 @@ export async function getOrders(params: GetOrdersParams): Promise<{ orders: Orde
 
   // In a real app, this data would come from a database.
   // For now, we're using the Zustand store as a mock database.
-  const allOrders = useOrdersStore.getState().orders;
+  const allOrders = ordersStore.getState().orders;
 
   // 1. Filtering
   let filteredOrders = allOrders.filter(order => {
@@ -65,5 +65,3 @@ export async function getOrders(params: GetOrdersParams): Promise<{ orders: Orde
     totalCount: totalCount,
   };
 }
-
-    
