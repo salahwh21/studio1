@@ -1,11 +1,11 @@
 
 import { create, StoreApi, UseBoundStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { useUsersStore } from './user-store';
+import { usersStore } from './user-store';
 
 
 const createInitialOrders = () => {
-    const { users } = useUsersStore.getState();
+    const { users } = usersStore.getState();
     const merchants = users.filter(u => u.roleId === 'merchant');
     const drivers = users.filter(u => u.roleId === 'driver');
     

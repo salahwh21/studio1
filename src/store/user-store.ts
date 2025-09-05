@@ -1,7 +1,7 @@
 
 'use client';
 
-import { create } from 'zustand';
+import { create, StoreApi, UseBoundStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { useRolesStore } from './roles-store';
 
@@ -147,7 +147,7 @@ type UsersState = {
 
 const generateId = () => `user-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-export const useUsersStore = create<UsersState>()(immer((set, get) => ({
+export const usersStore = create<UsersState>()(immer((set, get) => ({
     users: initialUsers,
 
     addUser: (newUser) => {
@@ -199,3 +199,5 @@ export const useUsersStore = create<UsersState>()(immer((set, get) => ({
         });
     },
 })));
+
+export const useUsersStore: UseBoundStore<StoreApi<UsersState>> = usersStore;
