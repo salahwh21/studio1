@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, useTransition } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
@@ -65,7 +65,9 @@ import { type Order } from '@/store/orders-store';
 import { useSettings, type SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
 import { PrintablePolicy } from '@/components/printable-policy';
 import { useStatusesStore } from '@/store/statuses-store';
+import { useUsersStore } from '@/store/user-store';
 import { getOrders, type OrderSortConfig } from '@/app/actions/get-orders';
+import { updateOrderAction } from '@/app/actions/update-order';
 
 
 // ShadCN UI Components
@@ -85,10 +87,11 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Icon from '@/components/icon';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 
 type OrderSource = Order['source'];
@@ -201,13 +204,17 @@ const OrdersTableComponent = () => {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const [isPending, startTransition] = useTransition();
     
     const [isClient, setIsClient] = useState(false);
     const context = useSettings();
     const { formatCurrency } = context;
     const { statuses } = useStatusesStore();
+    const { users } = useUsersStore();
+
+    const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
+    const merchants = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
     
-    // Server-side state
     const [orders, setOrders] = useState<Order[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
@@ -218,7 +225,6 @@ const OrdersTableComponent = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-    // Client-side state for UI
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
     const [modalState, setModalState] = useState<ModalState>({ type: 'none' });
     const isMobile = useMediaQuery('(max-width: 1024px)');
@@ -245,7 +251,6 @@ const OrdersTableComponent = () => {
         }
     }, []);
 
-    // Effect to fetch data from the server
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -253,7 +258,7 @@ const OrdersTableComponent = () => {
             const driverFilter = searchParams.get('driver');
 
             const result = await getOrders({
-                page: groupBy ? 0 : page, // If grouping, fetch all data for client-side grouping
+                page: groupBy ? 0 : page,
                 rowsPerPage: groupBy ? 9999 : rowsPerPage,
                 searchQuery: debouncedSearchQuery,
                 sortConfig,
@@ -313,7 +318,7 @@ const OrdersTableComponent = () => {
     const visibleOrdersInOpenGroups = useMemo(() => {
         if (!groupBy || !groupedOrders) return [];
         return Object.entries(groupedOrders).reduce((acc: Order[], [groupKey, groupOrders]) => {
-            const isGroupOpen = openGroups[groupKey] ?? false;
+            const isGroupOpen = openGroups[groupKey] ?? true;
             if (isGroupOpen) {
                 return [...acc, ...groupOrders];
             }
@@ -343,7 +348,7 @@ const OrdersTableComponent = () => {
     const footerTotals = useMemo(() => {
         const listForCalculation = selectedRows.length > 0 
             ? orders.filter(o => selectedRows.includes(o.id))
-            : (groupBy ? [] : orders); // Simplified: footer shows selected or nothing if grouped
+            : (groupBy ? [] : orders);
         
         return listForCalculation.reduce((acc, order) => {
             acc.itemPrice += order.itemPrice || 0;
@@ -387,6 +392,32 @@ const OrdersTableComponent = () => {
         setModalState({ type: 'print' });
     };
 
+    const handleUpdateField = (orderId: string, field: keyof Order, value: any) => {
+        startTransition(async () => {
+            const originalOrders = [...orders];
+            
+            // Optimistic update
+            const updatedOrders = orders.map(o => o.id === orderId ? { ...o, [field]: value } : o);
+            setOrders(updatedOrders);
+
+            const result = await updateOrderAction({ orderId, field, value });
+            
+            if (!result.success) {
+                // Revert on failure
+                setOrders(originalOrders);
+                toast({
+                    variant: 'destructive',
+                    title: `فشل تحديث ${field}`,
+                    description: result.error,
+                });
+            } else {
+                 toast({
+                    title: `تم تحديث الحقل`,
+                });
+            }
+        });
+    };
+
     const getStatusInfo = (statusValue: string) => {
         return statuses.find(s => s.name === statusValue) || { name: statusValue, icon: 'Package', color: '#808080' };
     };
@@ -394,7 +425,7 @@ const OrdersTableComponent = () => {
     const renderOrderRow = (order: Order, index: number) => {
         return (
             <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''} className="hover:bg-muted/50">
-                <TableCell className="sticky right-0 z-10 p-4 text-center border-l bg-card dark:bg-slate-900 data-[state=selected]:bg-primary/20">
+                <TableCell className="sticky right-0 z-10 p-2 text-center border-l bg-card dark:bg-slate-900 data-[state=selected]:bg-primary/20">
                     <div className="flex items-center justify-center gap-2">
                         <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
                         <Checkbox
@@ -415,13 +446,68 @@ const OrdersTableComponent = () => {
                             content = <Badge variant="outline" className="gap-1.5 font-normal"><IconC className="h-3 w-3" />{value as string}</Badge>;
                             break;
                         case 'status':
-                            const sInfo = getStatusInfo(value as string);
-                            content = <div className="flex items-center justify-center">
-                                <Badge className="gap-1.5" style={{ backgroundColor: `${sInfo.color}20`, color: sInfo.color }}>
-                                    <Icon name={sInfo.icon as any} className="h-3 w-3"/>
-                                    {sInfo.name}
-                                </Badge>
-                            </div>
+                             const sInfo = getStatusInfo(value as string);
+                             content = (
+                                 <Select value={value as string} onValueChange={(newValue) => handleUpdateField(order.id, 'status', newValue)}>
+                                     <SelectTrigger className="bg-transparent border-0 focus:ring-0 focus:ring-offset-0 h-8">
+                                         <SelectValue>
+                                            <div className="flex items-center justify-center">
+                                                <Badge className="gap-1.5" style={{ backgroundColor: `${sInfo.color}20`, color: sInfo.color }}>
+                                                    <Icon name={sInfo.icon as any} className="h-3 w-3"/>
+                                                    {sInfo.name}
+                                                </Badge>
+                                            </div>
+                                         </SelectValue>
+                                     </SelectTrigger>
+                                     <SelectContent>
+                                        {statuses.filter(s => s.isActive).map(status => (
+                                            <SelectItem key={status.id} value={status.name}>
+                                                <div className="flex items-center gap-2">
+                                                    <Icon name={status.icon as any} className="h-4 w-4" style={{ color: status.color }}/>
+                                                    {status.name}
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                     </SelectContent>
+                                 </Select>
+                             );
+                             break;
+                        case 'merchant':
+                        case 'driver':
+                            const options = col.key === 'merchant' ? merchants : drivers;
+                            content = (
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="ghost" className="w-full h-8 justify-between hover:bg-muted font-normal border">
+                                            {value as string}
+                                            <ArrowUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[200px] p-0">
+                                        <Command>
+                                            <CommandInput placeholder="بحث..."/>
+                                            <CommandList>
+                                                <CommandEmpty>لم يتم العثور على نتائج.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {options.map(item => (
+                                                        <CommandItem
+                                                            key={item.id}
+                                                            value={item.name}
+                                                            onSelect={(currentValue) => {
+                                                                const selectedName = options.find(o => o.name.toLowerCase() === currentValue)?.name || '';
+                                                                handleUpdateField(order.id, col.key, selectedName);
+                                                            }}
+                                                        >
+                                                            <Check className={cn("mr-2 h-4 w-4", value === item.name ? "opacity-100" : "opacity-0")} />
+                                                            {item.name}
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                            );
                             break;
                         case 'previousStatus':
                             content = value ? <Badge variant="secondary">{value as string}</Badge> : '-';
@@ -440,7 +526,7 @@ const OrdersTableComponent = () => {
                         default:
                             content = value as React.ReactNode || '-';
                     }
-                    return <TableCell key={col.key} className="p-5 text-center whitespace-nowrap border-l text-base">{content}</TableCell>
+                    return <TableCell key={col.key} className="p-2 text-center whitespace-nowrap border-l text-sm">{content}</TableCell>
                 })}
             </TableRow>
         )
@@ -451,7 +537,6 @@ const OrdersTableComponent = () => {
     }
 
     if (isMobile) {
-        // Mobile view remains client-side for now to preserve its specific UI
         return (
             <div className="flex flex-col h-full">
                 <div className="flex-none p-4 flex-row items-center justify-between flex flex-wrap gap-2 border-b bg-background">
@@ -567,21 +652,21 @@ const OrdersTableComponent = () => {
                         <Table>
                             <TableHeader className="sticky top-0 z-20 bg-slate-800 text-white">
                                 <TableRow className="hover:bg-transparent">
-                                    <TableHead className="sticky right-0 z-30 p-4 text-center border-b border-l w-24 bg-slate-800"><div className="flex items-center justify-center gap-2"><span className="text-sm font-bold">#</span><Checkbox onCheckedChange={handleSelectAll} checked={isAllSelected} indeterminate={isIndeterminate} aria-label="Select all rows" className='border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-800 data-[state=indeterminate]:bg-white data-[state=indeterminate]:text-slate-800' /></div></TableHead>
-                                    {visibleColumns.map((col) => (<TableHead key={col.key} className="p-5 text-center whitespace-nowrap border-b border-l hover:bg-slate-700 transition-colors duration-200">{col.sortable ? (<Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-transparent hover:text-white w-full p-0 h-auto">{col.label}<ArrowUpDown className="mr-2 h-3 w-3" /></Button>) : (col.label)}</TableHead>))}
+                                    <TableHead className="sticky right-0 z-30 p-2 text-center border-l w-20 bg-slate-800"><div className="flex items-center justify-center gap-2"><span className="text-sm font-bold">#</span><Checkbox onCheckedChange={handleSelectAll} checked={isAllSelected} indeterminate={isIndeterminate} aria-label="Select all rows" className='border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-800 data-[state=indeterminate]:bg-white data-[state=indeterminate]:text-slate-800' /></div></TableHead>
+                                    {visibleColumns.map((col) => (<TableHead key={col.key} className="p-2 text-center whitespace-nowrap border-b border-l hover:bg-slate-700 transition-colors duration-200">{col.sortable ? (<Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-transparent hover:text-white w-full p-0 h-auto">{col.label}<ArrowUpDown className="mr-2 h-3 w-3" /></Button>) : (col.label)}</TableHead>))}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {isLoading ? (
                                     Array.from({ length: 5 }).map((_, i) => (
                                         <TableRow key={i}>
-                                            <TableCell className="sticky right-0 z-10 p-4 text-center border-l bg-card"><Skeleton className="h-5 w-16" /></TableCell>
-                                            {visibleColumns.map(col => <TableCell key={col.key} className="p-5 text-center border-l"><Skeleton className="h-5 w-full" /></TableCell>)}
+                                            <TableCell className="sticky right-0 z-10 p-2 text-center border-l bg-card"><Skeleton className="h-5 w-16" /></TableCell>
+                                            {visibleColumns.map(col => <TableCell key={col.key} className="p-2 text-center border-l"><Skeleton className="h-5 w-full" /></TableCell>)}
                                         </TableRow>
                                     ))
                                 ) : groupedOrders ? (
                                     Object.entries(groupedOrders).map(([groupKey, groupOrders], groupIndex) => {
-                                        const isGroupOpen = openGroups[groupKey] ?? false;
+                                        const isGroupOpen = openGroups[groupKey] ?? true;
                                         const groupTotals = groupOrders.reduce((acc, order) => {
                                             acc.itemPrice += order.itemPrice || 0;
                                             acc.deliveryFee += (order.deliveryFee || 0) + (order.additionalCost || 0);
@@ -651,5 +736,3 @@ export function OrdersTable() {
         </React.Suspense>
     );
 }
-
-    
