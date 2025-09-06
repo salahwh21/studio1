@@ -234,7 +234,9 @@ const OrdersTableComponent = () => {
         try {
             const savedTemplatesJson = localStorage.getItem('policyTemplates');
             const savedTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
-            setAvailableTemplates([...readyTemplates, ...savedTemplates]);
+            const readyMadeIds = new Set(readyTemplates.map(t => t.id));
+            const uniqueUserTemplates = savedTemplates.filter((t: SavedTemplate) => !readyMadeIds.has(t.id));
+            setAvailableTemplates([...readyTemplates, ...uniqueUserTemplates]);
 
             const savedColumnSettings = localStorage.getItem(COLUMN_SETTINGS_KEY);
             if (savedColumnSettings) {
@@ -434,7 +436,7 @@ const OrdersTableComponent = () => {
         { key: 'address', label: 'العنوان', type: 'text' },
         { key: 'status', label: 'الحالة', type: 'select', options: statuses.map(s => s.name) },
         { key: 'driver', label: 'السائق', type: 'select', options: drivers.map(d => d.name) },
-        { key: 'merchant', label: 'التاجر', type: 'select', options: merchants.map(m => m.name) },
+        { key: 'merchant', label: 'التاجر', type: 'select', options: merchants.map(m => m.storeName || m.name) },
         { key: 'city', label: 'المدينة', type: 'text' },
         { key: 'region', label: 'المنطقة', type: 'text' },
         { key: 'date', label: 'التاريخ', type: 'text' },
@@ -777,8 +779,6 @@ const OrdersTableComponent = () => {
                                         <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="gap-1"><ListOrdered className="h-4 w-4" /><span>الأعمدة</span></Button></DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="w-64 p-2 max-h-[400px] flex flex-col"><DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel><div className='flex items-center gap-2 p-1'><Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(ALL_COLUMNS.map(c => c.key))}>إظهار الكل</Button><Separator orientation="vertical" className="h-4" /><Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(['id', 'recipient', 'status'])}>إخفاء الكل</Button></div><DropdownMenuSeparator /><div className="flex-1 min-h-0 overflow-auto"><DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}><SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>{ALL_COLUMNS.map((column) => (<SortableColumn key={column.key} id={column.key} label={column.label} isVisible={visibleColumnKeys.includes(column.key)} onToggle={handleColumnVisibilityChange} />))}</SortableContext></DndContext></div></DropdownMenuContent>
                                     </DropdownMenu>
-                                    <DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="gap-1"><FileDown /><span>تصدير</span></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem>تصدير كـ CSV</DropdownMenuItem><DropdownMenuItem>تصدير كـ PDF</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
-                                    <Button variant="outline" size="sm" onClick={handlePrintClick}><Printer /></Button>
                                     <Button variant="outline" size="sm" onClick={handleRefresh}><RefreshCw className="h-4 w-4"/></Button>
                                 </div>
                             </>
@@ -787,9 +787,9 @@ const OrdersTableComponent = () => {
                     {/* Table Container */}
                      <div className="flex-1 border rounded-lg overflow-auto flex flex-col">
                         <Table>
-                            <TableHeader className="sticky top-0 z-20 bg-slate-800 text-white">
+                            <TableHeader className="sticky top-0 z-20 bg-slate-800">
                                 <TableRow className="hover:bg-transparent">
-                                    <TableHead className="sticky right-0 z-30 p-2 text-center border-l w-20 bg-slate-800 text-white"><div className="flex items-center justify-center gap-2"><span className="text-sm font-bold">#</span><Checkbox onCheckedChange={handleSelectAll} checked={isAllSelected} indeterminate={isIndeterminate} aria-label="Select all rows" className='border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-800 data-[state=indeterminate]:bg-white data-[state=indeterminate]:text-slate-800' /></div></TableHead>
+                                    <TableHead className="sticky right-0 z-30 p-2 text-center border-l w-20 bg-slate-800"><div className="flex items-center justify-center gap-2"><span className="text-sm font-bold text-white">#</span><Checkbox onCheckedChange={handleSelectAll} checked={isAllSelected} indeterminate={isIndeterminate} aria-label="Select all rows" className='border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-800 data-[state=indeterminate]:bg-white data-[state=indeterminate]:text-slate-800' /></div></TableHead>
                                     {visibleColumns.map((col) => (<TableHead key={col.key} className="p-2 text-center whitespace-nowrap border-b border-l text-white hover:bg-slate-700 transition-colors duration-200">{col.sortable ? (<Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-transparent hover:text-white w-full p-0 h-auto">{col.label}<ArrowUpDown className="mr-2 h-3 w-3 text-white" /></Button>) : (<span className='text-white'>{col.label}</span>)}</TableHead>))}
                                 </TableRow>
                             </TableHeader>
