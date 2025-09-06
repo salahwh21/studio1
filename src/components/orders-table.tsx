@@ -44,6 +44,7 @@ import {
   Loader2,
   ChevronsRight,
   ChevronsLeft,
+  ChevronsUpDown,
 } from 'lucide-react';
 import {
   DndContext,
@@ -338,6 +339,26 @@ const OrdersTableComponent = () => {
 
     const isAllSelected = currentOrderList.length > 0 && selectedRows.length > 0 && currentOrderList.every(o => selectedRows.includes(o.id));
     const isIndeterminate = selectedRows.length > 0 && !isAllSelected;
+
+    const areAllGroupsOpen = useMemo(() => {
+        if (!groupedOrders) return false;
+        const groupKeys = Object.keys(groupedOrders);
+        if (groupKeys.length === 0) return false;
+        return groupKeys.every(key => openGroups[key]);
+    }, [groupedOrders, openGroups]);
+
+    const toggleAllGroups = () => {
+        if (!groupedOrders) return;
+        if (areAllGroupsOpen) {
+            setOpenGroups({});
+        } else {
+            const newOpenGroups: Record<string, boolean> = {};
+            for (const key in groupedOrders) {
+                newOpenGroups[key] = true;
+            }
+            setOpenGroups(newOpenGroups);
+        }
+    };
 
 
     const handleSelectAll = (checked: boolean | 'indeterminate') => {
@@ -776,6 +797,7 @@ const OrdersTableComponent = () => {
                                         <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="gap-1"><ListOrdered className="h-4 w-4" /><span>الأعمدة</span></Button></DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="w-64 p-2 max-h-[400px] flex flex-col"><DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel><div className='flex items-center gap-2 p-1'><Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(ALL_COLUMNS.map(c => c.key))}>إظهار الكل</Button><Separator orientation="vertical" className="h-4" /><Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(['id', 'recipient', 'status'])}>إخفاء الكل</Button></div><DropdownMenuSeparator /><div className="flex-1 min-h-0 overflow-auto"><DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}><SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>{ALL_COLUMNS.map((column) => (<SortableColumn key={column.key} id={column.key} label={column.label} isVisible={visibleColumnKeys.includes(column.key)} onToggle={handleColumnVisibilityChange} />))}</SortableContext></DndContext></div></DropdownMenuContent>
                                     </DropdownMenu>
+                                    <Button variant="outline" size="sm" onClick={toggleAllGroups} disabled={!groupBy}><ChevronsUpDown className="h-4 w-4"/></Button>
                                     <Button variant="outline" size="sm" onClick={handleRefresh}><RefreshCw className="h-4 w-4"/></Button>
                                 </div>
                             </>
