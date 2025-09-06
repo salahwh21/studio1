@@ -61,6 +61,8 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { CSVLink } from 'react-csv';
+
 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
@@ -189,6 +191,20 @@ const SortableColumn = ({ id, label, onToggle, isVisible }: { id: string; label:
     );
 };
 
+const SEARCHABLE_FIELDS: { key: keyof Order; label: string; type: 'text' | 'select', options?: string[] }[] = [
+    { key: 'id', label: 'رقم الطلب', type: 'text' },
+    { key: 'referenceNumber', label: 'الرقم المرجعي', type: 'text' },
+    { key: 'recipient', label: 'المستلم', type: 'text' },
+    { key: 'phone', label: 'الهاتف', type: 'text' },
+    { key: 'address', label: 'العنوان', type: 'text' },
+    { key: 'status', label: 'الحالة', type: 'select', options: [] },
+    { key: 'driver', label: 'السائق', type: 'select', options: [] },
+    { key: 'merchant', label: 'التاجر', type: 'select', options: [] },
+    { key: 'city', label: 'المدينة', type: 'text' },
+    { key: 'region', label: 'المنطقة', type: 'text' },
+    { key: 'date', label: 'التاريخ', type: 'text' },
+];
+
 const OrdersTableComponent = () => {
     const { toast } = useToast();
     const router = useRouter();
@@ -233,7 +249,7 @@ const OrdersTableComponent = () => {
     useEffect(() => { 
         setIsClient(true);
         try {
-            const savedTemplatesJson = localStorage.getItem('policyTemplates');
+             const savedTemplatesJson = localStorage.getItem('policyTemplates');
             if (savedTemplatesJson) {
                 const savedTemplates = JSON.parse(savedTemplatesJson);
                 const readyMadeIds = new Set(readyTemplates.map(t => t.id));
@@ -443,20 +459,15 @@ const OrdersTableComponent = () => {
     const getStatusInfo = (statusValue: string) => {
         return statuses.find(s => s.name === statusValue) || { name: statusValue, icon: 'Package', color: '#808080' };
     };
-    
-    const SEARCHABLE_FIELDS: { key: keyof Order; label: string; type: 'text' | 'select', options?: string[] }[] = [
-        { key: 'id', label: 'رقم الطلب', type: 'text' },
-        { key: 'referenceNumber', label: 'الرقم المرجعي', type: 'text' },
-        { key: 'recipient', label: 'المستلم', type: 'text' },
-        { key: 'phone', label: 'الهاتف', type: 'text' },
-        { key: 'address', label: 'العنوان', type: 'text' },
-        { key: 'status', label: 'الحالة', type: 'select', options: statuses.map(s => s.name) },
-        { key: 'driver', label: 'السائق', type: 'select', options: drivers.map(d => d.name) },
-        { key: 'merchant', label: 'التاجر', type: 'select', options: merchants.map(m => m.storeName || m.name) },
-        { key: 'city', label: 'المدينة', type: 'text' },
-        { key: 'region', label: 'المنطقة', type: 'text' },
-        { key: 'date', label: 'التاريخ', type: 'text' },
-    ];
+
+    const searchableFieldsWithOptions = useMemo(() => {
+        return SEARCHABLE_FIELDS.map(field => {
+            if (field.key === 'status') return { ...field, options: statuses.map(s => s.name) };
+            if (field.key === 'driver') return { ...field, options: drivers.map(d => d.name) };
+            if (field.key === 'merchant') return { ...field, options: merchants.map(m => m.storeName || m.name) };
+            return field;
+        });
+    }, [statuses, drivers, merchants]);
     
     const AdvancedSearch = ({
       filters,
@@ -469,7 +480,7 @@ const OrdersTableComponent = () => {
     }) => {
       const [popoverOpen, setPopoverOpen] = useState(false);
       const [inputValue, setInputValue] = useState('');
-      const [currentField, setCurrentField] = useState<(typeof SEARCHABLE_FIELDS)[number] | null>(null);
+      const [currentField, setCurrentField] = useState<(typeof searchableFieldsWithOptions)[number] | null>(null);
       const inputRef = useRef<HTMLInputElement>(null);
     
       useEffect(() => {
@@ -479,7 +490,7 @@ const OrdersTableComponent = () => {
       }, [currentField]);
     
       const handleSelectField = (fieldKey: string) => {
-        const field = SEARCHABLE_FIELDS.find(f => f.key === fieldKey);
+        const field = searchableFieldsWithOptions.find(f => f.key === fieldKey);
         if (field) {
           setCurrentField(field);
           setPopoverOpen(false);
@@ -517,7 +528,7 @@ const OrdersTableComponent = () => {
             <Search className="h-4 w-4 text-muted-foreground ml-1" />
             {filters.map((filter, index) => (
               <Badge key={index} variant="secondary" className="gap-1.5">
-                {SEARCHABLE_FIELDS.find(f => f.key === filter.field)?.label || filter.field}: {filter.value}
+                {searchableFieldsWithOptions.find(f => f.key === filter.field)?.label || filter.field}: {filter.value}
                 <button onClick={() => onRemoveFilter(index)} className="rounded-full hover:bg-background/50">
                   <X className="h-3 w-3" />
                 </button>
@@ -563,7 +574,7 @@ const OrdersTableComponent = () => {
                 <CommandList>
                     <CommandEmpty>لم يتم العثور على حقل.</CommandEmpty>
                     <CommandGroup>
-                        {SEARCHABLE_FIELDS.map(field => (
+                        {searchableFieldsWithOptions.map(field => (
                             <CommandItem key={field.key} onSelect={() => handleSelectField(field.key)}>
                                 {field.label}
                             </CommandItem>
@@ -574,6 +585,17 @@ const OrdersTableComponent = () => {
           </PopoverContent>
         </Popover>
       );
+    };
+    
+    const getCsvData = () => {
+        const dataToExport = selectedRows.length > 0 ? orders.filter(o => selectedRows.includes(o.id)) : orders;
+        return dataToExport.map(order => {
+            const row: {[key: string]: any} = {};
+            visibleColumns.forEach(col => {
+                row[col.label] = order[col.key as keyof Order];
+            });
+            return row;
+        });
     };
 
     const renderOrderRow = (order: Order, index: number) => {
@@ -840,12 +862,28 @@ const OrdersTableComponent = () => {
                                     <DropdownMenuItem disabled={selectedRows.length === 0} onSelect={() => setModalState({ type: 'changeStatus' })}>
                                         <RefreshCw className="ml-2 h-4 w-4" /> تغيير الحالة
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem disabled={selectedRows.length === 0} onSelect={() => setModalState({ type: 'print' })}>
-                                        <Printer className="ml-2 h-4 w-4" /> طباعة بوليصة
-                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem disabled={selectedRows.length === 0} className="text-destructive" onSelect={() => setModalState({ type: 'delete' })}>
                                         <Trash2 className="ml-2 h-4 w-4" /> حذف المحدد
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="gap-1">
+                                        <Printer className="h-4 w-4" />
+                                        <span>طباعة / تصدير</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                     <DropdownMenuItem onSelect={() => setModalState({ type: 'print' })} disabled={selectedRows.length === 0}>
+                                        <Printer className="ml-2 h-4 w-4" /> طباعة بوليصة
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem>
+                                        <FileDown className="ml-2 h-4 w-4" /> 
+                                         <CSVLink data={getCsvData()} filename={"orders_export.csv"}>
+                                            تصدير
+                                        </CSVLink>
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
