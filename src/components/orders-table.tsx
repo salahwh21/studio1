@@ -61,7 +61,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { CSVLink } from 'react-csv';
+import dynamic from 'next/dynamic';
 
 
 import { useToast } from '@/hooks/use-toast';
@@ -98,6 +98,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Icon from '@/components/icon';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
+
+const CSVLink = dynamic(() => import('react-csv').then(mod => mod.CSVLink), { ssr: false });
 
 type OrderSource = Order['source'];
 type ColumnConfig = { key: keyof Order | 'id-link' | 'notes' | 'companyDue'; label: string; type?: 'default' | 'financial' | 'admin_financial'; sortable?: boolean };
@@ -232,7 +234,7 @@ const OrdersTableComponent = () => {
 
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
     const [modalState, setModalState] = useState<ModalState>({ type: 'none' });
-    const isMobile = useMediaQuery('(max-width: 1024px)');
+    const isMobile = useMediaQuery('(max-width: 1024px'));
     const [groupBy, setGroupBy] = useState<GroupByOption>(null);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
     
@@ -249,9 +251,10 @@ const OrdersTableComponent = () => {
     useEffect(() => { 
         setIsClient(true);
         try {
-             const savedTemplatesJson = localStorage.getItem('policyTemplates');
+            const savedTemplatesJson = localStorage.getItem('policyTemplates');
             if (savedTemplatesJson) {
                 const savedTemplates = JSON.parse(savedTemplatesJson);
+                // Filter out ready-made templates if they are already in the saved list to avoid duplicates
                 const readyMadeIds = new Set(readyTemplates.map(t => t.id));
                 const uniqueUserTemplates = savedTemplates.filter((t: SavedTemplate) => !readyMadeIds.has(t.id));
                 setAvailableTemplates([...readyTemplates, ...uniqueUserTemplates]);
@@ -881,9 +884,11 @@ const OrdersTableComponent = () => {
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>
                                         <FileDown className="ml-2 h-4 w-4" /> 
-                                         <CSVLink data={getCsvData()} filename={"orders_export.csv"}>
-                                            تصدير
-                                        </CSVLink>
+                                        {isClient && 
+                                            <CSVLink data={getCsvData()} filename={"orders_export.csv"}>
+                                                تصدير
+                                            </CSVLink>
+                                        }
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -1059,3 +1064,6 @@ export function OrdersTable() {
     );
 }
 
+
+
+    
