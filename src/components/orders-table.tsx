@@ -45,6 +45,8 @@ import {
   ChevronsLeft,
   ChevronsUpDown,
   Printer,
+  ArrowRight,
+  ArrowLeft as ArrowLeftIcon,
 } from 'lucide-react';
 import {
   DndContext,
@@ -53,6 +55,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  DragOverlay,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -172,7 +175,8 @@ type ModalState =
     | { type: 'barcode', order: Order }
     | { type: 'assignDriver' }
     | { type: 'changeStatus' }
-    | { type: 'print' };
+    | { type: 'print' }
+    | { type: 'export' };
 
 type GroupedOrders = { [key: string]: Order[] };
 
@@ -206,6 +210,191 @@ const SEARCHABLE_FIELDS: { key: keyof Order; label: string; type: 'text' | 'sele
     { key: 'region', label: 'المنطقة', type: 'text' },
     { key: 'date', label: 'التاريخ', type: 'text' },
 ];
+
+const ExportDataDialog = ({
+    open,
+    onOpenChange,
+    allColumns,
+    initialVisibleColumns,
+    ordersToExport,
+    isClient,
+  }: {
+    open: boolean;
+    onOpenChange: (isOpen: boolean) => void;
+    allColumns: ColumnConfig[];
+    initialVisibleColumns: ColumnConfig[];
+    ordersToExport: Order[];
+    isClient: boolean;
+  }) => {
+    const [exportPurpose, setExportPurpose] = useState('all_data');
+    const [fileFormat, setFileFormat] = useState('excel');
+    const [availableFields, setAvailableFields] = useState<ColumnConfig[]>([]);
+    const [exportedFields, setExportedFields] = useState<ColumnConfig[]>([]);
+    const [activeDragId, setActiveDragId] = useState<string | null>(null);
+    const { toast } = useToast();
+    const EXPORT_FIELDS_KEY = 'ordersExportFieldsSettings';
+  
+    useEffect(() => {
+        if(open) {
+            const savedFieldsJson = localStorage.getItem(EXPORT_FIELDS_KEY);
+            if (savedFieldsJson) {
+                const savedFieldKeys = JSON.parse(savedFieldsJson);
+                const savedExportedFields = savedFieldKeys.map((key: string) => allColumns.find(c => c.key === key)).filter(Boolean);
+                const savedAvailableFields = allColumns.filter(col => !savedFieldKeys.includes(col.key));
+                setExportedFields(savedExportedFields);
+                setAvailableFields(savedAvailableFields);
+            } else {
+                setExportedFields(initialVisibleColumns);
+                setAvailableFields(allColumns.filter(c => !initialVisibleColumns.some(vc => vc.key === c.key)));
+            }
+        }
+    }, [open, allColumns, initialVisibleColumns]);
+
+  
+    const sensors = useSensors(useSensor(PointerSensor));
+  
+    const handleDragStart = (event: any) => setActiveDragId(event.active.id);
+  
+    const handleDragEnd = (event: any) => {
+        const { active, over } = event;
+        setActiveDragId(null);
+    
+        if (!over) return;
+    
+        const activeId = active.id;
+        const overId = over.id;
+    
+        if (activeId === overId) return;
+
+        const isActiveInExported = exportedFields.some(f => f.key === activeId);
+        const isOverInExported = exportedFields.some(f => f.key === overId);
+
+        if (isActiveInExported && isOverInExported) {
+            // Reorder within exported fields
+            setExportedFields(fields => {
+                const oldIndex = fields.findIndex(f => f.key === activeId);
+                const newIndex = fields.findIndex(f => f.key === overId);
+                return arrayMove(fields, oldIndex, newIndex);
+            });
+        }
+    };
+
+    const handleDragOver = (event: any) => {
+        const { active, over } = event;
+        if (!over) return;
+
+        const activeId = active.id;
+        const overId = over.id;
+        const overContainer = over.data.current?.sortable?.containerId;
+
+        const isActiveInAvailable = availableFields.some(f => f.key === activeId);
+        const isActiveInExported = exportedFields.some(f => f.key === activeId);
+    
+        if (isActiveInAvailable && overContainer === 'exported') {
+            setAvailableFields(prev => prev.filter(f => f.key !== activeId));
+            setExportedFields(prev => [...prev, availableFields.find(f => f.key === activeId)!]);
+        } else if (isActiveInExported && overContainer === 'available') {
+            setExportedFields(prev => prev.filter(f => f.key !== activeId));
+            setAvailableFields(prev => [...prev, exportedFields.find(f => f.key === activeId)!]);
+        }
+    };
+  
+    const handleSaveFields = () => {
+      const fieldKeys = exportedFields.map(f => f.key);
+      localStorage.setItem(EXPORT_FIELDS_KEY, JSON.stringify(fieldKeys));
+      toast({ title: "تم الحفظ", description: "تم حفظ قائمة الحقول المصدرة." });
+    };
+
+    const csvData = useMemo(() => {
+        return ordersToExport.map(order => {
+            const row: Record<string, any> = {};
+            exportedFields.forEach(field => {
+                row[field.label] = order[field.key as keyof Order] ?? '';
+            });
+            return row;
+        });
+    }, [ordersToExport, exportedFields]);
+
+    const ExportItem = ({ id, label }: { id: string; label: string; }) => {
+        const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+        const style = { transform: transform ? CSS.Transform.toString(transform) : undefined, transition, zIndex: 10 };
+      
+        return (
+          <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="p-2 bg-background border rounded-md flex items-center justify-between text-sm">
+            {label}
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
+        );
+      };
+
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>تصدير البيانات</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
+            <div className="space-y-6">
+                <div className="space-y-3">
+                    <Label className="font-semibold">ما الذي تريد فعله؟</Label>
+                    <RadioGroup value={exportPurpose} onValueChange={setExportPurpose} className="space-y-2">
+                        <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="all_data" id="r1_exp" /><Label htmlFor="r1_exp">استخدام البيانات في الجدول (تصدير كافة البيانات)</Label></div>
+                        <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="update_data" id="r2_exp" /><Label htmlFor="r2_exp">تحديث البيانات (تصدير صالح للاستيراد)</Label></div>
+                    </RadioGroup>
+                </div>
+                 <div className="space-y-3">
+                    <Label className="font-semibold">صيغة الملف المصدر:</Label>
+                     <RadioGroup value={fileFormat} onValueChange={setFileFormat} className="flex gap-4">
+                        <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="excel" id="f_excel" /><Label htmlFor="f_excel">Excel</Label></div>
+                        <div className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value="csv" id="f_csv" /><Label htmlFor="f_csv">CSV</Label></div>
+                    </RadioGroup>
+                </div>
+                 <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={handleDragOver} collisionDetection={closestCenter}>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>الحقول المتاحة</Label>
+                            <SortableContext id="available" items={availableFields.map(f => f.key)} strategy={verticalListSortingStrategy}>
+                                <ScrollArea className="h-64 border rounded-md p-2 space-y-2 bg-muted/50">
+                                    {availableFields.map(field => <ExportItem key={field.key} id={field.key} label={field.label} />)}
+                                </ScrollArea>
+                            </SortableContext>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>الحقول المراد تصديرها</Label>
+                             <SortableContext id="exported" items={exportedFields.map(f => f.key)} strategy={verticalListSortingStrategy}>
+                                <ScrollArea className="h-64 border rounded-md p-2 space-y-2">
+                                    {exportedFields.map(field => <ExportItem key={field.key} id={field.key} label={field.label} />)}
+                                </ScrollArea>
+                            </SortableContext>
+                        </div>
+                    </div>
+                    <DragOverlay>
+                        {activeDragId ? <div className="p-2 bg-white border rounded-md shadow-lg text-sm">{allColumns.find(c => c.key === activeDragId)?.label}</div> : null}
+                    </DragOverlay>
+                 </DndContext>
+            </div>
+            <div className="flex flex-col items-center justify-center bg-muted rounded-md p-4 space-y-4">
+                <Icon name="FileSpreadsheet" className="w-24 h-24 text-muted-foreground" />
+                <p className="text-center text-muted-foreground">سيتم تصدير {ordersToExport.length} سجلات مع {exportedFields.length} حقول.</p>
+                <div className="flex flex-col gap-2 w-full">
+                    <Button onClick={handleSaveFields} variant="secondary">
+                        <Save className="ml-2 h-4 w-4" /> حفظ قائمة الحقول
+                    </Button>
+                    {isClient && (
+                         <CSVLink data={csvData} filename={"orders_export.csv"} className="w-full">
+                            <Button className="w-full">
+                                <Download className="ml-2 h-4 w-4"/>
+                                {fileFormat === 'excel' ? 'تصدير Excel' : 'تصدير CSV'}
+                            </Button>
+                        </CSVLink>
+                    )}
+                </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
 const OrdersTableComponent = () => {
     const { toast } = useToast();
@@ -589,17 +778,6 @@ const OrdersTableComponent = () => {
         </Popover>
       );
     };
-    
-    const getCsvData = () => {
-        const dataToExport = selectedRows.length > 0 ? orders.filter(o => selectedRows.includes(o.id)) : orders;
-        return dataToExport.map(order => {
-            const row: {[key: string]: any} = {};
-            visibleColumns.forEach(col => {
-                row[col.label] = order[col.key as keyof Order];
-            });
-            return row;
-        });
-    };
 
     const renderOrderRow = (order: Order, index: number) => {
         return (
@@ -871,7 +1049,7 @@ const OrdersTableComponent = () => {
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <DropdownMenu>
+                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" size="sm" className="gap-1">
                                         <Printer className="h-4 w-4" />
@@ -882,13 +1060,9 @@ const OrdersTableComponent = () => {
                                      <DropdownMenuItem onSelect={() => setModalState({ type: 'print' })} disabled={selectedRows.length === 0}>
                                         <Printer className="ml-2 h-4 w-4" /> طباعة بوليصة
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <FileDown className="ml-2 h-4 w-4" /> 
-                                        {isClient && 
-                                            <CSVLink data={getCsvData()} filename={"orders_export.csv"}>
-                                                تصدير
-                                            </CSVLink>
-                                        }
+                                    <DropdownMenuItem onSelect={() => setModalState({ type: 'export' })}>
+                                        <FileDown className="ml-2 h-4 w-4" />
+                                        تصدير البيانات
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -1049,6 +1223,14 @@ const OrdersTableComponent = () => {
             <AlertDialog open={modalState.type === 'delete'} onOpenChange={(open) => !open && setModalState({ type: 'none' })}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف {selectedRows.length} طلبات؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction>حذف</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
             <Dialog open={modalState.type === 'print'} onOpenChange={(open) => !open && setModalState({type: 'none'})}><DialogContent className="max-w-4xl h-[90vh] flex flex-col"><DialogHeader><DialogTitle>طباعة البوالص</DialogTitle><DialogDescription>اختر القالب وقم بمعاينة البوالص قبل الطباعة النهائية.</DialogDescription></DialogHeader><div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 min-h-0"><div className="md:col-span-1 flex flex-col gap-4"><Card><CardHeader className='p-4'><CardTitle className='text-base'>1. اختر القالب</CardTitle></CardHeader><CardContent className='p-4'><RadioGroup value={selectedTemplate?.id} onValueChange={(id) => setSelectedTemplate(availableTemplates.find(t => t.id === id) || null)}>{availableTemplates.map(template => (<div key={template.id} className="flex items-center space-x-2 space-x-reverse"><RadioGroupItem value={template.id} id={`tpl-${template.id}`} /><Label htmlFor={`tpl-${template.id}`}>{template.name}</Label></div>))}</RadioGroup></CardContent></Card><Card><CardHeader className='p-4'><CardTitle className='text-base'>2. إجراء الطباعة</CardTitle></CardHeader><CardContent className='p-4 flex flex-col gap-2'><Button onClick={() => printablePolicyRef.current?.handleExport()} className="w-full"><Icon name="Save" className="ml-2 h-4 w-4 inline" /> طباعة PDF</Button><Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(orders.find(o => o.id === selectedRows[0]), 'zpl')}><Icon name="Printer" className="ml-2 h-4 w-4 inline" /> طباعة ZPL (أول طلب)</Button><Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(orders.find(o => o.id === selectedRows[0]), 'escpos')}><Icon name="Printer" className="ml-2 h-4 w-4 inline" /> طباعة ESC/POS (أول طلب)</Button></CardContent></Card></div><div className="md:col-span-3 bg-muted rounded-md flex items-center justify-center overflow-hidden"><ScrollArea className="h-full w-full"><div className="p-4 flex items-center justify-center">{selectedTemplate && (<PrintablePolicy ref={printablePolicyRef} orders={orders.filter(o => selectedRows.includes(o.id))} template={selectedTemplate} />)}</div></ScrollArea></div></div></DialogContent></Dialog>
             <Dialog open={modalState.type === 'assignDriver' || modalState.type === 'changeStatus'} onOpenChange={(open) => !open && setModalState({ type: 'none' })}><DialogContent><DialogHeader><DialogTitle>{modalState.type === 'assignDriver' ? 'تعيين سائق' : 'تغيير الحالة'}</DialogTitle></DialogHeader><div className="py-4"><Select><SelectTrigger><SelectValue placeholder={modalState.type === 'assignDriver' ? 'اختر سائق...' : 'اختر حالة...'} /></SelectTrigger><SelectContent>{ (modalState.type === 'assignDriver' ? ['علي الأحمد', 'ابو العبد', 'محمد الخالد'] : statuses.filter(s => s.isActive).map(s=>s.name)).map(item => (<SelectItem key={item} value={item}>{item}</SelectItem>)) }</SelectContent></Select></div></DialogContent></Dialog>
+            <ExportDataDialog
+                open={modalState.type === 'export'}
+                onOpenChange={(open) => !open && setModalState({type: 'none'})}
+                allColumns={ALL_COLUMNS}
+                initialVisibleColumns={visibleColumns}
+                ordersToExport={selectedRows.length > 0 ? orders.filter(o => selectedRows.includes(o.id)) : orders}
+                isClient={isClient}
+            />
         </>
     );
 }
