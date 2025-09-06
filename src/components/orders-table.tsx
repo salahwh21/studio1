@@ -442,10 +442,22 @@ const OrdersTableComponent = () => {
         setIsClient(true);
         try {
             const savedTemplatesJson = localStorage.getItem('policyTemplates');
-            if (savedTemplatesJson) {
-                setAvailableTemplates(JSON.parse(savedTemplatesJson));
-            } else {
+            const userTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
+            const isInitialized = localStorage.getItem('policyTemplatesInitialized');
+
+            if (!isInitialized && userTemplates.length === 0) {
+                localStorage.setItem('policyTemplates', JSON.stringify(readyTemplates));
                 setAvailableTemplates(readyTemplates);
+                localStorage.setItem('policyTemplatesInitialized', 'true');
+            } else {
+                const uniqueTemplates = [...readyTemplates];
+                const readyIds = new Set(readyTemplates.map(t => t.id));
+                userTemplates.forEach((t: SavedTemplate) => {
+                    if (!readyIds.has(t.id)) {
+                        uniqueTemplates.push(t);
+                    }
+                });
+                setAvailableTemplates(uniqueTemplates);
             }
 
             const savedColumnSettings = localStorage.getItem(COLUMN_SETTINGS_KEY);
@@ -1028,7 +1040,6 @@ const OrdersTableComponent = () => {
                                     <Button variant="outline" size="sm" className="gap-1">
                                         <Icon name="Settings2" className="h-4 w-4" />
                                         <span>الإجراءات</span>
-                                        {selectedRows.length > 0 && <Badge variant="secondary" className="mr-1">{selectedRows.length}</Badge>}
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
@@ -1246,4 +1257,5 @@ export function OrdersTable() {
 
 
     
+
 
