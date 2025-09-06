@@ -11,7 +11,6 @@ import {
   PlusCircle,
   Search,
   Trash2,
-  Printer,
   UserCheck,
   RefreshCw,
   FileDown,
@@ -77,7 +76,7 @@ import { updateOrderAction } from '@/app/actions/update-order';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -234,10 +233,14 @@ const OrdersTableComponent = () => {
         setIsClient(true);
         try {
             const savedTemplatesJson = localStorage.getItem('policyTemplates');
-            const savedTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
-            const readyMadeIds = new Set(readyTemplates.map(t => t.id));
-            const uniqueUserTemplates = savedTemplates.filter((t: SavedTemplate) => !readyMadeIds.has(t.id));
-            setAvailableTemplates([...readyTemplates, ...uniqueUserTemplates]);
+            if (savedTemplatesJson) {
+                const savedTemplates = JSON.parse(savedTemplatesJson);
+                const readyMadeIds = new Set(readyTemplates.map(t => t.id));
+                const uniqueUserTemplates = savedTemplates.filter((t: SavedTemplate) => !readyMadeIds.has(t.id));
+                setAvailableTemplates([...readyTemplates, ...uniqueUserTemplates]);
+            } else {
+                setAvailableTemplates(readyTemplates);
+            }
 
             const savedColumnSettings = localStorage.getItem(COLUMN_SETTINGS_KEY);
             if (savedColumnSettings) {
@@ -411,15 +414,6 @@ const OrdersTableComponent = () => {
         fetchData();
         toast({ title: "تم تحديث البيانات" });
     }
-
-    const handlePrintClick = () => {
-        if (selectedRows.length === 0) {
-            toast({ variant: 'destructive', title: 'لا توجد طلبات محددة', description: 'الرجاء تحديد طلب واحد على الأقل للطباعة.' });
-            return;
-        }
-        setSelectedTemplate(availableTemplates.length > 0 ? availableTemplates[0] : null);
-        setModalState({ type: 'print' });
-    };
 
     const handleUpdateField = (orderId: string, field: keyof Order, value: any) => {
         startTransition(async () => {
@@ -772,36 +766,88 @@ const OrdersTableComponent = () => {
                 <Card className="flex flex-col h-[calc(100vh-8rem)] bg-background p-4 gap-4">
                     {/* Header */}
                     <div className="flex-none flex-row items-center justify-between flex flex-wrap gap-2">
-                        {selectedRows.length > 0 ? (
-                             <div className='flex items-center gap-2'>
-                                <span className='text-sm font-semibold text-muted-foreground'>{selectedRows.length} طلبات محددة</span>
-                                <Separator orientation="vertical" className="h-6 mx-1" />
-                                 <Button variant="outline" size="sm"><UserCheck className="ml-2 h-4 w-4" /> تعيين سائق</Button>
-                                <Button variant="outline" size="sm"><RefreshCw className="ml-2 h-4 w-4" /> تغيير الحالة</Button>
-                                <Button variant="destructive" size="sm"><Trash2 className="ml-2 h-4 w-4" /> حذف</Button>
-                                <Button variant="ghost" size="icon" onClick={() => setSelectedRows([])}><X className="h-4 w-4" /></Button>
-                            </div>
-                        ) : (
-                            <>
-                                <AdvancedSearch
-                                    filters={filters}
-                                    onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
-                                    onRemoveFilter={(index) => setFilters(prev => prev.filter((_, i) => i !== index))}
-                                />
-                                <div className="flex items-center gap-2">
-                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="gap-1"><ListTree className="h-4 w-4" /><span>التجميع حسب</span>{groupBy && <Badge variant="secondary" className='mr-1'>{GROUP_BY_OPTIONS.find(o => o.value === groupBy)?.label}</Badge>}</Button></DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end"><DropdownMenuLabel>اختر حقل للتجميع</DropdownMenuLabel><DropdownMenuSeparator />{GROUP_BY_OPTIONS.map(option => (<DropdownMenuCheckboxItem key={option.label} checked={groupBy === option.value} onSelect={() => setGroupBy(option.value)}>{option.label}</DropdownMenuCheckboxItem>))}</DropdownMenuContent>
-                                    </DropdownMenu>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="gap-1"><ListOrdered className="h-4 w-4" /><span>الأعمدة</span></Button></DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-64 p-2 max-h-[400px] flex flex-col"><DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel><div className='flex items-center gap-2 p-1'><Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(ALL_COLUMNS.map(c => c.key))}>إظهار الكل</Button><Separator orientation="vertical" className="h-4" /><Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(['id', 'recipient', 'status'])}>إخفاء الكل</Button></div><DropdownMenuSeparator /><div className="flex-1 min-h-0 overflow-auto"><DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}><SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>{ALL_COLUMNS.map((column) => (<SortableColumn key={column.key} id={column.key} label={column.label} isVisible={visibleColumnKeys.includes(column.key)} onToggle={handleColumnVisibilityChange} />))}</SortableContext></DndContext></div></DropdownMenuContent>
-                                    </DropdownMenu>
-                                    <Button variant="outline" size="sm" onClick={toggleAllGroups} disabled={!groupBy}><ChevronsUpDown className="h-4 w-4"/></Button>
-                                    <Button variant="outline" size="sm" onClick={handleRefresh}><RefreshCw className="h-4 w-4"/></Button>
-                                </div>
-                            </>
-                        )}
+                        <AdvancedSearch
+                            filters={filters}
+                            onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
+                            onRemoveFilter={(index) => setFilters(prev => prev.filter((_, i) => i !== index))}
+                        />
+                        <div className="flex items-center gap-2">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="gap-1">
+                                        <ListTree className="h-4 w-4" />
+                                        <span>التجميع حسب</span>
+                                        {groupBy && <Badge variant="secondary" className='mr-1'>{GROUP_BY_OPTIONS.find(o => o.value === groupBy)?.label}</Badge>}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>اختر حقل للتجميع</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    {GROUP_BY_OPTIONS.map(option => (
+                                        <DropdownMenuCheckboxItem key={option.label} checked={groupBy === option.value} onSelect={() => setGroupBy(option.value)}>
+                                            {option.label}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="gap-1">
+                                        <ListOrdered className="h-4 w-4" />
+                                        <span>الأعمدة</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-64 p-2 max-h-[400px] flex flex-col">
+                                    <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
+                                    <div className='flex items-center gap-2 p-1'>
+                                        <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(ALL_COLUMNS.map(c => c.key))}>إظهار الكل</Button>
+                                        <Separator orientation="vertical" className="h-4" />
+                                        <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(['id', 'recipient', 'status'])}>إخفاء الكل</Button>
+                                    </div>
+                                    <DropdownMenuSeparator />
+                                    <div className="flex-1 min-h-0 overflow-auto">
+                                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
+                                            <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
+                                                {ALL_COLUMNS.map((column) => (
+                                                    <SortableColumn
+                                                        key={column.key}
+                                                        id={column.key}
+                                                        label={column.label}
+                                                        isVisible={visibleColumnKeys.includes(column.key)}
+                                                        onToggle={handleColumnVisibilityChange}
+                                                    />
+                                                ))}
+                                            </SortableContext>
+                                        </DndContext>
+                                    </div>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="gap-1">
+                                        <Icon name="Settings2" className="h-4 w-4" />
+                                        <span>الإجراءات</span>
+                                        {selectedRows.length > 0 && <Badge variant="secondary" className="mr-1">{selectedRows.length}</Badge>}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>الإجراءات المجمعة</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem disabled={selectedRows.length === 0} onSelect={() => setModalState({ type: 'assignDriver' })}>
+                                        <UserCheck className="ml-2 h-4 w-4" /> تعيين سائق
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem disabled={selectedRows.length === 0} onSelect={() => setModalState({ type: 'changeStatus' })}>
+                                        <RefreshCw className="ml-2 h-4 w-4" /> تغيير الحالة
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem disabled={selectedRows.length === 0} className="text-destructive" onSelect={() => setModalState({ type: 'delete' })}>
+                                        <Trash2 className="ml-2 h-4 w-4" /> حذف المحدد
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <Button variant="outline" size="sm" onClick={toggleAllGroups} disabled={!groupBy}><ChevronsUpDown className="h-4 w-4"/></Button>
+                            <Button variant="outline" size="sm" onClick={handleRefresh}><RefreshCw className="h-4 w-4"/></Button>
+                        </div>
                     </div>
                     {/* Table Container */}
                      <div className="flex-1 border rounded-lg overflow-auto flex flex-col">
