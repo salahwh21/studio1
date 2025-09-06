@@ -47,6 +47,7 @@ import {
   Printer,
   ArrowRight,
   ArrowLeft as ArrowLeftIcon,
+  Save,
 } from 'lucide-react';
 import {
   DndContext,
@@ -442,11 +443,7 @@ const OrdersTableComponent = () => {
         try {
             const savedTemplatesJson = localStorage.getItem('policyTemplates');
             if (savedTemplatesJson) {
-                const savedTemplates = JSON.parse(savedTemplatesJson);
-                // Filter out ready-made templates if they are already in the saved list to avoid duplicates
-                const readyMadeIds = new Set(readyTemplates.map(t => t.id));
-                const uniqueUserTemplates = savedTemplates.filter((t: SavedTemplate) => !readyMadeIds.has(t.id));
-                setAvailableTemplates([...readyTemplates, ...uniqueUserTemplates]);
+                setAvailableTemplates(JSON.parse(savedTemplatesJson));
             } else {
                 setAvailableTemplates(readyTemplates);
             }
@@ -1249,3 +1246,4 @@ export function OrdersTable() {
 
 
     
+
