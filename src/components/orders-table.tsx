@@ -44,6 +44,7 @@ import {
   ChevronsRight,
   ChevronsLeft,
   ChevronsUpDown,
+  Printer,
 } from 'lucide-react';
 import {
   DndContext,
@@ -76,7 +77,7 @@ import { updateOrderAction } from '@/app/actions/update-order';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -839,6 +840,9 @@ const OrdersTableComponent = () => {
                                     <DropdownMenuItem disabled={selectedRows.length === 0} onSelect={() => setModalState({ type: 'changeStatus' })}>
                                         <RefreshCw className="ml-2 h-4 w-4" /> تغيير الحالة
                                     </DropdownMenuItem>
+                                    <DropdownMenuItem disabled={selectedRows.length === 0} onSelect={() => setModalState({ type: 'print' })}>
+                                        <Printer className="ml-2 h-4 w-4" /> طباعة بوليصة
+                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem disabled={selectedRows.length === 0} className="text-destructive" onSelect={() => setModalState({ type: 'delete' })}>
                                         <Trash2 className="ml-2 h-4 w-4" /> حذف المحدد
@@ -1016,3 +1020,4 @@ export function OrdersTable() {
         </React.Suspense>
     );
 }
+
