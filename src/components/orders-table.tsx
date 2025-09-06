@@ -689,8 +689,6 @@ const OrdersTableComponent = () => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem><PlusCircle className="ml-2 h-4 w-4" /> إضافة طلب</DropdownMenuItem>
-                                <DropdownMenuItem><FileDown className="ml-2 h-4 w-4" /> تصدير</DropdownMenuItem>
-                                <DropdownMenuItem onClick={handlePrintClick}><Printer className="ml-2 h-4 w-4" /> طباعة</DropdownMenuItem>
                                 <DropdownMenuItem><Trash2 className="ml-2 h-4 w-4" /> حذف المحدد</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -759,7 +757,6 @@ const OrdersTableComponent = () => {
                                 <Separator orientation="vertical" className="h-6 mx-1" />
                                  <Button variant="outline" size="sm"><UserCheck className="ml-2 h-4 w-4" /> تعيين سائق</Button>
                                 <Button variant="outline" size="sm"><RefreshCw className="ml-2 h-4 w-4" /> تغيير الحالة</Button>
-                                <Button variant="outline" size="sm" onClick={handlePrintClick}><Printer className="ml-2 h-4 w-4" /> طباعة</Button>
                                 <Button variant="destructive" size="sm"><Trash2 className="ml-2 h-4 w-4" /> حذف</Button>
                                 <Button variant="ghost" size="icon" onClick={() => setSelectedRows([])}><X className="h-4 w-4" /></Button>
                             </div>
