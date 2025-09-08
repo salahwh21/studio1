@@ -48,7 +48,9 @@ import {
   ArrowRight,
   ArrowLeft as ArrowLeftIcon,
   Save,
-  ArrowUp,
+  ChevronsUp,
+  ChevronUp,
+  ChevronsDown,
 } from 'lucide-react';
 import {
   DndContext,
@@ -57,7 +59,6 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-  DragOverlay,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -67,6 +68,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import dynamic from 'next/dynamic';
+import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 
 
@@ -313,6 +315,11 @@ const ExportDataDialog = ({
     }
     
     const handleExport = () => {
+        if (typeof window === 'undefined') {
+            toast({ variant: "destructive", title: "خطأ", description: "لا يمكن تنفيذ هذه العملية على الخادم." });
+            return;
+        }
+
         const dataToExport = ordersToExport.map(order => {
             const row: Record<string, any> = {};
             exportedFields.forEach(field => {
@@ -382,10 +389,10 @@ const ExportDataDialog = ({
                     <Button variant="outline" size="sm" onClick={() => handleMove('add')} disabled={selectedAvailable.length === 0}>إضافة <ArrowLeftIcon className="mr-2 h-4"/></Button>
                     <Button variant="outline" size="sm" onClick={() => handleMove('remove')} disabled={selectedExported.length === 0}>إزالة <ArrowRight className="mr-2 h-4"/></Button>
                     <Separator className="my-2"/>
-                    <Button variant="outline" size="sm" onClick={() => handleReorder('top')} disabled={selectedExported.length !== 1}> <ChevronsUp className="h-4"/> </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleReorder('up')} disabled={selectedExported.length !== 1}> <ChevronUp className="h-4"/> </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleReorder('down')} disabled={selectedExported.length !== 1}> <ChevronDown className="h-4"/> </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleReorder('bottom')} disabled={selectedExported.length !== 1}> <ChevronsDown className="h-4"/> </Button>
+                    <Button variant="outline" size="icon" onClick={() => handleReorder('top')} disabled={selectedExported.length !== 1}> <ChevronsUp className="h-4"/> </Button>
+                    <Button variant="outline" size="icon" onClick={() => handleReorder('up')} disabled={selectedExported.length !== 1}> <ChevronUp className="h-4"/> </Button>
+                    <Button variant="outline" size="icon" onClick={() => handleReorder('down')} disabled={selectedExported.length !== 1}> <ChevronDown className="h-4"/> </Button>
+                    <Button variant="outline" size="icon" onClick={() => handleReorder('bottom')} disabled={selectedExported.length !== 1}> <ChevronsDown className="h-4"/> </Button>
                     <Separator className="my-2"/>
                     <Button variant="outline" size="sm" onClick={() => handleMove('remove_all')}>إزالة الكل</Button>
                 </div>
@@ -453,22 +460,15 @@ const OrdersTableComponent = () => {
         try {
             const savedTemplatesJson = localStorage.getItem('policyTemplates');
             const userTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
-            const isInitialized = localStorage.getItem('policyTemplatesInitialized');
+            const uniqueTemplates = [...readyTemplates];
+            const readyIds = new Set(readyTemplates.map(t => t.id));
+            userTemplates.forEach((t: SavedTemplate) => {
+                if (!readyIds.has(t.id)) {
+                    uniqueTemplates.push(t);
+                }
+            });
+            setAvailableTemplates(uniqueTemplates);
 
-            if (!isInitialized && userTemplates.length === 0) {
-                localStorage.setItem('policyTemplates', JSON.stringify(readyTemplates));
-                setAvailableTemplates(readyTemplates);
-                localStorage.setItem('policyTemplatesInitialized', 'true');
-            } else {
-                 const uniqueTemplates = [...readyTemplates];
-                const readyIds = new Set(readyTemplates.map(t => t.id));
-                userTemplates.forEach((t: SavedTemplate) => {
-                    if (!readyIds.has(t.id)) {
-                        uniqueTemplates.push(t);
-                    }
-                });
-                setAvailableTemplates(uniqueTemplates);
-            }
 
             const savedColumnSettings = localStorage.getItem(COLUMN_SETTINGS_KEY);
             if (savedColumnSettings) {
@@ -1045,7 +1045,7 @@ const OrdersTableComponent = () => {
                                     </div>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                             <DropdownMenu>
+                            <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" size="sm" className="gap-1">
                                         <Icon name="Settings2" className="h-4 w-4" />
@@ -1067,7 +1067,7 @@ const OrdersTableComponent = () => {
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                             <DropdownMenu>
+                            <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" size="sm" className="gap-1">
                                         <Printer className="h-4 w-4" />
@@ -1270,3 +1270,6 @@ export function OrdersTable() {
 
 
 
+
+
+    
