@@ -51,6 +51,7 @@ import {
   FileSpreadsheet,
   ChevronsUp,
   ChevronUp,
+  ChevronsDown,
 } from 'lucide-react';
 import {
   DndContext,
@@ -331,15 +332,17 @@ const ExportDataDialog = ({
             link.click();
             document.body.removeChild(link);
         } else {
-            try {
-                const XLSX = await import('xlsx');
-                const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
-                XLSX.writeFile(workbook, "orders_export.xlsx");
-            } catch (error) {
-                console.error("Failed to export to Excel:", error);
-                toast({ variant: 'destructive', title: 'فشل التصدير', description: 'حدث خطأ أثناء إعداد ملف Excel.' });
+            if (typeof window !== 'undefined') {
+                try {
+                    const XLSX = await import('xlsx');
+                    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
+                    XLSX.writeFile(workbook, "orders_export.xlsx");
+                } catch (error) {
+                    console.error("Failed to export to Excel:", error);
+                    toast({ variant: 'destructive', title: 'فشل التصدير', description: 'حدث خطأ أثناء إعداد ملف Excel.' });
+                }
             }
         }
     }
