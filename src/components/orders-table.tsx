@@ -48,9 +48,9 @@ import {
   ArrowRight,
   ArrowLeft as ArrowLeftIcon,
   Save,
+  FileSpreadsheet,
   ChevronsUp,
   ChevronUp,
-  ChevronsDown,
 } from 'lucide-react';
 import {
   DndContext,
@@ -69,7 +69,6 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import dynamic from 'next/dynamic';
 import Papa from 'papaparse';
-import * as XLSX from 'xlsx';
 
 
 import { useToast } from '@/hooks/use-toast';
@@ -235,7 +234,6 @@ const ExportDataDialog = ({
     const [exportPurpose, setExportPurpose] = useState('all_data');
     const [fileFormat, setFileFormat] = useState('excel');
     
-    // Field selection state
     const [availableFields, setAvailableFields] = useState<ColumnConfig[]>([]);
     const [exportedFields, setExportedFields] = useState<ColumnConfig[]>([]);
     const [selectedAvailable, setSelectedAvailable] = useState<string[]>([]);
@@ -314,12 +312,7 @@ const ExportDataDialog = ({
         }
     }
     
-    const handleExport = () => {
-        if (typeof window === 'undefined') {
-            toast({ variant: "destructive", title: "خطأ", description: "لا يمكن تنفيذ هذه العملية على الخادم." });
-            return;
-        }
-
+    const handleExport = async () => {
         const dataToExport = ordersToExport.map(order => {
             const row: Record<string, any> = {};
             exportedFields.forEach(field => {
@@ -338,10 +331,16 @@ const ExportDataDialog = ({
             link.click();
             document.body.removeChild(link);
         } else {
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
-            XLSX.writeFile(workbook, "orders_export.xlsx");
+            try {
+                const XLSX = await import('xlsx');
+                const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
+                XLSX.writeFile(workbook, "orders_export.xlsx");
+            } catch (error) {
+                console.error("Failed to export to Excel:", error);
+                toast({ variant: 'destructive', title: 'فشل التصدير', description: 'حدث خطأ أثناء إعداد ملف Excel.' });
+            }
         }
     }
   
@@ -468,7 +467,6 @@ const OrdersTableComponent = () => {
                 }
             });
             setAvailableTemplates(uniqueTemplates);
-
 
             const savedColumnSettings = localStorage.getItem(COLUMN_SETTINGS_KEY);
             if (savedColumnSettings) {
@@ -1045,7 +1043,7 @@ const OrdersTableComponent = () => {
                                     </div>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <DropdownMenu>
+                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" size="sm" className="gap-1">
                                         <Icon name="Settings2" className="h-4 w-4" />
@@ -1067,7 +1065,7 @@ const OrdersTableComponent = () => {
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <DropdownMenu>
+                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" size="sm" className="gap-1">
                                         <Printer className="h-4 w-4" />
