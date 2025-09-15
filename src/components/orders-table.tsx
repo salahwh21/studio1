@@ -432,7 +432,7 @@ const OrdersTableComponent = () => {
 
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
     const [modalState, setModalState] = useState<ModalState>({ type: 'none' });
-    const isMobile = useMediaQuery('(max-width: 1024px'));
+    const isMobile = useMediaQuery('(max-width: 1024px)');
     const [groupBy, setGroupBy] = useState<GroupByOption>(null);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
     
@@ -943,7 +943,7 @@ const OrdersTableComponent = () => {
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground"><MapPin className="h-4 w-4"/><span>{order.address}, {order.city}</span></div>
                                     </div>
                                     <div className="col-start-3 col-end-4 row-span-2 flex flex-col items-end justify-start gap-1">
-                                        <Badge className={cn("gap-1.5")} style={{backgroundColor: `${sInfo.color}20`, color: sInfo.color}}><Icon name={statusInfo.icon as any} className="h-3 w-3"/>{statusInfo.name}</Badge>
+                                        <Badge className={cn("gap-1.5")} style={{backgroundColor: `${statusInfo.color}20`, color: statusInfo.color}}><Icon name={statusInfo.icon as any} className="h-3 w-3"/>{statusInfo.name}</Badge>
                                         <span className="text-lg font-bold text-primary">{formatCurrency(order.cod)}</span>
                                     </div>
                                     <div className="col-start-2 col-end-4 flex justify-between text-xs text-muted-foreground">
@@ -1263,5 +1263,6 @@ export function OrdersTable() {
 
 
     
+
 
 
