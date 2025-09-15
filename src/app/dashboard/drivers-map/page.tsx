@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -21,7 +22,8 @@ import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore, type Order } from '@/store/orders-store';
 
 import 'leaflet/dist/leaflet.css';
-import 'react-leaflet-cluster/lib/styles.scss';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 
 // Dynamic imports for Leaflet components
@@ -320,3 +322,4 @@ export default function DriversMapPage() {
         </div>
     );
 }
+
