@@ -70,6 +70,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import dynamic from 'next/dynamic';
 import Papa from 'papaparse';
+import ExcelJS from 'exceljs';
 
 
 import { useToast } from '@/hooks/use-toast';
@@ -314,16 +315,15 @@ const ExportDataDialog = ({
     }
     
     const handleExport = async () => {
-        const dataToExport = ordersToExport.map(order => {
-            const row: Record<string, any> = {};
-            exportedFields.forEach(field => {
-                row[field.label] = order[field.key as keyof Order] ?? '';
+        const headers = exportedFields.map(field => field.label);
+        const dataRows = ordersToExport.map(order => {
+            return exportedFields.map(field => {
+                return order[field.key as keyof Order] ?? '';
             });
-            return row;
         });
 
         if (fileFormat === 'csv') {
-            const csvData = Papa.unparse(dataToExport);
+            const csvData = Papa.unparse([headers, ...dataRows]);
             const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvData], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
@@ -332,18 +332,31 @@ const ExportDataDialog = ({
             link.click();
             document.body.removeChild(link);
         } else {
-            if (typeof window !== 'undefined') {
-                try {
-                    const XLSX = await import('xlsx');
-                    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-                    const workbook = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
-                    XLSX.writeFile(workbook, "orders_export.xlsx");
-                } catch (error) {
-                    console.error("Failed to export to Excel:", error);
-                    toast({ variant: 'destructive', title: 'فشل التصدير', description: 'حدث خطأ أثناء إعداد ملف Excel.' });
-                }
-            }
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Orders');
+            worksheet.addRow(headers);
+            worksheet.addRows(dataRows);
+            
+            worksheet.getRow(1).font = { bold: true };
+            worksheet.columns.forEach(column => {
+                let maxLen = 0;
+                column.eachCell!({ includeEmpty: true }, (cell) => {
+                    const columnLength = cell.value ? cell.value.toString().length : 10;
+                    if (columnLength > maxLen) {
+                        maxLen = columnLength;
+                    }
+                });
+                column.width = maxLen < 10 ? 10 : maxLen + 2;
+            });
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'orders_export.xlsx';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     }
   
@@ -954,7 +967,7 @@ const OrdersTableComponent = () => {
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground"><MapPin className="h-4 w-4"/><span>{order.address}, {order.city}</span></div>
                                     </div>
                                     <div className="col-start-3 col-end-4 row-span-2 flex flex-col items-end justify-start gap-1">
-                                        <Badge className={cn("gap-1.5")} style={{backgroundColor: `${statusInfo.color}20`, color: statusInfo.color}}><Icon name={statusInfo.icon as any} className="h-3 w-3"/>{statusInfo.name}</Badge>
+                                        <Badge className={cn("gap-1.5")} style={{backgroundColor: `${sInfo.color}20`, color: sInfo.color}}><Icon name={statusInfo.icon as any} className="h-3 w-3"/>{statusInfo.name}</Badge>
                                         <span className="text-lg font-bold text-primary">{formatCurrency(order.cod)}</span>
                                     </div>
                                     <div className="col-start-2 col-end-4 flex justify-between text-xs text-muted-foreground">
@@ -1274,3 +1287,4 @@ export function OrdersTable() {
 
 
     
+
