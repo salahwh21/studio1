@@ -10,6 +10,7 @@ const withPWA = require('next-pwa')({
 
 
 const nextConfig: NextConfig = {
+  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -43,9 +44,6 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
-  },
-  experimental: {
-    // Other experimental features can go here if needed
   },
   turbopack: {
     // Example: adding an alias and custom file extension
