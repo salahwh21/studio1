@@ -3,7 +3,6 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { HelpCircle } from 'lucide-react';
-import 'leaflet/dist/leaflet.css';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -17,9 +16,7 @@ import Icon from '@/components/icon';
 import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore } from '@/store/orders-store';
 
-import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
-import iconUrl from 'leaflet/dist/images/marker-icon.png';
-import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
+import 'leaflet/dist/leaflet.css';
 
 const statuses = [
   { label: 'بالانتظار', count: 2, color: 'bg-yellow-400' },
@@ -61,9 +58,19 @@ export default function DriversMapPage() {
     useEffect(() => {
         if (!mapContainerRef.current) return;
 
-        let L: typeof import('leaflet');
-        import('leaflet').then(leaflet => {
-            L = leaflet;
+        import('leaflet').then(L => {
+             // Create a custom SVG icon, this avoids all image path issues.
+            const customIcon = L.divIcon({
+                html: `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" fill="#3B82F6">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        <circle cx="12" cy="9.5" r="2.5" fill="white" />
+                    </svg>`,
+                className: '', // important to clear default styling
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32]
+            });
             
             // Initialize map only once
             if (!mapRef.current) {
@@ -83,17 +90,6 @@ export default function DriversMapPage() {
             // Clear existing markers
             markersRef.current.forEach(marker => marker.remove());
             markersRef.current = [];
-            
-            // Create a custom icon instance
-            const customIcon = L.icon({
-                iconRetinaUrl: iconRetinaUrl.src,
-                iconUrl: iconUrl.src,
-                shadowUrl: shadowUrl.src,
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41],
-            });
 
             // Add new markers for all drivers
             drivers.forEach(driver => {
