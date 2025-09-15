@@ -170,12 +170,18 @@ export default function DriversMapPage() {
         }
 
         const interval = setInterval(() => {
-            setDrivers(prevDrivers => prevDrivers.map(d => ({
-                ...d,
-                position: [d.position[0] + (Math.random() - 0.5) * 0.0005, d.position[1] + (Math.random() - 0.5) * 0.0005] as LatLngTuple
-            })));
+            setDrivers(prevDrivers => prevDrivers.map(d => {
+                // Do not move the selected driver, as it will be handled by the map component simulation
+                if (d.id === selectedDriverId) return d;
+                
+                return {
+                    ...d,
+                    position: [d.position[0] + (Math.random() - 0.5) * 0.0005, d.position[1] + (Math.random() - 0.5) * 0.0005] as LatLngTuple
+                }
+            }));
         }, 5000);
         return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [users, orders, selectedDriverId]);
 
     const orderStatusCounts = useMemo(() => {
@@ -248,6 +254,9 @@ export default function DriversMapPage() {
                                         orders={orders}
                                         initialSelectedDriverId={selectedDriverId}
                                         onSelectDriverInMap={setSelectedDriverId}
+                                        onDriverPositionChange={(driverId, newPosition) => {
+                                            setDrivers(prev => prev.map(d => d.id === driverId ? {...d, position: newPosition} : d))
+                                        }}
                                 />
                                 </CardContent>
                             </Card>
