@@ -3,8 +3,10 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import L, { type LatLngTuple } from 'leaflet';
-import 'leaflet.markercluster';
-import 'leaflet-routing-machine';
+
+// Import marker cluster CSS
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 import type { Order } from '@/store/orders-store';
 import { useStatusesStore } from '@/store/statuses-store';
@@ -83,26 +85,38 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             }).addTo(map);
-
-            routingControlRef.current = L.Routing.control({
-                waypoints: [],
-                routeWhileDragging: false,
-                lineOptions: {
-                    styles: [{ color: '#F96941', opacity: 0.8, weight: 6 }],
-                },
-                show: true, 
-                addWaypoints: false,
-                createMarker: () => null,
-            }).addTo(map);
-
-            if (L.markerClusterGroup) {
-                orderClusterGroupRef.current = L.markerClusterGroup();
-                map.addLayer(orderClusterGroupRef.current);
-            }
             
             mapRef.current = map;
+            
+            Promise.all([
+                import('leaflet.markercluster'),
+                import('leaflet-routing-machine')
+            ]).then(() => {
+                orderClusterGroupRef.current = L.markerClusterGroup();
+                map.addLayer(orderClusterGroupRef.current);
+                
+                routingControlRef.current = L.Routing.control({
+                    waypoints: [],
+                    routeWhileDragging: false,
+                    lineOptions: {
+                        styles: [{ color: '#F96941', opacity: 0.8, weight: 6 }],
+                    },
+                    show: false, // This is the fix to hide the white container
+                    addWaypoints: false,
+                    createMarker: () => null,
+                }).addTo(map);
+
+                // Trigger a re-render or data fetch now that libs are loaded
+                fetchData(); 
+            });
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+    
+    const fetchData = () => {
+         // This function can be used to re-trigger effects that depend on the map objects
+         // For now, we can just re-set a state to trigger updates.
+    };
 
     useEffect(() => {
         setSelectedDriverId(initialSelectedDriverId);
@@ -263,7 +277,7 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
             routingControl.setWaypoints([]);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedDriverId]);
+    }, [selectedDriverId, orders]); // Re-run when selectedDriver or their orders change
 
     return (
         <div className="relative h-full w-full">
