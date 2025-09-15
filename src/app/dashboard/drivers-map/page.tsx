@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { HelpCircle } from 'lucide-react';
-import L, { type Map as LeafletMap } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -17,7 +16,6 @@ import Icon from '@/components/icon';
 import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore } from '@/store/orders-store';
 
-// Statically import the images for webpack to handle them correctly.
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
@@ -37,9 +35,9 @@ export default function DriversMapPage() {
     const { users } = useUsersStore();
     const { orders } = useOrdersStore();
 
-    const mapRef = useRef<LeafletMap | null>(null);
+    const mapRef = useRef<import('leaflet').Map | null>(null);
     const mapContainerRef = useRef<HTMLDivElement>(null);
-    const markersRef = useRef<L.Marker[]>([]);
+    const markersRef = useRef<import('leaflet').Marker[]>([]);
 
     const drivers = useMemo(() => {
         return users.filter(u => u.roleId === 'driver').map(driver => {
@@ -63,47 +61,52 @@ export default function DriversMapPage() {
     useEffect(() => {
         if (!mapContainerRef.current) return;
 
-        // Initialize map only once
-        if (!mapRef.current) {
-            // Set up default icon paths BEFORE initializing the map
+        let L: typeof import('leaflet');
+        import('leaflet').then(leaflet => {
+            L = leaflet;
+            
+            // Fix for default icon issue
             delete (L.Icon.Default.prototype as any)._getIconUrl;
             L.Icon.Default.mergeOptions({
                 iconRetinaUrl: iconRetinaUrl.src,
                 iconUrl: iconUrl.src,
                 shadowUrl: shadowUrl.src,
             });
+            
+            // Initialize map only once
+            if (!mapRef.current) {
+                mapRef.current = L.map(mapContainerRef.current!, {
+                    center: [31.9539, 35.9106],
+                    zoom: 11,
+                    scrollWheelZoom: true,
+                });
 
-            mapRef.current = L.map(mapContainerRef.current, {
-                center: [31.9539, 35.9106],
-                zoom: 11,
-                scrollWheelZoom: true,
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                }).addTo(mapRef.current);
+            }
+
+            const map = mapRef.current;
+
+            // Clear existing markers
+            markersRef.current.forEach(marker => marker.remove());
+            markersRef.current = [];
+
+            // Add new markers for all drivers
+            drivers.forEach(driver => {
+                const marker = L.marker(driver.position).addTo(map);
+                marker.bindPopup(`<b>${driver.name}</b>`);
+                markersRef.current.push(marker);
             });
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            }).addTo(mapRef.current);
-        }
-
-        const map = mapRef.current;
-
-        // Clear existing markers
-        markersRef.current.forEach(marker => marker.remove());
-        markersRef.current = [];
-
-        // Add new markers for all drivers
-        drivers.forEach(driver => {
-            const marker = L.marker(driver.position).addTo(map);
-            marker.bindPopup(`<b>${driver.name}</b>`);
-            markersRef.current.push(marker);
+            // Fly to selected driver
+            if (selectedDriver) {
+                map.flyTo(selectedDriver.position, 14, {
+                    animate: true,
+                    duration: 1,
+                });
+            }
         });
-
-        // Fly to selected driver
-        if (selectedDriver) {
-            map.flyTo(selectedDriver.position, 14, {
-                animate: true,
-                duration: 1,
-            });
-        }
         
         // Cleanup function to destroy the map instance on component unmount
         return () => {
