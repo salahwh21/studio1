@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useRef, useMemo, useState, useTransition } from 'react';
@@ -160,26 +161,23 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                     const originalAddresses = result.data.originalAddresses;
                     const addressMap = new Map(originalAddresses.map(a => [a.value, {lat: a.lat, lng: a.lng}]));
 
-                    const waypoints = [
-                        L.latLng(selectedDriver.position[0], selectedDriver.position[1]),
+                     const waypoints: LatLngTuple[] = [
+                        selectedDriver.position,
                         ...optimizedAddresses.map(addr => {
                             const location = addressMap.get(addr);
-                            return location && location.lat && location.lng ? L.latLng(location.lat, location.lng) : null;
-                        }).filter((p): p is L.LatLng => p !== null)
+                            return location && location.lat && location.lng ? [location.lat, location.lng] as LatLngTuple : null;
+                        }).filter((p): p is LatLngTuple => p !== null)
                     ];
                     
                     if (waypoints.length > 1) {
                          const instance = L.Routing.control({
-                            waypoints,
+                            waypoints: waypoints.map(wp => L.latLng(wp[0], wp[1])),
                             lineOptions: {
-                                styles: [{ color: '#F96941', opacity: 0.8, weight: 5 }],
-                                extendToWaypoints: false,
+                                styles: [{ color: '#F96941', opacity: 0.8, weight: 6 }],
+                                extendToWaypoints: true,
                                 missingRouteTolerance: 100,
                             },
                             addWaypoints: false,
-                            routeWhileDragging: false,
-                            draggableWaypoints: false,
-                            fitSelectedRoutes: true,
                             createMarker: () => null,
                         }).on('routesfound', function(e) {
                              const route = e.routes[0];
