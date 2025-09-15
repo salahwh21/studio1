@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -19,7 +20,6 @@ import { useOrdersStore } from '@/store/orders-store';
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
-
 
 const statuses = [
   { label: 'بالانتظار', count: 2, color: 'bg-yellow-400' },
@@ -65,14 +65,6 @@ export default function DriversMapPage() {
         import('leaflet').then(leaflet => {
             L = leaflet;
             
-            // Fix for default icon issue
-            delete (L.Icon.Default.prototype as any)._getIconUrl;
-            L.Icon.Default.mergeOptions({
-                iconRetinaUrl: iconRetinaUrl.src,
-                iconUrl: iconUrl.src,
-                shadowUrl: shadowUrl.src,
-            });
-            
             // Initialize map only once
             if (!mapRef.current) {
                 mapRef.current = L.map(mapContainerRef.current!, {
@@ -91,10 +83,21 @@ export default function DriversMapPage() {
             // Clear existing markers
             markersRef.current.forEach(marker => marker.remove());
             markersRef.current = [];
+            
+            // Create a custom icon instance
+            const customIcon = L.icon({
+                iconRetinaUrl: iconRetinaUrl.src,
+                iconUrl: iconUrl.src,
+                shadowUrl: shadowUrl.src,
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41],
+            });
 
             // Add new markers for all drivers
             drivers.forEach(driver => {
-                const marker = L.marker(driver.position).addTo(map);
+                const marker = L.marker(driver.position, { icon: customIcon }).addTo(map);
                 marker.bindPopup(`<b>${driver.name}</b>`);
                 markersRef.current.push(marker);
             });
