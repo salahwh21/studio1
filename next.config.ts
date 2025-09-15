@@ -48,13 +48,6 @@ const nextConfig: NextConfig = {
   experimental: {
     // Other experimental features can go here if needed
   },
-  turbopack: {
-    // Example: adding an alias and custom file extension
-    resolveAlias: {
-      underscore: 'lodash',
-    },
-    resolveExtensions: ['.mdx', '.tsx', '.ts', '.jsx', '.js', '.json'],
-  },
 };
 
 export default withPWA(nextConfig);
