@@ -18,6 +18,7 @@ import Icon from '@/components/icon';
 import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore, type Order } from '@/store/orders-store';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 const DriversMapComponent = dynamic(() => import('@/components/drivers-map-component'), {
   ssr: false,
@@ -36,7 +37,7 @@ const DriverListPanel = ({ drivers, selectedDriverId, onSelectDriver, searchQuer
     const allFilteredDrivers = [...activeDrivers, ...inactiveDrivers];
     
     return (
-        <Card className="col-span-1 lg:col-span-3 xl:col-span-1 flex flex-col">
+        <Card className="col-span-1 xl:col-span-2 flex flex-col">
             <div className="p-4">
                 <h3 className="text-base font-semibold">قائمة السائقين</h3>
                 <div className="relative mt-2">
@@ -94,7 +95,7 @@ const DriverDetailsPanel = ({ driver, driverOrders, onClose }: {
     const totalCOD = outForDeliveryOrders.reduce((sum, order) => sum + order.cod, 0);
 
     return (
-        <Card className="col-span-1 lg:col-span-5 xl:col-span-2 flex flex-col">
+        <Card className="col-span-1 xl:col-span-2 flex-col">
             <CardHeader className="flex flex-row items-center justify-between p-4">
                 <div className="flex items-center gap-4">
                     <Avatar className="h-14 w-14 border-2 border-primary"><AvatarImage src={driver.avatar} /><AvatarFallback>{driver.name.charAt(0)}</AvatarFallback></Avatar>
@@ -210,36 +211,38 @@ export default function DriversMapPage() {
                 </CardContent>
             </Card>
 
-            <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-8 xl:grid-cols-4 min-h-0">
-                <DriverListPanel
-                    drivers={drivers}
-                    selectedDriverId={selectedDriverId}
-                    onSelectDriver={setSelectedDriverId}
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                />
+             <div className="grid flex-1 grid-cols-1 md:grid-cols-7 xl:grid-cols-8 gap-4 min-h-0">
+                <div className="col-span-1 md:col-span-2 xl:col-span-2">
+                    <DriverListPanel
+                        drivers={drivers}
+                        selectedDriverId={selectedDriverId}
+                        onSelectDriver={setSelectedDriverId}
+                        searchQuery={searchQuery}
+                        onSearchChange={setSearchQuery}
+                    />
+                </div>
                 
-                {selectedDriverId && (
-                    <DriverDetailsPanel 
+                <div className="col-span-1 md:col-span-5 xl:col-span-4 h-full">
+                    <Card className="h-full">
+                        <CardContent className="p-2 h-full">
+                           <DriversMapComponent
+                               drivers={drivers}
+                               orders={orders}
+                               initialSelectedDriverId={selectedDriverId}
+                               onSelectDriverInMap={setSelectedDriverId}
+                           />
+                        </CardContent>
+                    </Card>
+                </div>
+                
+                <div className={cn("col-span-1 md:col-span-2 xl:col-span-2", selectedDriver ? 'md:flex' : 'hidden')}>
+                     <DriverDetailsPanel 
                         driver={selectedDriver}
                         driverOrders={driverOrders}
                         onClose={() => setSelectedDriverId(null)}
                     />
-                )}
-
-                <Card className="col-span-1 lg:col-span-5 xl:col-span-3">
-                    <CardContent className="p-2 h-full">
-                       <DriversMapComponent
-                           drivers={drivers}
-                           orders={orders}
-                           initialSelectedDriverId={selectedDriverId}
-                           onSelectDriverInMap={setSelectedDriverId}
-                       />
-                    </CardContent>
-                </Card>
+                </div>
             </div>
         </div>
     );
-
-    
 }
