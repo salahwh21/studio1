@@ -3,8 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { HelpCircle, Phone, Package } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import type { LatLngTuple, Map } from 'leaflet';
-import L from 'leaflet';
+import L, { type LatLngTuple, type Map } from 'leaflet';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
