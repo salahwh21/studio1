@@ -176,7 +176,6 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                                 extendToWaypoints: false,
                                 missingRouteTolerance: 100,
                             },
-                            show: false,
                             addWaypoints: false,
                             routeWhileDragging: false,
                             draggableWaypoints: false,
