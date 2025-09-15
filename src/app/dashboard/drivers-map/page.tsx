@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { HelpCircle, Phone, Package, Search as SearchIcon, X as XIcon, ArrowLeft, ChevronDown } from 'lucide-react';
+import { HelpCircle, Phone, Package, Search as SearchIcon, ArrowLeft, ChevronDown } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import type { LatLngTuple } from 'leaflet';
 
@@ -30,7 +30,7 @@ const DriversMapComponent = dynamic(() => import('@/components/drivers-map-compo
   loading: () => <Skeleton className="w-full h-full" />,
 });
 
-const DriverDetailsContent = ({ driver, driverOrders }: { driver: any; driverOrders: Order[] }) => {
+const DriverDetailsContent = ({ driver, driverOrders, onOrderSelect }: { driver: any; driverOrders: Order[], onOrderSelect: (order: Order) => void; }) => {
     const outForDeliveryOrders = driverOrders.filter(o => o.status === 'جاري التوصيل');
     const totalCOD = outForDeliveryOrders.reduce((sum, order) => sum + order.cod, 0);
 
@@ -45,7 +45,7 @@ const DriverDetailsContent = ({ driver, driverOrders }: { driver: any; driverOrd
             <ScrollArea className="h-48 border rounded-md">
                 <div className="p-2 space-y-2">
                      {outForDeliveryOrders.map(order => (
-                        <div key={order.id} className="p-2 rounded-md bg-background flex items-center justify-between">
+                        <div key={order.id} className="p-2 rounded-md bg-background flex items-center justify-between cursor-pointer hover:bg-muted" onClick={() => onOrderSelect(order)}>
                             <div className="space-y-1">
                                 <p className="font-medium text-sm flex items-center gap-2"><Package className="h-4 w-4 text-muted-foreground"/> {order.recipient}</p>
                                 <p className="text-xs text-muted-foreground">{order.address}</p>
@@ -64,13 +64,14 @@ const DriverDetailsContent = ({ driver, driverOrders }: { driver: any; driverOrd
 };
 
 
-const DriverListPanel = ({ drivers, driverOrders, selectedDriverId, onSelectDriver, searchQuery, onSearchChange }: {
+const DriverListPanel = ({ drivers, driverOrders, selectedDriverId, onSelectDriver, searchQuery, onSearchChange, onOrderSelect }: {
     drivers: any[];
     driverOrders: (driverId: string) => Order[];
     selectedDriverId: string | null;
     onSelectDriver: (id: string | null) => void;
     searchQuery: string;
     onSearchChange: (query: string) => void;
+    onOrderSelect: (order: Order) => void;
 }) => {
     const activeDrivers = useMemo(() => drivers.filter(d => d.status === 'نشط' && d.name.toLowerCase().includes(searchQuery.toLowerCase())), [drivers, searchQuery]);
     const inactiveDrivers = useMemo(() => drivers.filter(d => d.status === 'غير نشط' && d.name.toLowerCase().includes(searchQuery.toLowerCase())), [drivers, searchQuery]);
@@ -118,7 +119,7 @@ const DriverListPanel = ({ drivers, driverOrders, selectedDriverId, onSelectDriv
                                     </Card>
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
-                                     <DriverDetailsContent driver={driver} driverOrders={driverOrders(driver.id)} />
+                                     <DriverDetailsContent driver={driver} driverOrders={driverOrders(driver.id)} onOrderSelect={onOrderSelect} />
                                 </CollapsibleContent>
                             </Collapsible>
                         ))}
@@ -136,6 +137,8 @@ export default function DriversMapPage() {
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+    const [highlightedOrder, setHighlightedOrder] = useState<Order | null>(null);
+
 
     const [drivers, setDrivers] = useState<any[]>([]);
     
@@ -182,7 +185,7 @@ export default function DriversMapPage() {
         }, 5000);
         return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [users, orders, selectedDriverId]);
+    }, [users, orders]);
 
     const orderStatusCounts = useMemo(() => {
         return orders.reduce((acc, order) => {
@@ -203,6 +206,11 @@ export default function DriversMapPage() {
         const driver = drivers.find(d => d.id === driverId);
         return driver ? orders.filter(o => o.driver === driver.name) : [];
     }
+
+    const handleSelectDriver = (driverId: string | null) => {
+        setSelectedDriverId(driverId);
+        setHighlightedOrder(null); // Clear highlighted order when changing driver
+    };
 
     return (
         <>
@@ -240,9 +248,10 @@ export default function DriversMapPage() {
                                 drivers={drivers}
                                 driverOrders={getDriverOrders}
                                 selectedDriverId={selectedDriverId}
-                                onSelectDriver={setSelectedDriverId}
+                                onSelectDriver={handleSelectDriver}
                                 searchQuery={searchQuery}
                                 onSearchChange={setSearchQuery}
+                                onOrderSelect={setHighlightedOrder}
                             />
                         </div>
                         
@@ -253,10 +262,11 @@ export default function DriversMapPage() {
                                         drivers={drivers}
                                         orders={orders}
                                         initialSelectedDriverId={selectedDriverId}
-                                        onSelectDriverInMap={setSelectedDriverId}
+                                        onSelectDriverInMap={handleSelectDriver}
                                         onDriverPositionChange={(driverId, newPosition) => {
                                             setDrivers(prev => prev.map(d => d.id === driverId ? {...d, position: newPosition} : d))
                                         }}
+                                        highlightedOrder={highlightedOrder}
                                 />
                                 </CardContent>
                             </Card>
