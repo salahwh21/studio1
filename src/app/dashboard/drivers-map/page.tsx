@@ -21,6 +21,7 @@ import { useOrdersStore } from '@/store/orders-store';
 // --- Leaflet Imports (for types and L object) ---
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { useMap } from 'react-leaflet';
 
 
 // Dynamically import map components to disable SSR
@@ -41,11 +42,24 @@ const statuses = [
 
 const defaultPosition: L.LatLngTuple = [31.9539, 35.9106]; // Amman, Jordan
 
+function MapUpdater({ selectedDriver }: { selectedDriver: any | null }) {
+    const map = useMap();
+    useEffect(() => {
+        if (selectedDriver) {
+            map.flyTo(selectedDriver.position, 14, {
+                animate: true,
+                duration: 1,
+            });
+        }
+    }, [selectedDriver, map]);
+
+    return null;
+}
+
 export default function DriversMapPage() {
     const { users } = useUsersStore();
     const { orders } = useOrdersStore();
     
-    // Fix for default icon issue with webpack, run only on client side
     const [leafletLoaded, setLeafletLoaded] = useState(false);
     useEffect(() => {
       if (typeof window !== 'undefined' && !leafletLoaded) {
@@ -162,22 +176,25 @@ export default function DriversMapPage() {
         {/* Right Panel: Map */}
         <Card className="col-span-1 lg:col-span-3">
           <CardContent className="p-2 h-full">
-            {leafletLoaded && <MapContainer
-              center={selectedDriver ? selectedDriver.position : defaultPosition}
-              zoom={selectedDriver ? 14 : 11}
-              scrollWheelZoom={true}
-              style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {drivers.map(driver => (
-                <Marker key={driver.id} position={driver.position}>
-                  <Popup><b>{driver.name}</b></Popup>
-                </Marker>
-              ))}
-            </MapContainer>}
+            {leafletLoaded && (
+              <MapContainer
+                center={defaultPosition}
+                zoom={11}
+                scrollWheelZoom={true}
+                style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <MapUpdater selectedDriver={selectedDriver} />
+                {drivers.map(driver => (
+                  <Marker key={driver.id} position={driver.position}>
+                    <Popup><b>{driver.name}</b></Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+            )}
           </CardContent>
         </Card>
       </div>
