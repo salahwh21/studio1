@@ -26,9 +26,9 @@ const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapCo
 const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
+const useMap = dynamic(() => import('react-leaflet').then(mod => mod.useMap), { ssr: false });
 
 function MapUpdater({ selectedDriver }: { selectedDriver: any | null }) {
-    const { useMap } = require('react-leaflet');
     const map = useMap();
     useEffect(() => {
         if (selectedDriver) {
@@ -61,14 +61,11 @@ export default function DriversMapPage() {
 
     useEffect(() => {
       setIsClient(true);
-      // This code should only run on the client side
       (async () => {
           if (typeof window !== 'undefined') {
               const L = await import('leaflet');
               try {
-                  // Fix for default icon issue with webpack
                   delete (L.Icon.Default.prototype as any)._getIconUrl;
-
                   L.Icon.Default.mergeOptions({
                       iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png').default.src,
                       iconUrl: require('leaflet/dist/images/marker-icon.png').default.src,
@@ -101,9 +98,32 @@ export default function DriversMapPage() {
     const inactiveDrivers = useMemo(() => drivers.filter(d => d.status === 'غير نشط'), [drivers]);
     const selectedDriver = useMemo(() => drivers.find(d => d.id === selectedDriverId), [drivers, selectedDriverId]);
 
+    const MapComponent = useMemo(() => {
+        if (!isClient) return null;
+      
+        return (
+          <MapContainer
+            center={defaultPosition}
+            zoom={11}
+            scrollWheelZoom={true}
+            style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <MapUpdater selectedDriver={selectedDriver} />
+            {drivers.map(driver => (
+              <Marker key={driver.id} position={driver.position}>
+                <Popup><b>{driver.name}</b></Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+        );
+      }, [isClient, selectedDriver, drivers]);
+
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col gap-4 text-sm">
-      {/* Top Bar */}
       <Card>
         <CardContent className="p-3">
           <div className="flex items-center justify-between">
@@ -132,9 +152,7 @@ export default function DriversMapPage() {
         </CardContent>
       </Card>
 
-      {/* Main Content */}
       <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-4">
-        {/* Left Panel: Drivers List */}
         <Card className="col-span-1 flex flex-col">
           <div className="p-4">
             <h3 className="text-base font-semibold">قائمة السائقين</h3>
@@ -180,28 +198,9 @@ export default function DriversMapPage() {
           </Tabs>
         </Card>
 
-        {/* Right Panel: Map */}
         <Card className="col-span-1 lg:col-span-3">
           <CardContent className="p-2 h-full">
-            {isClient ? (
-              <MapContainer
-                center={defaultPosition}
-                zoom={11}
-                scrollWheelZoom={true}
-                style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <MapUpdater selectedDriver={selectedDriver} />
-                {drivers.map(driver => (
-                  <Marker key={driver.id} position={driver.position}>
-                    <Popup><b>{driver.name}</b></Popup>
-                  </Marker>
-                ))}
-              </MapContainer>
-            ) : <Skeleton className="w-full h-full" />}
+            {MapComponent || <Skeleton className="w-full h-full" />}
           </CardContent>
         </Card>
       </div>
