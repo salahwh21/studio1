@@ -277,7 +277,7 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
             routingControl.setWaypoints([]);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedDriverId, orders]); // Re-run when selectedDriver or their orders change
+    }, [selectedDriverId, orders]);
 
     return (
         <div className="relative h-full w-full">
