@@ -1,33 +1,186 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Phone, Package } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import type { LatLngTuple, Map } from 'leaflet';
+import L from 'leaflet';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import Icon from '@/components/icon';
 import { useUsersStore } from '@/store/user-store';
-import { useOrdersStore } from '@/store/orders-store';
+import { useOrdersStore, type Order } from '@/store/orders-store';
 
 import 'leaflet/dist/leaflet.css';
+import 'react-leaflet-cluster/lib/styles.scss';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+
+// Dynamic imports for Leaflet components
+const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
+const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
+const MarkerClusterGroup = dynamic(() => import('react-leaflet-cluster'), { ssr: false });
+
+// Routing Machine component
+const RoutingMachine = ({ waypoints }: { waypoints: L.LatLng[] }) => {
+  const map = L.Routing.control({
+    waypoints,
+    lineOptions: {
+      styles: [{ color: '#F96941', opacity: 0.8, weight: 5 }],
+      extendToWaypoints: false,
+      missingRouteTolerance: 10,
+    },
+    show: false,
+    addWaypoints: false,
+    routeWhileDragging: false,
+    draggableWaypoints: false,
+    fitSelectedRoutes: true,
+    createMarker: () => null, // We'll create our own markers
+  });
+
+  return <>{map && <map.Wrapper />}</>;
+};
+
+const defaultPosition: LatLngTuple = [31.9539, 35.9106]; // Amman, Jordan
+
+const DriverListPanel = ({ drivers, selectedDriverId, onSelectDriver, searchQuery, onSearchChange }: {
+    drivers: any[];
+    selectedDriverId: string | null;
+    onSelectDriver: (id: string | null) => void;
+    searchQuery: string;
+    onSearchChange: (query: string) => void;
+}) => {
+    const activeDrivers = useMemo(() => drivers.filter(d => d.status === 'نشط' && d.name.toLowerCase().includes(searchQuery.toLowerCase())), [drivers, searchQuery]);
+    const inactiveDrivers = useMemo(() => drivers.filter(d => d.status === 'غير نشط' && d.name.toLowerCase().includes(searchQuery.toLowerCase())), [drivers, searchQuery]);
+    const allFilteredDrivers = [...activeDrivers, ...inactiveDrivers];
+    
+    return (
+        <Card className="col-span-1 lg:col-span-3 xl:col-span-1 flex flex-col">
+            <div className="p-4">
+                <h3 className="text-base font-semibold">قائمة السائقين</h3>
+                <div className="relative mt-2">
+                    <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="بحث..." className="pr-10" value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} />
+                </div>
+            </div>
+            <Tabs defaultValue="all" className="flex-1 flex flex-col min-h-0">
+                <TabsList className="grid w-full grid-cols-3 px-4">
+                    <TabsTrigger value="all">الكل ({allFilteredDrivers.length})</TabsTrigger>
+                    <TabsTrigger value="active">نشط ({activeDrivers.length})</TabsTrigger>
+                    <TabsTrigger value="inactive">غير نشط ({inactiveDrivers.length})</TabsTrigger>
+                </TabsList>
+                <ScrollArea className="flex-1">
+                    <div className="p-4 space-y-3">
+                        {allFilteredDrivers.map(driver => (
+                            <Card
+                                key={driver.id}
+                                className={`cursor-pointer transition-all ${selectedDriverId === driver.id ? 'border-primary shadow-lg' : 'hover:bg-muted/50'}`}
+                                onClick={() => onSelectDriver(driver.id)}
+                            >
+                                <CardContent className="p-3 flex items-center gap-3">
+                                    <div className={`w-1.5 h-16 rounded-full ${selectedDriverId === driver.id ? 'bg-primary' : 'bg-transparent'}`}></div>
+                                    <div className="flex-1 flex items-center gap-3">
+                                        <Avatar className="h-12 w-12 border">
+                                            <AvatarImage src={driver.avatar} alt={driver.name} />
+                                            <AvatarFallback><HelpCircle className="text-muted-foreground"/></AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1">
+                                            <h4 className="font-semibold">{driver.name}</h4>
+                                            <p className="text-xs text-muted-foreground">{driver.parcels} طرود</p>
+                                        </div>
+                                    </div>
+                                    <Badge variant={driver.status === 'نشط' ? 'default' : 'secondary'} className={driver.status === 'نشط' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}>
+                                        {driver.status}
+                                    </Badge>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </ScrollArea>
+            </Tabs>
+        </Card>
+    );
+};
+
+const DriverDetailsPanel = ({ driver, driverOrders, onClose }: {
+    driver: any | null;
+    driverOrders: Order[];
+    onClose: () => void;
+}) => {
+    if (!driver) return null;
+
+    const outForDeliveryOrders = driverOrders.filter(o => o.status === 'جاري التوصيل');
+    const totalCOD = outForDeliveryOrders.reduce((sum, order) => sum + order.cod, 0);
+
+    return (
+        <Card className="col-span-1 lg:col-span-5 xl:col-span-2 flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between p-4">
+                <div className="flex items-center gap-4">
+                    <Avatar className="h-14 w-14 border-2 border-primary"><AvatarImage src={driver.avatar} /><AvatarFallback>{driver.name.charAt(0)}</AvatarFallback></Avatar>
+                    <div>
+                        <CardTitle>{driver.name}</CardTitle>
+                        <CardDescription>ملخص المهام والأداء</CardDescription>
+                    </div>
+                </div>
+                <Button variant="ghost" size="icon" onClick={onClose}><Icon name="X" className="h-4 w-4"/></Button>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col gap-4 p-4 min-h-0">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="p-3 bg-muted rounded-lg"><p className="font-bold text-lg">{driverOrders.length}</p><p className="text-xs text-muted-foreground">إجمالي الطلبات</p></div>
+                    <div className="p-3 bg-muted rounded-lg"><p className="font-bold text-lg">{outForDeliveryOrders.length}</p><p className="text-xs text-muted-foreground">قيد التوصيل</p></div>
+                    <div className="p-3 bg-muted rounded-lg"><p className="font-bold text-lg">{totalCOD.toFixed(2)}</p><p className="text-xs text-muted-foreground">مبلغ التحصيل</p></div>
+                </div>
+                <h4 className="font-semibold">قائمة الطلبات ({outForDeliveryOrders.length})</h4>
+                <ScrollArea className="flex-1 border rounded-md">
+                    <div className="p-2 space-y-2">
+                         {outForDeliveryOrders.map(order => (
+                            <div key={order.id} className="p-2 rounded-md bg-background flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <p className="font-medium text-sm flex items-center gap-2"><Package className="h-4 w-4"/> {order.recipient}</p>
+                                    <p className="text-xs text-muted-foreground">{order.address}</p>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                    <p className="font-bold text-sm text-primary">{order.cod.toFixed(2)} د.أ</p>
+                                    <Button size="sm" variant="ghost" className="h-auto p-1 text-xs"><Phone className="h-3 w-3 ml-1"/>اتصال</Button>
+                                </div>
+                            </div>
+                         ))}
+                         {outForDeliveryOrders.length === 0 && <p className="text-center text-muted-foreground p-4">لا توجد طلبات قيد التوصيل لهذا السائق.</p>}
+                    </div>
+                </ScrollArea>
+            </CardContent>
+        </Card>
+    );
+};
 
 export default function DriversMapPage() {
+    const mapRef = useRef<Map | null>(null);
     const { users } = useUsersStore();
     const { orders } = useOrdersStore();
     const [searchQuery, setSearchQuery] = useState('');
 
-    const mapRef = useRef<import('leaflet').Map | null>(null);
-    const mapContainerRef = useRef<HTMLDivElement>(null);
-    const markersRef = useRef<Record<string, import('leaflet').Marker>>({});
+    const [drivers, setDrivers] = useState<any[]>([]);
 
-    const drivers = useMemo(() => {
-        return users.filter(u => u.roleId === 'driver').map(driver => {
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setDrivers(prevDrivers => prevDrivers.map(d => ({
+                ...d,
+                position: [d.position[0] + (Math.random() - 0.5) * 0.0005, d.position[1] + (Math.random() - 0.5) * 0.0005] as LatLngTuple
+            })));
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        setDrivers(users.filter(u => u.roleId === 'driver').map((driver) => {
             const driverOrders = orders.filter(o => o.driver === driver.name);
             return {
                 id: driver.id,
@@ -35,11 +188,11 @@ export default function DriversMapPage() {
                 status: driverOrders.some(o => o.status === 'جاري التوصيل') ? 'نشط' : 'غير نشط',
                 parcels: driverOrders.filter(o => o.status === 'جاري التوصيل').length,
                 avatar: driver.avatar || `https://i.pravatar.cc/150?u=${driver.id}`,
-                position: [31.9539 + (Math.random() - 0.5) * 0.1, 35.9106 + (Math.random() - 0.5) * 0.1] as [number, number],
+                position: [31.9539 + (Math.random() - 0.5) * 0.1, 35.9106 + (Math.random() - 0.5) * 0.1] as LatLngTuple,
             };
-        });
+        }));
     }, [users, orders]);
-    
+
     const orderStatusCounts = useMemo(() => {
         return orders.reduce((acc, order) => {
             acc[order.status] = (acc[order.status] || 0) + 1;
@@ -55,165 +208,100 @@ export default function DriversMapPage() {
         { label: 'مرتجع', color: 'bg-purple-400', key: 'راجع' },
     ];
 
-
-    const [selectedDriverId, setSelectedDriverId] = useState<string | null>(drivers.length > 0 ? drivers[0].id : null);
-    
-    const filteredDrivers = useMemo(() => 
-        drivers.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase())), 
-    [drivers, searchQuery]);
-
-    const activeDrivers = useMemo(() => filteredDrivers.filter(d => d.status === 'نشط'), [filteredDrivers]);
-    const inactiveDrivers = useMemo(() => filteredDrivers.filter(d => d.status === 'غير نشط'), [filteredDrivers]);
+    const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
     const selectedDriver = useMemo(() => drivers.find(d => d.id === selectedDriverId), [drivers, selectedDriverId]);
+    const driverOrders = useMemo(() => selectedDriver ? orders.filter(o => o.driver === selectedDriver.name) : [], [orders, selectedDriver]);
 
     useEffect(() => {
-        if (!mapContainerRef.current) return;
+        if (selectedDriver && mapRef.current) {
+            mapRef.current.flyTo(selectedDriver.position, 13, { animate: true, duration: 1 });
+        }
+    }, [selectedDriver]);
 
-        import('leaflet').then(L => {
-            if (!mapRef.current) {
-                mapRef.current = L.map(mapContainerRef.current!, {
-                    center: [31.9539, 35.9106],
-                    zoom: 11,
-                    scrollWheelZoom: true,
-                });
-
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                }).addTo(mapRef.current);
-            }
-
-            const map = mapRef.current;
-            
-            // Update markers
-            Object.values(markersRef.current).forEach(marker => marker.remove());
-            markersRef.current = {};
-
-            drivers.forEach(driver => {
-                 const isSelected = driver.id === selectedDriverId;
-                 const iconHtml = `
-                    <div style="position: relative; width: 48px; height: 48px;">
-                        <img src="${driver.avatar}" style="width: 40px; height: 40px; border-radius: 50%; border: ${isSelected ? '3px solid #F96941' : '3px solid #ccc'}; object-fit: cover; position: absolute; top: 0; left: 0; background: #fff;">
-                        <div style="position: absolute; bottom: 0; left: 16px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 12px solid ${isSelected ? '#F96941' : '#ccc'};"></div>
-                    </div>
-                `;
-
-                const customIcon = L.divIcon({
-                    html: iconHtml,
-                    className: '', // important to clear default styling
-                    iconSize: [48, 48],
-                    iconAnchor: [24, 48],
-                    popupAnchor: [0, -48]
-                });
-
-                const marker = L.marker(driver.position, { icon: customIcon }).addTo(map);
-                marker.bindTooltip(`<b>${driver.name}</b>`);
-                markersRef.current[driver.id] = marker;
-            });
-            
-            if (selectedDriver) {
-                map.flyTo(selectedDriver.position, 14, {
-                    animate: true,
-                    duration: 1,
-                });
-            }
+    const createDriverIcon = (driver: any, isSelected: boolean) => {
+        return L.divIcon({
+            html: `
+                <div style="position: relative; width: 48px; height: 48px;">
+                    <img src="${driver.avatar}" style="width: 40px; height: 40px; border-radius: 50%; border: ${isSelected ? '3px solid #F96941' : '3px solid #ccc'}; object-fit: cover; position: absolute; top: 0; left: 0; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
+                    <div style="position: absolute; bottom: 0; left: 16px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 12px solid ${isSelected ? '#F96941' : '#ccc'};"></div>
+                </div>
+            `,
+            className: '',
+            iconSize: [48, 48],
+            iconAnchor: [24, 48]
         });
+    };
 
-    }, [drivers, selectedDriver, selectedDriverId]);
-
-    // Cleanup function
-    useEffect(() => {
-        const map = mapRef.current;
-        return () => {
-            if (map) {
-                map.remove();
-                mapRef.current = null;
-            }
-        };
-    }, []);
+    const orderIcon = L.divIcon({
+        html: `<div style="background-color: #2563eb; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
+        className: 'bg-transparent border-0',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
+    });
+    
+    const waypoints = useMemo(() => {
+        if (!selectedDriver) return [];
+        const driverWp = L.latLng(selectedDriver.position[0], selectedDriver.position[1]);
+        const orderWps = driverOrders
+            .filter(o => o.status === 'جاري التوصيل' && o.lat && o.lng)
+            .map(o => L.latLng(o.lat!, o.lng!));
+        return [driverWp, ...orderWps];
+    }, [selectedDriver, driverOrders]);
 
 
     return (
         <div className="flex h-[calc(100vh-8rem)] flex-col gap-4 text-sm">
-            {/* Top Bar */}
             <Card>
                 <CardContent className="p-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="icon">
-                                <Icon name="ArrowLeft" className="h-4 w-4" />
-                            </Button>
+                            <Button variant="outline" size="icon"><Icon name="ArrowLeft" className="h-4 w-4" /></Button>
                             <h2 className="text-lg font-bold">خريطة السائقين</h2>
                         </div>
                         <div className="flex items-center gap-2 overflow-x-auto pb-2">
                            {statusDisplay.map(status => (
                                 <div key={status.label} className="flex items-center gap-2 rounded-lg border p-2 pr-3 whitespace-nowrap">
-                                    <div className="flex flex-col text-right">
-                                        <span className="font-bold text-base">{orderStatusCounts[status.key] || 0}</span>
-                                        <span className="text-muted-foreground text-xs">{status.label}</span>
-                                    </div>
+                                    <div className="flex flex-col text-right"><span className="font-bold text-base">{orderStatusCounts[status.key] || 0}</span><span className="text-muted-foreground text-xs">{status.label}</span></div>
                                     <Separator orientation="vertical" className={`h-8 w-1 rounded-full ${status.color}`} />
                                 </div>
                             ))}
                         </div>
-                        <Button variant="secondary" className="bg-orange-100 text-orange-600 border-orange-300 hover:bg-orange-200">
-                            <Icon name="Bell" className="h-4 w-4 ml-2" />
-                            <span>(0) طلب تفعيل التتبع</span>
-                        </Button>
+                        <Button variant="secondary" className="bg-orange-100 text-orange-600 border-orange-300 hover:bg-orange-200"><Icon name="Bell" className="h-4 w-4 ml-2" /><span>(0) طلب تفعيل التتبع</span></Button>
                     </div>
                 </CardContent>
             </Card>
 
-            <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-4">
-                {/* Left Panel: Drivers List */}
-                <Card className="col-span-1 flex flex-col">
-                    <div className="p-4">
-                        <h3 className="text-base font-semibold">قائمة السائقين</h3>
-                        <div className="relative mt-2">
-                            <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="بحث..." className="pr-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                        </div>
-                    </div>
-                    <Tabs defaultValue="all" className="flex-1 flex flex-col">
-                        <TabsList className="grid w-full grid-cols-3 px-4">
-                            <TabsTrigger value="all">الكل ({filteredDrivers.length})</TabsTrigger>
-                            <TabsTrigger value="active">نشط ({activeDrivers.length})</TabsTrigger>
-                            <TabsTrigger value="inactive">غير نشط ({inactiveDrivers.length})</TabsTrigger>
-                        </TabsList>
-                        <ScrollArea className="flex-1">
-                            <div className="p-4 space-y-3">
-                                {[...activeDrivers, ...inactiveDrivers].map(driver => (
-                                    <Card
-                                        key={driver.id}
-                                        className={`cursor-pointer transition-all ${selectedDriverId === driver.id ? 'border-primary shadow-lg' : 'hover:bg-muted/50'}`}
-                                        onClick={() => setSelectedDriverId(driver.id)}
-                                    >
-                                        <CardContent className="p-3 flex items-center gap-3">
-                                            <div className={`w-1.5 h-16 rounded-full ${selectedDriverId === driver.id ? 'bg-primary' : 'bg-transparent'}`}></div>
-                                            <div className="flex-1 flex items-center gap-3">
-                                                <Avatar className="h-12 w-12 border">
-                                                    <AvatarImage src={driver.avatar} alt={driver.name} />
-                                                    <AvatarFallback><HelpCircle className="text-muted-foreground"/></AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex-1">
-                                                    <h4 className="font-semibold">{driver.name}</h4>
-                                                    <p className="text-xs text-muted-foreground">{driver.parcels} طرود</p>
-                                                </div>
-                                            </div>
-                                            <Badge variant={driver.status === 'نشط' ? 'default' : 'secondary'} className={driver.status === 'نشط' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}>
-                                                {driver.status}
-                                            </Badge>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </Tabs>
-                </Card>
+            <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-8 xl:grid-cols-4 min-h-0">
+                <DriverListPanel
+                    drivers={drivers}
+                    selectedDriverId={selectedDriverId}
+                    onSelectDriver={setSelectedDriverId}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                />
+                
+                {selectedDriverId && (
+                    <DriverDetailsPanel 
+                        driver={selectedDriver}
+                        driverOrders={driverOrders}
+                        onClose={() => setSelectedDriverId(null)}
+                    />
+                )}
 
-                {/* Right Panel: Map */}
-                <Card className="col-span-1 lg:col-span-3">
+                <Card className="col-span-1 lg:col-span-5 xl:col-span-3">
                     <CardContent className="p-2 h-full">
-                       <div ref={mapContainerRef} id="map" className="w-full h-full rounded-md" />
+                       <MapContainer whenCreated={map => { mapRef.current = map; }} center={defaultPosition} zoom={11} scrollWheelZoom={true} style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}>
+                            <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                             <MarkerClusterGroup chunkedLoading>
+                                {drivers.map(driver => (
+                                    <Marker key={driver.id} position={driver.position} icon={createDriverIcon(driver, driver.id === selectedDriverId)} eventHandlers={{ click: () => setSelectedDriverId(driver.id) }} />
+                                ))}
+                                {selectedDriver && driverOrders.filter(o => o.lat && o.lng).map(order => (
+                                    <Marker key={order.id} position={[order.lat!, order.lng!]} icon={orderIcon} />
+                                ))}
+                             </MarkerClusterGroup>
+                            {waypoints.length > 1 && <RoutingMachine waypoints={waypoints} />}
+                        </MapContainer>
                     </CardContent>
                 </Card>
             </div>
