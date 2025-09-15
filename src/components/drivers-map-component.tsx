@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useEffect, useRef, useMemo, useState } from 'react';
-import { MapContainer, TileLayer, Marker, useMap, Tooltip, Polyline } from 'react-leaflet';
 import L, { type LatLngTuple } from 'leaflet';
 import 'leaflet-routing-machine';
 
 import type { Order } from '@/store/orders-store';
 
+// Helper to create a custom icon for drivers
 const createDriverIcon = (driver: any, isSelected: boolean) => {
     return L.divIcon({
         html: `
@@ -21,6 +21,7 @@ const createDriverIcon = (driver: any, isSelected: boolean) => {
     });
 };
 
+// Helper to create an icon for orders
 const orderIcon = L.divIcon({
     html: `<div style="background-color: #2563eb; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
     className: 'bg-transparent border-0',
@@ -28,37 +29,6 @@ const orderIcon = L.divIcon({
     iconAnchor: [8, 8]
 });
 
-const RoutingLayer = ({ waypoints }: { waypoints: L.LatLng[] }) => {
-    const map = useMap();
-    const routingControlRef = useRef<L.Routing.Control | null>(null);
-
-    useEffect(() => {
-        if (!map) return;
-        
-        if (routingControlRef.current) {
-            routingControlRef.current.setWaypoints(waypoints);
-        } else if (waypoints.length > 1) {
-             const instance = L.Routing.control({
-                waypoints,
-                lineOptions: {
-                    styles: [{ color: '#F96941', opacity: 0.8, weight: 5 }],
-                    extendToWaypoints: false,
-                    missingRouteTolerance: 100,
-                },
-                show: false,
-                addWaypoints: false,
-                routeWhileDragging: false,
-                draggableWaypoints: false,
-                fitSelectedRoutes: true,
-                createMarker: () => null,
-            }).addTo(map);
-            routingControlRef.current = instance;
-        }
-
-    }, [map, waypoints]);
-
-    return null;
-};
 
 interface DriversMapComponentProps {
     drivers: any[];
@@ -68,66 +38,132 @@ interface DriversMapComponentProps {
 }
 
 export default function DriversMapComponent({ drivers, orders, initialSelectedDriverId, onSelectDriverInMap }: DriversMapComponentProps) {
+    const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<L.Map | null>(null);
-    const [selectedDriverId, setSelectedDriverId] = useState(initialSelectedDriverId);
-    const defaultPosition: LatLngTuple = [31.9539, 35.9106]; // Amman, Jordan
+    const driverMarkersRef = useRef<Record<string, L.Marker>>({});
+    const orderMarkersRef = useRef<L.Marker[]>([]);
+    const routingControlRef = useRef<L.Routing.Control | null>(null);
 
+    const [selectedDriverId, setSelectedDriverId] = useState(initialSelectedDriverId);
+
+    // Effect to initialize the map
+    useEffect(() => {
+        if (mapContainerRef.current && !mapRef.current) {
+            const map = L.map(mapContainerRef.current, {
+                center: [31.9539, 35.9106], // Amman, Jordan
+                zoom: 11,
+                scrollWheelZoom: true,
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            }).addTo(map);
+            
+            mapRef.current = map;
+        }
+    }, []);
+
+    // Effect to update the selected driver when the prop changes
     useEffect(() => {
         setSelectedDriverId(initialSelectedDriverId);
     }, [initialSelectedDriverId]);
 
-    const selectedDriver = useMemo(() => {
-        return drivers.find(d => d.id === selectedDriverId);
-    }, [drivers, selectedDriverId]);
-    
-    const driverOrders = useMemo(() => {
-        if (!selectedDriver) return [];
-        return orders.filter(o => o.driver === selectedDriver.name);
-    }, [orders, selectedDriver]);
-
-    const waypoints = useMemo(() => {
-        if (!selectedDriver) return [];
-        const driverWp = L.latLng(selectedDriver.position[0], selectedDriver.position[1]);
-        const orderWps = driverOrders
-            .filter(o => o.status === 'جاري التوصيل' && o.lat && o.lng)
-            .map(o => L.latLng(o.lat!, o.lng!));
-        return [driverWp, ...orderWps];
-    }, [selectedDriver, driverOrders]);
-
+    // Effect to update driver markers
     useEffect(() => {
-        if (mapRef.current && selectedDriver) {
-            mapRef.current.flyTo(selectedDriver.position, 13, { animate: true, duration: 1 });
+        const map = mapRef.current;
+        if (!map) return;
+
+        const currentMarkerIds = Object.keys(driverMarkersRef.current);
+        const driverIds = drivers.map(d => d.id);
+        
+        // Remove old markers
+        currentMarkerIds.forEach(id => {
+            if (!driverIds.includes(id)) {
+                driverMarkersRef.current[id].remove();
+                delete driverMarkersRef.current[id];
+            }
+        });
+        
+        // Add or update markers
+        drivers.forEach(driver => {
+            const isSelected = driver.id === selectedDriverId;
+            const icon = createDriverIcon(driver, isSelected);
+
+            if (driverMarkersRef.current[driver.id]) {
+                driverMarkersRef.current[driver.id].setLatLng(driver.position).setIcon(icon);
+            } else {
+                const marker = L.marker(driver.position, { icon })
+                    .addTo(map)
+                    .bindTooltip(driver.name, { direction: 'top', offset: L.point(0, -48) })
+                    .on('click', () => onSelectDriverInMap(driver.id));
+                driverMarkersRef.current[driver.id] = marker;
+            }
+        });
+
+    }, [drivers, selectedDriverId, onSelectDriverInMap]);
+
+
+    // Effect to handle selected driver logic (panning, showing orders, routing)
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!map) return;
+        
+        // Clear previous orders and route
+        orderMarkersRef.current.forEach(marker => marker.remove());
+        orderMarkersRef.current = [];
+        if (routingControlRef.current) {
+            routingControlRef.current.setWaypoints([]);
         }
-    }, [selectedDriver, mapRef]);
+
+        const selectedDriver = drivers.find(d => d.id === selectedDriverId);
+        if (!selectedDriver) return;
+        
+        // Fly to selected driver
+        map.flyTo(selectedDriver.position, 13, { animate: true, duration: 1 });
+        
+        const driverOrders = orders.filter(o => o.driver === selectedDriver.name && o.status === 'جاري التوصيل' && o.lat && o.lng);
+
+        // Add order markers
+        driverOrders.forEach(order => {
+            const marker = L.marker([order.lat!, order.lng!], { icon: orderIcon })
+                .addTo(map)
+                .bindTooltip(order.recipient);
+            orderMarkersRef.current.push(marker);
+        });
+
+        // Add routing
+        const waypoints = [
+            L.latLng(selectedDriver.position[0], selectedDriver.position[1]),
+            ...driverOrders.map(o => L.latLng(o.lat!, o.lng!))
+        ];
+
+        if (waypoints.length > 1) {
+             if (routingControlRef.current) {
+                routingControlRef.current.setWaypoints(waypoints);
+            } else {
+                 const instance = L.Routing.control({
+                    waypoints,
+                    lineOptions: {
+                        styles: [{ color: '#F96941', opacity: 0.8, weight: 5 }],
+                        extendToWaypoints: false,
+                        missingRouteTolerance: 100,
+                    },
+                    show: false,
+                    addWaypoints: false,
+                    routeWhileDragging: false,
+                    draggableWaypoints: false,
+                    fitSelectedRoutes: false,
+                    createMarker: () => null,
+                }).addTo(map);
+                routingControlRef.current = instance;
+            }
+        }
+
+
+    }, [selectedDriverId, drivers, orders]);
+
 
     return (
-        <MapContainer
-            whenCreated={map => { mapRef.current = map; }}
-            center={defaultPosition}
-            zoom={11}
-            scrollWheelZoom={true}
-            style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
-        >
-            <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {drivers.map(driver => (
-                <Marker
-                    key={driver.id}
-                    position={driver.position}
-                    icon={createDriverIcon(driver, driver.id === selectedDriverId)}
-                    eventHandlers={{ click: () => onSelectDriverInMap(driver.id) }}
-                >
-                     <Tooltip direction="top" offset={[0, -48]}>{driver.name}</Tooltip>
-                </Marker>
-            ))}
-            {selectedDriverId && driverOrders.filter(o => o.lat && o.lng).map(order => (
-                <Marker key={order.id} position={[order.lat!, order.lng!]} icon={orderIcon}>
-                    <Tooltip direction="top">{order.recipient}</Tooltip>
-                </Marker>
-            ))}
-             {waypoints.length > 1 && <RoutingLayer waypoints={waypoints} />}
-        </MapContainer>
+        <div ref={mapContainerRef} style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }} />
     );
 }
