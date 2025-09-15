@@ -19,7 +19,6 @@ import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore } from '@/store/orders-store';
 
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
 import type { LatLngTuple } from 'leaflet';
 
 // Dynamically import react-leaflet components with SSR turned off
@@ -63,20 +62,23 @@ export default function DriversMapPage() {
     useEffect(() => {
       setIsClient(true);
       // This code should only run on the client side
-      if (typeof window !== 'undefined') {
-          try {
-            // Fix for default icon issue with webpack
-            delete (L.Icon.Default.prototype as any)._getIconUrl;
+      (async () => {
+          if (typeof window !== 'undefined') {
+              const L = await import('leaflet');
+              try {
+                  // Fix for default icon issue with webpack
+                  delete (L.Icon.Default.prototype as any)._getIconUrl;
 
-            L.Icon.Default.mergeOptions({
-                iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png').default.src,
-                iconUrl: require('leaflet/dist/images/marker-icon.png').default.src,
-                shadowUrl: require('leaflet/dist/images/marker-shadow.png').default.src,
-            });
-          } catch (e) {
-            console.error("Error setting up Leaflet icons", e);
+                  L.Icon.Default.mergeOptions({
+                      iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png').default.src,
+                      iconUrl: require('leaflet/dist/images/marker-icon.png').default.src,
+                      shadowUrl: require('leaflet/dist/images/marker-shadow.png').default.src,
+                  });
+              } catch (e) {
+                  console.error("Error setting up Leaflet icons", e);
+              }
           }
-      }
+      })();
     }, []);
 
     const drivers = useMemo(() => {
