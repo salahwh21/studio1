@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -20,6 +21,10 @@ import { useOrdersStore, type Order } from '@/store/orders-store';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useToast } from '@/hooks/use-toast';
+
 
 const DriversMapComponent = dynamic(() => import('@/components/drivers-map-component'), {
   ssr: false,
@@ -129,10 +134,24 @@ const DriverListPanel = ({ drivers, driverOrders, selectedDriverId, onSelectDriv
 export default function DriversMapPage() {
     const { users } = useUsersStore();
     const { orders } = useOrdersStore();
+    const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
 
     const [drivers, setDrivers] = useState<any[]>([]);
+    
+    const [trackingRequests, setTrackingRequests] = useState([
+        { id: 'req1', driverName: 'ابو العبد', time: '10:45ص' },
+        { id: 'req2', driverName: 'سامر الطباخي', time: '11:02ص' },
+    ]);
+    
+    const handleRequestAction = (requestId: string, action: 'activate' | 'reject') => {
+        setTrackingRequests(prev => prev.filter(req => req.id !== requestId));
+        toast({
+            title: `تم ${action === 'activate' ? 'تفعيل' : 'رفض'} الطلب`,
+            description: `تم تحديث حالة طلب تفعيل التتبع.`,
+        });
+    };
 
     useEffect(() => {
         const initialDrivers = users.filter(u => u.roleId === 'driver').map((driver) => {
@@ -199,7 +218,49 @@ export default function DriversMapPage() {
                                 </div>
                             ))}
                         </div>
-                        <Button variant="secondary" className="bg-orange-100 text-orange-600 border-orange-300 hover:bg-orange-200"><Icon name="Bell" className="h-4 w-4 ml-2" /><span>(0) طلب تفعيل التتبع</span></Button>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="secondary" className="bg-orange-100 text-orange-600 border-orange-300 hover:bg-orange-200">
+                                    <Icon name="Bell" className="h-4 w-4 ml-2" />
+                                    <span>({trackingRequests.length}) طلب تفعيل التتبع</span>
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>طلبات تفعيل التتبع</DialogTitle>
+                                    <DialogDescription>
+                                        تظهر هنا طلبات السائقين لتفعيل التتبع لمواقعهم.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>السائق</TableHead>
+                                            <TableHead>وقت الطلب</TableHead>
+                                            <TableHead className="text-left">إجراء</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {trackingRequests.length > 0 ? trackingRequests.map(req => (
+                                            <TableRow key={req.id}>
+                                                <TableCell className="font-medium">{req.driverName}</TableCell>
+                                                <TableCell>{req.time}</TableCell>
+                                                <TableCell className="text-left">
+                                                    <div className="flex gap-2 justify-end">
+                                                        <Button size="sm" onClick={() => handleRequestAction(req.id, 'activate')}>تفعيل</Button>
+                                                        <Button size="sm" variant="ghost" onClick={() => handleRequestAction(req.id, 'reject')}>رفض</Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        )) : (
+                                            <TableRow>
+                                                <TableCell colSpan={3} className="text-center text-muted-foreground">لا توجد طلبات حالية.</TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 </CardContent>
             </Card>
@@ -232,3 +293,4 @@ export default function DriversMapPage() {
         </div>
     );
 }
+
