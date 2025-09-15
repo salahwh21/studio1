@@ -4,6 +4,7 @@
 import React, { useEffect, useRef, useState, useTransition } from 'react';
 import L, { type LatLngTuple } from 'leaflet';
 import 'leaflet-routing-machine';
+import 'leaflet.markercluster';
 
 import type { Order } from '@/store/orders-store';
 import { useStatusesStore } from '@/store/statuses-store';
@@ -12,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import { Search } from 'lucide-react';
+import { Card, CardContent } from './ui/card';
 
 // Helper to create a custom icon for drivers
 const createDriverIcon = (driver: any, isSelected: boolean) => {
@@ -51,9 +53,9 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<L.Map | null>(null);
     const driverMarkersRef = useRef<Record<string, L.Marker>>({});
-    const orderMarkersRef = useRef<Record<string, L.Marker>>({});
     const routingControlRef = useRef<L.Routing.Control | null>(null);
     const simulationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const orderClusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
     const { toast } = useToast();
     const { statuses } = useStatusesStore();
     
@@ -85,13 +87,14 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                 waypoints: [],
                 lineOptions: {
                     styles: [{ color: '#F96941', opacity: 0.8, weight: 6 }],
-                    extendToWaypoints: true,
-                    missingRouteTolerance: 100,
                 },
+                show: true,
                 addWaypoints: false,
                 createMarker: () => null,
-                show: true,
             }).addTo(map);
+
+            orderClusterGroupRef.current = L.markerClusterGroup();
+            map.addLayer(orderClusterGroupRef.current);
             
             mapRef.current = map;
         }
@@ -115,24 +118,6 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
         }
     }, [searchQuery, orders]);
     
-    // Effect to handle highlighted order
-    useEffect(() => {
-        const map = mapRef.current;
-        if (!map) return;
-
-        Object.values(orderMarkersRef.current).forEach(marker => {
-            const isHighlighted = marker.options.title === highlightedOrder?.id;
-            const order = orders.find(o => o.id === marker.options.title);
-            marker.setIcon(createOrderIcon(getStatusColor(order?.status || ''), isHighlighted));
-            marker.setZIndexOffset(isHighlighted ? 1000 : 0);
-        });
-
-        if (highlightedOrder?.lat && highlightedOrder?.lng) {
-            map.flyTo([highlightedOrder.lat, highlightedOrder.lng], 15);
-        }
-
-    }, [highlightedOrder, orders, statuses]);
-
     // Effect to update driver markers
     useEffect(() => {
         const map = mapRef.current;
@@ -170,20 +155,10 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
 
      // Effect to update order markers
     useEffect(() => {
-        const map = mapRef.current;
-        if (!map) return;
-
-        const currentOrderMarkerIds = Object.keys(orderMarkersRef.current);
-        const orderIds = orders.map(o => o.id);
-
-        currentOrderMarkerIds.forEach(id => {
-            if (!orderIds.includes(id)) {
-                if (orderMarkersRef.current[id]) {
-                    orderMarkersRef.current[id].remove();
-                    delete orderMarkersRef.current[id];
-                }
-            }
-        });
+        const clusterGroup = orderClusterGroupRef.current;
+        if (!clusterGroup) return;
+        
+        clusterGroup.clearLayers();
 
         orders.forEach(order => {
             if (!order.lat || !order.lng) return;
@@ -191,16 +166,26 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
             const isHighlighted = highlightedOrder?.id === order.id;
             const icon = createOrderIcon(getStatusColor(order.status), isHighlighted);
 
-            if (orderMarkersRef.current[order.id]) {
-                orderMarkersRef.current[order.id].setLatLng([order.lat, order.lng]).setIcon(icon);
-            } else {
-                const marker = L.marker([order.lat, order.lng], { icon, title: order.id, zIndexOffset: isHighlighted ? 1000 : 0 })
-                    .addTo(map)
-                    .bindTooltip(`${order.recipient} - ${order.id}`)
-                    .on('click', () => onOrderPositionSelect(order));
-                orderMarkersRef.current[order.id] = marker;
-            }
+            const marker = L.marker([order.lat, order.lng], { icon, title: order.id, zIndexOffset: isHighlighted ? 1000 : 0 })
+                .bindTooltip(`${order.recipient} - ${order.id}`)
+                .on('click', () => onOrderPositionSelect(order));
+
+            clusterGroup.addLayer(marker);
         });
+        
+        if (highlightedOrder?.lat && highlightedOrder?.lng && mapRef.current) {
+            mapRef.current.flyTo([highlightedOrder.lat, highlightedOrder.lng], 15);
+             const markerToAnimate = (clusterGroup.getLayers() as L.Marker[]).find(l => l.options.title === highlightedOrder.id);
+             if (markerToAnimate) {
+                 (markerToAnimate as any)._icon.style.transition = 'transform 0.3s ease-in-out';
+                 (markerToAnimate as any)._icon.style.transform = 'scale(1.8)';
+                 setTimeout(() => {
+                     if((markerToAnimate as any)._icon) {
+                        (markerToAnimate as any)._icon.style.transform = 'scale(1.5)';
+                     }
+                 }, 300);
+             }
+        }
 
     }, [orders, highlightedOrder, statuses, onOrderPositionSelect]);
 
@@ -219,7 +204,7 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
 
         const selectedDriver = drivers.find(d => d.id === selectedDriverId);
         
-        if (!selectedDriver) {
+        if (!selectedDriver || selectedDriver.isSimulating === false) { // Stop if driver is not selected or not simulating
              routingControl.setWaypoints([]);
             return;
         }
@@ -301,16 +286,17 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                 ref={mapContainerRef}
                 className="h-full w-full rounded-md"
             />
-            <div className="absolute top-3 right-3 z-[1000] w-full max-w-sm">
+            <div className="absolute top-3 left-3 z-[1000] w-full max-w-sm">
                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="بحث عن طلب بالرقم أو اسم المستلم..."
-                        className="pl-10 shadow-lg"
+                        className="pl-4 pr-10 shadow-lg"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onFocus={() => setIsSearchFocused(true)}
                         onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
+                        dir="rtl"
                     />
                 </div>
                 {isSearchFocused && searchResults.length > 0 && (
