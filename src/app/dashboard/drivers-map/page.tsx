@@ -201,69 +201,69 @@ export default function DriversMapPage() {
 
     return (
         <div className="flex h-[calc(100vh-8rem)] flex-col gap-4 text-sm">
-            <Card>
-                <CardContent className="p-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="icon" asChild>
-                                <Link href="/dashboard"><ArrowLeft className="h-4 w-4" /></Link>
-                            </Button>
-                            <h2 className="text-lg font-bold">خريطة السائقين</h2>
-                        </div>
-                        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                           {statusDisplay.map(status => (
-                                <div key={status.label} className="flex items-center gap-2 rounded-lg border p-2 pr-3 whitespace-nowrap">
-                                    <div className="flex flex-col text-right"><span className="font-bold text-base">{orderStatusCounts[status.key] || 0}</span><span className="text-muted-foreground text-xs">{status.label}</span></div>
-                                    <Separator orientation="vertical" className={`h-8 w-1 rounded-full ${status.color}`} />
-                                </div>
-                            ))}
-                        </div>
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <Button variant="secondary" className="bg-orange-100 text-orange-600 border-orange-300 hover:bg-orange-200">
-                                    <Icon name="Bell" className="h-4 w-4 ml-2" />
-                                    <span>({trackingRequests.length}) طلب تفعيل التتبع</span>
+             <Dialog>
+                <Card>
+                    <CardContent className="p-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Button variant="outline" size="icon" asChild>
+                                    <Link href="/dashboard"><ArrowLeft className="h-4 w-4" /></Link>
                                 </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>طلبات تفعيل التتبع</DialogTitle>
-                                    <DialogDescription>
-                                        تظهر هنا طلبات السائقين لتفعيل التتبع لمواقعهم.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>السائق</TableHead>
-                                            <TableHead>وقت الطلب</TableHead>
-                                            <TableHead className="text-left">إجراء</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {trackingRequests.length > 0 ? trackingRequests.map(req => (
-                                            <TableRow key={req.id}>
-                                                <TableCell className="font-medium">{req.driverName}</TableCell>
-                                                <TableCell>{req.time}</TableCell>
-                                                <TableCell className="text-left">
-                                                    <div className="flex gap-2 justify-end">
-                                                        <Button size="sm" onClick={() => handleRequestAction(req.id, 'activate')}>تفعيل</Button>
-                                                        <Button size="sm" variant="ghost" onClick={() => handleRequestAction(req.id, 'reject')}>رفض</Button>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        )) : (
-                                            <TableRow>
-                                                <TableCell colSpan={3} className="text-center text-muted-foreground">لا توجد طلبات حالية.</TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
-                </CardContent>
-            </Card>
+                                <h2 className="text-lg font-bold">خريطة السائقين</h2>
+                            </div>
+                            <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                            {statusDisplay.map(status => (
+                                    <div key={status.label} className="flex items-center gap-2 rounded-lg border p-2 pr-3 whitespace-nowrap">
+                                        <div className="flex flex-col text-right"><span className="font-bold text-base">{orderStatusCounts[status.key] || 0}</span><span className="text-muted-foreground text-xs">{status.label}</span></div>
+                                        <Separator orientation="vertical" className={`h-8 w-1 rounded-full ${status.color}`} />
+                                    </div>
+                                ))}
+                            </div>
+                                <DialogTrigger asChild>
+                                    <Button variant="secondary" className="bg-orange-100 text-orange-600 border-orange-300 hover:bg-orange-200">
+                                        <Icon name="Bell" className="h-4 w-4 ml-2" />
+                                        <span>({trackingRequests.length}) طلب تفعيل التتبع</span>
+                                    </Button>
+                                </DialogTrigger>
+                        </div>
+                    </CardContent>
+                </Card>
+                 <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>طلبات تفعيل التتبع</DialogTitle>
+                        <DialogDescription>
+                            تظهر هنا طلبات السائقين لتفعيل التتبع لمواقعهم.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>السائق</TableHead>
+                                <TableHead>وقت الطلب</TableHead>
+                                <TableHead className="text-left">إجراء</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {trackingRequests.length > 0 ? trackingRequests.map(req => (
+                                <TableRow key={req.id}>
+                                    <TableCell className="font-medium">{req.driverName}</TableCell>
+                                    <TableCell>{req.time}</TableCell>
+                                    <TableCell className="text-left">
+                                        <div className="flex gap-2 justify-end">
+                                            <Button size="sm" onClick={() => handleRequestAction(req.id, 'activate')}>تفعيل</Button>
+                                            <Button size="sm" variant="ghost" onClick={() => handleRequestAction(req.id, 'reject')}>رفض</Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-center text-muted-foreground">لا توجد طلبات حالية.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </DialogContent>
+            </Dialog>
 
              <div className="grid flex-1 grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
                 <div className="lg:col-span-1">
@@ -277,7 +277,7 @@ export default function DriversMapPage() {
                     />
                 </div>
                 
-                <div className="lg:col-span-2 h-full">
+                <div className="lg:col-span-2 h-full z-10">
                     <Card className="h-full">
                         <CardContent className="p-2 h-full">
                            <DriversMapComponent
@@ -293,4 +293,3 @@ export default function DriversMapPage() {
         </div>
     );
 }
-
