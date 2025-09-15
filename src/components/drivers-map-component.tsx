@@ -98,10 +98,12 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
             }).addTo(map);
 
             // Dynamically import and initialize marker cluster group
-            import('leaflet.markercluster').then(mc => {
-                orderClusterGroupRef.current = mc.markerClusterGroup();
-                if (mapRef.current) {
-                    mapRef.current.addLayer(orderClusterGroupRef.current);
+            import('leaflet.markercluster').then(() => {
+                if (L.markerClusterGroup) {
+                    orderClusterGroupRef.current = L.markerClusterGroup();
+                    if (mapRef.current) {
+                        mapRef.current.addLayer(orderClusterGroupRef.current);
+                    }
                 }
             });
             
