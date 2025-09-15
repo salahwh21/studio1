@@ -30,22 +30,15 @@ interface DriversMapProps {
 
 const defaultPosition: [number, number] = [31.9539, 35.9106]; // Amman, Jordan
 
-function MapUpdater({ selectedDriver }: { selectedDriver: Driver | null }) {
-    const map = useMap();
-    React.useEffect(() => {
-        if (selectedDriver) {
-            map.flyTo(selectedDriver.position, 14, {
-                animate: true,
-                duration: 0.8
-            });
-        } else {
-            map.flyTo(defaultPosition, 11, {
-                animate: true,
-                duration: 0.8
-            });
-        }
-    }, [selectedDriver, map]);
-    return null;
+function ChangeView({ center, zoom }: { center: [number, number]; zoom: number }) {
+  const map = useMap();
+  React.useEffect(() => {
+    map.flyTo(center, zoom, {
+        animate: true,
+        duration: 0.8
+    });
+  }, [center, zoom, map]);
+  return null;
 }
 
 
@@ -62,7 +55,7 @@ export default function DriversMap({ drivers, selectedDriver }: DriversMapProps)
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             
-            <MapUpdater selectedDriver={selectedDriver} />
+            {selectedDriver && <ChangeView center={selectedDriver.position} zoom={14} />}
 
             {drivers.map(driver => (
                 <Marker key={driver.id} position={driver.position}>
