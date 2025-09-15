@@ -12,7 +12,7 @@ const createInitialOrders = () => {
     
     if (merchants.length === 0 || drivers.length === 0) return [];
 
-    return Array.from({ length: 15 }, (_, i) => ({
+    return Array.from({ length: 50 }, (_, i) => ({
         id: `ORD-171981000${1+i}`,
         source: (['Shopify', 'Manual', 'API', 'WooCommerce'] as const)[i % 4],
         referenceNumber: `REF-00${100+i}`,
@@ -32,10 +32,10 @@ const createInitialOrders = () => {
         additionalCost: i % 10 === 0 ? 0.5 : 0, 
         driverFee: 1.00,
         driverAdditionalFare: i % 15 === 0 ? -0.25 : 0, 
-        date: `2024-07-${(1 + i % 5).toString().padStart(2,'0')}`,
+        date: `2024-07-${(1 + i % 28).toString().padStart(2,'0')}`,
         notes: i % 3 === 0 ? 'اتصل قبل الوصول' : '',
-        lat: i % 10 === 0 ? 31.95 + (Math.random() - 0.5) * 0.1 : undefined,
-        lng: i % 10 === 0 ? 35.91 + (Math.random() - 0.5) * 0.1 : undefined,
+        lat: i % 2 === 0 ? 31.9539 + (Math.random() - 0.5) * 0.15 : undefined,
+        lng: i % 2 === 0 ? 35.9106 + (Math.random() - 0.5) * 0.15 : undefined,
     }));
 }
 
