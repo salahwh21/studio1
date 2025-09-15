@@ -10,7 +10,7 @@ const withPWA = require('next-pwa')({
 
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  reactStrictMode: false,
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -57,4 +57,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-module.exports = withPWA(nextConfig);
+export default withPWA(nextConfig);

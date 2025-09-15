@@ -23,7 +23,7 @@ interface Driver {
 
 interface DriversMapProps {
     drivers: Driver[];
-    selectedDriver?: Driver;
+    selectedDriver?: Driver | null;
 }
 
 const defaultPosition: [number, number] = [31.9539, 35.9106]; // Amman, Jordan
@@ -39,8 +39,10 @@ function ChangeView({ center, zoom }: { center: [number, number]; zoom: number }
   return null;
 }
 
-
 export default function DriversMap({ drivers, selectedDriver }: DriversMapProps) {
+    const displayCenter = selectedDriver ? selectedDriver.position : defaultPosition;
+    const displayZoom = selectedDriver ? 14 : 11;
+
     return (
         <MapContainer
             center={defaultPosition}
@@ -53,7 +55,7 @@ export default function DriversMap({ drivers, selectedDriver }: DriversMapProps)
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             
-            {selectedDriver && <ChangeView center={selectedDriver.position} zoom={14} />}
+            <ChangeView center={displayCenter} zoom={displayZoom} />
 
             {drivers.map(driver => (
                 <Marker key={driver.id} position={driver.position}>
