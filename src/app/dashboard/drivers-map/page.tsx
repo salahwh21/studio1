@@ -27,7 +27,8 @@ const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapCo
 const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
-const MapUpdater = dynamic(() => Promise.resolve(function MapUpdater({ selectedDriver }: { selectedDriver: any | null }) {
+
+function MapUpdater({ selectedDriver }: { selectedDriver: any | null }) {
     const { useMap } = require('react-leaflet');
     const map = useMap();
     useEffect(() => {
@@ -39,7 +40,7 @@ const MapUpdater = dynamic(() => Promise.resolve(function MapUpdater({ selectedD
         }
     }, [selectedDriver, map]);
     return null;
-}), { ssr: false });
+}
 
 
 const statuses = [
@@ -64,6 +65,7 @@ export default function DriversMapPage() {
       // This code should only run on the client side
       if (typeof window !== 'undefined') {
           try {
+            // Fix for default icon issue with webpack
             delete (L.Icon.Default.prototype as any)._getIconUrl;
 
             L.Icon.Default.mergeOptions({
