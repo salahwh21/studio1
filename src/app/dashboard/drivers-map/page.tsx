@@ -22,6 +22,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import type { LatLngTuple } from 'leaflet';
 
+// Dynamically import react-leaflet components with SSR turned off
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false, loading: () => <Skeleton className="w-full h-full" /> });
 const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
@@ -62,13 +63,17 @@ export default function DriversMapPage() {
       setIsClient(true);
       // This code should only run on the client side
       if (typeof window !== 'undefined') {
-          delete (L.Icon.Default.prototype as any)._getIconUrl;
+          try {
+            delete (L.Icon.Default.prototype as any)._getIconUrl;
 
-          L.Icon.Default.mergeOptions({
-            iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-            iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-            shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-          });
+            L.Icon.Default.mergeOptions({
+                iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png').default.src,
+                iconUrl: require('leaflet/dist/images/marker-icon.png').default.src,
+                shadowUrl: require('leaflet/dist/images/marker-shadow.png').default.src,
+            });
+          } catch (e) {
+            console.error("Error setting up Leaflet icons", e);
+          }
       }
     }, []);
 
