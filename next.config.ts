@@ -47,13 +47,6 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     // Other experimental features can go here if needed
-     allowedDevOrigins: [
-      'https://*.google.com',
-      'https://*.cloud.google.com',
-      'https://*.firebase.google.com',
-      'https://*.corp.google.com',
-      'https://*.cloud.goog',
-    ],
   },
   turbopack: {
     // Example: adding an alias and custom file extension
