@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { HelpCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 

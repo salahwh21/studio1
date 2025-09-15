@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L, { type LatLngTuple } from 'leaflet';
@@ -52,27 +52,32 @@ type DriversMapProps = {
 const defaultPosition: LatLngTuple = [31.9539, 35.9106]; // Amman, Jordan
 
 const DriversMap = ({ drivers, selectedDriver }: DriversMapProps) => {
-    return (
-        <MapContainer
-            center={defaultPosition}
-            zoom={11}
-            scrollWheelZoom={true}
-            style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
-        >
-            <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            
-            <MapUpdater selectedDriver={selectedDriver} />
+    // Memoize the map component to prevent re-initialization
+    const memoizedMap = useMemo(() => {
+        return (
+            <MapContainer
+                center={defaultPosition}
+                zoom={11}
+                scrollWheelZoom={true}
+                style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
+                // Using a static key helps prevent re-renders in some edge cases
+                key="drivers-map-container"
+            >
+                <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <MapUpdater selectedDriver={selectedDriver} />
+                {drivers.map(driver => (
+                    <Marker key={driver.id} position={driver.position}>
+                        <Popup><b>{driver.name}</b></Popup>
+                    </Marker>
+                ))}
+            </MapContainer>
+        );
+    }, [drivers, selectedDriver]);
 
-            {drivers.map(driver => (
-                <Marker key={driver.id} position={driver.position}>
-                    <Popup><b>{driver.name}</b></Popup>
-                </Marker>
-            ))}
-        </MapContainer>
-    );
+    return memoizedMap;
 };
 
 export default DriversMap;
