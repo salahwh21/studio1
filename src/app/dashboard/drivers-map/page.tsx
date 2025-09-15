@@ -80,7 +80,7 @@ const DriverListPanel = ({ drivers, driverOrders, selectedDriverId, onSelectDriv
     const allFilteredDrivers = [...activeDrivers, ...inactiveDrivers];
     
     return (
-        <Card className="col-span-1 flex flex-col">
+        <Card className="col-span-1 flex flex-col h-full">
             <div className="p-4">
                 <h3 className="text-base font-semibold">قائمة السائقين</h3>
                 <div className="relative mt-2">
@@ -252,8 +252,8 @@ export default function DriversMapPage() {
                                 </div>
                             </CardContent>
                         </Card>
-                    <div className="grid flex-1 grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
-                        <div className="lg:col-span-1">
+                    <div className="flex flex-col lg:flex-row flex-1 gap-4 min-h-0">
+                         <div className="w-full lg:w-1/3 lg:max-w-md h-[50vh] lg:h-full">
                             <DriverListPanel
                                 drivers={drivers}
                                 driverOrders={getDriverOrders}
@@ -265,7 +265,7 @@ export default function DriversMapPage() {
                             />
                         </div>
                         
-                        <div className="lg:col-span-2 h-full z-10">
+                        <div className="flex-1 h-[50vh] lg:h-full z-10">
                             <Card className="h-full">
                                 <CardContent className="p-2 h-full">
                                 <DriversMapComponent
@@ -273,6 +273,7 @@ export default function DriversMapPage() {
                                         orders={filteredOrders}
                                         initialSelectedDriverId={selectedDriverId}
                                         onSelectDriverInMap={handleSelectDriver}
+                                        onOrderPositionSelect={setHighlightedOrder}
                                         onDriverPositionChange={(driverId, newPosition) => {
                                             setDrivers(prev => prev.map(d => d.id === driverId ? {...d, position: newPosition, isSimulating: true } : d))
                                         }}

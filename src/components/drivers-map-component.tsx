@@ -9,6 +9,9 @@ import type { Order } from '@/store/orders-store';
 import { useStatusesStore } from '@/store/statuses-store';
 import { optimizeRouteAction } from '@/app/actions/optimize-route';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from './ui/input';
+import { ScrollArea } from './ui/scroll-area';
+import { Search } from 'lucide-react';
 
 // Helper to create a custom icon for drivers
 const createDriverIcon = (driver: any, isSelected: boolean) => {
@@ -27,13 +30,12 @@ const createDriverIcon = (driver: any, isSelected: boolean) => {
 
 const createOrderIcon = (color: string, isHighlighted: boolean) => {
     return L.divIcon({
-        html: `<div style="background-color: ${color}; width: ${isHighlighted ? '16px' : '12px'}; height: ${isHighlighted ? '16px' : '12px'}; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transform: ${isHighlighted ? 'scale(1.2)' : 'scale(1)'}; transition: all 0.2s ease-in-out;"></div>`,
+        html: `<div style="background-color: ${color}; width: ${isHighlighted ? '16px' : '12px'}; height: ${isHighlighted ? '16px' : '12px'}; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transform: ${isHighlighted ? 'scale(1.5)' : 'scale(1)'}; transition: all 0.2s ease-in-out;"></div>`,
         className: 'bg-transparent border-0',
-        iconSize: [isHighlighted ? 20 : 16, isHighlighted ? 20 : 16],
-        iconAnchor: [isHighlighted ? 10 : 8, isHighlighted ? 10 : 8]
+        iconSize: [isHighlighted ? 24 : 16, isHighlighted ? 24 : 16],
+        iconAnchor: [isHighlighted ? 12 : 8, isHighlighted ? 12 : 8]
     });
 };
-
 
 interface DriversMapComponentProps {
     drivers: any[];
@@ -42,9 +44,10 @@ interface DriversMapComponentProps {
     highlightedOrder: Order | null;
     onSelectDriverInMap: (id: string | null) => void;
     onDriverPositionChange: (driverId: string, newPosition: LatLngTuple) => void;
+    onOrderPositionSelect: (order: Order | null) => void;
 }
 
-export default function DriversMapComponent({ drivers, orders, initialSelectedDriverId, highlightedOrder, onSelectDriverInMap, onDriverPositionChange }: DriversMapComponentProps) {
+export default function DriversMapComponent({ drivers, orders, initialSelectedDriverId, highlightedOrder, onSelectDriverInMap, onDriverPositionChange, onOrderPositionSelect }: DriversMapComponentProps) {
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<L.Map | null>(null);
     const driverMarkersRef = useRef<Record<string, L.Marker>>({});
@@ -53,10 +56,14 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
     const simulationIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const { toast } = useToast();
     const { statuses } = useStatusesStore();
-    const [isPending, startTransition] = useTransition();
-
+    
     const [selectedDriverId, setSelectedDriverId] = useState(initialSelectedDriverId);
     
+    // Search State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<Order[]>([]);
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
+
     const getStatusColor = (statusName: string) => {
         return statuses.find(s => s.name === statusName)?.color || '#808080';
     }
@@ -83,8 +90,7 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                 },
                 addWaypoints: false,
                 createMarker: () => null,
-                show: true, // Make sure the route line is shown
-                routeWhileDragging: false,
+                show: true,
             }).addTo(map);
             
             mapRef.current = map;
@@ -95,24 +101,33 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
     useEffect(() => {
         setSelectedDriverId(initialSelectedDriverId);
     }, [initialSelectedDriverId]);
+
+    // Live search effect
+    useEffect(() => {
+        if (searchQuery.length > 2) {
+            const results = orders.filter(o =>
+                (o.id && o.id.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                (o.recipient && o.recipient.toLowerCase().includes(searchQuery.toLowerCase()))
+            );
+            setSearchResults(results);
+        } else {
+            setSearchResults([]);
+        }
+    }, [searchQuery, orders]);
     
     // Effect to handle highlighted order
     useEffect(() => {
         const map = mapRef.current;
-        if (!map || !highlightedOrder) return;
+        if (!map) return;
 
         Object.values(orderMarkersRef.current).forEach(marker => {
-            const isHighlighted = marker.options.title === highlightedOrder.id;
+            const isHighlighted = marker.options.title === highlightedOrder?.id;
             const order = orders.find(o => o.id === marker.options.title);
             marker.setIcon(createOrderIcon(getStatusColor(order?.status || ''), isHighlighted));
-            if (isHighlighted) {
-                marker.setZIndexOffset(1000);
-            } else {
-                marker.setZIndexOffset(0);
-            }
+            marker.setZIndexOffset(isHighlighted ? 1000 : 0);
         });
 
-        if (highlightedOrder.lat && highlightedOrder.lng) {
+        if (highlightedOrder?.lat && highlightedOrder?.lng) {
             map.flyTo([highlightedOrder.lat, highlightedOrder.lng], 15);
         }
 
@@ -128,8 +143,10 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
         
         currentMarkerIds.forEach(id => {
             if (!driverIds.includes(id)) {
-                driverMarkersRef.current[id].remove();
-                delete driverMarkersRef.current[id];
+                if (driverMarkersRef.current[id]) {
+                    driverMarkersRef.current[id].remove();
+                    delete driverMarkersRef.current[id];
+                }
             }
         });
         
@@ -179,12 +196,13 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
             } else {
                 const marker = L.marker([order.lat, order.lng], { icon, title: order.id, zIndexOffset: isHighlighted ? 1000 : 0 })
                     .addTo(map)
-                    .bindTooltip(order.recipient);
+                    .bindTooltip(`${order.recipient} - ${order.id}`)
+                    .on('click', () => onOrderPositionSelect(order));
                 orderMarkersRef.current[order.id] = marker;
             }
         });
 
-    }, [orders, highlightedOrder, statuses]);
+    }, [orders, highlightedOrder, statuses, onOrderPositionSelect]);
 
     // Effect to handle selected driver logic (panning, routing, simulation)
     useEffect(() => {
@@ -201,7 +219,6 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
 
         const selectedDriver = drivers.find(d => d.id === selectedDriverId);
         
-        // Reset/clear route if no driver is selected
         if (!selectedDriver) {
              routingControl.setWaypoints([]);
             return;
@@ -212,20 +229,19 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
         const driverOrders = orders.filter(o => o.driver === selectedDriver.name && o.status === 'جاري التوصيل' && o.lat && o.lng);
 
         if (driverOrders.length > 0) {
-            startTransition(async () => {
-                toast({ title: 'جاري تحسين المسار للسائق المحدد...' });
-                const addressesToOptimize = driverOrders.map(o => ({
-                    value: o.address,
-                    lat: o.lat,
-                    lng: o.lng
-                }));
-
-                const result = await optimizeRouteAction({
-                    driverId: selectedDriver.id,
-                    startLocation: 'Current Location', 
-                    addresses: addressesToOptimize
-                });
-
+            const addressesToOptimize = driverOrders.map(o => ({
+                value: o.address,
+                lat: o.lat,
+                lng: o.lng
+            }));
+            
+            toast({ title: 'جاري تحسين المسار للسائق المحدد...' });
+            
+            optimizeRouteAction({
+                driverId: selectedDriver.id,
+                startLocation: 'Current Location', 
+                addresses: addressesToOptimize
+            }).then(result => {
                 if (result.success && result.data?.optimizedRoute.length) {
                     const optimizedAddresses = result.data.optimizedRoute;
                     const originalAddresses = result.data.originalAddresses;
@@ -252,7 +268,7 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                              simulationIntervalRef.current = setInterval(() => {
                                  if (index < coordinates.length) {
                                      onDriverPositionChange(selectedDriver.id, [coordinates[index].lat, coordinates[index].lng]);
-                                     index += 5; // Increase step for faster simulation
+                                     index += 5; 
                                  } else {
                                      if(simulationIntervalRef.current) clearInterval(simulationIntervalRef.current);
                                  }
@@ -264,18 +280,56 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                         toast({ title: 'تم تحسين المسار وجاري محاكاة الحركة!' });
                     }
                 } else {
-                    routingControl.setWaypoints([]); // Clear route on failure
+                    routingControl.setWaypoints([]);
                     toast({ variant: 'destructive', title: 'فشل تحسين المسار', description: result.error || 'لم يتمكن الذكاء الاصطناعي من إنشاء مسار.' });
                 }
             });
         } else {
-            routingControl.setWaypoints([]); // Clear route if no orders
+            routingControl.setWaypoints([]);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedDriverId, drivers]); // Simplified dependencies, check if `orders` is needed
+    }, [selectedDriverId, drivers, orders, toast, onDriverPositionChange]);
 
+    const handleSelectSearchResult = (order: Order) => {
+        onOrderPositionSelect(order);
+        setSearchQuery('');
+        setSearchResults([]);
+    };
 
     return (
-        <div ref={mapContainerRef} style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }} />
+        <div className="relative h-full w-full">
+            <div
+                ref={mapContainerRef}
+                className="h-full w-full rounded-md"
+            />
+            <div className="absolute top-3 right-3 z-[1000] w-full max-w-sm">
+                 <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="بحث عن طلب بالرقم أو اسم المستلم..."
+                        className="pl-10 shadow-lg"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onFocus={() => setIsSearchFocused(true)}
+                        onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
+                    />
+                </div>
+                {isSearchFocused && searchResults.length > 0 && (
+                    <Card className="mt-2 shadow-lg max-h-60 overflow-y-auto">
+                        <CardContent className="p-2">
+                            {searchResults.map(order => (
+                                <div
+                                    key={order.id}
+                                    className="p-2 rounded-md cursor-pointer hover:bg-muted"
+                                    onMouseDown={() => handleSelectSearchResult(order)}
+                                >
+                                    <p className="font-semibold">{order.recipient}</p>
+                                    <p className="text-xs text-muted-foreground">{order.id} - {order.address}</p>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
+        </div>
     );
 }
