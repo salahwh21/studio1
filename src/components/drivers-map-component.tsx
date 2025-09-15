@@ -5,7 +5,7 @@ import { useEffect, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L, { type LatLngTuple, type Map } from 'leaflet';
 import 'leaflet-routing-machine';
-import MarkerClusterGroup from 'react-leaflet-cluster';
+import MarkerClusterGroup from '@changey/react-leaflet-markercluster';
 
 
 import type { Order } from '@/store/orders-store';
