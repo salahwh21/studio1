@@ -19,20 +19,17 @@ import { useOrdersStore } from '@/store/orders-store';
 
 import 'leaflet/dist/leaflet.css';
 import type { LatLngTuple } from 'leaflet';
+import { useMap } from 'react-leaflet';
 
-
-// استيراد صور Leaflet بشكل صحيح
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 
-
-// Dynamically import react-leaflet components with SSR turned off
+// Dynamic imports
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false, loading: () => <Skeleton className="w-full h-full" /> });
 const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
-const useMap = dynamic(() => import('react-leaflet').then(mod => mod.useMap), { ssr: false });
 
 function MapUpdater({ selectedDriver }: { selectedDriver: any | null }) {
     const map = useMap();
@@ -65,26 +62,21 @@ export default function DriversMapPage() {
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
-      setIsClient(true);
-      (async () => {
-          if (typeof window !== 'undefined') {
-              const L = await import('leaflet');
-              try {
-                  delete (L.Icon.Default.prototype as any)._getIconUrl;
-                  L.Icon.Default.mergeOptions({
-                      iconRetinaUrl: iconRetinaUrl.src,
-                      iconUrl: iconUrl.src,
-                      shadowUrl: shadowUrl.src,
-                  });
-              } catch (e) {
-                  console.error("Error setting up Leaflet icons", e);
-              }
-          }
-      })();
+        setIsClient(true);
+        if (typeof window !== 'undefined') {
+            import('leaflet').then(L => {
+                delete (L.Icon.Default.prototype as any)._getIconUrl;
+                L.Icon.Default.mergeOptions({
+                    iconRetinaUrl: iconRetinaUrl.src,
+                    iconUrl: iconUrl.src,
+                    shadowUrl: shadowUrl.src,
+                });
+            }).catch(e => console.error("Error setting up Leaflet icons", e));
+        }
     }, []);
 
     const drivers = useMemo(() => {
-        return users.filter(u => u.roleId === 'driver').map((driver) => {
+        return users.filter(u => u.roleId === 'driver').map(driver => {
             const driverOrders = orders.filter(o => o.driver === driver.name);
             return {
                 id: driver.id,
@@ -98,117 +90,119 @@ export default function DriversMapPage() {
     }, [users, orders]);
 
     const [selectedDriverId, setSelectedDriverId] = useState<string | null>(drivers.length > 0 ? drivers[0].id : null);
-    
     const activeDrivers = useMemo(() => drivers.filter(d => d.status === 'نشط'), [drivers]);
     const inactiveDrivers = useMemo(() => drivers.filter(d => d.status === 'غير نشط'), [drivers]);
     const selectedDriver = useMemo(() => drivers.find(d => d.id === selectedDriverId), [drivers, selectedDriverId]);
 
     const MapComponent = useMemo(() => {
-        if (!isClient) return null;
-      
-        return (
-          <MapContainer
-            center={defaultPosition}
-            zoom={11}
-            scrollWheelZoom={true}
-            style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <MapUpdater selectedDriver={selectedDriver} />
-            {drivers.map(driver => (
-              <Marker key={driver.id} position={driver.position}>
-                <Popup><b>{driver.name}</b></Popup>
-              </Marker>
-            ))}
-          </MapContainer>
-        );
-      }, [isClient, selectedDriver, drivers]);
+      if (!isClient) return null;
+    
+      return (
+        <MapContainer
+          center={defaultPosition}
+          zoom={11}
+          scrollWheelZoom={true}
+          style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <MapUpdater selectedDriver={selectedDriver} />
+          {drivers.map(driver => (
+            <Marker key={driver.id} position={driver.position}>
+              <Popup><b>{driver.name}</b></Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      );
+    }, [isClient, drivers, selectedDriver]);
 
-  return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col gap-4 text-sm">
-      <Card>
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon">
-                <Icon name="ArrowLeft" className="h-4 w-4" />
-              </Button>
-              <h2 className="text-lg font-bold">خريطة السائقين</h2>
-            </div>
-            <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              {statuses.map(status => (
-                <div key={status.label} className="flex items-center gap-2 rounded-lg border p-2 pr-3 whitespace-nowrap">
-                   <div className="flex flex-col text-right">
-                        <span className="font-bold text-base">{status.count}</span>
-                        <span className="text-muted-foreground text-xs">{status.label}</span>
-                   </div>
-                  <Separator orientation="vertical" className={`h-8 w-1 rounded-full ${status.color}`} />
-                </div>
-              ))}
-            </div>
-            <Button variant="secondary" className="bg-orange-100 text-orange-600 border-orange-300 hover:bg-orange-200">
-              <Icon name="Bell" className="h-4 w-4 ml-2" />
-              <span>(0) طلب تفعيل التتبع</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+    return (
+        <div className="flex h-[calc(100vh-8rem)] flex-col gap-4 text-sm">
+            {/* Top Bar */}
+            <Card>
+                <CardContent className="p-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="icon">
+                                <Icon name="ArrowLeft" className="h-4 w-4" />
+                            </Button>
+                            <h2 className="text-lg font-bold">خريطة السائقين</h2>
+                        </div>
+                        <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                            {statuses.map(status => (
+                                <div key={status.label} className="flex items-center gap-2 rounded-lg border p-2 pr-3 whitespace-nowrap">
+                                    <div className="flex flex-col text-right">
+                                        <span className="font-bold text-base">{status.count}</span>
+                                        <span className="text-muted-foreground text-xs">{status.label}</span>
+                                    </div>
+                                    <Separator orientation="vertical" className={`h-8 w-1 rounded-full ${status.color}`} />
+                                </div>
+                            ))}
+                        </div>
+                        <Button variant="secondary" className="bg-orange-100 text-orange-600 border-orange-300 hover:bg-orange-200">
+                            <Icon name="Bell" className="h-4 w-4 ml-2" />
+                            <span>(0) طلب تفعيل التتبع</span>
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
 
-      <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-4">
-        <Card className="col-span-1 flex flex-col">
-          <div className="p-4">
-            <h3 className="text-base font-semibold">قائمة السائقين</h3>
-             <div className="relative mt-2">
-                <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="بحث..." className="pr-10" />
-            </div>
-          </div>
-          <Tabs defaultValue="all" className="flex-1 flex flex-col">
-            <TabsList className="grid w-full grid-cols-3 px-4">
-              <TabsTrigger value="all">الكل ({drivers.length})</TabsTrigger>
-              <TabsTrigger value="active">نشط ({activeDrivers.length})</TabsTrigger>
-              <TabsTrigger value="inactive">غير نشط ({inactiveDrivers.length})</TabsTrigger>
-            </TabsList>
-            <ScrollArea className="flex-1">
-              <div className="p-4 space-y-3">
-                 {[...activeDrivers, ...inactiveDrivers].map(driver => (
-                    <Card
-                      key={driver.id}
-                      className={`cursor-pointer transition-all ${selectedDriverId === driver.id ? 'border-primary shadow-lg' : 'hover:bg-muted/50'}`}
-                      onClick={() => setSelectedDriverId(driver.id)}
-                    >
-                      <CardContent className="p-3 flex items-center gap-3">
-                         <div className={`w-1.5 h-16 rounded-full ${selectedDriverId === driver.id ? 'bg-primary' : 'bg-transparent'}`}></div>
-                         <div className="flex-1 flex items-center gap-3">
-                            <Avatar className="h-12 w-12 border">
-                                <AvatarImage src={driver.avatar} alt={driver.name} />
-                                <AvatarFallback><HelpCircle className="text-muted-foreground"/></AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                                <h4 className="font-semibold">{driver.name}</h4>
-                                <p className="text-xs text-muted-foreground">{driver.parcels} طرود</p>
+            <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-4">
+                {/* Left Panel: Drivers List */}
+                <Card className="col-span-1 flex flex-col">
+                    <div className="p-4">
+                        <h3 className="text-base font-semibold">قائمة السائقين</h3>
+                        <div className="relative mt-2">
+                            <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="بحث..." className="pr-10" />
+                        </div>
+                    </div>
+                    <Tabs defaultValue="all" className="flex-1 flex flex-col">
+                        <TabsList className="grid w-full grid-cols-3 px-4">
+                            <TabsTrigger value="all">الكل ({drivers.length})</TabsTrigger>
+                            <TabsTrigger value="active">نشط ({activeDrivers.length})</TabsTrigger>
+                            <TabsTrigger value="inactive">غير نشط ({inactiveDrivers.length})</TabsTrigger>
+                        </TabsList>
+                        <ScrollArea className="flex-1">
+                            <div className="p-4 space-y-3">
+                                {[...activeDrivers, ...inactiveDrivers].map(driver => (
+                                    <Card
+                                        key={driver.id}
+                                        className={`cursor-pointer transition-all ${selectedDriverId === driver.id ? 'border-primary shadow-lg' : 'hover:bg-muted/50'}`}
+                                        onClick={() => setSelectedDriverId(driver.id)}
+                                    >
+                                        <CardContent className="p-3 flex items-center gap-3">
+                                            <div className={`w-1.5 h-16 rounded-full ${selectedDriverId === driver.id ? 'bg-primary' : 'bg-transparent'}`}></div>
+                                            <div className="flex-1 flex items-center gap-3">
+                                                <Avatar className="h-12 w-12 border">
+                                                    <AvatarImage src={driver.avatar} alt={driver.name} />
+                                                    <AvatarFallback><HelpCircle className="text-muted-foreground"/></AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex-1">
+                                                    <h4 className="font-semibold">{driver.name}</h4>
+                                                    <p className="text-xs text-muted-foreground">{driver.parcels} طرود</p>
+                                                </div>
+                                            </div>
+                                            <Badge variant={driver.status === 'نشط' ? 'default' : 'secondary'} className={driver.status === 'نشط' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}>
+                                                {driver.status}
+                                            </Badge>
+                                        </CardContent>
+                                    </Card>
+                                ))}
                             </div>
-                         </div>
-                        <Badge variant={driver.status === 'نشط' ? 'default' : 'secondary'} className={driver.status === 'نشط' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}>
-                          {driver.status}
-                        </Badge>
-                      </CardContent>
-                    </Card>
-                 ))}
-              </div>
-            </ScrollArea>
-          </Tabs>
-        </Card>
+                        </ScrollArea>
+                    </Tabs>
+                </Card>
 
-        <Card className="col-span-1 lg:col-span-3">
-          <CardContent className="p-2 h-full">
-            {MapComponent || <Skeleton className="w-full h-full" />}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+                {/* Right Panel: Map */}
+                <Card className="col-span-1 lg:col-span-3">
+                    <CardContent className="p-2 h-full">
+                        {MapComponent || <Skeleton className="w-full h-full" />}
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    );
 }
