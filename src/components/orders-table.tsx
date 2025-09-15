@@ -70,7 +70,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import dynamic from 'next/dynamic';
 import Papa from 'papaparse';
-import ExcelJS from 'exceljs';
+
 
 
 import { useToast } from '@/hooks/use-toast';
@@ -234,7 +234,7 @@ const ExportDataDialog = ({
   }) => {
     const { toast } = useToast();
     const [exportPurpose, setExportPurpose] = useState('all_data');
-    const [fileFormat, setFileFormat] = useState('excel');
+    const [fileFormat, setFileFormat] = useState('csv');
     
     const [availableFields, setAvailableFields] = useState<ColumnConfig[]>([]);
     const [exportedFields, setExportedFields] = useState<ColumnConfig[]>([]);
@@ -332,31 +332,7 @@ const ExportDataDialog = ({
             link.click();
             document.body.removeChild(link);
         } else {
-            const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet('Orders');
-            worksheet.addRow(headers);
-            worksheet.addRows(dataRows);
-            
-            worksheet.getRow(1).font = { bold: true };
-            worksheet.columns.forEach(column => {
-                let maxLen = 0;
-                column.eachCell!({ includeEmpty: true }, (cell) => {
-                    const columnLength = cell.value ? cell.value.toString().length : 10;
-                    if (columnLength > maxLen) {
-                        maxLen = columnLength;
-                    }
-                });
-                column.width = maxLen < 10 ? 10 : maxLen + 2;
-            });
-
-            const buffer = await workbook.xlsx.writeBuffer();
-            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'orders_export.xlsx';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+             toast({ variant: 'destructive', title: 'غير متوفر', description: 'تصدير Excel غير متوفر حاليًا.' });
         }
     }
   
@@ -1287,4 +1263,5 @@ export function OrdersTable() {
 
 
     
+
 
