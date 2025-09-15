@@ -4,12 +4,12 @@
 import React, { useEffect, useRef, useState, useTransition } from 'react';
 import L, { type LatLngTuple } from 'leaflet';
 import 'leaflet-routing-machine';
-import 'leaflet.markercluster';
+
 
 import type { Order } from '@/store/orders-store';
 import { useStatusesStore } from '@/store/statuses-store';
 import { optimizeRouteAction } from '@/app/actions/optimize-route';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from './ui/use-toast';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import { Search } from 'lucide-react';
@@ -72,6 +72,10 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
 
     // Effect to initialize the map
     useEffect(() => {
+        // Dynamically import marker cluster CSS only on client side
+        import('leaflet.markercluster/dist/MarkerCluster.css');
+        import('leaflet.markercluster/dist/MarkerCluster.Default.css');
+
         if (mapContainerRef.current && !mapRef.current) {
             const map = L.map(mapContainerRef.current, {
                 center: [31.9539, 35.9106], // Amman, Jordan
@@ -93,8 +97,13 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                 createMarker: () => null,
             }).addTo(map);
 
-            orderClusterGroupRef.current = L.markerClusterGroup();
-            map.addLayer(orderClusterGroupRef.current);
+            // Dynamically import and initialize marker cluster group
+            import('leaflet.markercluster').then(mc => {
+                orderClusterGroupRef.current = mc.markerClusterGroup();
+                if (mapRef.current) {
+                    mapRef.current.addLayer(orderClusterGroupRef.current);
+                }
+            });
             
             mapRef.current = map;
         }
