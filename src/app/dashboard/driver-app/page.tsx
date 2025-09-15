@@ -1,9 +1,11 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useUsersStore } from '@/store/user-store';
-import { useOrdersStore } from '@/store/orders-store';
+import { useOrdersStore, type Order } from '@/store/orders-store';
+import dynamic from 'next/dynamic';
+import type { LatLngTuple } from 'leaflet';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +18,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Icon from '@/components/icon';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Skeleton } from '@/components/ui/skeleton';
+
+const DriversMapComponent = dynamic(() => import('@/components/drivers-map-component'), {
+  ssr: false,
+  loading: () => <Skeleton className="w-full h-full" />,
+});
 
 
 const getStatusBadge = (status: string) => {
@@ -34,7 +41,22 @@ export default function DriverWebAppPage() {
   const { users } = useUsersStore();
   const { orders } = useOrdersStore();
 
-  const driver = useMemo(() => users.find(u => u.roleId === 'driver'), [users]);
+  const driverUser = useMemo(() => users.find(u => u.roleId === 'driver'), [users]);
+  
+  const [driver, setDriver] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (driverUser) {
+        setDriver({
+            id: driverUser.id,
+            name: driverUser.name,
+            avatar: driverUser.avatar || `https://i.pravatar.cc/150?u=${driverUser.id}`,
+            position: [31.9539, 35.9106] as LatLngTuple, // Default position
+            isSimulating: true, // Start simulating movement
+        });
+    }
+  }, [driverUser]);
+
   const driverOrders = useMemo(() => driver ? orders.filter(o => o.driver === driver.name) : [], [orders, driver]);
   
   if (!driver) {
@@ -237,10 +259,18 @@ export default function DriverWebAppPage() {
                <CardTitle>خريطة المسار اليومي</CardTitle>
                 <CardDescription>المسار المقترح لتوصيل طلبات اليوم بكفاءة.</CardDescription>
              </CardHeader>
-             <CardContent>
-                <div className="aspect-video w-full bg-muted rounded-lg flex items-center justify-center">
-                    <p className="text-muted-foreground">سيتم عرض الخريطة التفاعلية هنا</p>
-                </div>
+             <CardContent className="h-[60vh]">
+                 <DriversMapComponent
+                    drivers={[driver]}
+                    orders={driverOrders}
+                    initialSelectedDriverId={driver.id}
+                    onSelectDriverInMap={() => {}}
+                    onDriverPositionChange={(_, newPosition) => {
+                         setDriver(prev => prev ? {...prev, position: newPosition} : null)
+                    }}
+                    onOrderPositionSelect={() => {}}
+                    highlightedOrder={null}
+                />
              </CardContent>
            </Card>
         </TabsContent>
@@ -258,7 +288,7 @@ export default function DriverWebAppPage() {
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="phone">رقم الهاتف</Label>
-                    <Input id="phone" defaultValue={driver.email} />
+                    <Input id="phone" defaultValue={driverUser?.email} />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="vehicle">معلومات المركبة</Label>
@@ -276,3 +306,4 @@ export default function DriverWebAppPage() {
     </div>
   );
 }
+
