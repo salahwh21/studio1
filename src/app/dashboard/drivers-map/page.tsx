@@ -1,8 +1,6 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
-import dynamic from 'next/dynamic';
 import { HelpCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -17,10 +15,21 @@ import Icon from '@/components/icon';
 import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore } from '@/store/orders-store';
 
-const DriversMap = dynamic(() => import('@/components/drivers-map'), {
-  ssr: false,
-  loading: () => <Skeleton className="h-full w-full rounded-lg" />,
+// --- Leaflet Imports ---
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default icon issue with webpack
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
+// --- End Leaflet Imports ---
+
 
 const statuses = [
   { label: 'بالانتظار', count: 2, color: 'bg-yellow-400' },
@@ -31,6 +40,8 @@ const statuses = [
   { label: 'ملغي', count: 1, color: 'bg-red-400' },
   { label: 'تم استلام المال في الشركة', count: 2, color: 'bg-teal-400' },
 ];
+
+const defaultPosition: L.LatLngTuple = [31.9539, 35.9106]; // Amman, Jordan
 
 export default function DriversMapPage() {
     const { users } = useUsersStore();
@@ -138,7 +149,19 @@ export default function DriversMapPage() {
         {/* Right Panel: Map */}
         <Card className="col-span-1 lg:col-span-3">
           <CardContent className="p-2 h-full">
-            <DriversMap drivers={drivers} selectedDriver={selectedDriver} />
+            <MapContainer center={defaultPosition} zoom={11} scrollWheelZoom={true} style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}>
+                <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {drivers.map(driver => (
+                    <Marker key={driver.id} position={driver.position}>
+                        <Popup>
+                            <b>{driver.name}</b>
+                        </Popup>
+                    </Marker>
+                ))}
+            </MapContainer>
           </CardContent>
         </Card>
       </div>
