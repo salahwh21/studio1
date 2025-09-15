@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { HelpCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -36,21 +36,24 @@ export default function DriversMapPage() {
     const { users } = useUsersStore();
     const { orders } = useOrdersStore();
     
-    const drivers = users.filter(u => u.roleId === 'driver').map((driver, index) => {
-        const driverOrders = orders.filter(o => o.driver === driver.name);
-        return {
-            id: driver.id,
-            name: driver.name,
-            status: driverOrders.some(o => o.status === 'جاري التوصيل') ? 'نشط' : 'غير نشط',
-            parcels: driverOrders.filter(o => o.status === 'جاري التوصيل').length,
-            avatar: driver.avatar,
-            position: [31.9539 + (Math.random() - 0.5) * 0.1, 35.9106 + (Math.random() - 0.5) * 0.1] as [number, number],
-        };
-    });
+    const drivers = useMemo(() => {
+        return users.filter(u => u.roleId === 'driver').map((driver, index) => {
+            const driverOrders = orders.filter(o => o.driver === driver.name);
+            return {
+                id: driver.id,
+                name: driver.name,
+                status: driverOrders.some(o => o.status === 'جاري التوصيل') ? 'نشط' : 'غير نشط',
+                parcels: driverOrders.filter(o => o.status === 'جاري التوصيل').length,
+                avatar: driver.avatar,
+                position: [31.9539 + (Math.random() - 0.5) * 0.1, 35.9106 + (Math.random() - 0.5) * 0.1] as [number, number],
+            };
+        });
+    }, [users, orders]);
 
     const [selectedDriver, setSelectedDriver] = useState(drivers.length > 0 ? drivers[0] : null);
-    const activeDrivers = drivers.filter(d => d.status === 'نشط');
-    const inactiveDrivers = drivers.filter(d => d.status === 'غير نشط');
+    
+    const activeDrivers = useMemo(() => drivers.filter(d => d.status === 'نشط'), [drivers]);
+    const inactiveDrivers = useMemo(() => drivers.filter(d => d.status === 'غير نشط'), [drivers]);
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col gap-4 text-sm">

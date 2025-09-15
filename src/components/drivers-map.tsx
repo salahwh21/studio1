@@ -1,10 +1,10 @@
+
 'use client';
 
 import * as React from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect } from 'react';
 
 // Fix for default icon issue with webpack
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -29,20 +29,22 @@ interface DriversMapProps {
     selectedDriver: Driver | null;
 }
 
-function ChangeView({ center, zoom }: { center: [number, number], zoom: number }) {
+const defaultPosition: [number, number] = [31.9539, 35.9106]; // Amman, Jordan
+
+function ChangeView({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
-  useEffect(() => {
+  React.useEffect(() => {
     map.flyTo(center, zoom, {
         animate: true,
-        duration: 0.5
+        duration: 0.8
     });
   }, [center, zoom, map]);
   return null;
 }
 
-export default function DriversMap({ drivers, selectedDriver }: DriversMapProps) {
-    const defaultPosition: [number, number] = [31.9539, 35.9106]; // Amman, Jordan
 
+export default function DriversMap({ drivers, selectedDriver }: DriversMapProps) {
+    
     return (
         <MapContainer
             center={defaultPosition}
