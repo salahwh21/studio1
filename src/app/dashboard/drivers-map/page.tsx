@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -184,8 +185,9 @@ export default function DriversMapPage() {
 
         const interval = setInterval(() => {
             setDrivers(prevDrivers => prevDrivers.map(d => {
-                if (d.id === selectedDriverId) return d;
-                
+                const isSelectedAndSimulating = d.id === selectedDriverId && d.isSimulating;
+                if(isSelectedAndSimulating) return d;
+
                 return {
                     ...d,
                     position: [d.position[0] + (Math.random() - 0.5) * 0.0005, d.position[1] + (Math.random() - 0.5) * 0.0005] as LatLngTuple
@@ -272,7 +274,7 @@ export default function DriversMapPage() {
                                         initialSelectedDriverId={selectedDriverId}
                                         onSelectDriverInMap={handleSelectDriver}
                                         onDriverPositionChange={(driverId, newPosition) => {
-                                            setDrivers(prev => prev.map(d => d.id === driverId ? {...d, position: newPosition} : d))
+                                            setDrivers(prev => prev.map(d => d.id === driverId ? {...d, position: newPosition, isSimulating: true } : d))
                                         }}
                                         highlightedOrder={highlightedOrder}
                                 />

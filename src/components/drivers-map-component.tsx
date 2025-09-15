@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useRef, useState, useTransition } from 'react';
@@ -82,7 +83,8 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                 },
                 addWaypoints: false,
                 createMarker: () => null,
-                show: true,
+                show: true, // Make sure the route line is shown
+                routeWhileDragging: false,
             }).addTo(map);
             
             mapRef.current = map;
@@ -114,7 +116,7 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
             map.flyTo([highlightedOrder.lat, highlightedOrder.lng], 15);
         }
 
-    }, [highlightedOrder, orders, statuses])
+    }, [highlightedOrder, orders, statuses]);
 
     // Effect to update driver markers
     useEffect(() => {
@@ -194,12 +196,16 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
             simulationIntervalRef.current = null;
         }
         
-        if (routingControlRef.current) {
-            routingControlRef.current.setWaypoints([]);
-        }
+        const routingControl = routingControlRef.current;
+        if (!routingControl) return;
 
         const selectedDriver = drivers.find(d => d.id === selectedDriverId);
-        if (!selectedDriver) return;
+        
+        // Reset/clear route if no driver is selected
+        if (!selectedDriver) {
+             routingControl.setWaypoints([]);
+            return;
+        }
         
         map.flyTo(selectedDriver.position, 13, { animate: true, duration: 1 });
         
@@ -233,10 +239,10 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                         }).filter((p): p is LatLngTuple => p !== null)
                     ];
                     
-                    if (waypoints.length > 1 && routingControlRef.current) {
-                        routingControlRef.current.setWaypoints(waypoints.map(wp => L.latLng(wp[0], wp[1])));
+                    if (waypoints.length > 1) {
+                         routingControl.setWaypoints(waypoints.map(wp => L.latLng(wp[0], wp[1])));
 
-                        routingControlRef.current.on('routesfound', function(e) {
+                         const routeFoundHandler = (e: any) => {
                              const route = e.routes[0];
                              const coordinates = route.coordinates;
                              let index = 0;
@@ -246,21 +252,27 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                              simulationIntervalRef.current = setInterval(() => {
                                  if (index < coordinates.length) {
                                      onDriverPositionChange(selectedDriver.id, [coordinates[index].lat, coordinates[index].lng]);
-                                     index += 5;
+                                     index += 5; // Increase step for faster simulation
                                  } else {
                                      if(simulationIntervalRef.current) clearInterval(simulationIntervalRef.current);
                                  }
                              }, 200);
-                        });
+                         };
+
+                        routingControl.off('routesfound').on('routesfound', routeFoundHandler);
+                        
                         toast({ title: 'تم تحسين المسار وجاري محاكاة الحركة!' });
                     }
                 } else {
-                     toast({ variant: 'destructive', title: 'فشل تحسين المسار', description: result.error || 'لم يتمكن الذكاء الاصطناعي من إنشاء مسار.' });
+                    routingControl.setWaypoints([]); // Clear route on failure
+                    toast({ variant: 'destructive', title: 'فشل تحسين المسار', description: result.error || 'لم يتمكن الذكاء الاصطناعي من إنشاء مسار.' });
                 }
             });
+        } else {
+            routingControl.setWaypoints([]); // Clear route if no orders
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedDriverId]);
+    }, [selectedDriverId, drivers]); // Simplified dependencies, check if `orders` is needed
 
 
     return (
