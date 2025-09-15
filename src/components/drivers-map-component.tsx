@@ -5,6 +5,7 @@ import L, { type LatLngTuple } from 'leaflet';
 import 'leaflet-routing-machine';
 
 import type { Order } from '@/store/orders-store';
+import { useStatusesStore } from '@/store/statuses-store';
 import { optimizeRouteAction } from '@/app/actions/optimize-route';
 import { useToast } from '@/hooks/use-toast';
 
@@ -23,9 +24,9 @@ const createDriverIcon = (driver: any, isSelected: boolean) => {
     });
 };
 
-const createOrderIcon = (isHighlighted: boolean) => {
+const createOrderIcon = (color: string, isHighlighted: boolean) => {
     return L.divIcon({
-        html: `<div style="background-color: ${isHighlighted ? '#F96941' : '#2563eb'}; width: ${isHighlighted ? '16px' : '12px'}; height: ${isHighlighted ? '16px' : '12px'}; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transform: ${isHighlighted ? 'scale(1.2)' : 'scale(1)'}; transition: all 0.2s ease-in-out;"></div>`,
+        html: `<div style="background-color: ${color}; width: ${isHighlighted ? '16px' : '12px'}; height: ${isHighlighted ? '16px' : '12px'}; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transform: ${isHighlighted ? 'scale(1.2)' : 'scale(1)'}; transition: all 0.2s ease-in-out;"></div>`,
         className: 'bg-transparent border-0',
         iconSize: [isHighlighted ? 20 : 16, isHighlighted ? 20 : 16],
         iconAnchor: [isHighlighted ? 10 : 8, isHighlighted ? 10 : 8]
@@ -50,9 +51,14 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
     const routingControlRef = useRef<L.Routing.Control | null>(null);
     const simulationIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const { toast } = useToast();
+    const { statuses } = useStatusesStore();
     const [isPending, startTransition] = useTransition();
 
     const [selectedDriverId, setSelectedDriverId] = useState(initialSelectedDriverId);
+    
+    const getStatusColor = (statusName: string) => {
+        return statuses.find(s => s.name === statusName)?.color || '#808080';
+    }
 
     // Effect to initialize the map
     useEffect(() => {
@@ -67,7 +73,6 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             }).addTo(map);
 
-            // Initialize routing control once and keep a reference to it
             routingControlRef.current = L.Routing.control({
                 waypoints: [],
                 lineOptions: {
@@ -76,7 +81,7 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                     missingRouteTolerance: 100,
                 },
                 addWaypoints: false,
-                createMarker: () => null, // We handle markers ourselves
+                createMarker: () => null,
                 show: true,
             }).addTo(map);
             
@@ -96,7 +101,8 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
 
         Object.values(orderMarkersRef.current).forEach(marker => {
             const isHighlighted = marker.options.title === highlightedOrder.id;
-            marker.setIcon(createOrderIcon(isHighlighted));
+            const order = orders.find(o => o.id === marker.options.title);
+            marker.setIcon(createOrderIcon(getStatusColor(order?.status || ''), isHighlighted));
             if (isHighlighted) {
                 marker.setZIndexOffset(1000);
             } else {
@@ -108,7 +114,7 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
             map.flyTo([highlightedOrder.lat, highlightedOrder.lng], 15);
         }
 
-    }, [highlightedOrder])
+    }, [highlightedOrder, orders, statuses])
 
     // Effect to update driver markers
     useEffect(() => {
@@ -118,7 +124,6 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
         const currentMarkerIds = Object.keys(driverMarkersRef.current);
         const driverIds = drivers.map(d => d.id);
         
-        // Remove old markers
         currentMarkerIds.forEach(id => {
             if (!driverIds.includes(id)) {
                 driverMarkersRef.current[id].remove();
@@ -126,7 +131,6 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
             }
         });
         
-        // Add or update markers
         drivers.forEach(driver => {
             const isSelected = driver.id === selectedDriverId;
             const icon = createDriverIcon(driver, isSelected);
@@ -134,7 +138,7 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
             if (driverMarkersRef.current[driver.id]) {
                 driverMarkersRef.current[driver.id].setLatLng(driver.position).setIcon(icon);
             } else {
-                const marker = L.marker(driver.position, { icon })
+                const marker = L.marker(driver.position, { icon, zIndexOffset: isSelected ? 2000 : 0 })
                     .addTo(map)
                     .bindTooltip(driver.name, { direction: 'top', offset: L.point(0, -48) })
                     .on('click', () => onSelectDriverInMap(driver.id));
@@ -145,26 +149,54 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
     }, [drivers, selectedDriverId, onSelectDriverInMap]);
 
 
-    // Effect to handle selected driver logic (panning, showing orders, routing, simulation)
+     // Effect to update order markers
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!map) return;
+
+        const currentOrderMarkerIds = Object.keys(orderMarkersRef.current);
+        const orderIds = orders.map(o => o.id);
+
+        currentOrderMarkerIds.forEach(id => {
+            if (!orderIds.includes(id)) {
+                if (orderMarkersRef.current[id]) {
+                    orderMarkersRef.current[id].remove();
+                    delete orderMarkersRef.current[id];
+                }
+            }
+        });
+
+        orders.forEach(order => {
+            if (!order.lat || !order.lng) return;
+
+            const isHighlighted = highlightedOrder?.id === order.id;
+            const icon = createOrderIcon(getStatusColor(order.status), isHighlighted);
+
+            if (orderMarkersRef.current[order.id]) {
+                orderMarkersRef.current[order.id].setLatLng([order.lat, order.lng]).setIcon(icon);
+            } else {
+                const marker = L.marker([order.lat, order.lng], { icon, title: order.id, zIndexOffset: isHighlighted ? 1000 : 0 })
+                    .addTo(map)
+                    .bindTooltip(order.recipient);
+                orderMarkersRef.current[order.id] = marker;
+            }
+        });
+
+    }, [orders, highlightedOrder, statuses]);
+
+    // Effect to handle selected driver logic (panning, routing, simulation)
     useEffect(() => {
         const map = mapRef.current;
         if (!map) return;
         
-        // Clear previous state for orders
-        Object.values(orderMarkersRef.current).forEach(marker => marker.remove());
-        orderMarkersRef.current = {};
-        
-        // Clear previous simulation
         if (simulationIntervalRef.current) {
             clearInterval(simulationIntervalRef.current);
             simulationIntervalRef.current = null;
         }
         
-        // Clear previous route by setting empty waypoints
         if (routingControlRef.current) {
             routingControlRef.current.setWaypoints([]);
         }
-
 
         const selectedDriver = drivers.find(d => d.id === selectedDriverId);
         if (!selectedDriver) return;
@@ -173,17 +205,9 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
         
         const driverOrders = orders.filter(o => o.driver === selectedDriver.name && o.status === 'جاري التوصيل' && o.lat && o.lng);
 
-        driverOrders.forEach(order => {
-            const isHighlighted = highlightedOrder?.id === order.id;
-            const marker = L.marker([order.lat!, order.lng!], { icon: createOrderIcon(isHighlighted), title: order.id })
-                .addTo(map)
-                .bindTooltip(order.recipient);
-            orderMarkersRef.current[order.id] = marker;
-        });
-
         if (driverOrders.length > 0) {
             startTransition(async () => {
-                toast({ title: 'جاري تحسين المسار...' });
+                toast({ title: 'جاري تحسين المسار للسائق المحدد...' });
                 const addressesToOptimize = driverOrders.map(o => ({
                     value: o.address,
                     lat: o.lat,
@@ -222,11 +246,11 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                              simulationIntervalRef.current = setInterval(() => {
                                  if (index < coordinates.length) {
                                      onDriverPositionChange(selectedDriver.id, [coordinates[index].lat, coordinates[index].lng]);
-                                     index += 5; // Jump more points for faster simulation
+                                     index += 5;
                                  } else {
                                      if(simulationIntervalRef.current) clearInterval(simulationIntervalRef.current);
                                  }
-                             }, 200); // Update every 200ms
+                             }, 200);
                         });
                         toast({ title: 'تم تحسين المسار وجاري محاكاة الحركة!' });
                     }

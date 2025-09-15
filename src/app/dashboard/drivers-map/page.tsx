@@ -23,6 +23,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
+import { useStatusesStore } from '@/store/statuses-store';
 
 
 const DriversMapComponent = dynamic(() => import('@/components/drivers-map-component'), {
@@ -83,7 +84,7 @@ const DriverListPanel = ({ drivers, driverOrders, selectedDriverId, onSelectDriv
                 <h3 className="text-base font-semibold">قائمة السائقين</h3>
                 <div className="relative mt-2">
                     <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="بحث..." className="pr-10" value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} />
+                    <Input placeholder="بحث عن سائق..." className="pr-10" value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} />
                 </div>
             </div>
             <Tabs defaultValue="all" className="flex-1 flex flex-col min-h-0">
@@ -134,11 +135,12 @@ const DriverListPanel = ({ drivers, driverOrders, selectedDriverId, onSelectDriv
 export default function DriversMapPage() {
     const { users } = useUsersStore();
     const { orders } = useOrdersStore();
+    const { statuses } = useStatusesStore();
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
     const [highlightedOrder, setHighlightedOrder] = useState<Order | null>(null);
-
+    const [statusFilters, setStatusFilters] = useState<string[]>(['جاري التوصيل', 'مؤجل', 'بالانتظار']);
 
     const [drivers, setDrivers] = useState<any[]>([]);
     
@@ -146,6 +148,14 @@ export default function DriversMapPage() {
         { id: 'req1', driverName: 'ابو العبد', time: '10:45ص' },
         { id: 'req2', driverName: 'سامر الطباخي', time: '11:02ص' },
     ]);
+
+    const handleToggleStatusFilter = (statusName: string) => {
+        setStatusFilters(prev => 
+            prev.includes(statusName) 
+            ? prev.filter(s => s !== statusName)
+            : [...prev, statusName]
+        );
+    }
     
     const handleRequestAction = (requestId: string, action: 'activate' | 'reject') => {
         setTrackingRequests(prev => prev.filter(req => req.id !== requestId));
@@ -174,7 +184,6 @@ export default function DriversMapPage() {
 
         const interval = setInterval(() => {
             setDrivers(prevDrivers => prevDrivers.map(d => {
-                // Do not move the selected driver, as it will be handled by the map component simulation
                 if (d.id === selectedDriverId) return d;
                 
                 return {
@@ -186,22 +195,11 @@ export default function DriversMapPage() {
         return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [users, orders]);
-
-    const orderStatusCounts = useMemo(() => {
-        return orders.reduce((acc, order) => {
-            acc[order.status] = (acc[order.status] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-    }, [orders]);
-
-    const statusDisplay = [
-        { label: 'بالانتظار', color: 'bg-yellow-400', key: 'بالانتظار' },
-        { label: 'جاري التوصيل', color: 'bg-blue-400', key: 'جاري التوصيل' },
-        { label: 'تم التوصيل', color: 'bg-green-400', key: 'تم التوصيل' },
-        { label: 'مؤجل', color: 'bg-orange-400', key: 'مؤجل' },
-        { label: 'مرتجع', color: 'bg-purple-400', key: 'راجع' },
-    ];
     
+    const filteredOrders = useMemo(() => {
+        return orders.filter(order => statusFilters.includes(order.status) && order.lat && order.lng);
+    }, [orders, statusFilters]);
+
     const getDriverOrders = (driverId: string): Order[] => {
         const driver = drivers.find(d => d.id === driverId);
         return driver ? orders.filter(o => o.driver === driver.name) : [];
@@ -209,7 +207,7 @@ export default function DriversMapPage() {
 
     const handleSelectDriver = (driverId: string | null) => {
         setSelectedDriverId(driverId);
-        setHighlightedOrder(null); // Clear highlighted order when changing driver
+        setHighlightedOrder(null);
     };
 
     return (
@@ -217,8 +215,8 @@ export default function DriversMapPage() {
             <Dialog>
                 <div className="flex h-[calc(100vh-8rem)] flex-col gap-4 text-sm">
                         <Card>
-                            <CardContent className="p-3">
-                                <div className="flex items-center justify-between">
+                             <CardContent className="p-3">
+                                <div className="flex items-center justify-between gap-4">
                                     <div className="flex items-center gap-2">
                                         <Button variant="outline" size="icon" asChild>
                                             <Link href="/dashboard"><ArrowLeft className="h-4 w-4" /></Link>
@@ -226,19 +224,29 @@ export default function DriversMapPage() {
                                         <h2 className="text-lg font-bold">خريطة السائقين</h2>
                                     </div>
                                     <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                                    {statusDisplay.map(status => (
-                                            <div key={status.label} className="flex items-center gap-2 rounded-lg border p-2 pr-3 whitespace-nowrap">
-                                                <div className="flex flex-col text-right"><span className="font-bold text-base">{orderStatusCounts[status.key] || 0}</span><span className="text-muted-foreground text-xs">{status.label}</span></div>
-                                                <Separator orientation="vertical" className={`h-8 w-1 rounded-full ${status.color}`} />
-                                            </div>
+                                        {statuses.filter(s => ['جاري التوصيل', 'بالانتظار', 'مؤجل', 'راجع', 'لا رد'].includes(s.name)).map(status => (
+                                            <Button 
+                                                key={status.id}
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleToggleStatusFilter(status.name)}
+                                                className={cn(
+                                                    "flex items-center gap-2 whitespace-nowrap",
+                                                    statusFilters.includes(status.name) ? 'border-primary ring-2 ring-primary/50' : 'opacity-60'
+                                                )}
+                                                style={{ '--status-color': status.color } as React.CSSProperties}
+                                            >
+                                                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: status.color }}></div>
+                                                {status.name}
+                                            </Button>
                                         ))}
                                     </div>
-                                        <DialogTrigger asChild>
-                                            <Button variant="secondary" className="bg-orange-100 text-orange-600 border-orange-300 hover:bg-orange-200">
-                                                <Icon name="Bell" className="h-4 w-4 ml-2" />
-                                                <span>({trackingRequests.length}) طلب تفعيل التتبع</span>
-                                            </Button>
-                                        </DialogTrigger>
+                                    <DialogTrigger asChild>
+                                        <Button variant="secondary" className="bg-orange-100 text-orange-600 border-orange-300 hover:bg-orange-200">
+                                            <Icon name="Bell" className="h-4 w-4 ml-2" />
+                                            <span>({trackingRequests.length}) طلب تفعيل التتبع</span>
+                                        </Button>
+                                    </DialogTrigger>
                                 </div>
                             </CardContent>
                         </Card>
@@ -260,7 +268,7 @@ export default function DriversMapPage() {
                                 <CardContent className="p-2 h-full">
                                 <DriversMapComponent
                                         drivers={drivers}
-                                        orders={orders}
+                                        orders={filteredOrders}
                                         initialSelectedDriverId={selectedDriverId}
                                         onSelectDriverInMap={handleSelectDriver}
                                         onDriverPositionChange={(driverId, newPosition) => {
