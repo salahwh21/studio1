@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -229,8 +228,8 @@ export default function DriversMapPage() {
                     <CardContent className="p-2 h-full">
                        <DriversMapComponent
                            drivers={drivers}
-                           selectedDriver={selectedDriver}
-                           driverOrders={driverOrders}
+                           orders={orders}
+                           selectedDriverId={selectedDriverId}
                            onSelectDriver={setSelectedDriverId}
                        />
                     </CardContent>
@@ -240,3 +239,4 @@ export default function DriversMapPage() {
     );
 
     
+}

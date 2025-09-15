@@ -1,14 +1,11 @@
-
 'use client';
 
 import React, { useEffect, useRef, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
-import L, { type LatLngTuple, type Map } from 'leaflet';
+import { MapContainer, TileLayer, Marker, useMap, Tooltip } from 'react-leaflet';
+import L, { type LatLngTuple } from 'leaflet';
 import 'leaflet-routing-machine';
 
 import type { Order } from '@/store/orders-store';
-
-const defaultPosition: LatLngTuple = [31.9539, 35.9106]; // Amman, Jordan
 
 const createDriverIcon = (driver: any, isSelected: boolean) => {
     return L.divIcon({
@@ -36,18 +33,20 @@ const RoutingMachine = ({ waypoints }: { waypoints: L.LatLng[] }) => {
     const routingControlRef = useRef<L.Routing.Control | null>(null);
 
     useEffect(() => {
+        if (!map) return;
+        
         if (routingControlRef.current) {
             map.removeControl(routingControlRef.current);
             routingControlRef.current = null;
         }
 
         if (waypoints.length > 1) {
-            const routingControl = L.Routing.control({
+             const instance = L.Routing.control({
                 waypoints,
                 lineOptions: {
                     styles: [{ color: '#F96941', opacity: 0.8, weight: 5 }],
                     extendToWaypoints: false,
-                    missingRouteTolerance: 10,
+                    missingRouteTolerance: 100, // Increase tolerance
                 },
                 show: false,
                 addWaypoints: false,
@@ -55,9 +54,15 @@ const RoutingMachine = ({ waypoints }: { waypoints: L.LatLng[] }) => {
                 draggableWaypoints: false,
                 fitSelectedRoutes: true,
                 createMarker: () => null,
-            }).addTo(map);
-            routingControlRef.current = routingControl;
+            });
+            instance.addTo(map);
+            routingControlRef.current = instance;
         }
+         return () => {
+            if (routingControlRef.current) {
+                map.removeControl(routingControlRef.current);
+            }
+        };
     }, [map, waypoints]);
 
     return null;
@@ -75,12 +80,22 @@ const MapController = ({ selectedDriver }: { selectedDriver: any | null }) => {
 
 interface DriversMapComponentProps {
     drivers: any[];
-    selectedDriver: any | null;
-    driverOrders: Order[];
+    orders: Order[];
+    selectedDriverId: string | null;
     onSelectDriver: (id: string | null) => void;
 }
 
-export default function DriversMapComponent({ drivers, selectedDriver, driverOrders, onSelectDriver }: DriversMapComponentProps) {
+export default function DriversMapComponent({ drivers, orders, selectedDriverId, onSelectDriver }: DriversMapComponentProps) {
+    const defaultPosition: LatLngTuple = [31.9539, 35.9106]; // Amman, Jordan
+
+    const selectedDriver = useMemo(() => {
+        return drivers.find(d => d.id === selectedDriverId);
+    }, [drivers, selectedDriverId]);
+    
+    const driverOrders = useMemo(() => {
+        if (!selectedDriver) return [];
+        return orders.filter(o => o.driver === selectedDriver.name);
+    }, [orders, selectedDriver]);
 
     const waypoints = useMemo(() => {
         if (!selectedDriver) return [];
@@ -102,23 +117,23 @@ export default function DriversMapComponent({ drivers, selectedDriver, driverOrd
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <React.Fragment>
-                {drivers.map(driver => (
-                    <Marker
-                        key={driver.id}
-                        position={driver.position}
-                        icon={createDriverIcon(driver, driver.id === selectedDriver?.id)}
-                        eventHandlers={{ click: () => onSelectDriver(driver.id) }}
-                    />
-                ))}
-                {selectedDriver && driverOrders.filter(o => o.lat && o.lng).map(order => (
-                    <Marker key={order.id} position={[order.lat!, order.lng!]} icon={orderIcon} />
-                ))}
-            </React.Fragment>
+            {drivers.map(driver => (
+                <Marker
+                    key={driver.id}
+                    position={driver.position}
+                    icon={createDriverIcon(driver, driver.id === selectedDriverId)}
+                    eventHandlers={{ click: () => onSelectDriver(driver.id) }}
+                >
+                     <Tooltip direction="top" offset={[0, -48]}>{driver.name}</Tooltip>
+                </Marker>
+            ))}
+            {selectedDriverId && driverOrders.filter(o => o.lat && o.lng).map(order => (
+                <Marker key={order.id} position={[order.lat!, order.lng!]} icon={orderIcon}>
+                    <Tooltip direction="top">{order.recipient}</Tooltip>
+                </Marker>
+            ))}
             <RoutingMachine waypoints={waypoints} />
             <MapController selectedDriver={selectedDriver} />
         </MapContainer>
     );
-
-    
 }
