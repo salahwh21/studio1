@@ -17,32 +17,10 @@ import Icon from '@/components/icon';
 import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore } from '@/store/orders-store';
 
-import 'leaflet/dist/leaflet.css';
-import type { LatLngTuple } from 'leaflet';
-import { useMap } from 'react-leaflet';
-
-import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
-import iconUrl from 'leaflet/dist/images/marker-icon.png';
-import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
-
-// Dynamic imports
-const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false, loading: () => <Skeleton className="w-full h-full" /> });
-const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
-const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
-const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
-
-function MapUpdater({ selectedDriver }: { selectedDriver: any | null }) {
-    const map = useMap();
-    useEffect(() => {
-        if (selectedDriver) {
-            map.flyTo(selectedDriver.position, 14, {
-                animate: true,
-                duration: 1,
-            });
-        }
-    }, [selectedDriver, map]);
-    return null;
-}
+const DriversMap = dynamic(() => import('@/components/drivers-map'), {
+  ssr: false,
+  loading: () => <Skeleton className="w-full h-full" />,
+});
 
 const statuses = [
   { label: 'بالانتظار', count: 2, color: 'bg-yellow-400' },
@@ -54,26 +32,9 @@ const statuses = [
   { label: 'تم استلام المال في الشركة', count: 2, color: 'bg-teal-400' },
 ];
 
-const defaultPosition: LatLngTuple = [31.9539, 35.9106]; // Amman, Jordan
-
 export default function DriversMapPage() {
     const { users } = useUsersStore();
     const { orders } = useOrdersStore();
-    const [isClient, setIsClient] = useState(false);
-
-    useEffect(() => {
-        setIsClient(true);
-        if (typeof window !== 'undefined') {
-            import('leaflet').then(L => {
-                delete (L.Icon.Default.prototype as any)._getIconUrl;
-                L.Icon.Default.mergeOptions({
-                    iconRetinaUrl: iconRetinaUrl.src,
-                    iconUrl: iconUrl.src,
-                    shadowUrl: shadowUrl.src,
-                });
-            }).catch(e => console.error("Error setting up Leaflet icons", e));
-        }
-    }, []);
 
     const drivers = useMemo(() => {
         return users.filter(u => u.roleId === 'driver').map(driver => {
@@ -93,30 +54,6 @@ export default function DriversMapPage() {
     const activeDrivers = useMemo(() => drivers.filter(d => d.status === 'نشط'), [drivers]);
     const inactiveDrivers = useMemo(() => drivers.filter(d => d.status === 'غير نشط'), [drivers]);
     const selectedDriver = useMemo(() => drivers.find(d => d.id === selectedDriverId), [drivers, selectedDriverId]);
-
-    const MapComponent = useMemo(() => {
-      if (!isClient) return null;
-    
-      return (
-        <MapContainer
-          center={defaultPosition}
-          zoom={11}
-          scrollWheelZoom={true}
-          style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <MapUpdater selectedDriver={selectedDriver} />
-          {drivers.map(driver => (
-            <Marker key={driver.id} position={driver.position}>
-              <Popup><b>{driver.name}</b></Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-      );
-    }, [isClient, drivers, selectedDriver]);
 
     return (
         <div className="flex h-[calc(100vh-8rem)] flex-col gap-4 text-sm">
@@ -199,7 +136,7 @@ export default function DriversMapPage() {
                 {/* Right Panel: Map */}
                 <Card className="col-span-1 lg:col-span-3">
                     <CardContent className="p-2 h-full">
-                        {MapComponent || <Skeleton className="w-full h-full" />}
+                        <DriversMap drivers={drivers} selectedDriver={selectedDriver} />
                     </CardContent>
                 </Card>
             </div>
