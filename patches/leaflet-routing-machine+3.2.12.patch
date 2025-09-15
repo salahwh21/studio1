@@ -1,0 +1,107 @@
+diff --git a/node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.js b/node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.js
+index 9a20a6e..6a3e115 100644
+--- a/node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.js
++++ b/node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.js
+@@ -10,7 +10,7 @@
+ 	// This is to support environments like browserify
+ 	(factory)(L);
+ } else if (typeof define === 'function' && define.amd) {
+-	// Finally, as a browser global.
++	// Finally, as a browser global
+ 	define(['leaflet'], factory);
+ }
+ }(function (L) {
+@@ -194,7 +194,7 @@
+ 		},
+ 
+ 		getWaypoints: function() {
+-			return this._waypoints;
++			return this._waypoints || [];
+ 		},
+ 
+ 		setWaypoints: function(waypoints) {
+@@ -231,7 +231,7 @@
+ 		},
+ 
+ 		spliceWaypoints: function() {
+-			var args = [arguments[0], arguments[1]].concat(Array.prototype.slice.call(arguments, 2).map(function(w) { return w instanceof L.Routing.Waypoint ? w : new L.Routing.Waypoint(w); }));
++			var args = [arguments[0], arguments[1]].concat(Array.prototype.slice.call(arguments, 2).map(function(w) { return w instanceof L.Routing.Waypoint ? w : new L.Routing.Waypoint(w, undefined, w.properties); }));
+ 			this._waypoints.splice.apply(this._waypoints, args);
+ 			while (this._waypoints.length < this.options.minWaypoints) {
+ 				this.spliceWaypoints(this._waypoints.length, 0, this.options.createWaypoint());
+@@ -265,7 +265,7 @@
+ 		},
+ 
+ 		_routeDone: function(response, inputWaypoints, callback) {
+-			var i,
++			var i, route = response.routes[0];
+ 			callback = L.Util.bind(callback, this);
+ 			this.fire('routingend', {
+ 				waypoints: inputWaypoints,
+@@ -274,7 +274,7 @@
+ 
+ 			if (!response.routes.length) {
+ 				callback(new Error('Routing error: ' + response.code));
+-				return;
++				return;			
+ 			}
+ 
+ 			// Since this is an async operation, paths might have been removed
+@@ -282,13 +282,13 @@
+ 				return;
+ 			}
+ 
+-			for (i = 0; i < response.routes.length; i++) {
+-				this._routes.push(response.routes[i]);
+-			}
++			this._routes = [route];
+ 
+ 			this._fireRouteSelected(this._routes[this._selectedRoute]);
+-			this.fire('routesfound', {waypoints: inputWaypoints, routes: this._routes});
+-			callback(null, this._routes);
++			this.fire('routesfound', {waypoints: inputWaypoints, routes: this._routes});			
++			
++			this._normalizeWaypoints(this._routes[0].waypoints, inputWaypoints);
++			callback(null, this._routes);			
+ 		},
+ 
+ 		_fireRouteSelected: function(route) {
+@@ -588,7 +588,7 @@
+ 	},
+ 
+ 	onRemove: function(map) {
+-		map.off('contextmenu', this._onContextMenu);
++		map.off('contextmenu', this._onContextMenu, this);
+ 		L.DomEvent.off(map.getContainer(), 'touchend', this._onContextMenu, this);
+ 		this._super.onRemove.call(this, map);
+ 	},
+@@ -1763,8 +1763,12 @@
+ 
+ 		this._map = map;
+ 		this._plan = plan;
+-		this._map.on('click', this._onMapClick, this);
+-		this._plan.on('waypointschanged', this._waypointsChanged, this);
++		
++		if (!this.options.lazy) {
++			this._map.on('click', this._onMapClick, this);
++			this._plan.on('waypointschanged', this._waypointsChanged, this);
++		}
++
+ 		this._waypointsChanged();
+ 	},
+ 
+@@ -1774,7 +1778,11 @@
+ 		if (this._markerContainer) {
+ 			container.removeChild(this._markerContainer);
+ 		}
+-		this._map.off('click', this._onMapClick, this);
++
++		if (!this.options.lazy) {
++			this._map.off('click', this._onMapClick, this);
++			this._plan.off('waypointschanged', this._waypointsChanged, this);
++		}
+ 	},
+ 
+ 	_createMarker: function(i, waypoint) {
+
+```

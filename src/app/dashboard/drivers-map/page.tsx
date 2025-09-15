@@ -138,6 +138,7 @@ export default function DriversMapPage() {
     const { users } = useUsersStore();
     const { orders } = useOrdersStore();
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
 
     const [drivers, setDrivers] = useState<any[]>([]);
 
@@ -154,6 +155,9 @@ export default function DriversMapPage() {
             };
         });
         setDrivers(initialDrivers);
+        if (initialDrivers.length > 0) {
+            setSelectedDriverId(initialDrivers[0].id);
+        }
 
         const interval = setInterval(() => {
             setDrivers(prevDrivers => prevDrivers.map(d => ({
@@ -178,8 +182,7 @@ export default function DriversMapPage() {
         { label: 'مؤجل', color: 'bg-orange-400', key: 'مؤجل' },
         { label: 'مرتجع', color: 'bg-purple-400', key: 'راجع' },
     ];
-
-    const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+    
     const selectedDriver = useMemo(() => drivers.find(d => d.id === selectedDriverId), [drivers, selectedDriverId]);
     const driverOrders = useMemo(() => selectedDriver ? orders.filter(o => o.driver === selectedDriver.name) : [], [orders, selectedDriver]);
 
@@ -229,8 +232,8 @@ export default function DriversMapPage() {
                        <DriversMapComponent
                            drivers={drivers}
                            orders={orders}
-                           selectedDriverId={selectedDriverId}
-                           onSelectDriver={setSelectedDriverId}
+                           initialSelectedDriverId={selectedDriverId}
+                           onSelectDriverInMap={setSelectedDriverId}
                        />
                     </CardContent>
                 </Card>

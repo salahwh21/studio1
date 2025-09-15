@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, useMap, Tooltip } from 'react-leaflet';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
+import { MapContainer, TileLayer, Marker, useMap, Tooltip, Polyline } from 'react-leaflet';
 import L, { type LatLngTuple } from 'leaflet';
 import 'leaflet-routing-machine';
 
@@ -28,7 +28,7 @@ const orderIcon = L.divIcon({
     iconAnchor: [8, 8]
 });
 
-const RoutingMachine = ({ waypoints }: { waypoints: L.LatLng[] }) => {
+const RoutingLayer = ({ waypoints }: { waypoints: L.LatLng[] }) => {
     const map = useMap();
     const routingControlRef = useRef<L.Routing.Control | null>(null);
 
@@ -36,17 +36,14 @@ const RoutingMachine = ({ waypoints }: { waypoints: L.LatLng[] }) => {
         if (!map) return;
         
         if (routingControlRef.current) {
-            map.removeControl(routingControlRef.current);
-            routingControlRef.current = null;
-        }
-
-        if (waypoints.length > 1) {
+            routingControlRef.current.setWaypoints(waypoints);
+        } else if (waypoints.length > 1) {
              const instance = L.Routing.control({
                 waypoints,
                 lineOptions: {
                     styles: [{ color: '#F96941', opacity: 0.8, weight: 5 }],
                     extendToWaypoints: false,
-                    missingRouteTolerance: 100, // Increase tolerance
+                    missingRouteTolerance: 100,
                 },
                 show: false,
                 addWaypoints: false,
@@ -54,43 +51,30 @@ const RoutingMachine = ({ waypoints }: { waypoints: L.LatLng[] }) => {
                 draggableWaypoints: false,
                 fitSelectedRoutes: true,
                 createMarker: () => null,
-            });
-            instance.addTo(map);
+            }).addTo(map);
             routingControlRef.current = instance;
         }
-         return () => {
-            if (routingControlRef.current) {
-                try {
-                    map.removeControl(routingControlRef.current);
-                } catch (e) {
-                    // Ignore errors on cleanup
-                }
-            }
-        };
+
     }, [map, waypoints]);
 
     return null;
 };
 
-const MapController = ({ selectedDriver }: { selectedDriver: any | null }) => {
-    const map = useMap();
-    useEffect(() => {
-        if (selectedDriver) {
-            map.flyTo(selectedDriver.position, 13, { animate: true, duration: 1 });
-        }
-    }, [selectedDriver, map]);
-    return null;
-}
-
 interface DriversMapComponentProps {
     drivers: any[];
     orders: Order[];
-    selectedDriverId: string | null;
-    onSelectDriver: (id: string | null) => void;
+    initialSelectedDriverId: string | null;
+    onSelectDriverInMap: (id: string | null) => void;
 }
 
-export default function DriversMapComponent({ drivers, orders, selectedDriverId, onSelectDriver }: DriversMapComponentProps) {
+export default function DriversMapComponent({ drivers, orders, initialSelectedDriverId, onSelectDriverInMap }: DriversMapComponentProps) {
+    const mapRef = useRef<L.Map | null>(null);
+    const [selectedDriverId, setSelectedDriverId] = useState(initialSelectedDriverId);
     const defaultPosition: LatLngTuple = [31.9539, 35.9106]; // Amman, Jordan
+
+    useEffect(() => {
+        setSelectedDriverId(initialSelectedDriverId);
+    }, [initialSelectedDriverId]);
 
     const selectedDriver = useMemo(() => {
         return drivers.find(d => d.id === selectedDriverId);
@@ -110,8 +94,15 @@ export default function DriversMapComponent({ drivers, orders, selectedDriverId,
         return [driverWp, ...orderWps];
     }, [selectedDriver, driverOrders]);
 
+    useEffect(() => {
+        if (mapRef.current && selectedDriver) {
+            mapRef.current.flyTo(selectedDriver.position, 13, { animate: true, duration: 1 });
+        }
+    }, [selectedDriver, mapRef]);
+
     return (
         <MapContainer
+            whenCreated={map => { mapRef.current = map; }}
             center={defaultPosition}
             zoom={11}
             scrollWheelZoom={true}
@@ -126,7 +117,7 @@ export default function DriversMapComponent({ drivers, orders, selectedDriverId,
                     key={driver.id}
                     position={driver.position}
                     icon={createDriverIcon(driver, driver.id === selectedDriverId)}
-                    eventHandlers={{ click: () => onSelectDriver(driver.id) }}
+                    eventHandlers={{ click: () => onSelectDriverInMap(driver.id) }}
                 >
                      <Tooltip direction="top" offset={[0, -48]}>{driver.name}</Tooltip>
                 </Marker>
@@ -136,8 +127,7 @@ export default function DriversMapComponent({ drivers, orders, selectedDriverId,
                     <Tooltip direction="top">{order.recipient}</Tooltip>
                 </Marker>
             ))}
-            <RoutingMachine waypoints={waypoints} />
-            <MapController selectedDriver={selectedDriver} />
+             {waypoints.length > 1 && <RoutingLayer waypoints={waypoints} />}
         </MapContainer>
     );
 }
