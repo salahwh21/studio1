@@ -51,7 +51,7 @@ export default function DriversMap({ drivers, selectedDriver }: DriversMapProps)
                 duration: 0.5,
             });
         }
-    }, [selectedDriver, defaultPosition]);
+    }, [selectedDriver]); // Removed defaultPosition from dependencies as it's constant
 
     if (!isClient) {
         return (
@@ -85,4 +85,3 @@ export default function DriversMap({ drivers, selectedDriver }: DriversMapProps)
         </MapContainer>
     );
 }
-
