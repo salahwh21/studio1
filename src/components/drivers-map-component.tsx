@@ -60,7 +60,11 @@ const RoutingMachine = ({ waypoints }: { waypoints: L.LatLng[] }) => {
         }
          return () => {
             if (routingControlRef.current) {
-                map.removeControl(routingControlRef.current);
+                try {
+                    map.removeControl(routingControlRef.current);
+                } catch (e) {
+                    // Ignore errors on cleanup
+                }
             }
         };
     }, [map, waypoints]);
