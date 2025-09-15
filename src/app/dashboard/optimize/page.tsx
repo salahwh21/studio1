@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useCallback } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,6 +29,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/icon';
 import { useUsersStore } from '@/store/user-store';
+import { useOrdersStore } from '@/store/orders-store';
 
 const routeOptimizationSchema = z.object({
   driverId: z.string().min(1, 'الرجاء اختيار سائق.'),
@@ -41,6 +42,7 @@ type RouteOptimizationForm = z.infer<typeof routeOptimizationSchema>;
 export default function OptimizeRoutePage() {
     const { toast } = useToast();
     const { users } = useUsersStore();
+    const { orders } = useOrdersStore();
     const drivers = users.filter(u => u.roleId === 'driver');
     
     const [isPending, startTransition] = useTransition();
@@ -55,10 +57,43 @@ export default function OptimizeRoutePage() {
         },
     });
 
-    const { fields, append, remove } = useFieldArray({
+    const { fields, append, remove, replace } = useFieldArray({
         control: form.control,
         name: "addresses",
     });
+
+    const handleFetchDriverOrders = useCallback(() => {
+        const driverId = form.getValues('driverId');
+        if (!driverId) {
+            toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء اختيار سائق أولاً.' });
+            return;
+        }
+
+        const driver = drivers.find(d => d.id === driverId);
+        if (!driver) return;
+
+        const driverOrders = orders.filter(
+            o => o.driver === driver.name && (o.status === 'جاري التوصيل' || o.status === 'بالانتظار')
+        );
+
+        if (driverOrders.length < 2) {
+            toast({
+                variant: 'destructive',
+                title: 'لا توجد طلبات كافية',
+                description: 'يجب أن يكون لدى السائق طلبان على الأقل بحالة "جاري التوصيل" أو "بالانتظار".',
+            });
+            replace([{ value: '' }, { value: '' }]);
+            return;
+        }
+
+        const orderAddresses = driverOrders.map(o => ({ value: o.address }));
+        replace(orderAddresses);
+        toast({
+            title: 'تم جلب الطلبات',
+            description: `تم جلب ${driverOrders.length} طلبات للسائق ${driver.name}. يمكنك الآن تحسين المسار.`,
+        });
+
+    }, [form, drivers, orders, replace, toast]);
 
     const onSubmit = (data: RouteOptimizationForm) => {
         setOptimizationResult([]);
@@ -117,9 +152,9 @@ export default function OptimizeRoutePage() {
                                 )}
                             />
                             
-                            <Button type="button" variant="outline" className="w-full">
+                            <Button type="button" variant="outline" className="w-full" onClick={handleFetchDriverOrders}>
                                 <Icon name="ListPlus" className="mr-2 h-4 w-4" />
-                                جلب الطلبات وتحسينها تلقائيًا (قريبًا)
+                                جلب الطلبات وتحسينها تلقائيًا
                             </Button>
 
                             <FormField
