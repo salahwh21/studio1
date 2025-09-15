@@ -7,11 +7,6 @@ import L, { type LatLngTuple, type Map } from 'leaflet';
 import 'leaflet-routing-machine';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 
-import 'leaflet/dist/leaflet.css';
-import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
-import 'leaflet.markercluster/dist/MarkerCluster.css';
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-
 
 import type { Order } from '@/store/orders-store';
 
