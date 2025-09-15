@@ -61,8 +61,10 @@ export default function DriversMapPage() {
     const selectedDriver = useMemo(() => drivers.find(d => d.id === selectedDriverId), [drivers, selectedDriverId]);
 
     useEffect(() => {
-        // This effect runs only once on mount to initialize the map
-        if (mapContainerRef.current && !mapRef.current) {
+        if (!mapContainerRef.current) return;
+
+        // Initialize map only once
+        if (!mapRef.current) {
             // Set up default icon paths BEFORE initializing the map
             delete (L.Icon.Default.prototype as any)._getIconUrl;
             L.Icon.Default.mergeOptions({
@@ -71,7 +73,7 @@ export default function DriversMapPage() {
                 shadowUrl: shadowUrl.src,
             });
 
-            const map = L.map(mapContainerRef.current, {
+            mapRef.current = L.map(mapContainerRef.current, {
                 center: [31.9539, 35.9106],
                 zoom: 11,
                 scrollWheelZoom: true,
@@ -79,11 +81,30 @@ export default function DriversMapPage() {
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            }).addTo(map);
-
-            mapRef.current = map;
+            }).addTo(mapRef.current);
         }
 
+        const map = mapRef.current;
+
+        // Clear existing markers
+        markersRef.current.forEach(marker => marker.remove());
+        markersRef.current = [];
+
+        // Add new markers for all drivers
+        drivers.forEach(driver => {
+            const marker = L.marker(driver.position).addTo(map);
+            marker.bindPopup(`<b>${driver.name}</b>`);
+            markersRef.current.push(marker);
+        });
+
+        // Fly to selected driver
+        if (selectedDriver) {
+            map.flyTo(selectedDriver.position, 14, {
+                animate: true,
+                duration: 1,
+            });
+        }
+        
         // Cleanup function to destroy the map instance on component unmount
         return () => {
             if (mapRef.current) {
@@ -91,36 +112,7 @@ export default function DriversMapPage() {
                 mapRef.current = null;
             }
         };
-    }, []); // Empty dependency array ensures this runs only once
-
-    useEffect(() => {
-        // This effect updates markers when drivers data changes
-        const map = mapRef.current;
-        if (!map) return;
-
-        // Clear existing markers
-        markersRef.current.forEach(marker => marker.remove());
-        markersRef.current = [];
-
-        // Add new markers
-        drivers.forEach(driver => {
-            const marker = L.marker(driver.position).addTo(map);
-            marker.bindPopup(`<b>${driver.name}</b>`);
-            markersRef.current.push(marker);
-        });
-
-    }, [drivers]);
-
-    useEffect(() => {
-        // This effect handles map view changes when a driver is selected
-        const map = mapRef.current;
-        if (map && selectedDriver) {
-            map.flyTo(selectedDriver.position, 14, {
-                animate: true,
-                duration: 1,
-            });
-        }
-    }, [selectedDriver]);
+    }, [drivers, selectedDriver]);
 
 
     return (
