@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, memo, useState, useRef } from 'react';
@@ -30,31 +30,44 @@ interface DriversMapProps {
     selectedDriver: Driver | null;
 }
 
-// This component will contain the map logic and will not re-render unnecessarily
-const MapView = memo(function MapView({ drivers, selectedDriver }: DriversMapProps) {
+export default function DriversMap({ drivers, selectedDriver }: DriversMapProps) {
+    const [isClient, setIsClient] = useState(false);
     const mapRef = useRef<L.Map | null>(null);
     const defaultPosition: [number, number] = [31.9539, 35.9106]; // Amman, Jordan
-    const displayCenter = selectedDriver ? selectedDriver.position : defaultPosition;
-    const displayZoom = selectedDriver ? 14 : 11;
 
     useEffect(() => {
-        if (mapRef.current) {
-            mapRef.current.setView(displayCenter, displayZoom, {
+        setIsClient(true);
+    }, []);
+
+    useEffect(() => {
+        if (mapRef.current && selectedDriver) {
+            mapRef.current.flyTo(selectedDriver.position, 14, {
                 animate: true,
-                pan: {
-                    duration: 0.5
-                }
+                duration: 0.5,
+            });
+        } else if (mapRef.current) {
+            mapRef.current.flyTo(defaultPosition, 11, {
+                animate: true,
+                duration: 0.5,
             });
         }
-    }, [displayCenter, displayZoom]);
+    }, [selectedDriver, defaultPosition]);
+
+    if (!isClient) {
+        return (
+            <div className="w-full h-full bg-muted rounded-lg flex items-center justify-center">
+                <p className="text-muted-foreground">جاري تحميل الخريطة...</p>
+            </div>
+        );
+    }
 
     return (
         <MapContainer
-            center={displayCenter}
-            zoom={displayZoom}
+            center={selectedDriver ? selectedDriver.position : defaultPosition}
+            zoom={selectedDriver ? 14 : 11}
             scrollWheelZoom={true}
             style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
-            whenCreated={mapInstance => { mapRef.current = mapInstance; }}
+            whenCreated={map => { mapRef.current = map; }}
         >
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -62,34 +75,14 @@ const MapView = memo(function MapView({ drivers, selectedDriver }: DriversMapPro
             />
             {drivers.map(driver => (
                 <Marker key={driver.id} position={driver.position}>
-                <Popup>
-                    <b>{driver.name}</b><br/>
-                    الحالة: {driver.status}<br/>
-                    الطرود: {driver.parcels}
-                </Popup>
+                    <Popup>
+                        <b>{driver.name}</b><br/>
+                        الحالة: {driver.status}<br/>
+                        الطرود: {driver.parcels}
+                    </Popup>
                 </Marker>
             ))}
         </MapContainer>
     );
-});
-
-
-export default function DriversMap({ drivers, selectedDriver }: DriversMapProps) {
-    const [isClient, setIsClient] = useState(false);
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-
-    return (
-        <>
-            {isClient ? (
-                <MapView drivers={drivers} selectedDriver={selectedDriver} />
-            ) : (
-                <div className="w-full h-full bg-muted rounded-lg flex items-center justify-center">
-                    <p className="text-muted-foreground">جاري تحميل الخريطة...</p>
-                </div>
-            )}
-        </>
-    );
 }
+
