@@ -4,6 +4,8 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { HelpCircle, Phone, Package } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import L, { type LatLngTuple, type Map } from 'leaflet';
+import 'leaflet-routing-machine';
+
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -28,25 +30,36 @@ const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLaye
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
 const MarkerClusterGroup = dynamic(() => import('react-leaflet-cluster'), { ssr: false });
 
-// Routing Machine component
-const RoutingMachine = ({ waypoints }: { waypoints: L.LatLng[] }) => {
-  const map = L.Routing.control({
-    waypoints,
-    lineOptions: {
-      styles: [{ color: '#F96941', opacity: 0.8, weight: 5 }],
-      extendToWaypoints: false,
-      missingRouteTolerance: 10,
-    },
-    show: false,
-    addWaypoints: false,
-    routeWhileDragging: false,
-    draggableWaypoints: false,
-    fitSelectedRoutes: true,
-    createMarker: () => null, // We'll create our own markers
-  });
 
-  return <>{map && <map.Wrapper />}</>;
+const RoutingMachine = ({ map, waypoints }: { map: L.Map; waypoints: L.LatLng[] }) => {
+    useEffect(() => {
+        if (map && waypoints.length > 1) {
+            const routingControl = L.Routing.control({
+                waypoints,
+                lineOptions: {
+                    styles: [{ color: '#F96941', opacity: 0.8, weight: 5 }],
+                    extendToWaypoints: false,
+                    missingRouteTolerance: 10,
+                },
+                show: false,
+                addWaypoints: false,
+                routeWhileDragging: false,
+                draggableWaypoints: false,
+                fitSelectedRoutes: true,
+                createMarker: () => null,
+            }).addTo(map);
+
+            return () => {
+                if (map) {
+                    map.removeControl(routingControl);
+                }
+            };
+        }
+    }, [map, waypoints]);
+
+    return null;
 };
+
 
 const defaultPosition: LatLngTuple = [31.9539, 35.9106]; // Amman, Jordan
 
@@ -299,7 +312,7 @@ export default function DriversMapPage() {
                                     <Marker key={order.id} position={[order.lat!, order.lng!]} icon={orderIcon} />
                                 ))}
                              </MarkerClusterGroup>
-                            {waypoints.length > 1 && <RoutingMachine waypoints={waypoints} />}
+                            {mapRef.current && waypoints.length > 1 && <RoutingMachine map={mapRef.current} waypoints={waypoints} />}
                         </MapContainer>
                     </CardContent>
                 </Card>
