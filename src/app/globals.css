@@ -108,5 +108,7 @@
   .custom-table tfoot {
     bottom: 56px; /* Height of pagination footer */
   }
-
+  .leaflet-routing-container {
+    display: none !important;
+  }
 }
