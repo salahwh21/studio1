@@ -1,12 +1,10 @@
 
 'use client';
 
-import { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L, { type LatLngTuple, type Map } from 'leaflet';
 import 'leaflet-routing-machine';
-import MarkerClusterGroup from 'react-leaflet-cluster';
-
 
 import type { Order } from '@/store/orders-store';
 
@@ -104,7 +102,7 @@ export default function DriversMapComponent({ drivers, selectedDriver, driverOrd
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <MarkerClusterGroup chunkedLoading>
+            <React.Fragment>
                 {drivers.map(driver => (
                     <Marker
                         key={driver.id}
@@ -116,7 +114,7 @@ export default function DriversMapComponent({ drivers, selectedDriver, driverOrd
                 {selectedDriver && driverOrders.filter(o => o.lat && o.lng).map(order => (
                     <Marker key={order.id} position={[order.lat!, order.lng!]} icon={orderIcon} />
                 ))}
-            </MarkerClusterGroup>
+            </React.Fragment>
             <RoutingMachine waypoints={waypoints} />
             <MapController selectedDriver={selectedDriver} />
         </MapContainer>
