@@ -1,10 +1,13 @@
+
 'use client';
 
-import React, { useEffect, useRef, useMemo, useState } from 'react';
+import React, { useEffect, useRef, useMemo, useState, useTransition } from 'react';
 import L, { type LatLngTuple } from 'leaflet';
 import 'leaflet-routing-machine';
 
 import type { Order } from '@/store/orders-store';
+import { optimizeRouteAction } from '@/app/actions/optimize-route';
+import { useToast } from '@/hooks/use-toast';
 
 // Helper to create a custom icon for drivers
 const createDriverIcon = (driver: any, isSelected: boolean) => {
@@ -43,6 +46,8 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
     const driverMarkersRef = useRef<Record<string, L.Marker>>({});
     const orderMarkersRef = useRef<L.Marker[]>([]);
     const routingControlRef = useRef<L.Routing.Control | null>(null);
+    const { toast } = useToast();
+    const [isPending, startTransition] = useTransition();
 
     const [selectedDriverId, setSelectedDriverId] = useState(initialSelectedDriverId);
 
@@ -132,35 +137,64 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
         });
 
         // Add routing
-        const waypoints = [
-            L.latLng(selectedDriver.position[0], selectedDriver.position[1]),
-            ...driverOrders.map(o => L.latLng(o.lat!, o.lng!))
-        ];
+        if (driverOrders.length > 0) {
+            startTransition(async () => {
+                toast({ title: 'جاري تحسين المسار...' });
+                const addressesToOptimize = driverOrders.map(o => ({
+                    value: o.address,
+                    lat: o.lat,
+                    lng: o.lng
+                }));
 
-        if (waypoints.length > 1) {
-             if (routingControlRef.current) {
-                routingControlRef.current.setWaypoints(waypoints);
-            } else {
-                 const instance = L.Routing.control({
-                    waypoints,
-                    lineOptions: {
-                        styles: [{ color: '#F96941', opacity: 0.8, weight: 5 }],
-                        extendToWaypoints: false,
-                        missingRouteTolerance: 100,
-                    },
-                    show: false,
-                    addWaypoints: false,
-                    routeWhileDragging: false,
-                    draggableWaypoints: false,
-                    fitSelectedRoutes: false,
-                    createMarker: () => null,
-                }).addTo(map);
-                routingControlRef.current = instance;
-            }
+                const result = await optimizeRouteAction({
+                    driverId: selectedDriver.id,
+                    startLocation: 'Current Location', // Placeholder, not used by AI logic
+                    addresses: addressesToOptimize
+                });
+
+                if (result.success && result.data) {
+                    const optimizedAddresses = result.data.optimizedRoute;
+                    const originalAddresses = result.data.originalAddresses;
+
+                    // Create a map for quick lookup
+                    const addressMap = new Map(originalAddresses.map(a => [a.value, {lat: a.lat, lng: a.lng}]));
+
+                    const waypoints = [
+                        L.latLng(selectedDriver.position[0], selectedDriver.position[1]),
+                        ...optimizedAddresses.map(addr => {
+                            const location = addressMap.get(addr);
+                            return location && location.lat && location.lng ? L.latLng(location.lat, location.lng) : null;
+                        }).filter((p): p is L.LatLng => p !== null)
+                    ];
+                    
+                    if (waypoints.length > 1) {
+                         if (routingControlRef.current) {
+                            routingControlRef.current.setWaypoints(waypoints);
+                        } else {
+                             const instance = L.Routing.control({
+                                waypoints,
+                                lineOptions: {
+                                    styles: [{ color: '#F96941', opacity: 0.8, weight: 5 }],
+                                    extendToWaypoints: false,
+                                    missingRouteTolerance: 100,
+                                },
+                                show: false,
+                                addWaypoints: false,
+                                routeWhileDragging: false,
+                                draggableWaypoints: false,
+                                fitSelectedRoutes: false,
+                                createMarker: () => null,
+                            }).addTo(map);
+                            routingControlRef.current = instance;
+                        }
+                    }
+                     toast({ title: 'تم تحسين المسار بنجاح!' });
+                } else {
+                     toast({ variant: 'destructive', title: 'فشل تحسين المسار', description: result.error });
+                }
+            });
         }
-
-
-    }, [selectedDriverId, drivers, orders]);
+    }, [selectedDriverId, drivers, orders, toast]);
 
 
     return (
