@@ -18,17 +18,28 @@ import Icon from '@/components/icon';
 import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore } from '@/store/orders-store';
 
-// --- Leaflet Imports (for types and L object) ---
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useMap } from 'react-leaflet';
+import type { LatLngTuple } from 'leaflet';
 
-
-// Dynamically import map components to disable SSR
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false, loading: () => <Skeleton className="w-full h-full" /> });
 const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
+const MapUpdater = dynamic(() => Promise.resolve(function MapUpdater({ selectedDriver }: { selectedDriver: any | null }) {
+    const { useMap } = require('react-leaflet');
+    const map = useMap();
+    useEffect(() => {
+        if (selectedDriver) {
+            map.flyTo(selectedDriver.position, 14, {
+                animate: true,
+                duration: 1,
+            });
+        }
+    }, [selectedDriver, map]);
+    return null;
+}), { ssr: false });
+
 
 const statuses = [
   { label: 'بالانتظار', count: 2, color: 'bg-yellow-400' },
@@ -40,29 +51,17 @@ const statuses = [
   { label: 'تم استلام المال في الشركة', count: 2, color: 'bg-teal-400' },
 ];
 
-const defaultPosition: L.LatLngTuple = [31.9539, 35.9106]; // Amman, Jordan
-
-function MapUpdater({ selectedDriver }: { selectedDriver: any | null }) {
-    const map = useMap();
-    useEffect(() => {
-        if (selectedDriver) {
-            map.flyTo(selectedDriver.position, 14, {
-                animate: true,
-                duration: 1,
-            });
-        }
-    }, [selectedDriver, map]);
-
-    return null;
-}
+const defaultPosition: LatLngTuple = [31.9539, 35.9106]; // Amman, Jordan
 
 export default function DriversMapPage() {
     const { users } = useUsersStore();
     const { orders } = useOrdersStore();
-    
-    const [leafletLoaded, setLeafletLoaded] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+
     useEffect(() => {
-      if (typeof window !== 'undefined' && !leafletLoaded) {
+      setIsClient(true);
+      // This code should only run on the client side
+      if (typeof window !== 'undefined') {
           delete (L.Icon.Default.prototype as any)._getIconUrl;
 
           L.Icon.Default.mergeOptions({
@@ -70,9 +69,8 @@ export default function DriversMapPage() {
             iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
             shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
           });
-          setLeafletLoaded(true);
       }
-    }, [leafletLoaded]);
+    }, []);
 
     const drivers = useMemo(() => {
         return users.filter(u => u.roleId === 'driver').map((driver) => {
@@ -176,7 +174,7 @@ export default function DriversMapPage() {
         {/* Right Panel: Map */}
         <Card className="col-span-1 lg:col-span-3">
           <CardContent className="p-2 h-full">
-            {leafletLoaded && (
+            {isClient ? (
               <MapContainer
                 center={defaultPosition}
                 zoom={11}
@@ -194,7 +192,7 @@ export default function DriversMapPage() {
                   </Marker>
                 ))}
               </MapContainer>
-            )}
+            ) : <Skeleton className="w-full h-full" />}
           </CardContent>
         </Card>
       </div>
