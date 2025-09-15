@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -17,15 +18,12 @@ L.Icon.Default.mergeOptions({
 interface Driver {
     id: string;
     name: string;
-    status: string;
-    parcels: number;
-    avatar: string;
     position: [number, number];
 }
 
 interface DriversMapProps {
     drivers: Driver[];
-    selectedDriver: Driver | null;
+    selectedDriver?: Driver;
 }
 
 const defaultPosition: [number, number] = [31.9539, 35.9106]; // Amman, Jordan
@@ -60,9 +58,7 @@ export default function DriversMap({ drivers, selectedDriver }: DriversMapProps)
             {drivers.map(driver => (
                 <Marker key={driver.id} position={driver.position}>
                     <Popup>
-                        <b>{driver.name}</b><br/>
-                        الحالة: {driver.status}<br/>
-                        الطرود: {driver.parcels}
+                        <b>{driver.name}</b>
                     </Popup>
                 </Marker>
             ))}

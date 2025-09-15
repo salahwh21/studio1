@@ -50,10 +50,11 @@ export default function DriversMapPage() {
         });
     }, [users, orders]);
 
-    const [selectedDriver, setSelectedDriver] = useState(drivers.length > 0 ? drivers[0] : null);
+    const [selectedDriverId, setSelectedDriverId] = useState<string | null>(drivers.length > 0 ? drivers[0].id : null);
     
     const activeDrivers = useMemo(() => drivers.filter(d => d.status === 'نشط'), [drivers]);
     const inactiveDrivers = useMemo(() => drivers.filter(d => d.status === 'غير نشط'), [drivers]);
+    const selectedDriver = useMemo(() => drivers.find(d => d.id === selectedDriverId), [drivers, selectedDriverId]);
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col gap-4 text-sm">
@@ -108,11 +109,11 @@ export default function DriversMapPage() {
                  {[...activeDrivers, ...inactiveDrivers].map(driver => (
                     <Card
                       key={driver.id}
-                      className={`cursor-pointer transition-all ${selectedDriver?.id === driver.id ? 'border-primary shadow-lg' : 'hover:bg-muted/50'}`}
-                      onClick={() => setSelectedDriver(driver)}
+                      className={`cursor-pointer transition-all ${selectedDriverId === driver.id ? 'border-primary shadow-lg' : 'hover:bg-muted/50'}`}
+                      onClick={() => setSelectedDriverId(driver.id)}
                     >
                       <CardContent className="p-3 flex items-center gap-3">
-                         <div className={`w-1.5 h-16 rounded-full ${selectedDriver?.id === driver.id ? 'bg-primary' : 'bg-transparent'}`}></div>
+                         <div className={`w-1.5 h-16 rounded-full ${selectedDriverId === driver.id ? 'bg-primary' : 'bg-transparent'}`}></div>
                          <div className="flex-1 flex items-center gap-3">
                             <Avatar className="h-12 w-12 border">
                                 <AvatarImage src={driver.avatar} alt={driver.name} />
