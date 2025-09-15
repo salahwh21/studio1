@@ -117,7 +117,8 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
         orderMarkersRef.current.forEach(marker => marker.remove());
         orderMarkersRef.current = [];
         if (routingControlRef.current) {
-            routingControlRef.current.setWaypoints([]);
+            map.removeControl(routingControlRef.current);
+            routingControlRef.current = null;
         }
 
         const selectedDriver = drivers.find(d => d.id === selectedDriverId);
@@ -168,25 +169,21 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                     ];
                     
                     if (waypoints.length > 1) {
-                         if (routingControlRef.current) {
-                            routingControlRef.current.setWaypoints(waypoints);
-                        } else {
-                             const instance = L.Routing.control({
-                                waypoints,
-                                lineOptions: {
-                                    styles: [{ color: '#F96941', opacity: 0.8, weight: 5 }],
-                                    extendToWaypoints: false,
-                                    missingRouteTolerance: 100,
-                                },
-                                show: false,
-                                addWaypoints: false,
-                                routeWhileDragging: false,
-                                draggableWaypoints: false,
-                                fitSelectedRoutes: false,
-                                createMarker: () => null,
-                            }).addTo(map);
-                            routingControlRef.current = instance;
-                        }
+                         const instance = L.Routing.control({
+                            waypoints,
+                            lineOptions: {
+                                styles: [{ color: '#F96941', opacity: 0.8, weight: 5 }],
+                                extendToWaypoints: false,
+                                missingRouteTolerance: 100,
+                            },
+                            show: false,
+                            addWaypoints: false,
+                            routeWhileDragging: false,
+                            draggableWaypoints: false,
+                            fitSelectedRoutes: true, // This will zoom to fit the route
+                            createMarker: () => null,
+                        }).addTo(map);
+                        routingControlRef.current = instance;
                     }
                      toast({ title: 'تم تحسين المسار بنجاح!' });
                 } else {
