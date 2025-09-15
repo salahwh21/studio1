@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -78,7 +77,7 @@ const DriverListPanel = ({ drivers, driverOrders, selectedDriverId, onSelectDriv
     const allFilteredDrivers = [...activeDrivers, ...inactiveDrivers];
     
     return (
-        <Card className="col-span-1 xl:col-span-2 flex flex-col">
+        <Card className="col-span-1 flex flex-col">
             <div className="p-4">
                 <h3 className="text-base font-semibold">قائمة السائقين</h3>
                 <div className="relative mt-2">
@@ -200,34 +199,61 @@ export default function DriversMapPage() {
     }
 
     return (
-        <div className="flex h-[calc(100vh-8rem)] flex-col gap-4 text-sm">
-             <Dialog>
-                <Card>
-                    <CardContent className="p-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Button variant="outline" size="icon" asChild>
-                                    <Link href="/dashboard"><ArrowLeft className="h-4 w-4" /></Link>
-                                </Button>
-                                <h2 className="text-lg font-bold">خريطة السائقين</h2>
-                            </div>
-                            <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                            {statusDisplay.map(status => (
-                                    <div key={status.label} className="flex items-center gap-2 rounded-lg border p-2 pr-3 whitespace-nowrap">
-                                        <div className="flex flex-col text-right"><span className="font-bold text-base">{orderStatusCounts[status.key] || 0}</span><span className="text-muted-foreground text-xs">{status.label}</span></div>
-                                        <Separator orientation="vertical" className={`h-8 w-1 rounded-full ${status.color}`} />
+        <>
+            <Dialog>
+                <div className="flex h-[calc(100vh-8rem)] flex-col gap-4 text-sm">
+                        <Card>
+                            <CardContent className="p-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="outline" size="icon" asChild>
+                                            <Link href="/dashboard"><ArrowLeft className="h-4 w-4" /></Link>
+                                        </Button>
+                                        <h2 className="text-lg font-bold">خريطة السائقين</h2>
                                     </div>
-                                ))}
-                            </div>
-                                <DialogTrigger asChild>
-                                    <Button variant="secondary" className="bg-orange-100 text-orange-600 border-orange-300 hover:bg-orange-200">
-                                        <Icon name="Bell" className="h-4 w-4 ml-2" />
-                                        <span>({trackingRequests.length}) طلب تفعيل التتبع</span>
-                                    </Button>
-                                </DialogTrigger>
+                                    <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                                    {statusDisplay.map(status => (
+                                            <div key={status.label} className="flex items-center gap-2 rounded-lg border p-2 pr-3 whitespace-nowrap">
+                                                <div className="flex flex-col text-right"><span className="font-bold text-base">{orderStatusCounts[status.key] || 0}</span><span className="text-muted-foreground text-xs">{status.label}</span></div>
+                                                <Separator orientation="vertical" className={`h-8 w-1 rounded-full ${status.color}`} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                        <DialogTrigger asChild>
+                                            <Button variant="secondary" className="bg-orange-100 text-orange-600 border-orange-300 hover:bg-orange-200">
+                                                <Icon name="Bell" className="h-4 w-4 ml-2" />
+                                                <span>({trackingRequests.length}) طلب تفعيل التتبع</span>
+                                            </Button>
+                                        </DialogTrigger>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    <div className="grid flex-1 grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
+                        <div className="lg:col-span-1">
+                            <DriverListPanel
+                                drivers={drivers}
+                                driverOrders={getDriverOrders}
+                                selectedDriverId={selectedDriverId}
+                                onSelectDriver={setSelectedDriverId}
+                                searchQuery={searchQuery}
+                                onSearchChange={setSearchQuery}
+                            />
                         </div>
-                    </CardContent>
-                </Card>
+                        
+                        <div className="lg:col-span-2 h-full z-10">
+                            <Card className="h-full">
+                                <CardContent className="p-2 h-full">
+                                <DriversMapComponent
+                                        drivers={drivers}
+                                        orders={orders}
+                                        initialSelectedDriverId={selectedDriverId}
+                                        onSelectDriverInMap={setSelectedDriverId}
+                                />
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                </div>
                  <DialogContent>
                     <DialogHeader>
                         <DialogTitle>طلبات تفعيل التتبع</DialogTitle>
@@ -264,32 +290,6 @@ export default function DriversMapPage() {
                     </Table>
                 </DialogContent>
             </Dialog>
-
-             <div className="grid flex-1 grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
-                <div className="lg:col-span-1">
-                    <DriverListPanel
-                        drivers={drivers}
-                        driverOrders={getDriverOrders}
-                        selectedDriverId={selectedDriverId}
-                        onSelectDriver={setSelectedDriverId}
-                        searchQuery={searchQuery}
-                        onSearchChange={setSearchQuery}
-                    />
-                </div>
-                
-                <div className="lg:col-span-2 h-full z-10">
-                    <Card className="h-full">
-                        <CardContent className="p-2 h-full">
-                           <DriversMapComponent
-                               drivers={drivers}
-                               orders={orders}
-                               initialSelectedDriverId={selectedDriverId}
-                               onSelectDriverInMap={setSelectedDriverId}
-                           />
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-        </div>
+        </>
     );
 }
