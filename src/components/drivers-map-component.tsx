@@ -1,19 +1,25 @@
 
 'use client';
 
-import React, { useEffect, useRef, useState, useTransition } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L, { type LatLngTuple } from 'leaflet';
+import 'leaflet.markercluster';
 import 'leaflet-routing-machine';
-
 
 import type { Order } from '@/store/orders-store';
 import { useStatusesStore } from '@/store/statuses-store';
 import { optimizeRouteAction } from '@/app/actions/optimize-route';
 import { useToast } from '@/hooks/use-toast';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+
+// Fix for default icon issue with webpack
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
+
 
 // Helper to create a custom icon for drivers
 const createDriverIcon = (driver: any, isSelected: boolean) => {
@@ -61,21 +67,12 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
     
     const [selectedDriverId, setSelectedDriverId] = useState(initialSelectedDriverId);
     
-    // Search State
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<Order[]>([]);
-    const [isSearchFocused, setIsSearchFocused] = useState(false);
-
     const getStatusColor = (statusName: string) => {
         return statuses.find(s => s.name === statusName)?.color || '#808080';
     }
 
     // Effect to initialize the map
     useEffect(() => {
-        // Dynamically import marker cluster CSS only on client side
-        import('leaflet.markercluster/dist/MarkerCluster.css');
-        import('leaflet.markercluster/dist/MarkerCluster.Default.css');
-
         if (mapContainerRef.current && !mapRef.current) {
             const map = L.map(mapContainerRef.current, {
                 center: [31.9539, 35.9106], // Amman, Jordan
@@ -89,46 +86,28 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
 
             routingControlRef.current = L.Routing.control({
                 waypoints: [],
+                routeWhileDragging: false,
                 lineOptions: {
                     styles: [{ color: '#F96941', opacity: 0.8, weight: 6 }],
                 },
-                show: true,
+                show: true, 
                 addWaypoints: false,
                 createMarker: () => null,
             }).addTo(map);
 
-            // Dynamically import and initialize marker cluster group
-            import('leaflet.markercluster').then(() => {
-                if (L.markerClusterGroup) {
-                    orderClusterGroupRef.current = L.markerClusterGroup();
-                    if (mapRef.current) {
-                        mapRef.current.addLayer(orderClusterGroupRef.current);
-                    }
-                }
-            });
+            if (L.markerClusterGroup) {
+                orderClusterGroupRef.current = L.markerClusterGroup();
+                map.addLayer(orderClusterGroupRef.current);
+            }
             
             mapRef.current = map;
         }
     }, []);
 
-    // Effect to update the selected driver when the prop changes
     useEffect(() => {
         setSelectedDriverId(initialSelectedDriverId);
     }, [initialSelectedDriverId]);
 
-    // Live search effect
-    useEffect(() => {
-        if (searchQuery.length > 2) {
-            const results = orders.filter(o =>
-                (o.id && o.id.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                (o.recipient && o.recipient.toLowerCase().includes(searchQuery.toLowerCase()))
-            );
-            setSearchResults(results);
-        } else {
-            setSearchResults([]);
-        }
-    }, [searchQuery, orders]);
-    
     // Effect to update driver markers
     useEffect(() => {
         const map = mapRef.current;
@@ -187,7 +166,7 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
         if (highlightedOrder?.lat && highlightedOrder?.lng && mapRef.current) {
             mapRef.current.flyTo([highlightedOrder.lat, highlightedOrder.lng], 15);
              const markerToAnimate = (clusterGroup.getLayers() as L.Marker[]).find(l => l.options.title === highlightedOrder.id);
-             if (markerToAnimate) {
+             if (markerToAnimate && (markerToAnimate as any)._icon) {
                  (markerToAnimate as any)._icon.style.transition = 'transform 0.3s ease-in-out';
                  (markerToAnimate as any)._icon.style.transform = 'scale(1.8)';
                  setTimeout(() => {
@@ -203,20 +182,19 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
     // Effect to handle selected driver logic (panning, routing, simulation)
     useEffect(() => {
         const map = mapRef.current;
-        if (!map) return;
+        const routingControl = routingControlRef.current;
+
+        if (!map || !routingControl) return;
         
         if (simulationIntervalRef.current) {
             clearInterval(simulationIntervalRef.current);
             simulationIntervalRef.current = null;
         }
-        
-        const routingControl = routingControlRef.current;
-        if (!routingControl) return;
 
         const selectedDriver = drivers.find(d => d.id === selectedDriverId);
         
-        if (!selectedDriver || selectedDriver.isSimulating === false) { // Stop if driver is not selected or not simulating
-             routingControl.setWaypoints([]);
+        if (!selectedDriver) {
+            routingControl.setWaypoints([]);
             return;
         }
         
@@ -243,7 +221,7 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                     const originalAddresses = result.data.originalAddresses;
                     const addressMap = new Map(originalAddresses.map(a => [a.value, {lat: a.lat, lng: a.lng}]));
 
-                     const waypoints: LatLngTuple[] = [
+                     const waypoints: L.LatLngTuple[] = [
                         selectedDriver.position,
                         ...optimizedAddresses.map(addr => {
                             const location = addressMap.get(addr);
@@ -256,13 +234,14 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
 
                          const routeFoundHandler = (e: any) => {
                              const route = e.routes[0];
+                             if(!route) return;
                              const coordinates = route.coordinates;
                              let index = 0;
                              
                              if (simulationIntervalRef.current) clearInterval(simulationIntervalRef.current);
                              
                              simulationIntervalRef.current = setInterval(() => {
-                                 if (index < coordinates.length) {
+                                 if (index < coordinates.length && selectedDriver.isSimulating) {
                                      onDriverPositionChange(selectedDriver.id, [coordinates[index].lat, coordinates[index].lng]);
                                      index += 5; 
                                  } else {
@@ -283,13 +262,8 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
         } else {
             routingControl.setWaypoints([]);
         }
-    }, [selectedDriverId, drivers, orders, toast, onDriverPositionChange]);
-
-    const handleSelectSearchResult = (order: Order) => {
-        onOrderPositionSelect(order);
-        setSearchQuery('');
-        setSearchResults([]);
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedDriverId]);
 
     return (
         <div className="relative h-full w-full">
@@ -297,36 +271,6 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                 ref={mapContainerRef}
                 className="h-full w-full rounded-md"
             />
-            <div className="absolute top-3 left-3 z-[1000] w-full max-w-sm">
-                 <div className="relative">
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="بحث عن طلب بالرقم أو اسم المستلم..."
-                        className="pl-4 pr-10 shadow-lg"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onFocus={() => setIsSearchFocused(true)}
-                        onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
-                        dir="rtl"
-                    />
-                </div>
-                {isSearchFocused && searchResults.length > 0 && (
-                    <Card className="mt-2 shadow-lg max-h-60 overflow-y-auto">
-                        <CardContent className="p-2">
-                            {searchResults.map(order => (
-                                <div
-                                    key={order.id}
-                                    className="p-2 rounded-md cursor-pointer hover:bg-muted"
-                                    onMouseDown={() => handleSelectSearchResult(order)}
-                                >
-                                    <p className="font-semibold">{order.recipient}</p>
-                                    <p className="text-xs text-muted-foreground">{order.id} - {order.address}</p>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
         </div>
     );
 }
