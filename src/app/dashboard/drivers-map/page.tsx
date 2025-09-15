@@ -1,12 +1,10 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { HelpCircle, Phone, Package } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { HelpCircle, Phone, Package, Search as SearchIcon, X as XIcon, ArrowLeft } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import L, { type LatLngTuple, type Map } from 'leaflet';
-import 'leaflet-routing-machine';
-
+import type { LatLngTuple } from 'leaflet';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -20,50 +18,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Icon from '@/components/icon';
 import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore, type Order } from '@/store/orders-store';
+import Link from 'next/link';
 
-import 'leaflet/dist/leaflet.css';
-import 'leaflet.markercluster/dist/MarkerCluster.css';
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
-
-// Dynamic imports for Leaflet components
-const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
-const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
-const MarkerClusterGroup = dynamic(() => import('react-leaflet-cluster'), { ssr: false });
-
-
-const RoutingMachine = ({ map, waypoints }: { map: L.Map; waypoints: L.LatLng[] }) => {
-    useEffect(() => {
-        if (map && waypoints.length > 1) {
-            const routingControl = L.Routing.control({
-                waypoints,
-                lineOptions: {
-                    styles: [{ color: '#F96941', opacity: 0.8, weight: 5 }],
-                    extendToWaypoints: false,
-                    missingRouteTolerance: 10,
-                },
-                show: false,
-                addWaypoints: false,
-                routeWhileDragging: false,
-                draggableWaypoints: false,
-                fitSelectedRoutes: true,
-                createMarker: () => null,
-            }).addTo(map);
-
-            return () => {
-                if (map) {
-                    map.removeControl(routingControl);
-                }
-            };
-        }
-    }, [map, waypoints]);
-
-    return null;
-};
-
-
-const defaultPosition: LatLngTuple = [31.9539, 35.9106]; // Amman, Jordan
+const DriversMapComponent = dynamic(() => import('@/components/drivers-map-component'), {
+  ssr: false,
+  loading: () => <Skeleton className="w-full h-full" />,
+});
 
 const DriverListPanel = ({ drivers, selectedDriverId, onSelectDriver, searchQuery, onSearchChange }: {
     drivers: any[];
@@ -81,7 +41,7 @@ const DriverListPanel = ({ drivers, selectedDriverId, onSelectDriver, searchQuer
             <div className="p-4">
                 <h3 className="text-base font-semibold">قائمة السائقين</h3>
                 <div className="relative mt-2">
-                    <Icon name="Search" className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input placeholder="بحث..." className="pr-10" value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} />
                 </div>
             </div>
@@ -144,7 +104,7 @@ const DriverDetailsPanel = ({ driver, driverOrders, onClose }: {
                         <CardDescription>ملخص المهام والأداء</CardDescription>
                     </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={onClose}><Icon name="X" className="h-4 w-4"/></Button>
+                <Button variant="ghost" size="icon" onClick={onClose}><XIcon className="h-4 w-4"/></Button>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col gap-4 p-4 min-h-0">
                 <div className="grid grid-cols-3 gap-4 text-center">
@@ -176,7 +136,6 @@ const DriverDetailsPanel = ({ driver, driverOrders, onClose }: {
 };
 
 export default function DriversMapPage() {
-    const mapRef = useRef<Map | null>(null);
     const { users } = useUsersStore();
     const { orders } = useOrdersStore();
     const [searchQuery, setSearchQuery] = useState('');
@@ -184,17 +143,7 @@ export default function DriversMapPage() {
     const [drivers, setDrivers] = useState<any[]>([]);
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            setDrivers(prevDrivers => prevDrivers.map(d => ({
-                ...d,
-                position: [d.position[0] + (Math.random() - 0.5) * 0.0005, d.position[1] + (Math.random() - 0.5) * 0.0005] as LatLngTuple
-            })));
-        }, 5000);
-        return () => clearInterval(interval);
-    }, []);
-
-    useEffect(() => {
-        setDrivers(users.filter(u => u.roleId === 'driver').map((driver) => {
+        const initialDrivers = users.filter(u => u.roleId === 'driver').map((driver) => {
             const driverOrders = orders.filter(o => o.driver === driver.name);
             return {
                 id: driver.id,
@@ -204,7 +153,16 @@ export default function DriversMapPage() {
                 avatar: driver.avatar || `https://i.pravatar.cc/150?u=${driver.id}`,
                 position: [31.9539 + (Math.random() - 0.5) * 0.1, 35.9106 + (Math.random() - 0.5) * 0.1] as LatLngTuple,
             };
-        }));
+        });
+        setDrivers(initialDrivers);
+
+        const interval = setInterval(() => {
+            setDrivers(prevDrivers => prevDrivers.map(d => ({
+                ...d,
+                position: [d.position[0] + (Math.random() - 0.5) * 0.0005, d.position[1] + (Math.random() - 0.5) * 0.0005] as LatLngTuple
+            })));
+        }, 5000);
+        return () => clearInterval(interval);
     }, [users, orders]);
 
     const orderStatusCounts = useMemo(() => {
@@ -226,50 +184,15 @@ export default function DriversMapPage() {
     const selectedDriver = useMemo(() => drivers.find(d => d.id === selectedDriverId), [drivers, selectedDriverId]);
     const driverOrders = useMemo(() => selectedDriver ? orders.filter(o => o.driver === selectedDriver.name) : [], [orders, selectedDriver]);
 
-    useEffect(() => {
-        if (selectedDriver && mapRef.current) {
-            mapRef.current.flyTo(selectedDriver.position, 13, { animate: true, duration: 1 });
-        }
-    }, [selectedDriver]);
-
-    const createDriverIcon = (driver: any, isSelected: boolean) => {
-        return L.divIcon({
-            html: `
-                <div style="position: relative; width: 48px; height: 48px;">
-                    <img src="${driver.avatar}" style="width: 40px; height: 40px; border-radius: 50%; border: ${isSelected ? '3px solid #F96941' : '3px solid #ccc'}; object-fit: cover; position: absolute; top: 0; left: 0; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
-                    <div style="position: absolute; bottom: 0; left: 16px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 12px solid ${isSelected ? '#F96941' : '#ccc'};"></div>
-                </div>
-            `,
-            className: '',
-            iconSize: [48, 48],
-            iconAnchor: [24, 48]
-        });
-    };
-
-    const orderIcon = L.divIcon({
-        html: `<div style="background-color: #2563eb; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
-        className: 'bg-transparent border-0',
-        iconSize: [16, 16],
-        iconAnchor: [8, 8]
-    });
-    
-    const waypoints = useMemo(() => {
-        if (!selectedDriver) return [];
-        const driverWp = L.latLng(selectedDriver.position[0], selectedDriver.position[1]);
-        const orderWps = driverOrders
-            .filter(o => o.status === 'جاري التوصيل' && o.lat && o.lng)
-            .map(o => L.latLng(o.lat!, o.lng!));
-        return [driverWp, ...orderWps];
-    }, [selectedDriver, driverOrders]);
-
-
     return (
         <div className="flex h-[calc(100vh-8rem)] flex-col gap-4 text-sm">
             <Card>
                 <CardContent className="p-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="icon"><Icon name="ArrowLeft" className="h-4 w-4" /></Button>
+                            <Button variant="outline" size="icon" asChild>
+                                <Link href="/dashboard"><ArrowLeft className="h-4 w-4" /></Link>
+                            </Button>
                             <h2 className="text-lg font-bold">خريطة السائقين</h2>
                         </div>
                         <div className="flex items-center gap-2 overflow-x-auto pb-2">
@@ -304,22 +227,16 @@ export default function DriversMapPage() {
 
                 <Card className="col-span-1 lg:col-span-5 xl:col-span-3">
                     <CardContent className="p-2 h-full">
-                       <MapContainer whenCreated={map => { mapRef.current = map; }} center={defaultPosition} zoom={11} scrollWheelZoom={true} style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}>
-                            <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                             <MarkerClusterGroup chunkedLoading>
-                                {drivers.map(driver => (
-                                    <Marker key={driver.id} position={driver.position} icon={createDriverIcon(driver, driver.id === selectedDriverId)} eventHandlers={{ click: () => setSelectedDriverId(driver.id) }} />
-                                ))}
-                                {selectedDriver && driverOrders.filter(o => o.lat && o.lng).map(order => (
-                                    <Marker key={order.id} position={[order.lat!, order.lng!]} icon={orderIcon} />
-                                ))}
-                             </MarkerClusterGroup>
-                            {mapRef.current && waypoints.length > 1 && <RoutingMachine map={mapRef.current} waypoints={waypoints} />}
-                        </MapContainer>
+                       <DriversMapComponent
+                           drivers={drivers}
+                           selectedDriver={selectedDriver}
+                           driverOrders={driverOrders}
+                           onSelectDriver={setSelectedDriverId}
+                       />
                     </CardContent>
                 </Card>
             </div>
         </div>
     );
-}
 
+    
