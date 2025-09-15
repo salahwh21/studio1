@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { HelpCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
@@ -22,17 +22,6 @@ import { useOrdersStore } from '@/store/orders-store';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Fix for default icon issue with webpack
-if (typeof window !== 'undefined') {
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
-
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-      iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-    });
-}
-// --- End Leaflet Imports ---
 
 // Dynamically import map components to disable SSR
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false, loading: () => <Skeleton className="w-full h-full" /> });
@@ -56,6 +45,21 @@ export default function DriversMapPage() {
     const { users } = useUsersStore();
     const { orders } = useOrdersStore();
     
+    // Fix for default icon issue with webpack, run only on client side
+    const [leafletLoaded, setLeafletLoaded] = useState(false);
+    useEffect(() => {
+      if (typeof window !== 'undefined' && !leafletLoaded) {
+          delete (L.Icon.Default.prototype as any)._getIconUrl;
+
+          L.Icon.Default.mergeOptions({
+            iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+            iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+          });
+          setLeafletLoaded(true);
+      }
+    }, [leafletLoaded]);
+
     const drivers = useMemo(() => {
         return users.filter(u => u.roleId === 'driver').map((driver) => {
             const driverOrders = orders.filter(o => o.driver === driver.name);
@@ -158,7 +162,7 @@ export default function DriversMapPage() {
         {/* Right Panel: Map */}
         <Card className="col-span-1 lg:col-span-3">
           <CardContent className="p-2 h-full">
-            <MapContainer
+            {leafletLoaded && <MapContainer
               center={selectedDriver ? selectedDriver.position : defaultPosition}
               zoom={selectedDriver ? 14 : 11}
               scrollWheelZoom={true}
@@ -173,7 +177,7 @@ export default function DriversMapPage() {
                   <Popup><b>{driver.name}</b></Popup>
                 </Marker>
               ))}
-            </MapContainer>
+            </MapContainer>}
           </CardContent>
         </Card>
       </div>
