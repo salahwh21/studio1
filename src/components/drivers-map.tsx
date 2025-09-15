@@ -2,10 +2,10 @@
 'use client';
 
 import * as React from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect, memo, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 
 // Fix for default icon issue with webpack
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -30,28 +30,24 @@ interface DriversMapProps {
     selectedDriver: Driver | null;
 }
 
+function ChangeView({ center, zoom }: { center: [number, number], zoom: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.flyTo(center, zoom, {
+      animate: true,
+      duration: 0.5,
+    });
+  }, [center, zoom, map]);
+  return null;
+}
+
 export default function DriversMap({ drivers, selectedDriver }: DriversMapProps) {
     const [isClient, setIsClient] = useState(false);
-    const mapRef = useRef<L.Map | null>(null);
     const defaultPosition: [number, number] = [31.9539, 35.9106]; // Amman, Jordan
 
     useEffect(() => {
         setIsClient(true);
     }, []);
-
-    useEffect(() => {
-        if (mapRef.current && selectedDriver) {
-            mapRef.current.flyTo(selectedDriver.position, 14, {
-                animate: true,
-                duration: 0.5,
-            });
-        } else if (mapRef.current) {
-            mapRef.current.flyTo(defaultPosition, 11, {
-                animate: true,
-                duration: 0.5,
-            });
-        }
-    }, [selectedDriver]); // Removed defaultPosition from dependencies as it's constant
 
     if (!isClient) {
         return (
@@ -63,12 +59,15 @@ export default function DriversMap({ drivers, selectedDriver }: DriversMapProps)
 
     return (
         <MapContainer
-            center={selectedDriver ? selectedDriver.position : defaultPosition}
-            zoom={selectedDriver ? 14 : 11}
+            center={defaultPosition}
+            zoom={11}
             scrollWheelZoom={true}
             style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
-            whenCreated={map => { mapRef.current = map; }}
         >
+            <ChangeView 
+                center={selectedDriver ? selectedDriver.position : defaultPosition}
+                zoom={selectedDriver ? 14 : 11}
+            />
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
