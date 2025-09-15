@@ -1,7 +1,10 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
 import { HelpCircle } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,21 +18,27 @@ import Icon from '@/components/icon';
 import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore } from '@/store/orders-store';
 
-// --- Leaflet Imports ---
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+// --- Leaflet Imports (for types and L object) ---
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
 // Fix for default icon issue with webpack
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+if (typeof window !== 'undefined') {
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
 
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-});
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+      iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    });
+}
 // --- End Leaflet Imports ---
 
+// Dynamically import map components to disable SSR
+const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false, loading: () => <Skeleton className="w-full h-full" /> });
+const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
+const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
+const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
 
 const statuses = [
   { label: 'بالانتظار', count: 2, color: 'bg-yellow-400' },
@@ -48,7 +57,7 @@ export default function DriversMapPage() {
     const { orders } = useOrdersStore();
     
     const drivers = useMemo(() => {
-        return users.filter(u => u.roleId === 'driver').map((driver, index) => {
+        return users.filter(u => u.roleId === 'driver').map((driver) => {
             const driverOrders = orders.filter(o => o.driver === driver.name);
             return {
                 id: driver.id,
@@ -149,18 +158,21 @@ export default function DriversMapPage() {
         {/* Right Panel: Map */}
         <Card className="col-span-1 lg:col-span-3">
           <CardContent className="p-2 h-full">
-            <MapContainer center={defaultPosition} zoom={11} scrollWheelZoom={true} style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}>
-                <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                {drivers.map(driver => (
-                    <Marker key={driver.id} position={driver.position}>
-                        <Popup>
-                            <b>{driver.name}</b>
-                        </Popup>
-                    </Marker>
-                ))}
+            <MapContainer
+              center={selectedDriver ? selectedDriver.position : defaultPosition}
+              zoom={selectedDriver ? 14 : 11}
+              scrollWheelZoom={true}
+              style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {drivers.map(driver => (
+                <Marker key={driver.id} position={driver.position}>
+                  <Popup><b>{driver.name}</b></Popup>
+                </Marker>
+              ))}
             </MapContainer>
           </CardContent>
         </Card>
