@@ -2,9 +2,10 @@
 'use client';
 
 import * as React from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import type { Map } from 'leaflet';
 
 // Fix for default icon issue with webpack
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -31,38 +32,32 @@ interface DriversMapProps {
 
 const defaultPosition: [number, number] = [31.9539, 35.9106]; // Amman, Jordan
 
-function ChangeView({ center, zoom }: { center: [number, number]; zoom: number }) {
-  const map = useMap();
-  React.useEffect(() => {
-    map.flyTo(center, zoom, {
-        animate: true,
-        duration: 0.8
-    });
-  }, [center, zoom, map]);
-  return null;
-}
-
-
 export default function DriversMap({ drivers, selectedDriver }: DriversMapProps) {
-    
+    const mapRef = React.useRef<Map | null>(null);
+
+    React.useEffect(() => {
+        if (mapRef.current && selectedDriver) {
+            mapRef.current.flyTo(selectedDriver.position, 14, {
+                animate: true,
+                duration: 0.8
+            });
+        }
+    }, [selectedDriver]);
+
     return (
         <MapContainer
             center={defaultPosition}
             zoom={11}
             scrollWheelZoom={true}
             style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
+            whenCreated={(mapInstance) => {
+                mapRef.current = mapInstance;
+            }}
         >
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            
-            {selectedDriver && (
-                <ChangeView 
-                    center={selectedDriver.position} 
-                    zoom={14} 
-                />
-            )}
             
             {drivers.map(driver => (
                 <Marker key={driver.id} position={driver.position}>
