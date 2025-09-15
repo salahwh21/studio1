@@ -21,6 +21,12 @@ import { useOrdersStore } from '@/store/orders-store';
 import 'leaflet/dist/leaflet.css';
 import type { LatLngTuple } from 'leaflet';
 
+// استيراد صور Leaflet بشكل صحيح
+import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
+import iconUrl from 'leaflet/dist/images/marker-icon.png';
+import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
+
+
 // Dynamically import react-leaflet components with SSR turned off
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false, loading: () => <Skeleton className="w-full h-full" /> });
 const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
@@ -40,7 +46,6 @@ function MapUpdater({ selectedDriver }: { selectedDriver: any | null }) {
     }, [selectedDriver, map]);
     return null;
 }
-
 
 const statuses = [
   { label: 'بالانتظار', count: 2, color: 'bg-yellow-400' },
@@ -67,9 +72,9 @@ export default function DriversMapPage() {
               try {
                   delete (L.Icon.Default.prototype as any)._getIconUrl;
                   L.Icon.Default.mergeOptions({
-                      iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png').default.src,
-                      iconUrl: require('leaflet/dist/images/marker-icon.png').default.src,
-                      shadowUrl: require('leaflet/dist/images/marker-shadow.png').default.src,
+                      iconRetinaUrl: iconRetinaUrl.src,
+                      iconUrl: iconUrl.src,
+                      shadowUrl: shadowUrl.src,
                   });
               } catch (e) {
                   console.error("Error setting up Leaflet icons", e);
