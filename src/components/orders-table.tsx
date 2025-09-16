@@ -177,7 +177,7 @@ const CopyableCell = ({ value, children }: { value: string | number, children: R
     };
 
     return (
-        <div className="group relative w-full h-full flex items-center justify-center">
+        <div className="group relative w-full flex items-center justify-center">
             {children}
             <Button
                 variant="ghost"
@@ -879,7 +879,7 @@ const OrdersTableComponent = () => {
                         case 'driver':
                             const options = col.key === 'merchant' ? merchants : drivers;
                             content = (
-                                <div className="flex items-center justify-between w-full h-8 px-1 group">
+                                <div className="flex items-center justify-center w-full h-8 px-1 group">
                                      <CopyableCell value={value as string}>
                                         <span className='px-2'>{value as string}</span>
                                     </CopyableCell>
@@ -952,7 +952,7 @@ const OrdersTableComponent = () => {
                                 </CopyableCell>
                             );
                     }
-                    return <TableCell key={col.key} className="p-0 text-center border-l text-sm" style={{minWidth: ['recipient', 'address', 'notes', 'merchant'].includes(col.key) ? '200px' : '150px'}}>{content}</TableCell>
+                    return <TableCell key={col.key} className="h-12 p-0 text-center border-l text-sm">{content}</TableCell>
                 })}
             </TableRow>
         )
@@ -1339,6 +1339,7 @@ export function OrdersTable() {
 
 
     
+
 
 
 
