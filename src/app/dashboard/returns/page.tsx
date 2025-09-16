@@ -11,6 +11,7 @@ import {
   DollarSign,
   Printer,
   FileDown,
+  Store,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   DropdownMenu,
@@ -254,7 +256,7 @@ export default function ReturnsManagementPage() {
             </DialogContent>
         </Dialog>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">شحنات عالقة مع السائقين</CardTitle>
@@ -330,3 +332,5 @@ export default function ReturnsManagementPage() {
     </div>
   );
 }
+
+    
