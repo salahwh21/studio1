@@ -35,44 +35,46 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 
-const RoleCard = ({ role, onEdit, onDelete }: { role: Role; onEdit: (role: Role) => void; onDelete: (role: Role) => void; }) => (
-  <Card className="hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out flex flex-col">
-    <CardHeader>
-      <div className="flex justify-between items-start">
-        <Link href={`/dashboard/settings/roles/${role.id}`} className="space-y-2 flex-1">
-          <CardTitle className="text-xl font-bold">{role.name}</CardTitle>
-          <CardDescription className="mt-2">{role.description}</CardDescription>
-        </Link>
-        <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted px-2 py-1 rounded-md">
-                <Icon name="Users" className="h-4 w-4"/>
-                <span>{role.userCount}</span>
-            </div>
-            {role.id !== 'admin' && role.id !== 'driver' && role.id !== 'merchant' && (
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon"><Icon name="MoreVertical" className="h-4 w-4" /></Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => onEdit(role)}>تعديل</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => onDelete(role)} className="text-destructive">حذف</DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )}
-        </div>
-      </div>
-    </CardHeader>
-    <CardContent className="flex-grow mt-auto">
-       <Button asChild className="w-full">
-        <Link href={`/dashboard/settings/roles/${role.id}`}>
-          <Icon name="Settings" className="mr-2 h-4 w-4" />
-          إدارة الصلاحيات
-        </Link>
-      </Button>
-    </CardContent>
-  </Card>
-);
+const RoleCard = ({ role, onEdit, onDelete }: { role: Role; onEdit: (role: Role) => void; onDelete: (role: Role) => void; }) => {
+    return (
+        <Card className="hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out flex flex-col">
+            <CardHeader>
+                <div className="flex justify-between items-start">
+                    <Link href={`/dashboard/settings/roles/${role.id}`} className="space-y-2 flex-1">
+                        <CardTitle className="text-xl font-bold">{role.name}</CardTitle>
+                        <CardDescription className="mt-2">{role.description}</CardDescription>
+                    </Link>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                            <Icon name="Users" className="h-4 w-4"/>
+                            <span>{role.userCount}</span>
+                        </div>
+                        {role.id !== 'admin' && role.id !== 'driver' && role.id !== 'merchant' && (
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon"><Icon name="MoreVertical" className="h-4 w-4" /></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onSelect={() => onEdit(role)}>تعديل</DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onSelect={() => onDelete(role)} className="text-destructive">حذف</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="flex-grow mt-auto">
+               <Button asChild className="w-full">
+                <Link href={`/dashboard/settings/roles/${role.id}`}>
+                  <Icon name="Settings" className="mr-2 h-4 w-4" />
+                  إدارة الصلاحيات
+                </Link>
+              </Button>
+            </CardContent>
+        </Card>
+    );
+};
 
 const RoleDialog = ({ open, onOpenChange, onSave, role }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (role: Omit<Role, 'id' | 'permissions' | 'userCount'>) => void, role: Role | null }) => {
     const [name, setName] = useState('');
