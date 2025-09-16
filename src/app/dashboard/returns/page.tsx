@@ -6,6 +6,7 @@ import {
   FileText,
   Store,
   Search,
+  ArrowLeft,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from '@/components/ui/card';
 
 import {
@@ -33,6 +33,7 @@ import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useStatusesStore } from '@/store/statuses-store';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import Link from 'next/link';
 
 const getStatusBadge = (status: string, allStatuses: any[]) => {
   const statusInfo = allStatuses.find(s => s.name === status);
@@ -47,68 +48,91 @@ const getStatusBadge = (status: string, allStatuses: any[]) => {
   return <Badge variant="outline">{status}</Badge>;
 };
 
-const ReturnsTable = ({ orders, statuses, selectedRows, onSelectionChange }: { 
-    orders: Order[], 
-    statuses: any[],
-    selectedRows: string[],
-    onSelectionChange: (id: string, isSelected: boolean) => void,
-}) => {
+const ReturnsTable = ({ orders, statuses }: { orders: Order[], statuses: any[] }) => {
+    const [selectedRows, setSelectedRows] = useState<string[]>([]);
+    
     const isAllSelected = orders.length > 0 && selectedRows.length === orders.length;
     const isIndeterminate = selectedRows.length > 0 && selectedRows.length < orders.length;
 
     const handleSelectAll = useCallback((checked: boolean) => {
-        orders.forEach(order => onSelectionChange(order.id, checked));
-    }, [orders, onSelectionChange]);
+        setSelectedRows(checked ? orders.map(order => order.id) : []);
+    }, [orders]);
+    
+    const handleSelectionChange = useCallback((id: string, isSelected: boolean) => {
+      setSelectedRows(prev => 
+        isSelected ? [...prev, id] : prev.filter(rowId => rowId !== id)
+      );
+  }, []);
 
     return (
-         <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12 text-center border-l">
-                    <Checkbox
-                        checked={isAllSelected}
-                        aria-label="Select all rows"
-                        onCheckedChange={(checked) => handleSelectAll(!!checked)}
-                        ref={(input: HTMLButtonElement | null) => {
-                          if (input) input.indeterminate = isIndeterminate;
-                        }}
-                    />
-                </TableHead>
-                <TableHead>رقم الطلب</TableHead>
-                <TableHead>المرجع</TableHead>
-                <TableHead>المستلم</TableHead>
-                <TableHead>الهاتف</TableHead>
-                <TableHead>المنطقة</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead>تاريخ الإرجاع</TableHead>
-                <TableHead>سبب الإرجاع</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orders.map((order) => (
-                <TableRow key={order.id} data-state={selectedRows.includes(order.id) && "selected"}>
-                  <TableCell className="text-center border-l">
-                    <Checkbox
-                        checked={selectedRows.includes(order.id)}
-                        onCheckedChange={(checked) => onSelectionChange(order.id, !!checked)}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">{order.id}</TableCell>
-                  <TableCell>{order.referenceNumber}</TableCell>
-                  <TableCell>{order.recipient}</TableCell>
-                  <TableCell>{order.phone}</TableCell>
-                  <TableCell>{order.region}</TableCell>
-                  <TableCell>{getStatusBadge(order.status, statuses)}</TableCell>
-                  <TableCell>{new Date(order.date).toLocaleDateString('ar-JO')}</TableCell>
-                  <TableCell>{order.notes || 'غير محدد'}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="overflow-x-auto">
+            <div className="flex items-center gap-2 mb-4">
+                <Button variant="default" size="sm" disabled={selectedRows.length === 0}>
+                    إنشاء كشف مرتجع للتاجر
+                </Button>
+            </div>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="w-12 text-center border-l">
+                            <Checkbox
+                                checked={isAllSelected}
+                                onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                                ref={(input: HTMLButtonElement | null) => {
+                                  if (input) input.indeterminate = isIndeterminate;
+                                }}
+                                aria-label="Select all rows"
+                            />
+                        </TableHead>
+                        <TableHead>#</TableHead>
+                        <TableHead>رقم الطلب</TableHead>
+                        <TableHead>المصدر</TableHead>
+                        <TableHead>المرجع</TableHead>
+                        <TableHead>المستلم</TableHead>
+                        <TableHead>الهاتف</TableHead>
+                        <TableHead>العنوان</TableHead>
+                        <TableHead>المنطقة</TableHead>
+                        <TableHead>المدينة</TableHead>
+                        <TableHead>التاجر</TableHead>
+                        <TableHead>الحالة</TableHead>
+                        <TableHead>الحالة السابقة</TableHead>
+                        <TableHead>التاريخ</TableHead>
+                        <TableHead>ملاحظات/سبب الإرجاع</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                {orders.map((order, index) => (
+                    <TableRow key={order.id} data-state={selectedRows.includes(order.id) && "selected"}>
+                    <TableCell className="text-center border-l">
+                        <Checkbox
+                            checked={selectedRows.includes(order.id)}
+                            onCheckedChange={(checked) => handleSelectionChange(order.id, !!checked)}
+                        />
+                    </TableCell>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell className="font-medium font-mono text-primary hover:underline">
+                        <Link href={`/dashboard/orders/${order.id}`}>{order.id}</Link>
+                    </TableCell>
+                    <TableCell>{order.source}</TableCell>
+                    <TableCell>{order.referenceNumber}</TableCell>
+                    <TableCell>{order.recipient}</TableCell>
+                    <TableCell>{order.phone}</TableCell>
+                    <TableCell>{order.address}</TableCell>
+                    <TableCell>{order.region}</TableCell>
+                    <TableCell>{order.city}</TableCell>
+                    <TableCell>{order.merchant}</TableCell>
+                    <TableCell>{getStatusBadge(order.status, statuses)}</TableCell>
+                    <TableCell>{order.previousStatus ? getStatusBadge(order.previousStatus, statuses) : '-'}</TableCell>
+                    <TableCell>{new Date(order.date).toLocaleDateString('ar-JO')}</TableCell>
+                    <TableCell>{order.notes || 'غير محدد'}</TableCell>
+                    </TableRow>
+                ))}
+                </TableBody>
+            </Table>
         </div>
     );
 };
+
 
 export default function ReturnsManagementPage() {
   const { orders } = useOrdersStore();
@@ -116,9 +140,7 @@ export default function ReturnsManagementPage() {
   
   const [selectedMerchant, setSelectedMerchant] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRows, setSelectedRows] = useState<string[]>([]);
-
-
+  
   const returnsByMerchant = useMemo(() => {
     return orders
       .filter(order => order.status === 'راجع')
@@ -134,7 +156,6 @@ export default function ReturnsManagementPage() {
   
   const merchantsWithReturns = Object.keys(returnsByMerchant);
 
-  // Set initial selection
   useEffect(() => {
       if (merchantsWithReturns.length > 0 && !selectedMerchant) {
           setSelectedMerchant(merchantsWithReturns[0]);
@@ -153,17 +174,7 @@ export default function ReturnsManagementPage() {
         order.phone.toLowerCase().includes(searchQuery.toLowerCase())
       );
   }, [selectedMerchant, returnsByMerchant, searchQuery]);
-  
-  // When merchant changes, clear selection
-  useEffect(() => {
-    setSelectedRows([]);
-  }, [selectedMerchant]);
 
-  const handleSelectionChange = useCallback((id: string, isSelected: boolean) => {
-      setSelectedRows(prev => 
-        isSelected ? [...prev, id] : prev.filter(rowId => rowId !== id)
-      );
-  }, []);
 
   const renderSidebar = () => {
     return (
@@ -208,6 +219,9 @@ export default function ReturnsManagementPage() {
                     <CardTitle className="text-2xl">إدارة المرتجعات</CardTitle>
                     <CardDescription>تتبع وإدارة جميع الشحنات المرتجعة للفرع.</CardDescription>
                 </div>
+                 <Button variant="outline" size="icon" asChild>
+                    <Link href="/dashboard"><ArrowLeft className="h-4 w-4" /></Link>
+                </Button>
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -231,18 +245,16 @@ export default function ReturnsManagementPage() {
                                                 onChange={e => setSearchQuery(e.target.value)}
                                             />
                                         </div>
-                                        <Button size="sm" variant="outline" disabled={selectedRows.length === 0}>
-                                            <FileText className="ml-2 h-4 w-4" /> إنشاء كشف مرتجع
+                                        <Button size="sm" variant="outline">
+                                            <FileText className="ml-2 h-4 w-4" /> تصدير الكشف
                                         </Button>
                                     </div>
                                 </div>
                             </CardHeader>
-                             <CardContent className="p-0">
+                             <CardContent>
                                 <ReturnsTable 
                                     orders={selectedOrders} 
                                     statuses={statuses} 
-                                    selectedRows={selectedRows}
-                                    onSelectionChange={handleSelectionChange}
                                 />
                             </CardContent>
                              <CardFooter className="p-2 border-t">
@@ -258,3 +270,4 @@ export default function ReturnsManagementPage() {
     </div>
   );
 }
+
