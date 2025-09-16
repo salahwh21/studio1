@@ -879,39 +879,41 @@ const OrdersTableComponent = () => {
                         case 'driver':
                             const options = col.key === 'merchant' ? merchants : drivers;
                             content = (
-                                <Popover>
-                                    <PopoverTrigger asChild disabled={!isEditMode}>
-                                        <Button variant="ghost" className="w-full h-8 justify-between hover:bg-muted font-normal border disabled:opacity-100 disabled:cursor-default disabled:border-transparent">
-                                            <CopyableCell value={value as string}>
-                                                {value as string}
-                                            </CopyableCell>
-                                            <ArrowUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[200px] p-0">
-                                        <Command>
-                                            <CommandInput placeholder="بحث..."/>
-                                            <CommandList>
-                                                <CommandEmpty>لم يتم العثور على نتائج.</CommandEmpty>
-                                                <CommandGroup>
-                                                    {options.map(item => (
-                                                        <CommandItem
-                                                            key={item.id}
-                                                            value={item.name}
-                                                            onSelect={(currentValue) => {
-                                                                const selectedName = options.find(o => (o.storeName || o.name).toLowerCase() === currentValue)?.name || '';
-                                                                handleUpdateField(order.id, col.key, col.key === 'merchant' ? (options.find(o => (o.storeName || o.name).toLowerCase() === currentValue)?.storeName || '') : selectedName);
-                                                            }}
-                                                        >
-                                                            <Check className={cn("mr-2 h-4 w-4", value === (item.storeName || item.name) ? "opacity-100" : "opacity-0")} />
-                                                            {item.storeName || item.name}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
+                                <div className="flex items-center justify-between w-full h-8 px-1 hover:bg-muted rounded-md group">
+                                     <CopyableCell value={value as string}>
+                                        <span className='px-2'>{value as string}</span>
+                                    </CopyableCell>
+                                    <Popover>
+                                        <PopoverTrigger asChild disabled={!isEditMode}>
+                                            <Button variant="ghost" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 focus:opacity-100" disabled={!isEditMode}>
+                                                <ArrowUpDown className="h-4 w-4 shrink-0" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[200px] p-0">
+                                            <Command>
+                                                <CommandInput placeholder="بحث..."/>
+                                                <CommandList>
+                                                    <CommandEmpty>لم يتم العثور على نتائج.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {options.map(item => (
+                                                            <CommandItem
+                                                                key={item.id}
+                                                                value={item.name}
+                                                                onSelect={(currentValue) => {
+                                                                    const selectedName = options.find(o => (o.storeName || o.name).toLowerCase() === currentValue)?.name || '';
+                                                                    handleUpdateField(order.id, col.key, col.key === 'merchant' ? (options.find(o => (o.storeName || o.name).toLowerCase() === currentValue)?.storeName || '') : selectedName);
+                                                                }}
+                                                            >
+                                                                <Check className={cn("mr-2 h-4 w-4", value === (item.storeName || item.name) ? "opacity-100" : "opacity-0")} />
+                                                                {item.storeName || item.name}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
                             );
                             break;
                         case 'previousStatus':
@@ -950,7 +952,7 @@ const OrdersTableComponent = () => {
                                 </CopyableCell>
                             );
                     }
-                    return <TableCell key={col.key} className="p-0 text-center border-l text-sm">{content}</TableCell>
+                    return <TableCell key={col.key} className="p-0 text-center border-l text-sm" style={{minWidth: ['recipient', 'address', 'notes', 'merchant'].includes(col.key) ? '200px' : '150px'}}>{content}</TableCell>
                 })}
             </TableRow>
         )
@@ -1337,6 +1339,7 @@ export function OrdersTable() {
 
 
     
+
 
 
 
