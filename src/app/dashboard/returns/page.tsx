@@ -50,13 +50,36 @@ import {
   Save,
   FileSpreadsheet,
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import dynamic from 'next/dynamic';
+import Papa from 'papaparse';
+
+
 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
-import { useOrdersStore, type Order } from '@/store/orders-store';
-import { useSettings } from '@/contexts/SettingsContext';
+import { type Order } from '@/store/orders-store';
+import { useSettings, type SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
+import { PrintablePolicy } from '@/components/printable-policy';
 import { useStatusesStore } from '@/store/statuses-store';
+import { useUsersStore } from '@/store/user-store';
+import { getOrders, type OrderSortConfig, type FilterDefinition } from '@/app/actions/get-orders';
+import { updateOrderAction } from '@/app/actions/update-order';
+
 
 // ShadCN UI Components
 import { Badge } from '@/components/ui/badge';
@@ -68,21 +91,41 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Icon from '@/components/icon';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
-const getStatusBadge = (status: string, allStatuses: any[]) => {
-    const statusInfo = allStatuses.find(s => s.name === status);
-    if (statusInfo) {
-        return (
-            <Badge variant="secondary" style={{ backgroundColor: `${statusInfo.color}20`, color: statusInfo.color }}>
-                <Icon name={statusInfo.icon as any} className="h-3 w-3 ml-1" />
-                {statusInfo.name}
-            </Badge>
-        );
-    }
-    return <Badge variant="outline">{status}</Badge>;
-};
+
+const CSVLink = dynamic(() => import('react-csv').then(mod => mod.CSVLink), { ssr: false });
+
+type ColumnConfig = { key: keyof Order | 'id-link'; label: string; sortable?: boolean };
+
+// Columns specific to the returns page
+const RETURNS_COLUMNS: ColumnConfig[] = [
+    { key: 'id', label: '#' },
+    { key: 'id-link', label: 'رقم الطلب' },
+    { key: 'source', label: 'المصدر' },
+    { key: 'referenceNumber', label: 'الرقم المرجعي' },
+    { key: 'recipient', label: 'المستلم' },
+    { key: 'phone', label: 'الهاتف' },
+    { key: 'address', label: 'العنوان' },
+    { key: 'region', label: 'المنطقة' },
+    { key: 'city', label: 'المدينة' },
+    { key: 'merchant', label: 'التاجر' },
+    { key: 'status', label: 'الحالة' },
+    { key: 'previousStatus', label: 'الحالة السابقة' },
+    { key: 'date', label: 'التاريخ' },
+    { key: 'notes', label: 'ملاحظات/سبب الإرجاع' },
+];
 
 const ReturnsTable = ({ orders, statuses }: { orders: Order[], statuses: any[] }) => {
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -111,6 +154,9 @@ const ReturnsTable = ({ orders, statuses }: { orders: Order[], statuses: any[] }
                 <Button variant="default" size="sm" disabled={selectedRows.length === 0}>
                     إنشاء كشف مرتجع للتاجر
                 </Button>
+                 <Button variant="outline" size="sm" disabled={selectedRows.length === 0}>
+                    <FileText className="ml-2 h-4 w-4" /> تصدير الكشف
+                </Button>
             </div>
              <Table>
                 <TableHeader>
@@ -125,20 +171,7 @@ const ReturnsTable = ({ orders, statuses }: { orders: Order[], statuses: any[] }
                                 aria-label="Select all rows"
                             />
                         </TableHead>
-                        <TableHead>#</TableHead>
-                        <TableHead>رقم الطلب</TableHead>
-                        <TableHead>المصدر</TableHead>
-                        <TableHead>الرقم المرجعي</TableHead>
-                        <TableHead>المستلم</TableHead>
-                        <TableHead>الهاتف</TableHead>
-                        <TableHead>العنوان</TableHead>
-                        <TableHead>المنطقة</TableHead>
-                        <TableHead>المدينة</TableHead>
-                        <TableHead>التاجر</TableHead>
-                        <TableHead>الحالة</TableHead>
-                        <TableHead>الحالة السابقة</TableHead>
-                        <TableHead>التاريخ</TableHead>
-                        <TableHead>ملاحظات/سبب الإرجاع</TableHead>
+                        {RETURNS_COLUMNS.map(col => <TableHead key={col.key}>{col.label}</TableHead>)}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -162,8 +195,8 @@ const ReturnsTable = ({ orders, statuses }: { orders: Order[], statuses: any[] }
                     <TableCell>{order.region}</TableCell>
                     <TableCell>{order.city}</TableCell>
                     <TableCell>{order.merchant}</TableCell>
-                    <TableCell>{getStatusBadge(order.status, statuses)}</TableCell>
-                    <TableCell>{order.previousStatus ? getStatusBadge(order.previousStatus, statuses) : '-'}</TableCell>
+                    <TableCell><Badge variant="secondary">{order.status}</Badge></TableCell>
+                    <TableCell>{order.previousStatus ? <Badge variant="outline">{order.previousStatus}</Badge> : '-'}</TableCell>
                     <TableCell>{new Date(order.date).toLocaleDateString('ar-JO')}</TableCell>
                     <TableCell>{order.notes || 'غير محدد'}</TableCell>
                     </TableRow>
@@ -286,9 +319,6 @@ export default function ReturnsManagementPage() {
                                             onChange={e => setSearchQuery(e.target.value)}
                                         />
                                     </div>
-                                    <Button size="sm" variant="outline">
-                                        <FileText className="ml-2 h-4 w-4" /> تصدير الكشف
-                                    </Button>
                                 </div>
                             </div>
                         </CardHeader>
