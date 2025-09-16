@@ -53,6 +53,7 @@ import {
   ChevronsUp,
   ChevronUp,
   ChevronsDown,
+  Clipboard,
 } from 'lucide-react';
 import {
   DndContext,
@@ -166,6 +167,29 @@ function useMediaQuery(query: string) {
     }, [matches, query]);
     return matches;
 }
+
+const CopyableCell = ({ value, children }: { value: string | number, children: React.ReactNode }) => {
+    const { toast } = useToast();
+    const handleCopy = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(String(value));
+        toast({ title: "تم النسخ!", description: String(value) });
+    };
+
+    return (
+        <div className="group relative w-full h-full flex items-center justify-center">
+            {children}
+            <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-1 top-1/2 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={handleCopy}
+            >
+                <Clipboard className="h-4 w-4" />
+            </Button>
+        </div>
+    );
+};
 
 
 const sourceIcons: Record<OrderSource, React.ElementType> = {
@@ -814,7 +838,11 @@ const OrdersTableComponent = () => {
                     let content: React.ReactNode;
                     switch (col.key) {
                         case 'id':
-                            content = <Link href={`/dashboard/orders/${order.id}`} className="text-primary hover:underline font-medium">{value as string}</Link>;
+                            content = (
+                                <CopyableCell value={value as string}>
+                                    <Link href={`/dashboard/orders/${order.id}`} className="text-primary hover:underline font-medium">{value as string}</Link>
+                                </CopyableCell>
+                            );
                             break;
                         case 'source':
                             const IconC = sourceIcons[value as OrderSource] || LinkIcon;
@@ -854,7 +882,9 @@ const OrdersTableComponent = () => {
                                 <Popover>
                                     <PopoverTrigger asChild disabled={!isEditMode}>
                                         <Button variant="ghost" className="w-full h-8 justify-between hover:bg-muted font-normal border disabled:opacity-100 disabled:cursor-default disabled:border-transparent">
-                                            {value as string}
+                                            <CopyableCell value={value as string}>
+                                                {value as string}
+                                            </CopyableCell>
                                             <ArrowUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
                                     </PopoverTrigger>
@@ -897,26 +927,30 @@ const OrdersTableComponent = () => {
                         case 'additionalCost':
                         case 'driverAdditionalFare':
                             content = (
-                                <Input
-                                    type="number"
-                                    defaultValue={value as number}
-                                    onBlur={(e) => handleUpdateField(order.id, col.key, parseFloat(e.target.value) || 0)}
-                                    className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-2 bg-transparent hover:bg-muted disabled:opacity-100 disabled:cursor-default"
-                                    disabled={!isEditMode}
-                                />
+                                <CopyableCell value={value as number}>
+                                    <Input
+                                        type="number"
+                                        defaultValue={value as number}
+                                        onBlur={(e) => handleUpdateField(order.id, col.key, parseFloat(e.target.value) || 0)}
+                                        className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-2 bg-transparent hover:bg-muted disabled:opacity-100 disabled:cursor-default"
+                                        disabled={!isEditMode}
+                                    />
+                                </CopyableCell>
                             );
                             break;
                         default:
                              content = (
-                                <Input
-                                    defaultValue={value as string}
-                                    onBlur={(e) => handleUpdateField(order.id, col.key, e.target.value)}
-                                    className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-2 bg-transparent hover:bg-muted disabled:opacity-100 disabled:cursor-default"
-                                    disabled={!isEditMode}
-                                />
+                                <CopyableCell value={value as string}>
+                                    <Input
+                                        defaultValue={value as string}
+                                        onBlur={(e) => handleUpdateField(order.id, col.key, e.target.value)}
+                                        className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-2 bg-transparent hover:bg-muted disabled:opacity-100 disabled:cursor-default"
+                                        disabled={!isEditMode}
+                                    />
+                                </CopyableCell>
                             );
                     }
-                    return <TableCell key={col.key} className="p-2 text-center border-l text-sm">{content}</TableCell>
+                    return <TableCell key={col.key} className="p-0 text-center border-l text-sm">{content}</TableCell>
                 })}
             </TableRow>
         )
@@ -1124,7 +1158,7 @@ const OrdersTableComponent = () => {
                             <TableHeader className="sticky top-0 z-20">
                                 <TableRow className="hover:bg-transparent">
                                     <TableHead className="sticky right-0 z-30 p-2 text-center border-l w-20 bg-slate-800"><div className="flex items-center justify-center gap-2"><span className="text-sm font-bold text-white">#</span><Checkbox onCheckedChange={handleSelectAll} checked={isAllSelected} indeterminate={isIndeterminate} aria-label="Select all rows" className='border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-800 data-[state=indeterminate]:bg-white data-[state=indeterminate]:text-slate-800' /></div></TableHead>
-                                    {visibleColumns.map((col) => (<TableHead key={col.key} className="p-2 text-center border-b border-l bg-slate-800 !text-white hover:!bg-slate-700 transition-colors duration-200" style={{minWidth: ['id', 'referenceNumber'].includes(col.key) ? '150px' : ['recipient', 'address', 'notes', 'merchant'].includes(col.key) ? '200px' : '120px'}}>{col.sortable ? (<Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-transparent hover:text-white w-full p-0 h-auto">{col.label}<ArrowUpDown className="mr-2 h-3 w-3 text-white" /></Button>) : (<span className='text-white'>{col.label}</span>)}</TableHead>))}
+                                    {visibleColumns.map((col) => (<TableHead key={col.key} className="p-2 text-center border-b border-l bg-slate-800 !text-white hover:!bg-slate-700 transition-colors duration-200" style={{minWidth: ['recipient', 'address', 'notes', 'merchant'].includes(col.key) ? '200px' : '150px'}}>{col.sortable ? (<Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-transparent hover:text-white w-full p-0 h-auto">{col.label}<ArrowUpDown className="mr-2 h-3 w-3 text-white" /></Button>) : (<span className='text-white'>{col.label}</span>)}</TableHead>))}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -1303,6 +1337,7 @@ export function OrdersTable() {
 
 
     
+
 
 
 
