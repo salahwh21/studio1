@@ -35,17 +35,29 @@ const ReturnsFromDrivers = () => {
 
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const drivers = useMemo(() => Array.from(new Set(orders.map(o => o.driver).filter(Boolean))), [orders]);
 
   const ordersForReturn = useMemo(() => {
     // Include orders that are in a returnable state OR are just 'مؤجل'
-    const returnableOrders = orders.filter(o => RETURNABLE_STATUSES.includes(o.status) || o.status === 'مؤجل');
+    let returnableOrders = orders.filter(o => RETURNABLE_STATUSES.includes(o.status) || o.status === 'مؤجل');
+    
     if (selectedDriver) {
-      return returnableOrders.filter(o => o.driver === selectedDriver);
+      returnableOrders = returnableOrders.filter(o => o.driver === selectedDriver);
     }
+    
+    if (searchQuery) {
+        const lowercasedQuery = searchQuery.toLowerCase();
+        returnableOrders = returnableOrders.filter(o => 
+            o.id.toLowerCase().includes(lowercasedQuery) ||
+            o.recipient.toLowerCase().includes(lowercasedQuery) ||
+            o.merchant.toLowerCase().includes(lowercasedQuery)
+        );
+    }
+
     return returnableOrders;
-  }, [orders, selectedDriver]);
+  }, [orders, selectedDriver, searchQuery]);
 
   const toggleSelect = (id: string) => {
     setSelectedOrders(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -75,21 +87,37 @@ const ReturnsFromDrivers = () => {
 
   return (
     <Card>
-      <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <CardTitle>استلام المرتجعات من السائقين</CardTitle>
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => setSelectedDriver(null)} variant={!selectedDriver ? 'default' : 'outline'} size="sm">الكل</Button>
-          {drivers.map(d => (
-            <Button key={d} onClick={() => setSelectedDriver(d)} variant={selectedDriver === d ? 'default' : 'outline'} size="sm">{d}</Button>
-          ))}
-        </div>
-      </CardHeader>
+        <CardHeader>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <CardTitle>استلام المرتجعات من السائقين</CardTitle>
+                    <CardDescription>عرض الشحنات الراجعة والمؤجلة لكل سائق وتأكيد استلامها في الفرع.</CardDescription>
+                </div>
+                 <div className="flex flex-wrap gap-2">
+                    <Button onClick={() => setSelectedDriver(null)} variant={!selectedDriver ? 'default' : 'outline'} size="sm">الكل</Button>
+                    {drivers.map(d => (
+                        <Button key={d} onClick={() => setSelectedDriver(d)} variant={selectedDriver === d ? 'default' : 'outline'} size="sm">{d}</Button>
+                    ))}
+                </div>
+            </div>
+             <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
+                <div className="relative w-full sm:max-w-md">
+                    <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input 
+                        placeholder="بحث برقم الطلب، المستلم، التاجر..." 
+                        className="pr-10"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+                <div className="flex items-center gap-2 sm:mr-auto">
+                    <Button onClick={markReturned} disabled={selectedOrders.length === 0}>
+                        <Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد استلام المحدد ({selectedOrders.length})
+                    </Button>
+                </div>
+            </div>
+        </CardHeader>
       <CardContent>
-        <div className="mb-4">
-          <Button onClick={markReturned} disabled={selectedOrders.length === 0}>
-            <Icon name="Check" className="ml-2 h-4 w-4" /> تعليم كـ "مرجع للفرع" ({selectedOrders.length})
-          </Button>
-        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -99,20 +127,22 @@ const ReturnsFromDrivers = () => {
               <TableHead>المستلم</TableHead>
               <TableHead>السائق</TableHead>
               <TableHead>الحالة الحالية</TableHead>
+              <TableHead>سبب الإرجاع</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {ordersForReturn.length > 0 ? ordersForReturn.map(o => (
-              <TableRow key={o.id}>
+              <TableRow key={o.id} data-state={selectedOrders.includes(o.id) && "selected"}>
                 <TableCell><Checkbox checked={selectedOrders.includes(o.id)} onCheckedChange={() => toggleSelect(o.id)} /></TableCell>
                 <TableCell className="font-mono">{o.id}</TableCell>
                 <TableCell>{o.merchant}</TableCell>
                 <TableCell>{o.recipient}</TableCell>
                 <TableCell>{o.driver}</TableCell>
                 <TableCell><Badge variant={getStatusBadgeVariant(o.status)}>{o.status}</Badge></TableCell>
+                <TableCell className="text-muted-foreground text-xs">{o.notes}</TableCell>
               </TableRow>
             )) : (
-              <TableRow><TableCell colSpan={6} className="h-24 text-center">لا توجد طلبات مرتجعة حالياً.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="h-24 text-center">لا توجد طلبات مرتجعة لهذا السائق/البحث.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
@@ -137,7 +167,6 @@ const ReturnSlipsToMerchants = () => {
 
     const returnsAtBranch = useMemo(() => {
         const slipOrderIds = new Set(slips.flatMap(s => s.orders.map(o => o.id)));
-        // Now, we also check for the new status 'مرجع للفرع'
         return orders.filter(o => [...RETURNABLE_STATUSES, 'مرجع للفرع'].includes(o.status) && !slipOrderIds.has(o.id));
     }, [orders, slips]);
     
@@ -234,7 +263,7 @@ const ReturnSlipsToMerchants = () => {
                         </TableRow></TableHeader>
                         <TableBody>
                         {returnsAtBranch.map((item) => (
-                            <TableRow key={item.id}>
+                            <TableRow key={item.id} data-state={selectedReturns.includes(item.id) && "selected"}>
                             <TableCell><Checkbox checked={selectedReturns.includes(item.id)} onCheckedChange={(checked) => setSelectedReturns(prev => checked ? [...prev, item.id] : prev.filter(id => id !== item.id))} /></TableCell>
                             <TableCell className="font-mono">{item.id}</TableCell>
                             <TableCell>{item.merchant}</TableCell>
@@ -243,19 +272,23 @@ const ReturnSlipsToMerchants = () => {
                             <TableCell><Badge variant="secondary">{item.status}</Badge></TableCell>
                             </TableRow>
                         ))}
+                        {returnsAtBranch.length === 0 && (
+                             <TableRow><TableCell colSpan={6} className="h-24 text-center">لا توجد طلبات مرتجعة بالفرع حالياً.</TableCell></TableRow>
+                        )}
                         </TableBody>
                     </Table>
                 </CardContent>
             </Card>
 
             <Card className="mt-6">
-                 <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                 <CardHeader>
                     <CardTitle>كشوفات الإرجاع</CardTitle>
-                    <div className="flex flex-wrap gap-2">
-                        <Select onValueChange={(v) => setFilterMerchant(v === 'all' ? null : v)} value={filterMerchant || 'all'}><SelectTrigger className="w-40"><SelectValue placeholder="اختيار التاجر" /></SelectTrigger><SelectContent><SelectItem value="all">كل التجار</SelectItem>{Array.from(new Set(slips.map(s=>s.merchant))).map((m) => (<SelectItem key={m} value={m}>{m}</SelectItem>))}</SelectContent></Select>
-                        <Select onValueChange={(v) => setFilterStatus(v === 'all' ? null : v)} value={filterStatus || 'all'}><SelectTrigger className="w-40"><SelectValue placeholder="حالة الكشف" /></SelectTrigger><SelectContent><SelectItem value="all">الكل</SelectItem><SelectItem value="جاهز للتسليم">جاهز للتسليم</SelectItem><SelectItem value="تم التسليم">تم التسليم</SelectItem></SelectContent></Select>
-                        <Input type="date" placeholder="من" value={filterStartDate || ''} onChange={(e) => setFilterStartDate(e.target.value || null)} />
-                        <Input type="date" placeholder="إلى" value={filterEndDate || ''} onChange={(e) => setFilterEndDate(e.target.value || null)} />
+                    <CardDescription>فلترة وبحث في الكشوفات التي تم إنشاؤها.</CardDescription>
+                     <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
+                        <Select onValueChange={(v) => setFilterMerchant(v === 'all' ? null : v)} value={filterMerchant || 'all'}><SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="اختيار التاجر" /></SelectTrigger><SelectContent><SelectItem value="all">كل التجار</SelectItem>{Array.from(new Set(slips.map(s=>s.merchant))).map((m) => (<SelectItem key={m} value={m}>{m}</SelectItem>))}</SelectContent></Select>
+                        <Select onValueChange={(v) => setFilterStatus(v === 'all' ? null : v)} value={filterStatus || 'all'}><SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="حالة الكشف" /></SelectTrigger><SelectContent><SelectItem value="all">الكل</SelectItem><SelectItem value="جاهز للتسليم">جاهز للتسليم</SelectItem><SelectItem value="تم التسليم">تم التسليم</SelectItem></SelectContent></Select>
+                        <Input type="date" placeholder="من تاريخ" value={filterStartDate || ''} onChange={(e) => setFilterStartDate(e.target.value || null)} className="w-full sm:w-auto" />
+                        <Input type="date" placeholder="إلى تاريخ" value={filterEndDate || ''} onChange={(e) => setFilterEndDate(e.target.value || null)} className="w-full sm:w-auto" />
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -271,13 +304,16 @@ const ReturnSlipsToMerchants = () => {
                             <TableCell>{slip.date}</TableCell>
                             <TableCell>{slip.items}</TableCell>
                             <TableCell><Badge variant={slip.status === 'تم التسليم' ? 'default' : 'outline'} className={slip.status === 'تم التسليم' ? 'bg-green-100 text-green-800' : ''}>{slip.status}</Badge></TableCell>
-                            <TableCell className="text-left flex gap-2">
+                            <TableCell className="text-left flex gap-2 justify-end">
                                 <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
                                 <Button variant="outline" size="sm" disabled={slip.status === 'تم التسليم'} onClick={() => setSlips(prev => prev.map(s => s.id === slip.id ? { ...s, status: 'تم التسليم' } : s))}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
-                                <Button variant="outline" size="sm" onClick={() => printSlip(slip)}><Icon name="Printer" className="ml-2 h-4 w-4" /> طباعة</Button>
+                                <Button variant="ghost" size="icon" onClick={() => printSlip(slip)}><Icon name="Printer" className="h-4 w-4" /></Button>
                             </TableCell>
                             </TableRow>
                         ))}
+                         {filteredSlips.length === 0 && (
+                             <TableRow><TableCell colSpan={6} className="h-24 text-center">لا توجد كشوفات تطابق الفلترة.</TableCell></TableRow>
+                        )}
                         </TableBody>
                     </Table>
                 </CardContent>
@@ -286,7 +322,7 @@ const ReturnSlipsToMerchants = () => {
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                 <DialogContent className="sm:max-w-lg">
                 <DialogHeader><DialogTitle>إنشاء كشف إرجاع جديد</DialogTitle></DialogHeader>
-                <div className="space-y-4"><p>سيتم إنشاء كشف يضم {selectedReturns.length} طلب/طلبات.</p><ul className="list-disc pr-6">{returnsAtBranch.filter(r => selectedReturns.includes(r.id)).map(r => (<li key={r.id}><span className="font-mono">{r.id}</span> – {r.merchant}</li>))}</ul></div>
+                <div className="space-y-4"><p>سيتم إنشاء كشف يضم {selectedReturns.length} طلب/طلبات.</p><ul className="list-disc pr-6 text-sm">{returnsAtBranch.filter(r => selectedReturns.includes(r.id)).map(r => (<li key={r.id}><span className="font-mono">{r.id}</span> – {r.merchant}</li>))}</ul></div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setShowCreateDialog(false)}>إلغاء</Button>
                     <Button onClick={handleCreateSlip}>تأكيد وإنشاء</Button>
@@ -309,8 +345,30 @@ const ReturnSlipsToMerchants = () => {
 };
 
 
+const StatCard = ({ title, value, icon, color }: { title: string, value: number, icon: any, color: string }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon name={icon} className="h-4 w-4 text-muted-foreground" style={{ color }} />
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{value}</div>
+            <p className="text-xs text-muted-foreground">شحنة</p>
+        </CardContent>
+    </Card>
+);
+
+
 // --- Main Page Component ---
 export default function ReturnsPage() {
+    const { orders } = useOrdersStore();
+    
+    const stats = useMemo(() => {
+        const withDrivers = orders.filter(o => RETURNABLE_STATUSES.includes(o.status)).length;
+        const atBranch = orders.filter(o => o.status === 'مرجع للفرع').length;
+        return { withDrivers, atBranch };
+    }, [orders]);
+
   return (
     <div className="space-y-6" dir="rtl">
       <Card>
@@ -320,10 +378,16 @@ export default function ReturnsPage() {
             إدارة المرتجعات
           </CardTitle>
           <CardDescription>
-            تجهيز ومتابعة الطلبات المرتجعة لإعادتها إلى التجار.
+            استلام الشحنات الراجعة من السائقين وتجهيزها في كشوفات لإعادتها إلى التجار.
           </CardDescription>
         </CardHeader>
       </Card>
+      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard title="مرتجعات مع السائقين" value={stats.withDrivers} icon="Truck" color="#F9A825" />
+        <StatCard title="مرتجعات في الفرع" value={stats.atBranch} icon="Building" color="#8E24AA" />
+      </div>
+
 
       <Tabs defaultValue="returns-from-drivers">
         <TabsList className="grid w-full grid-cols-2">
