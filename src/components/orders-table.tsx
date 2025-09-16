@@ -177,7 +177,7 @@ const CopyableCell = ({ value, children }: { value: string | number, children: R
     };
 
     return (
-        <div className="group relative w-full flex items-center justify-center">
+        <div className="group relative w-full flex items-center justify-center h-full">
             {children}
             <Button
                 variant="ghost"
@@ -707,16 +707,24 @@ const OrdersTableComponent = () => {
       filters,
       onAddFilter,
       onRemoveFilter,
+      onGlobalSearchChange,
+      globalSearchTerm,
     }: {
       filters: FilterDefinition[];
       onAddFilter: (filter: FilterDefinition) => void;
       onRemoveFilter: (index: number) => void;
+      onGlobalSearchChange: (term: string) => void;
+      globalSearchTerm: string;
     }) => {
       const [popoverOpen, setPopoverOpen] = useState(false);
-      const [inputValue, setInputValue] = useState('');
+      const [inputValue, setInputValue] = useState(globalSearchTerm);
       const [currentField, setCurrentField] = useState<(typeof searchableFieldsWithOptions)[number] | null>(null);
       const inputRef = useRef<HTMLInputElement>(null);
     
+      useEffect(() => {
+        setInputValue(globalSearchTerm);
+      }, [globalSearchTerm])
+
       useEffect(() => {
         if (currentField && currentField.type === 'text' && inputRef.current) {
           inputRef.current.focus();
@@ -740,6 +748,7 @@ const OrdersTableComponent = () => {
           });
           setCurrentField(null);
           setInputValue('');
+          onGlobalSearchChange('');
         }
       };
     
@@ -752,14 +761,22 @@ const OrdersTableComponent = () => {
           });
           setCurrentField(null);
           setInputValue('');
+          onGlobalSearchChange('');
         }
       };
       
+      const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const term = e.target.value;
+        setInputValue(term);
+        if (!currentField) {
+          onGlobalSearchChange(term);
+        }
+      }
     
       return (
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-          <div className="flex items-center gap-2 flex-wrap border rounded-lg p-1.5 min-h-[40px] w-full max-w-lg bg-background">
-            <Search className="h-4 w-4 text-muted-foreground ml-1" />
+          <div className="flex items-center gap-2 flex-wrap border rounded-lg p-1.5 min-h-[40px] w-full max-w-2xl bg-background">
+            <Search className="h-4 w-4 text-muted-foreground mx-1" />
             {filters.map((filter, index) => (
               <Badge key={index} variant="secondary" className="gap-1.5">
                 {searchableFieldsWithOptions.find(f => f.key === filter.field)?.label || filter.field}: {filter.value}
@@ -769,7 +786,7 @@ const OrdersTableComponent = () => {
               </Badge>
             ))}
             <PopoverTrigger asChild>
-                <div className="flex-1 min-w-[150px]">
+                <div className="flex-1 min-w-[200px] flex items-center">
                     {currentField ? (
                         <div className="flex items-center gap-1">
                             <span className="text-sm text-muted-foreground">{currentField.label}:</span>
@@ -777,7 +794,7 @@ const OrdersTableComponent = () => {
                                 <Input
                                     ref={inputRef}
                                     value={inputValue}
-                                    onChange={(e) => setInputValue(e.target.value)}
+                                    onChange={handleInputChange}
                                     onKeyDown={(e) => e.key === 'Enter' && handleAddTextFilter()}
                                     onBlur={() => { if (!inputValue) setCurrentField(null); }}
                                     className="h-7 border-none focus-visible:ring-0 p-1"
@@ -797,14 +814,19 @@ const OrdersTableComponent = () => {
                             )}
                         </div>
                     ) : (
-                        <button className="text-sm text-muted-foreground hover:text-foreground">إضافة فلتر...</button>
+                        <Input
+                            placeholder="بحث شامل أو إضافة فلتر..."
+                            className="h-7 border-none focus-visible:ring-0 p-1"
+                            value={inputValue}
+                            onChange={handleInputChange}
+                        />
                     )}
                 </div>
             </PopoverTrigger>
           </div>
           <PopoverContent className="w-[250px] p-0" align="start">
              <Command>
-                <CommandInput placeholder="ابحث عن حقل..." />
+                <CommandInput placeholder="ابحث عن حقل للفلترة..." />
                 <CommandList>
                     <CommandEmpty>لم يتم العثور على حقل.</CommandEmpty>
                     <CommandGroup>
@@ -879,7 +901,7 @@ const OrdersTableComponent = () => {
                         case 'driver':
                             const options = col.key === 'merchant' ? merchants : drivers;
                             content = (
-                                <div className="flex items-center justify-center w-full h-8 px-1 group">
+                                <div className="flex items-center justify-center w-full h-12 px-1 group">
                                      <CopyableCell value={value as string}>
                                         <span className='px-2'>{value as string}</span>
                                     </CopyableCell>
@@ -934,7 +956,7 @@ const OrdersTableComponent = () => {
                                         type="number"
                                         defaultValue={value as number}
                                         onBlur={(e) => handleUpdateField(order.id, col.key, parseFloat(e.target.value) || 0)}
-                                        className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-2 bg-transparent hover:bg-muted disabled:opacity-100 disabled:cursor-default"
+                                        className="h-12 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-2 bg-transparent hover:bg-muted disabled:opacity-100 disabled:cursor-default"
                                         disabled={!isEditMode}
                                     />
                                 </CopyableCell>
@@ -946,7 +968,7 @@ const OrdersTableComponent = () => {
                                     <Input
                                         defaultValue={value as string}
                                         onBlur={(e) => handleUpdateField(order.id, col.key, e.target.value)}
-                                        className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-2 bg-transparent hover:bg-muted disabled:opacity-100 disabled:cursor-default"
+                                        className="h-12 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-2 bg-transparent hover:bg-muted disabled:opacity-100 disabled:cursor-default"
                                         disabled={!isEditMode}
                                     />
                                 </CopyableCell>
@@ -1039,22 +1061,13 @@ const OrdersTableComponent = () => {
                 <Card className="flex flex-col h-[calc(100vh-8rem)] bg-background p-4 gap-4">
                     {/* Header */}
                     <div className="flex-none flex-row items-center justify-between flex flex-wrap gap-2">
-                        <div className="flex items-center gap-2">
-                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                    placeholder="بحث شامل..." 
-                                    className="pl-10" 
-                                    value={globalSearch}
-                                    onChange={(e) => setGlobalSearch(e.target.value)}
-                                />
-                            </div>
-                            <AdvancedSearch
-                                filters={filters}
-                                onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
-                                onRemoveFilter={(index) => setFilters(prev => prev.filter((_, i) => i !== index))}
-                            />
-                        </div>
+                        <AdvancedSearch
+                            filters={filters}
+                            onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
+                            onRemoveFilter={(index) => setFilters(prev => prev.filter((_, i) => i !== index))}
+                            onGlobalSearchChange={setGlobalSearch}
+                            globalSearchTerm={globalSearch}
+                        />
                         <div className="flex items-center gap-2">
                              <div className="flex items-center space-x-2 space-x-reverse">
                                 <Switch id="edit-mode" checked={isEditMode} onCheckedChange={setIsEditMode} />
@@ -1339,6 +1352,7 @@ export function OrdersTable() {
 
 
     
+
 
 
 
