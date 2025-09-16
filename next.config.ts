@@ -39,6 +39,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     // Other experimental features can go here if needed
+    allowedDevOrigins: ["**"],
   },
 };
 
