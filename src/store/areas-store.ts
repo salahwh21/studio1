@@ -3336,11 +3336,16 @@ const defaultCities: any[] = [
       }
     ]
   }
-].map(city => ({...city, areas: city.regions || []}));
+];
 
+const getInitialCities = () => {
+    const processedCities = defaultCities.map(city => ({
+        ...city,
+        areas: city.regions || []
+    }));
+    return JSON.parse(JSON.stringify(processedCities));
+};
 
-// Use a deep copy for the initial state to prevent mutation issues
-const getInitialCities = () => JSON.parse(JSON.stringify(defaultCities));
 
 type AreasState = {
   cities: City[];
