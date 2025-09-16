@@ -1,16 +1,16 @@
 
 'use client';
-import { useState, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useState, useMemo, useCallback } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/icon';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { parseISO, isWithinInterval } from 'date-fns';
@@ -54,7 +54,7 @@ const ReturnsFromDrivers = () => {
 
   const markReturned = () => {
     selectedOrders.forEach(id => {
-      // We are marking them as 'راجع للفرع' which is a more specific status
+      // We are marking them as 'مرجع للفرع' which is a more specific status
       updateOrderStatus(id, 'مرجع للفرع');
     });
     toast({ title: "تم التحديث", description: `تم تحديث ${selectedOrders.length} طلب/طلبات إلى حالة "مرجع للفرع".` });
