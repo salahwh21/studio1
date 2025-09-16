@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -1119,7 +1120,7 @@ const OrdersTableComponent = () => {
                     </div>
                     {/* Table Container */}
                      <div className="flex-1 border rounded-lg overflow-auto flex flex-col">
-                        <Table>
+                        <Table style={{ tableLayout: 'auto' }}>
                             <TableHeader className="sticky top-0 z-20">
                                 <TableRow className="hover:bg-transparent">
                                     <TableHead className="sticky right-0 z-30 p-2 text-center border-l w-20 bg-slate-800"><div className="flex items-center justify-center gap-2"><span className="text-sm font-bold text-white">#</span><Checkbox onCheckedChange={handleSelectAll} checked={isAllSelected} indeterminate={isIndeterminate} aria-label="Select all rows" className='border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-800 data-[state=indeterminate]:bg-white data-[state=indeterminate]:text-slate-800' /></div></TableHead>
@@ -1131,7 +1132,7 @@ const OrdersTableComponent = () => {
                                     Array.from({ length: 5 }).map((_, i) => (
                                         <TableRow key={i}>
                                             <TableCell className="sticky right-0 z-10 p-2 text-center border-l bg-card"><Skeleton className="h-5 w-16" /></TableCell>
-                                            {visibleColumns.map(col => <TableCell key={col.key} className="p-2 text-center border-l"><Skeleton className="h-5 w-full" /></TableCell>)}
+                                            {visibleColumns.map(col => <TableCell key={col.key} className="p-2 text-center whitespace-nowrap border-l"><Skeleton className="h-5 w-full" /></TableCell>)}
                                         </TableRow>
                                     ))
                                 ) : groupedOrders ? (
@@ -1169,7 +1170,7 @@ const OrdersTableComponent = () => {
                                                             case 'cod': totalValue = formatCurrency(groupTotals.cod); break;
                                                             default: totalValue = '';
                                                         }
-                                                        return <TableCell key={col.key} className="p-3 text-center border-l">{totalValue}</TableCell>
+                                                        return <TableCell key={col.key} className="p-3 text-center whitespace-nowrap border-l">{totalValue}</TableCell>
                                                     })}
                                                 </TableRow>
                                                 {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
@@ -1302,6 +1303,7 @@ export function OrdersTable() {
 
 
     
+
 
 
 
