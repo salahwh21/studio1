@@ -3,14 +3,7 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
-  MoreHorizontal,
   FileText,
-  User,
-  Truck,
-  Archive,
-  DollarSign,
-  Printer,
-  FileDown,
   Store,
   Search,
 } from 'lucide-react';
@@ -24,15 +17,7 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+
 import {
   Table,
   TableBody,
@@ -43,11 +28,9 @@ import {
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import Icon from '@/components/icon';
 import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useStatusesStore } from '@/store/statuses-store';
-import { useUsersStore } from '@/store/user-store';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -85,8 +68,11 @@ const ReturnsTable = ({ orders, statuses, selectedRows, onSelectionChange }: {
                 <TableHead className="w-12 text-center border-l">
                     <Checkbox
                         checked={isAllSelected}
-                        indeterminate={isIndeterminate}
-                        onCheckedChange={handleSelectAll}
+                        aria-label="Select all rows"
+                        onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                        ref={(input: HTMLButtonElement | null) => {
+                          if (input) input.indeterminate = isIndeterminate;
+                        }}
                     />
                 </TableHead>
                 <TableHead>رقم الطلب</TableHead>
@@ -149,7 +135,7 @@ export default function ReturnsManagementPage() {
   const merchantsWithReturns = Object.keys(returnsByMerchant);
 
   // Set initial selection
-  useMemo(() => {
+  useEffect(() => {
       if (merchantsWithReturns.length > 0 && !selectedMerchant) {
           setSelectedMerchant(merchantsWithReturns[0]);
       }
@@ -162,7 +148,7 @@ export default function ReturnsManagementPage() {
       }
       return ordersForMerchant.filter(order => 
         order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.referenceNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (order.referenceNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.recipient.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.phone.toLowerCase().includes(searchQuery.toLowerCase())
       );
@@ -179,12 +165,6 @@ export default function ReturnsManagementPage() {
       );
   }, []);
 
-  const totalReturnedOrders = useMemo(() => Object.values(returnsByMerchant).flat().length, [returnsByMerchant]);
-  const totalCodValue = useMemo(() => {
-      return Object.values(returnsByMerchant).flat().reduce((sum, order) => sum + order.cod, 0);
-  }, [returnsByMerchant]);
-
-
   const renderSidebar = () => {
     return (
         <Card className="h-full">
@@ -193,7 +173,7 @@ export default function ReturnsManagementPage() {
                 <CardDescription>لديهم مرتجعات في الفرع</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-                 <ScrollArea className="h-[calc(100vh-20rem)]">
+                 <ScrollArea className="h-[calc(100vh-16rem)]">
                     {merchantsWithReturns.map(merchant => (
                         <button
                             key={merchant}
@@ -222,35 +202,11 @@ export default function ReturnsManagementPage() {
 
   return (
     <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">مرتجعات جاهزة للتسليم</CardTitle>
-                    <Archive className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{totalReturnedOrders}</div>
-                    <p className="text-xs text-muted-foreground">شحنة في الفرع بانتظار تسليمها للتاجر</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">قيمة المرتجعات الجاهزة</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{totalCodValue.toFixed(2)} د.أ</div>
-                     <p className="text-xs text-muted-foreground">إجمالي قيمة البضاعة المرتجعة للفرع</p>
-                </CardContent>
-            </Card>
-        </div>
-
-
         <Card>
             <CardHeader className="flex-row items-center justify-between gap-4 p-4 md:p-6">
                 <div>
                     <CardTitle className="text-2xl">إدارة المرتجعات</CardTitle>
-                    <CardDescription>تتبع وإدارة جميع الشحنات المرتجعة بكفاءة.</CardDescription>
+                    <CardDescription>تتبع وإدارة جميع الشحنات المرتجعة للفرع.</CardDescription>
                 </div>
             </CardHeader>
             <CardContent>
@@ -302,4 +258,3 @@ export default function ReturnsManagementPage() {
     </div>
   );
 }
-
