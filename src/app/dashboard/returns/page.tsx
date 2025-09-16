@@ -16,6 +16,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 
 import {
@@ -270,4 +271,3 @@ export default function ReturnsManagementPage() {
     </div>
   );
 }
-
