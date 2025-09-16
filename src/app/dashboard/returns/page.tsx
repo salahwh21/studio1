@@ -50,6 +50,8 @@ import {
   ArrowLeft as ArrowLeftIcon,
   Save,
   FileSpreadsheet,
+  ChevronsUp,
+  ChevronUp,
 } from 'lucide-react';
 import {
   DndContext,
@@ -73,7 +75,7 @@ import Papa from 'papaparse';
 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
-import { useOrdersStore, type Order } from '@/store/orders-store';
+import { type Order } from '@/store/orders-store';
 import { useSettings, type SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
 import { PrintablePolicy } from '@/components/printable-policy';
 import { useStatusesStore } from '@/store/statuses-store';
@@ -127,134 +129,272 @@ const RETURNS_COLUMNS: ColumnConfig[] = [
     { key: 'notes', label: 'ملاحظات/سبب الإرجاع' },
 ];
 
-const ReturnsTable = ({
-    orders,
-    totalCount,
-    isLoading,
-    columns,
-    onSort,
-    sortConfig,
-    page,
-    rowsPerPage,
-}: {
-    orders: Order[],
-    totalCount: number,
-    isLoading: boolean,
-    columns: ColumnConfig[],
-    onSort: (key: keyof Order) => void,
-    sortConfig: OrderSortConfig | null,
-    page: number,
-    rowsPerPage: number,
-}) => {
-    const [selectedRows, setSelectedRows] = useState<string[]>([]);
-    
-    const isAllSelected = orders.length > 0 && selectedRows.length === orders.length;
-    const isIndeterminate = selectedRows.length > 0 && selectedRows.length < orders.length;
+const SEARCHABLE_FIELDS: { key: keyof Order; label: string; type: 'text' | 'select', options?: string[] }[] = [
+    { key: 'id', label: 'رقم الطلب', type: 'text' },
+    { key: 'referenceNumber', label: 'الرقم المرجعي', type: 'text' },
+    { key: 'recipient', label: 'المستلم', type: 'text' },
+    { key: 'phone', label: 'الهاتف', type: 'text' },
+    { key: 'merchant', label: 'التاجر', type: 'text' },
+    { key: 'city', label: 'المدينة', type: 'text' },
+    { key: 'region', label: 'المنطقة', type: 'text' },
+    { key: 'date', label: 'التاريخ', type: 'text' },
+    { key: 'previousStatus', label: 'الحالة السابقة', type: 'text' },
+];
 
-    const handleSelectAll = (checked: boolean) => {
-        setSelectedRows(checked ? orders.map(o => o.id) : []);
-    };
-    
-    const handleRowSelect = (id: string, checked: boolean) => {
-        setSelectedRows(prev => checked ? [...prev, id] : prev.filter(rowId => rowId !== id));
-    };
+
+const SortableColumn = ({ id, label, onToggle, isVisible }: { id: string; label: string; onToggle: (id: string, checked: boolean) => void; isVisible: boolean; }) => {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+    const style = { transform: transform ? CSS.Transform.toString(transform) : undefined, transition };
 
     return (
-        <>
-            <div className="flex items-center gap-2 mb-4">
-                 <Button variant="default" size="sm" disabled={selectedRows.length === 0}>
-                    إنشاء كشف مرتجع للتاجر
-                </Button>
-                 <Button variant="outline" size="sm" disabled={selectedRows.length === 0}>
-                    <FileText className="ml-2 h-4 w-4" /> تصدير الكشف المحدد
-                </Button>
-                 <Button variant="outline" size="sm">
-                    <Download className="ml-2 h-4 w-4" /> تصدير كل المرتجعات
-                </Button>
-            </div>
-            <div className="border rounded-lg overflow-auto flex-1">
-                <Table>
-                    <TableHeader className="sticky top-0 z-10 bg-muted/80 backdrop-blur-sm">
-                        <TableRow>
-                            <TableHead className="w-12 text-center border-l">
-                               <Checkbox
-                                    checked={isAllSelected}
-                                    onCheckedChange={handleSelectAll}
-                                    indeterminate={isIndeterminate}
-                                    aria-label="Select all rows"
-                                />
+        <div
+            ref={setNodeRef}
+            style={style}
+            className="flex items-center gap-2 p-2 rounded-md hover:bg-muted"
+        >
+            <GripVertical {...attributes} {...listeners} className="h-5 w-5 cursor-grab text-muted-foreground" />
+            <Checkbox checked={isVisible} id={`col-${id}`} onCheckedChange={(checked) => onToggle(id, !!checked)} className="h-4 w-4" />
+            <Label htmlFor={`col-${id}`} className="flex-1 cursor-pointer">{label}</Label>
+        </div>
+    );
+};
+
+
+const AdvancedSearch = ({
+      filters,
+      onAddFilter,
+      onRemoveFilter,
+    }: {
+      filters: FilterDefinition[];
+      onAddFilter: (filter: FilterDefinition) => void;
+      onRemoveFilter: (index: number) => void;
+    }) => {
+      const [popoverOpen, setPopoverOpen] = useState(false);
+      const [inputValue, setInputValue] = useState('');
+      const [currentField, setCurrentField] = useState<(typeof SEARCHABLE_FIELDS)[number] | null>(null);
+      const inputRef = useRef<HTMLInputElement>(null);
+
+      useEffect(() => {
+        if (currentField && currentField.type === 'text' && inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, [currentField]);
+
+      const handleSelectField = (fieldKey: string) => {
+        const field = SEARCHABLE_FIELDS.find(f => f.key === fieldKey);
+        if (field) {
+          setCurrentField(field);
+          setPopoverOpen(false);
+        }
+      };
+
+      const handleAddTextFilter = () => {
+        if (currentField && inputValue) {
+          onAddFilter({
+            field: currentField.key,
+            operator: 'contains', // Simplified for now
+            value: inputValue,
+          });
+          setCurrentField(null);
+          setInputValue('');
+        }
+      };
+
+      return (
+        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+          <div className="flex items-center gap-2 flex-wrap border rounded-lg p-1.5 min-h-[40px] w-full max-w-lg bg-background">
+            <Search className="h-4 w-4 text-muted-foreground ml-1" />
+            {filters.map((filter, index) => (
+              <Badge key={index} variant="secondary" className="gap-1.5">
+                {SEARCHABLE_FIELDS.find(f => f.key === filter.field)?.label || filter.field}: {filter.value}
+                <button onClick={() => onRemoveFilter(index)} className="rounded-full hover:bg-background/50">
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+            <PopoverTrigger asChild>
+                <div className="flex-1 min-w-[150px]">
+                    {currentField ? (
+                        <div className="flex items-center gap-1">
+                            <span className="text-sm text-muted-foreground">{currentField.label}:</span>
+                            <Input
+                                ref={inputRef}
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddTextFilter()}
+                                onBlur={() => { if (!inputValue) setCurrentField(null); }}
+                                className="h-7 border-none focus-visible:ring-0 p-1"
+                                placeholder="أدخل قيمة..."
+                            />
+                        </div>
+                    ) : (
+                        <button className="text-sm text-muted-foreground hover:text-foreground">إضافة فلتر...</button>
+                    )}
+                </div>
+            </PopoverTrigger>
+          </div>
+          <PopoverContent className="w-[250px] p-0" align="start">
+             <Command>
+                <CommandInput placeholder="ابحث عن حقل..." />
+                <CommandList>
+                    <CommandEmpty>لم يتم العثور على حقل.</CommandEmpty>
+                    <CommandGroup>
+                        {SEARCHABLE_FIELDS.map(field => (
+                            <CommandItem key={field.key} onSelect={() => handleSelectField(field.key)}>
+                                {field.label}
+                            </CommandItem>
+                        ))}
+                    </CommandGroup>
+                </CommandList>
+             </Command>
+          </PopoverContent>
+        </Popover>
+      );
+    };
+
+
+
+const ReturnsTable = ({
+    orders,
+    isLoading,
+    columns,
+    sortConfig,
+    onSort,
+    selectedRows,
+    onSelectRow,
+    onSelectAll,
+    isAllSelected,
+    isIndeterminate,
+}: {
+    orders: Order[],
+    isLoading: boolean,
+    columns: ColumnConfig[],
+    sortConfig: OrderSortConfig | null,
+    onSort: (key: keyof Order) => void,
+    selectedRows: string[],
+    onSelectRow: (id: string, checked: boolean) => void,
+    onSelectAll: (checked: boolean) => void,
+    isAllSelected: boolean,
+    isIndeterminate: boolean,
+}) => {
+
+    const renderOrderRow = (order: Order, index: number) => {
+        return (
+            <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? 'selected' : ''}>
+                <TableCell className="sticky right-0 z-10 p-2 text-center border-l bg-card data-[state=selected]:bg-primary/20">
+                     <Checkbox
+                        checked={selectedRows.includes(order.id)}
+                        onCheckedChange={(checked) => onSelectRow(order.id, !!checked)}
+                    />
+                </TableCell>
+                <TableCell className="p-2 text-center border-l">{index + 1}</TableCell>
+                {columns.map(col => {
+                    let content: React.ReactNode = order[col.key as keyof Order] as string;
+                    if (col.key === 'id-link') {
+                        content = <Link href={`/dashboard/orders/${order.id}`} className="text-primary hover:underline font-mono">{order.id}</Link>
+                    } else if (col.key === 'status') {
+                        content = <Badge variant="secondary">{order.status}</Badge>
+                    } else if (col.key === 'previousStatus') {
+                        content = order.previousStatus ? <Badge variant="outline">{order.previousStatus}</Badge> : '-'
+                    } else if (col.key === 'date') {
+                        content = new Date(order.date).toLocaleDateString('ar-JO');
+                    }
+                    return <TableCell key={col.key} className="p-2 text-center whitespace-nowrap border-l">{content || '-'}</TableCell>
+                })}
+            </TableRow>
+        )
+    }
+
+    return (
+        <div className="flex-1 border rounded-lg overflow-auto flex flex-col">
+            <Table>
+                <TableHeader className="sticky top-0 z-20">
+                    <TableRow className="hover:bg-transparent">
+                        <TableHead className="sticky right-0 z-30 p-2 text-center border-l w-12 bg-slate-800">
+                           <Checkbox
+                                checked={isAllSelected}
+                                onCheckedChange={onSelectAll}
+                                indeterminate={isIndeterminate}
+                                aria-label="Select all rows"
+                                className='border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-800 data-[state=indeterminate]:bg-white data-[state=indeterminate]:text-slate-800'
+                            />
+                        </TableHead>
+                        <TableHead className="w-12 text-center border-l bg-slate-800 text-white">#</TableHead>
+                        {columns.map(col => (
+                            <TableHead key={col.key} className="p-2 text-center whitespace-nowrap border-b border-l bg-slate-800 !text-white hover:!bg-slate-700 transition-colors duration-200">
+                                 {col.sortable ? (
+                                    <Button variant="ghost" onClick={() => onSort(col.key as keyof Order)} className="text-white hover:bg-transparent hover:text-white w-full p-0 h-auto">
+                                        {col.label}
+                                        <ArrowUpDown className="mr-2 h-3 w-3 text-white" />
+                                    </Button>
+                                ) : <span className='text-white'>{col.label}</span>}
                             </TableHead>
-                            <TableHead>#</TableHead>
-                            {columns.map(col => (
-                                <TableHead key={col.key} className="whitespace-nowrap text-center">
-                                     {col.sortable ? (
-                                        <Button variant="ghost" onClick={() => onSort(col.key as keyof Order)} className="px-1">
-                                            {col.label}
-                                            <ArrowUpDown className="mr-2 h-4 w-4" />
-                                        </Button>
-                                    ) : col.label}
-                                </TableHead>
-                            ))}
+                        ))}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                {isLoading ? (
+                    Array.from({ length: 10 }).map((_, i) => (
+                        <TableRow key={`skel-${i}`}>
+                            <TableCell className="text-center border-l"><Checkbox disabled/></TableCell>
+                             <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+                            {columns.map(c => <TableCell key={c.key}><Skeleton className="h-4 w-full" /></TableCell>)}
                         </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {isLoading ? (
-                        Array.from({ length: 5 }).map((_, i) => (
-                            <TableRow key={`skel-${i}`}>
-                                <TableCell className="text-center border-l"><Checkbox disabled/></TableCell>
-                                <TableCell><Skeleton className="h-4 w-4" /></TableCell>
-                                {columns.map(c => <TableCell key={c.key}><Skeleton className="h-4 w-full" /></TableCell>)}
-                            </TableRow>
-                        ))
-                    ) : orders.map((order, index) => (
-                        <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? "selected" : ""}>
-                            <TableCell className="text-center border-l">
-                                <Checkbox
-                                    checked={selectedRows.includes(order.id)}
-                                    onCheckedChange={(checked) => handleRowSelect(order.id, !!checked)}
-                                />
-                            </TableCell>
-                            <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                            {columns.map(col => {
-                                let content: React.ReactNode = order[col.key as keyof Order] as string;
-                                if (col.key === 'id-link') {
-                                    content = <Link href={`/dashboard/orders/${order.id}`} className="text-primary hover:underline font-mono">{order.id}</Link>
-                                } else if (col.key === 'status') {
-                                    content = <Badge variant="secondary">{order.status}</Badge>
-                                } else if (col.key === 'previousStatus') {
-                                    content = order.previousStatus ? <Badge variant="outline">{order.previousStatus}</Badge> : '-'
-                                } else if (col.key === 'date') {
-                                    content = new Date(order.date).toLocaleDateString('ar-JO');
-                                }
-                                return <TableCell key={col.key} className="text-center whitespace-nowrap">{content || '-'}</TableCell>
-                            })}
-                        </TableRow>
-                    ))}
-                    </TableBody>
-                </Table>
-            </div>
-        </>
+                    ))
+                ) : orders.length === 0 ? (
+                     <TableRow><TableCell colSpan={columns.length + 2} className="h-24 text-center">لا توجد مرتجعات لهذا التاجر.</TableCell></TableRow>
+                ) : orders.map((order, index) => renderOrderRow(order, index)) }
+                </TableBody>
+            </Table>
+        </div>
     );
 };
 
 
 const ReturnsManagementPage = () => {
     const { statuses } = useStatusesStore();
-    const [selectedMerchant, setSelectedMerchant] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [sortConfig, setSortConfig] = useState<OrderSortConfig | null>(null);
+    const { users } = useUsersStore();
     
-    // Data fetching states
     const [allReturnedOrders, setAllReturnedOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedMerchant, setSelectedMerchant] = useState<string | null>(null);
+
+    const [filters, setFilters] = useState<FilterDefinition[]>([]);
+    const [sortConfig, setSortConfig] = useState<OrderSortConfig | null>(null);
+    const [selectedRows, setSelectedRows] = useState<string[]>([]);
+    
+    const [columns, setColumns] = useState<ColumnConfig[]>(RETURNS_COLUMNS);
+    const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[]>(RETURNS_COLUMNS.map(c => c.key));
+    const sensors = useSensors(useSensor(PointerSensor));
+    
+    const COLUMN_SETTINGS_KEY = 'returnsTableColumnSettings';
+
+    useEffect(() => {
+        try {
+            const savedColumnSettings = localStorage.getItem(COLUMN_SETTINGS_KEY);
+            if (savedColumnSettings) {
+                const { savedColumns, savedVisibleKeys } = JSON.parse(savedColumnSettings);
+                setColumns(savedColumns);
+                setVisibleColumnKeys(savedVisibleKeys);
+            }
+        } catch (e) { console.error(e); }
+    }, []);
+
+    useEffect(() => {
+        const settingsToSave = JSON.stringify({ savedColumns: columns, savedVisibleKeys: visibleColumnKeys });
+        localStorage.setItem(COLUMN_SETTINGS_KEY, settingsToSave);
+    }, [columns, visibleColumnKeys]);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
+            // Hardcoded filter for returned orders
+            const baseFilters: FilterDefinition[] = [{ field: 'status', operator: 'equals', value: 'مرجع للفرع' }];
             const result = await getOrders({
                 page: 0,
-                rowsPerPage: 9999, // Fetch all for now
-                filters: [{ field: 'status', operator: 'equals', value: 'مرجع للفرع' }],
+                rowsPerPage: 9999, // Fetch all for now, no pagination in this view
+                sortConfig,
+                filters: [...baseFilters, ...filters],
             });
             setAllReturnedOrders(result.orders);
         } catch (error) {
@@ -262,12 +402,11 @@ const ReturnsManagementPage = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [sortConfig, filters]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
-
 
     const returnsByMerchant = useMemo(() => {
         return allReturnedOrders.reduce((acc, order) => {
@@ -281,6 +420,10 @@ const ReturnsManagementPage = () => {
     }, [allReturnedOrders]);
 
     const merchantsWithReturns = Object.keys(returnsByMerchant);
+    
+    const selectedOrders = useMemo(() => {
+        return selectedMerchant ? returnsByMerchant[selectedMerchant] || [] : [];
+    }, [selectedMerchant, returnsByMerchant]);
 
     useEffect(() => {
         if (!selectedMerchant && merchantsWithReturns.length > 0) {
@@ -288,33 +431,37 @@ const ReturnsManagementPage = () => {
         }
     }, [merchantsWithReturns, selectedMerchant]);
     
-    const selectedOrders = useMemo(() => {
-        let ordersForMerchant = selectedMerchant ? returnsByMerchant[selectedMerchant] || [] : [];
-        
-        if (searchQuery) {
-            const lowercasedQuery = searchQuery.toLowerCase();
-            ordersForMerchant = ordersForMerchant.filter(order =>
-                order.id.toLowerCase().includes(lowercasedQuery) ||
-                (order.referenceNumber || '').toLowerCase().includes(lowercasedQuery) ||
-                order.recipient.toLowerCase().includes(lowercasedQuery) ||
-                order.phone.toLowerCase().includes(lowercasedQuery)
-            );
-        }
-        
-        if (sortConfig) {
-            ordersForMerchant.sort((a, b) => {
-                const valA = a[sortConfig.key];
-                const valB = b[sortConfig.key];
-                if (valA < valB) return sortConfig.direction === 'ascending' ? -1 : 1;
-                if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1;
-                return 0;
+    useEffect(() => {
+        setSelectedRows([]);
+    }, [selectedMerchant]);
+
+    const visibleColumns = useMemo(() => columns.filter(c => visibleColumnKeys.includes(c.key)), [columns, visibleColumnKeys]);
+    
+    const handleColumnVisibilityChange = (key: string, checked: boolean) => {
+        setVisibleColumnKeys(prev => 
+            checked ? [...new Set([...prev, key])] : prev.filter(k => k !== key)
+        );
+    };
+
+    const handleColumnDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setColumns((currentColumns) => {
+                const oldIndex = currentColumns.findIndex(c => c.key === active.id);
+                const newIndex = currentColumns.findIndex(c => c.key === over.id);
+                return arrayMove(currentColumns, oldIndex, newIndex);
             });
         }
+    };
+    
+    const handleSelectAll = (checked: boolean) => {
+        setSelectedRows(checked ? selectedOrders.map(o => o.id) : []);
+    };
+    
+    const isAllSelected = selectedOrders.length > 0 && selectedRows.length === selectedOrders.length;
+    const isIndeterminate = selectedRows.length > 0 && selectedRows.length < selectedOrders.length;
 
-        return ordersForMerchant;
-    }, [selectedMerchant, returnsByMerchant, searchQuery, sortConfig]);
-    
-    
+
     const renderSidebar = () => {
         return (
             <Card className="h-full">
@@ -342,7 +489,8 @@ const ReturnsManagementPage = () => {
                                 </Badge>
                             </button>
                         ))}
-                        {merchantsWithReturns.length === 0 && <p className="p-4 text-center text-muted-foreground">لا توجد مرتجعات حالياً.</p>}
+                        {isLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+                        {!isLoading && merchantsWithReturns.length === 0 && <p className="p-4 text-center text-muted-foreground">لا توجد مرتجعات حالياً.</p>}
                     </ScrollArea>
                 </CardContent>
             </Card>
@@ -369,29 +517,72 @@ const ReturnsManagementPage = () => {
                 <div className="md:col-span-9">
                     <Card className="h-full flex flex-col">
                         <CardHeader>
-                            <div className="flex justify-between items-center">
-                                <CardTitle>
-                                    مرتجعات التاجر: <span className="text-primary">{selectedMerchant}</span>
-                                </CardTitle>
+                            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                                <div>
+                                    <CardTitle>
+                                        مرتجعات التاجر: <span className="text-primary">{selectedMerchant}</span>
+                                    </CardTitle>
+                                     <CardDescription>
+                                        إجمالي {selectedOrders.length} طلبات مرتجعة لهذا التاجر.
+                                    </CardDescription>
+                                </div>
                                 <div className="flex items-center gap-2">
-                                    <div className="relative">
-                                        <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                        <Input
-                                            placeholder="بحث في طلبات التاجر..."
-                                            className="pr-10"
-                                            value={searchQuery}
-                                            onChange={e => setSearchQuery(e.target.value)}
-                                        />
-                                    </div>
+                                     <AdvancedSearch
+                                        filters={filters}
+                                        onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
+                                        onRemoveFilter={(index) => setFilters(prev => prev.filter((_, i) => i !== index))}
+                                     />
+                                     <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" size="sm" className="gap-1">
+                                                <ListOrdered className="h-4 w-4" />
+                                                <span>الأعمدة</span>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-64 p-2 max-h-[400px] flex flex-col">
+                                            <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
+                                            <div className='flex items-center gap-2 p-1'>
+                                                <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(RETURNS_COLUMNS.map(c => c.key))}>إظهار الكل</Button>
+                                                <Separator orientation="vertical" className="h-4" />
+                                                <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(['id-link', 'recipient', 'status'])}>إخفاء الكل</Button>
+                                            </div>
+                                            <DropdownMenuSeparator />
+                                            <div className="flex-1 min-h-0 overflow-auto">
+                                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
+                                                    <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
+                                                        {RETURNS_COLUMNS.map((column) => (
+                                                            <SortableColumn
+                                                                key={column.key}
+                                                                id={column.key}
+                                                                label={column.label}
+                                                                isVisible={visibleColumnKeys.includes(column.key)}
+                                                                onToggle={handleColumnVisibilityChange}
+                                                            />
+                                                        ))}
+                                                    </SortableContext>
+                                                </DndContext>
+                                            </div>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
                             </div>
                         </CardHeader>
                         <CardContent className="flex-1 flex flex-col">
+                             <div className="flex items-center gap-2 mb-4">
+                                <Button variant="default" size="sm" disabled={selectedRows.length === 0}>
+                                    إنشاء كشف مرتجع للتاجر
+                                </Button>
+                                <Button variant="outline" size="sm" disabled={selectedRows.length === 0}>
+                                    <FileText className="ml-2 h-4 w-4" /> تصدير الكشف المحدد
+                                </Button>
+                                <Button variant="outline" size="sm">
+                                    <Download className="ml-2 h-4 w-4" /> تصدير كل المرتجعات
+                                </Button>
+                            </div>
                             <ReturnsTable
                                 orders={selectedOrders}
-                                totalCount={selectedOrders.length}
                                 isLoading={isLoading}
-                                columns={RETURNS_COLUMNS}
+                                columns={visibleColumns}
                                 onSort={(key) => {
                                     setSortConfig(prev => {
                                         if (prev?.key === key) {
@@ -401,8 +592,11 @@ const ReturnsManagementPage = () => {
                                     });
                                 }}
                                 sortConfig={sortConfig}
-                                page={0}
-                                rowsPerPage={selectedOrders.length}
+                                selectedRows={selectedRows}
+                                onSelectRow={(id, checked) => setSelectedRows(prev => checked ? [...prev, id] : prev.filter(rowId => rowId !== id))}
+                                onSelectAll={handleSelectAll}
+                                isAllSelected={isAllSelected}
+                                isIndeterminate={isIndeterminate}
                             />
                         </CardContent>
                          <CardFooter className="p-2 border-t">
