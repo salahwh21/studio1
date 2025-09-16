@@ -1120,11 +1120,11 @@ const OrdersTableComponent = () => {
                     </div>
                     {/* Table Container */}
                      <div className="flex-1 border rounded-lg overflow-auto flex flex-col">
-                        <Table className='table-auto'>
+                        <Table>
                             <TableHeader className="sticky top-0 z-20">
                                 <TableRow className="hover:bg-transparent">
                                     <TableHead className="sticky right-0 z-30 p-2 text-center border-l w-20 bg-slate-800"><div className="flex items-center justify-center gap-2"><span className="text-sm font-bold text-white">#</span><Checkbox onCheckedChange={handleSelectAll} checked={isAllSelected} indeterminate={isIndeterminate} aria-label="Select all rows" className='border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-800 data-[state=indeterminate]:bg-white data-[state=indeterminate]:text-slate-800' /></div></TableHead>
-                                    {visibleColumns.map((col) => (<TableHead key={col.key} className="p-2 text-center border-b border-l bg-slate-800 !text-white hover:!bg-slate-700 transition-colors duration-200">{col.sortable ? (<Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-transparent hover:text-white w-full p-0 h-auto">{col.label}<ArrowUpDown className="mr-2 h-3 w-3 text-white" /></Button>) : (<span className='text-white'>{col.label}</span>)}</TableHead>))}
+                                    {visibleColumns.map((col) => (<TableHead key={col.key} className="p-2 text-center border-b border-l bg-slate-800 !text-white hover:!bg-slate-700 transition-colors duration-200" style={{minWidth: ['id', 'referenceNumber'].includes(col.key) ? '150px' : ['recipient', 'address', 'notes', 'merchant'].includes(col.key) ? '200px' : '120px'}}>{col.sortable ? (<Button variant="ghost" onClick={() => handleSort(col.key as keyof Order)} className="text-white hover:bg-transparent hover:text-white w-full p-0 h-auto">{col.label}<ArrowUpDown className="mr-2 h-3 w-3 text-white" /></Button>) : (<span className='text-white'>{col.label}</span>)}</TableHead>))}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -1303,6 +1303,7 @@ export function OrdersTable() {
 
 
     
+
 
 
 
