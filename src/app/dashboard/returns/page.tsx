@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -52,6 +51,7 @@ import {
   FileSpreadsheet,
   ChevronsUp,
   ChevronUp,
+  ChevronsDown,
 } from 'lucide-react';
 import {
   DndContext,
@@ -106,6 +106,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Icon from '@/components/icon';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const CSVLink = dynamic(() => import('react-csv').then(mod => mod.CSVLink), { ssr: false });
@@ -359,11 +360,15 @@ const mockStatements = [
 const ReturnsManagementPage = () => {
     const { statuses } = useStatusesStore();
     const { users } = useUsersStore();
-    
     const [allReturnedOrders, setAllReturnedOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    
+    // States for Merchants
     const [selectedMerchant, setSelectedMerchant] = useState<string | null>(null);
 
+    // States for Drivers
+    const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
+    
     const [filters, setFilters] = useState<FilterDefinition[]>([]);
     const [sortConfig, setSortConfig] = useState<OrderSortConfig | null>(null);
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -390,11 +395,10 @@ const ReturnsManagementPage = () => {
         localStorage.setItem(COLUMN_SETTINGS_KEY, settingsToSave);
     }, [columns, visibleColumnKeys]);
 
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (status: string) => {
         setIsLoading(true);
         try {
-            // Hardcoded filter for returned orders
-            const baseFilters: FilterDefinition[] = [{ field: 'status', operator: 'equals', value: 'مرجع للفرع' }];
+            const baseFilters: FilterDefinition[] = [{ field: 'status', operator: 'equals', value: status }];
             const result = await getOrders({
                 page: 0,
                 rowsPerPage: 9999, // Fetch all for now, no pagination in this view
@@ -410,9 +414,10 @@ const ReturnsManagementPage = () => {
     }, [sortConfig, filters]);
 
     useEffect(() => {
-        fetchData();
+        // Initially fetch data for merchants
+        fetchData('مرجع للفرع');
     }, [fetchData]);
-
+    
     const returnsByMerchant = useMemo(() => {
         return allReturnedOrders.reduce((acc, order) => {
                 const merchantName = order.merchant;
@@ -423,23 +428,45 @@ const ReturnsManagementPage = () => {
                 return acc;
             }, {} as Record<string, Order[]>);
     }, [allReturnedOrders]);
+    
+    const returnsByDriver = useMemo(() => {
+        return allReturnedOrders.reduce((acc, order) => {
+            if (order.driver) {
+                if (!acc[order.driver]) {
+                    acc[order.driver] = [];
+                }
+                acc[order.driver].push(order);
+            }
+            return acc;
+        }, {} as Record<string, Order[]>);
+    }, [allReturnedOrders]);
+
 
     const merchantsWithReturns = Object.keys(returnsByMerchant);
+    const driversWithReturns = Object.keys(returnsByDriver);
     
     const selectedOrders = useMemo(() => {
-        return selectedMerchant ? returnsByMerchant[selectedMerchant] || [] : [];
-    }, [selectedMerchant, returnsByMerchant]);
-
+        if(selectedMerchant) return returnsByMerchant[selectedMerchant] || [];
+        if(selectedDriver) return returnsByDriver[selectedDriver] || [];
+        return [];
+    }, [selectedMerchant, selectedDriver, returnsByMerchant, returnsByDriver]);
+    
     useEffect(() => {
         if (!selectedMerchant && merchantsWithReturns.length > 0) {
             setSelectedMerchant(merchantsWithReturns[0]);
         }
     }, [merchantsWithReturns, selectedMerchant]);
     
-    // When merchant changes, clear selection
+    useEffect(() => {
+        if (!selectedDriver && driversWithReturns.length > 0) {
+            setSelectedDriver(driversWithReturns[0]);
+        }
+    }, [driversWithReturns, selectedDriver]);
+
+    // When merchant/driver selection changes, clear row selection
     useEffect(() => {
       setSelectedRows([]);
-    }, [selectedMerchant]);
+    }, [selectedMerchant, selectedDriver]);
 
     const visibleColumns = useMemo(() => columns.filter(c => visibleColumnKeys.includes(c.key)), [columns, visibleColumnKeys]);
     
@@ -467,41 +494,71 @@ const ReturnsManagementPage = () => {
     const isAllSelected = selectedOrders.length > 0 && selectedRows.length === selectedOrders.length;
     const isIndeterminate = selectedRows.length > 0 && selectedRows.length < selectedOrders.length;
 
+    const renderMerchantSidebar = () => (
+        <Card className="h-full">
+            <CardHeader className="p-4">
+                <CardTitle className="text-lg">قائمة التجار</CardTitle>
+                <CardDescription>التجار الذين لديهم مرتجعات في الفرع</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+                <ScrollArea className="h-[calc(100vh-16rem)]">
+                    {merchantsWithReturns.map(merchant => (
+                        <button
+                            key={merchant}
+                            onClick={() => setSelectedMerchant(merchant)}
+                            className={cn(
+                                "w-full text-right flex justify-between items-center p-4 border-b hover:bg-muted/50 transition-colors",
+                                selectedMerchant === merchant && "bg-primary/10 text-primary"
+                            )}
+                        >
+                            <div className="flex items-center gap-3">
+                                <Store className="h-4 w-4" />
+                                <span className="font-medium">{merchant}</span>
+                            </div>
+                            <Badge variant={selectedMerchant === merchant ? "default" : "secondary"}>
+                                {returnsByMerchant[merchant]?.length || 0}
+                            </Badge>
+                        </button>
+                    ))}
+                    {isLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+                    {!isLoading && merchantsWithReturns.length === 0 && <p className="p-4 text-center text-muted-foreground">لا توجد مرتجعات حالياً.</p>}
+                </ScrollArea>
+            </CardContent>
+        </Card>
+    );
 
-    const renderSidebar = () => {
-        return (
-            <Card className="h-full">
-                <CardHeader className="p-4">
-                    <CardTitle className="text-lg">قائمة التجار</CardTitle>
-                    <CardDescription>التجار الذين لديهم مرتجعات في الفرع</CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <ScrollArea className="h-[calc(100vh-16rem)]">
-                        {merchantsWithReturns.map(merchant => (
-                            <button
-                                key={merchant}
-                                onClick={() => setSelectedMerchant(merchant)}
-                                className={cn(
-                                    "w-full text-right flex justify-between items-center p-4 border-b hover:bg-muted/50 transition-colors",
-                                    selectedMerchant === merchant && "bg-primary/10 text-primary"
-                                )}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <Store className="h-4 w-4" />
-                                    <span className="font-medium">{merchant}</span>
-                                </div>
-                                <Badge variant={selectedMerchant === merchant ? "default" : "secondary"}>
-                                    {returnsByMerchant[merchant]?.length || 0}
-                                </Badge>
-                            </button>
-                        ))}
-                        {isLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
-                        {!isLoading && merchantsWithReturns.length === 0 && <p className="p-4 text-center text-muted-foreground">لا توجد مرتجعات حالياً.</p>}
-                    </ScrollArea>
-                </CardContent>
-            </Card>
-        );
-    };
+    const renderDriverSidebar = () => (
+         <Card className="h-full">
+            <CardHeader className="p-4">
+                <CardTitle className="text-lg">قائمة السائقين</CardTitle>
+                <CardDescription>السائقين الذين لديهم مرتجعات لتسليمها.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+                <ScrollArea className="h-[calc(100vh-16rem)]">
+                    {driversWithReturns.map(driver => (
+                        <button
+                            key={driver}
+                            onClick={() => setSelectedDriver(driver)}
+                            className={cn(
+                                "w-full text-right flex justify-between items-center p-4 border-b hover:bg-muted/50 transition-colors",
+                                selectedDriver === driver && "bg-primary/10 text-primary"
+                            )}
+                        >
+                            <div className="flex items-center gap-3">
+                                <Truck className="h-4 w-4" />
+                                <span className="font-medium">{driver}</span>
+                            </div>
+                            <Badge variant={selectedDriver === driver ? "default" : "secondary"}>
+                                {returnsByDriver[driver]?.length || 0}
+                            </Badge>
+                        </button>
+                    ))}
+                    {isLoading && Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+                    {!isLoading && driversWithReturns.length === 0 && <p className="p-4 text-center text-muted-foreground">لا توجد مرتجعات لدى السائقين.</p>}
+                </ScrollArea>
+            </CardContent>
+        </Card>
+    );
 
     return (
         <div className="space-y-6">
@@ -509,151 +566,200 @@ const ReturnsManagementPage = () => {
                 <CardHeader className="flex-row items-center justify-between gap-4 p-4 md:p-6">
                     <div>
                         <CardTitle className="text-2xl">إدارة المرتجعات</CardTitle>
-                        <CardDescription>تتبع وإدارة جميع الشحنات المرتجعة للفرع.</CardDescription>
+                        <CardDescription>تتبع وإدارة جميع الشحنات المرتجعة للفرع أو مع السائقين.</CardDescription>
                     </div>
                     <Button variant="outline" size="icon" asChild>
                         <Link href="/dashboard"><ArrowLeftIcon className="h-4 w-4" /></Link>
                     </Button>
                 </CardHeader>
             </Card>
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                <div className="md:col-span-3">
-                    {renderSidebar()}
-                </div>
-                <div className="md:col-span-9 space-y-6">
-                    <Card className="h-full flex flex-col">
-                        <CardHeader>
-                            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                                <div>
-                                    <CardTitle>
-                                        مرتجعات التاجر: <span className="text-primary">{selectedMerchant}</span>
-                                    </CardTitle>
-                                     <CardDescription>
-                                        إجمالي {selectedOrders.length} طلبات مرتجعة لهذا التاجر.
-                                    </CardDescription>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                     <AdvancedSearch
-                                        filters={filters}
-                                        onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
-                                        onRemoveFilter={(index) => setFilters(prev => prev.filter((_, i) => i !== index))}
-                                     />
-                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="outline" size="sm" className="gap-1">
-                                                <ListOrdered className="h-4 w-4" />
-                                                <span>الأعمدة</span>
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-64 p-2 max-h-[400px] flex flex-col">
-                                            <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
-                                            <div className='flex items-center gap-2 p-1'>
-                                                <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(RETURNS_COLUMNS.map(c => c.key))}>إظهار الكل</Button>
-                                                <Separator orientation="vertical" className="h-4" />
-                                                <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(['id-link', 'recipient', 'status'])}>إخفاء الكل</Button>
-                                            </div>
-                                            <DropdownMenuSeparator />
-                                            <div className="flex-1 min-h-0 overflow-auto">
-                                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
-                                                    <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
-                                                        {RETURNS_COLUMNS.map((column) => (
-                                                            <SortableColumn
-                                                                key={column.key}
-                                                                id={column.key}
-                                                                label={column.label}
-                                                                isVisible={visibleColumnKeys.includes(column.key)}
-                                                                onToggle={handleColumnVisibilityChange}
-                                                            />
-                                                        ))}
-                                                    </SortableContext>
-                                                </DndContext>
-                                            </div>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="flex-1 flex flex-col">
-                             <div className="flex items-center gap-2 mb-4">
-                                <Button variant="default" size="sm" disabled={selectedRows.length === 0}>
-                                    إنشاء كشف مرتجع للتاجر
-                                </Button>
-                                <Button variant="outline" size="sm" disabled={selectedRows.length === 0}>
-                                    <FileText className="ml-2 h-4 w-4" /> تصدير الكشف المحدد
-                                </Button>
-                                <Button variant="outline" size="sm">
-                                    <Download className="ml-2 h-4 w-4" /> تصدير كل المرتجعات
-                                </Button>
-                            </div>
-                            <ReturnsTable
-                                orders={selectedOrders}
-                                isLoading={isLoading}
-                                columns={visibleColumns}
-                                onSort={(key) => {
-                                    setSortConfig(prev => {
-                                        if (prev?.key === key) {
-                                            return { ...prev, direction: prev.direction === 'ascending' ? 'descending' : 'ascending' };
-                                        }
-                                        return { key, direction: 'ascending' };
-                                    });
-                                }}
-                                sortConfig={sortConfig}
-                                selectedRows={selectedRows}
-                                onSelectRow={(id, checked) => setSelectedRows(prev => checked ? [...prev, id] : prev.filter(rowId => rowId !== id))}
-                                onSelectAll={handleSelectAll}
-                                isAllSelected={isAllSelected}
-                                isIndeterminate={isIndeterminate}
-                            />
-                        </CardContent>
-                         <CardFooter className="p-2 border-t">
-                            <span className="text-xs text-muted-foreground">
-                                إجمالي {selectedOrders.length} طلبات
-                            </span>
-                        </CardFooter>
-                    </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>الكشوفات المصدرة للتاجر</CardTitle>
-                            <CardDescription>
-                                قائمة بالكشوفات التي تم إنشاؤها مسبقًا لهذا التاجر.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>رقم الكشف</TableHead>
-                                        <TableHead>تاريخ الإنشاء</TableHead>
-                                        <TableHead>عدد القطع</TableHead>
-                                        <TableHead>الحالة</TableHead>
-                                        <TableHead className="text-left">إجراءات</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {mockStatements.map((stmt) => (
-                                        <TableRow key={stmt.id}>
-                                            <TableCell className="font-mono">{stmt.id}</TableCell>
-                                            <TableCell>{stmt.date}</TableCell>
-                                            <TableCell>{stmt.itemCount}</TableCell>
-                                            <TableCell>
-                                                <Badge variant={stmt.status === 'مدفوع' ? 'default' : 'secondary'} className={stmt.status === 'مدفوع' ? 'bg-green-100 text-green-700' : ''}>
-                                                    {stmt.status}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-left">
-                                                <Button variant="outline" size="sm">
-                                                    <Printer className="ml-2 h-4 w-4" /> طباعة
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+            <Tabs defaultValue="merchants" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="merchants" onClick={() => {
+                        fetchData('مرجع للفرع');
+                        setSelectedDriver(null);
+                    }}>
+                        <Store className="ml-2 h-4 w-4" /> مرتجعات التجار
+                    </TabsTrigger>
+                    <TabsTrigger value="drivers" onClick={() => {
+                        fetchData('راجع'); // Or any other status for drivers
+                        setSelectedMerchant(null);
+                    }}>
+                        <Truck className="ml-2 h-4 w-4" /> مرتجعات السائقين
+                    </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="merchants" className="mt-4">
+                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        <div className="md:col-span-3">
+                            {renderMerchantSidebar()}
+                        </div>
+                        <div className="md:col-span-9 space-y-6">
+                            <Card className="h-full flex flex-col">
+                                <CardHeader>
+                                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                                        <div>
+                                            <CardTitle>
+                                                مرتجعات التاجر: <span className="text-primary">{selectedMerchant}</span>
+                                            </CardTitle>
+                                            <CardDescription>
+                                                إجمالي {selectedOrders.length} طلبات مرتجعة لهذا التاجر.
+                                            </CardDescription>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <AdvancedSearch
+                                                filters={filters}
+                                                onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
+                                                onRemoveFilter={(index) => setFilters(prev => prev.filter((_, i) => i !== index))}
+                                            />
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="outline" size="sm" className="gap-1">
+                                                        <ListOrdered className="h-4 w-4" />
+                                                        <span>الأعمدة</span>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-64 p-2 max-h-[400px] flex flex-col">
+                                                    <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
+                                                    <div className='flex items-center gap-2 p-1'>
+                                                        <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(RETURNS_COLUMNS.map(c => c.key))}>إظهار الكل</Button>
+                                                        <Separator orientation="vertical" className="h-4" />
+                                                        <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(['id-link', 'recipient', 'status'])}>إخفاء الكل</Button>
+                                                    </div>
+                                                    <DropdownMenuSeparator />
+                                                    <div className="flex-1 min-h-0 overflow-auto">
+                                                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
+                                                            <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
+                                                                {RETURNS_COLUMNS.map((column) => (
+                                                                    <SortableColumn
+                                                                        key={column.key}
+                                                                        id={column.key}
+                                                                        label={column.label}
+                                                                        isVisible={visibleColumnKeys.includes(column.key)}
+                                                                        onToggle={handleColumnVisibilityChange}
+                                                                    />
+                                                                ))}
+                                                            </SortableContext>
+                                                        </DndContext>
+                                                    </div>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="flex-1 flex flex-col">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <Button variant="default" size="sm" disabled={selectedRows.length === 0}>
+                                            إنشاء كشف مرتجع للتاجر
+                                        </Button>
+                                        <Button variant="outline" size="sm" disabled={selectedRows.length === 0}>
+                                            <FileText className="ml-2 h-4 w-4" /> تصدير الكشف المحدد
+                                        </Button>
+                                        <Button variant="outline" size="sm">
+                                            <Download className="ml-2 h-4 w-4" /> تصدير كل المرتجعات
+                                        </Button>
+                                    </div>
+                                    <ReturnsTable
+                                        orders={selectedOrders}
+                                        isLoading={isLoading}
+                                        columns={visibleColumns}
+                                        onSort={(key) => {
+                                            setSortConfig(prev => {
+                                                if (prev?.key === key) {
+                                                    return { ...prev, direction: prev.direction === 'ascending' ? 'descending' : 'ascending' };
+                                                }
+                                                return { key, direction: 'ascending' };
+                                            });
+                                        }}
+                                        sortConfig={sortConfig}
+                                        selectedRows={selectedRows}
+                                        onSelectRow={(id, checked) => setSelectedRows(prev => checked ? [...prev, id] : prev.filter(rowId => rowId !== id))}
+                                        onSelectAll={handleSelectAll}
+                                        isAllSelected={isAllSelected}
+                                        isIndeterminate={isIndeterminate}
+                                    />
+                                </CardContent>
+                                <CardFooter className="p-2 border-t">
+                                    <span className="text-xs text-muted-foreground">
+                                        إجمالي {selectedOrders.length} طلبات
+                                    </span>
+                                </CardFooter>
+                            </Card>
+
+                             <Card>
+                                <CardHeader>
+                                    <CardTitle>الكشوفات المصدرة للتاجر</CardTitle>
+                                    <CardDescription>
+                                        قائمة بالكشوفات التي تم إنشاؤها مسبقًا لهذا التاجر.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>رقم الكشف</TableHead>
+                                                <TableHead>تاريخ الإنشاء</TableHead>
+                                                <TableHead>عدد القطع</TableHead>
+                                                <TableHead>الحالة</TableHead>
+                                                <TableHead className="text-left">إجراءات</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {mockStatements.map((stmt) => (
+                                                <TableRow key={stmt.id}>
+                                                    <TableCell className="font-mono">{stmt.id}</TableCell>
+                                                    <TableCell>{stmt.date}</TableCell>
+                                                    <TableCell>{stmt.itemCount}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant={stmt.status === 'مدفوع' ? 'default' : 'secondary'} className={stmt.status === 'مدفوع' ? 'bg-green-100 text-green-700' : ''}>
+                                                            {stmt.status}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-left">
+                                                        <Button variant="outline" size="sm">
+                                                            <Printer className="ml-2 h-4 w-4" /> طباعة
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                </TabsContent>
+
+                 <TabsContent value="drivers" className="mt-4">
+                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        <div className="md:col-span-3">
+                           {renderDriverSidebar()}
+                        </div>
+                        <div className="md:col-span-9 space-y-6">
+                             <Card>
+                                <CardHeader>
+                                     <CardTitle>مرتجعات السائق: <span className="text-primary">{selectedDriver}</span></CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                     <ReturnsTable
+                                        orders={selectedOrders}
+                                        isLoading={isLoading}
+                                        columns={visibleColumns}
+                                        onSort={(key) => {}}
+                                        sortConfig={sortConfig}
+                                        selectedRows={selectedRows}
+                                        onSelectRow={(id, checked) => setSelectedRows(prev => checked ? [...prev, id] : prev.filter(rowId => rowId !== id))}
+                                        onSelectAll={handleSelectAll}
+                                        isAllSelected={isAllSelected}
+                                        isIndeterminate={isIndeterminate}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
@@ -665,3 +771,5 @@ export default function ReturnsPage() {
         </React.Suspense>
     )
 }
+
+    
