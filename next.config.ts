@@ -3,6 +3,10 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
+  devIndicators: {
+    buildActivity: true, 
+    autoPrerender: true,
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -40,7 +44,6 @@ const nextConfig: NextConfig = {
   experimental: {
     // Other experimental features can go here if needed
   },
-  allowedDevOrigins: ["**"],
 };
 
 export default nextConfig;
