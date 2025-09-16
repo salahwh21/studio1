@@ -31,6 +31,7 @@ export default function ReturnsPage() {
   const [filterMerchant, setFilterMerchant] = useState<string | null>(null);
   const [filterStartDate, setFilterStartDate] = useState<string | null>(null);
   const [filterEndDate, setFilterEndDate] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
   
   const returnsAtBranch = useMemo(() => {
     const ordersInSlips = new Set(slips.flatMap(slip => slip.orders.map((o: Order) => o.id)));
@@ -52,7 +53,8 @@ export default function ReturnsPage() {
         matchesDate = false;
       }
     }
-    return matchesMerchant && matchesDate;
+    let matchesStatus = filterStatus ? slip.status === filterStatus : true;
+    return matchesMerchant && matchesDate && matchesStatus;
   });
 
   // إنشاء كشف جديد
@@ -192,39 +194,44 @@ export default function ReturnsPage() {
         {/* لسان كشوفات الإرجاع مع الفلاتر */}
         <TabsContent value="return-slips" className="mt-4">
           <Card>
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>كشوفات الإرجاع</CardTitle>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Select onValueChange={(v) => setFilterMerchant(v === 'all' ? null : v)} value={filterMerchant || 'all'}>
-                    <SelectTrigger className="w-full sm:w-40">
-                      <SelectValue placeholder="اختيار التاجر" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">كل التجار</SelectItem>
-                      {merchants.map((m) => (
-                        <SelectItem key={m} value={m}>{m}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="date"
-                      placeholder="من"
-                      value={filterStartDate || ''}
-                      onChange={(e) => setFilterStartDate(e.target.value || null)}
-                      className="w-full sm:w-auto"
-                    />
-                     <span className="text-muted-foreground">-</span>
-                    <Input
-                      type="date"
-                      placeholder="إلى"
-                      value={filterEndDate || ''}
-                      onChange={(e) => setFilterEndDate(e.target.value || null)}
-                      className="w-full sm:w-auto"
-                    />
-                  </div>
-                </div>
+            <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <CardTitle>كشوفات الإرجاع</CardTitle>
+              <div className="flex flex-wrap gap-2">
+                <Select onValueChange={(v) => setFilterMerchant(v === 'all' ? null : v)} value={filterMerchant || 'all'}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="اختيار التاجر" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">كل التجار</SelectItem>
+                    {merchants.map((m) => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select onValueChange={(v) => setFilterStatus(v === 'all' ? null : v)} value={filterStatus || 'all'}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="حالة الكشف" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">الكل</SelectItem>
+                    <SelectItem value="جاهز للتسليم">جاهز للتسليم</SelectItem>
+                    <SelectItem value="تم التسليم">تم التسليم</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Input
+                  type="date"
+                  placeholder="من"
+                  value={filterStartDate || ''}
+                  onChange={(e) => setFilterStartDate(e.target.value || null)}
+                />
+                <Input
+                  type="date"
+                  placeholder="إلى"
+                  value={filterEndDate || ''}
+                  onChange={(e) => setFilterEndDate(e.target.value || null)}
+                />
               </div>
             </CardHeader>
             <CardContent>
