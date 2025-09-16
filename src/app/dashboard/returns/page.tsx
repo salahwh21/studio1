@@ -1,7 +1,8 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback, useRef, useTransition } from 'react';
+import * as React from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, useTransition } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
@@ -49,6 +50,7 @@ import {
   Save,
   FileSpreadsheet,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
@@ -69,7 +71,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Icon from '@/components/icon';
 
-
 const getStatusBadge = (status: string, allStatuses: any[]) => {
     const statusInfo = allStatuses.find(s => s.name === status);
     if (statusInfo) {
@@ -88,8 +89,12 @@ const ReturnsTable = ({ orders, statuses }: { orders: Order[], statuses: any[] }
     
     const isAllSelected = orders.length > 0 && selectedRows.length === orders.length;
     
-    const handleSelectAll = useCallback((checked: boolean) => {
-        setSelectedRows(checked ? orders.map(order => order.id) : []);
+    const handleSelectAll = useCallback((checked: boolean | 'indeterminate') => {
+        if (checked === true) {
+            setSelectedRows(orders.map(order => order.id));
+        } else {
+            setSelectedRows([]);
+        }
     }, [orders]);
 
     const handleSelectionChange = useCallback((id: string, isSelected: boolean) => {
@@ -112,8 +117,8 @@ const ReturnsTable = ({ orders, statuses }: { orders: Order[], statuses: any[] }
                     <TableRow>
                         <TableHead className="w-12 text-center border-l">
                            <Checkbox
-                                checked={isAllSelected}
-                                onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                                checked={isAllSelected || isIndeterminate}
+                                onCheckedChange={handleSelectAll}
                                 ref={(input: HTMLButtonElement | null) => {
                                   if (input) input.indeterminate = isIndeterminate;
                                 }}
@@ -176,8 +181,7 @@ export default function ReturnsManagementPage() {
 
     const [selectedMerchant, setSelectedMerchant] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedRows, setSelectedRows] = useState<string[]>([]);
-
+    
     const returnsByMerchant = useMemo(() => {
         return orders
             .filter(order => order.status === 'راجع')
@@ -199,10 +203,6 @@ export default function ReturnsManagementPage() {
         }
     }, [merchantsWithReturns, selectedMerchant]);
     
-    useEffect(() => {
-        setSelectedRows([]);
-    }, [selectedMerchant]);
-
     const selectedOrders = useMemo(() => {
         const ordersForMerchant = selectedMerchant ? returnsByMerchant[selectedMerchant] || [] : [];
         if (!searchQuery) {
@@ -264,50 +264,48 @@ export default function ReturnsManagementPage() {
                         <Link href="/dashboard"><ArrowLeftIcon className="h-4 w-4" /></Link>
                     </Button>
                 </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                        <div className="md:col-span-3">
-                            {renderSidebar()}
-                        </div>
-                        <div className="md:col-span-9">
-                            <Card>
-                                <CardHeader>
-                                    <div className="flex justify-between items-center">
-                                        <CardTitle>
-                                            مرتجعات التاجر: <span className="text-primary">{selectedMerchant}</span>
-                                        </CardTitle>
-                                        <div className="flex items-center gap-2">
-                                            <div className="relative">
-                                                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                                <Input
-                                                    placeholder="بحث في طلبات التاجر..."
-                                                    className="pr-10"
-                                                    value={searchQuery}
-                                                    onChange={e => setSearchQuery(e.target.value)}
-                                                />
-                                            </div>
-                                            <Button size="sm" variant="outline">
-                                                <FileText className="ml-2 h-4 w-4" /> تصدير الكشف
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <ReturnsTable
-                                        orders={selectedOrders}
-                                        statuses={statuses}
-                                    />
-                                </CardContent>
-                                 <CardFooter className="p-2 border-t">
-                                    <span className="text-xs text-muted-foreground">
-                                        إجمالي {selectedOrders.length} طلبات
-                                    </span>
-                                </CardFooter>
-                            </Card>
-                        </div>
-                    </div>
-                </CardContent>
             </Card>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <div className="md:col-span-3">
+                    {renderSidebar()}
+                </div>
+                <div className="md:col-span-9">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex justify-between items-center">
+                                <CardTitle>
+                                    مرتجعات التاجر: <span className="text-primary">{selectedMerchant}</span>
+                                </CardTitle>
+                                <div className="flex items-center gap-2">
+                                    <div className="relative">
+                                        <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                        <Input
+                                            placeholder="بحث في طلبات التاجر..."
+                                            className="pr-10"
+                                            value={searchQuery}
+                                            onChange={e => setSearchQuery(e.target.value)}
+                                        />
+                                    </div>
+                                    <Button size="sm" variant="outline">
+                                        <FileText className="ml-2 h-4 w-4" /> تصدير الكشف
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <ReturnsTable
+                                orders={selectedOrders}
+                                statuses={statuses}
+                            />
+                        </CardContent>
+                         <CardFooter className="p-2 border-t">
+                            <span className="text-xs text-muted-foreground">
+                                إجمالي {selectedOrders.length} طلبات
+                            </span>
+                        </CardFooter>
+                    </Card>
+                </div>
+            </div>
         </div>
     );
 }
