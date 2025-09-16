@@ -53,17 +53,18 @@ const ReturnsTable = ({ orders, statuses }: { orders: Order[], statuses: any[] }
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
     
     const isAllSelected = orders.length > 0 && selectedRows.length === orders.length;
-    const isIndeterminate = selectedRows.length > 0 && selectedRows.length < orders.length;
-
+    
     const handleSelectAll = useCallback((checked: boolean) => {
         setSelectedRows(checked ? orders.map(order => order.id) : []);
     }, [orders]);
-    
+
     const handleSelectionChange = useCallback((id: string, isSelected: boolean) => {
       setSelectedRows(prev => 
         isSelected ? [...prev, id] : prev.filter(rowId => rowId !== id)
       );
-  }, []);
+    }, []);
+
+    const isIndeterminate = selectedRows.length > 0 && selectedRows.length < orders.length;
 
     return (
         <div className="overflow-x-auto">
@@ -88,7 +89,7 @@ const ReturnsTable = ({ orders, statuses }: { orders: Order[], statuses: any[] }
                         <TableHead>#</TableHead>
                         <TableHead>رقم الطلب</TableHead>
                         <TableHead>المصدر</TableHead>
-                        <TableHead>المرجع</TableHead>
+                        <TableHead>الرقم المرجعي</TableHead>
                         <TableHead>المستلم</TableHead>
                         <TableHead>الهاتف</TableHead>
                         <TableHead>العنوان</TableHead>
