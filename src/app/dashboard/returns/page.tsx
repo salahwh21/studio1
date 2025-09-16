@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { parseISO, isWithinInterval } from 'date-fns';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { Separator } from '@/components/ui/separator';
 
 
 const RETURNABLE_STATUSES = ['راجع', 'ملغي', 'رفض ودفع أجور', 'رفض ولم يدفع أجور', 'تبديل'];
@@ -28,56 +29,137 @@ type Slip = {
   orders: Order[];
 };
 
+type AutomationRule = {
+    id: string;
+    conditionField: 'age_in_branch' | 'reason';
+    conditionOperator: 'greater_than' | 'equals';
+    conditionValue: string;
+    action: 'change_status' | 'notify_merchant';
+    actionValue: string;
+    enabled: boolean;
+};
+
+// --- Component: محرك الأتمتة ---
+const AutomationEngine = () => {
+    const [rules, setRules] = useState<AutomationRule[]>([
+        { id: 'rule1', conditionField: 'age_in_branch', conditionOperator: 'greater_than', conditionValue: '3', action: 'change_status', actionValue: 'يتطلب مراجعة', enabled: true },
+        { id: 'rule2', conditionField: 'reason', conditionOperator: 'equals', conditionValue: 'عنوان خاطئ', action: 'notify_merchant', actionValue: 'تنبيه بتحديث العنوان', enabled: false },
+    ]);
+
+    const handleAddRule = () => {
+        setRules(prev => [...prev, { id: `rule${Date.now()}`, conditionField: 'age_in_branch', conditionOperator: 'greater_than', conditionValue: '', action: 'change_status', actionValue: '', enabled: true }]);
+    };
+
+    const handleRemoveRule = (id: string) => {
+        setRules(prev => prev.filter(r => r.id !== id));
+    };
+
+    return (
+        <Card className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Icon name="Wand2"/> محرك الأتمتة للمرتجعات</CardTitle>
+                <CardDescription>إنشاء قواعد تلقائية لتسهيل إدارة المرتجعات. سيتم تنفيذ هذه القواعد مرة واحدة يوميًا.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-1/4">إذا كان</TableHead>
+                            <TableHead className="w-1/4">والشرط</TableHead>
+                            <TableHead className="w-1/4">إذن نفذ الإجراء</TableHead>
+                            <TableHead>إجراء</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {rules.map(rule => (
+                            <TableRow key={rule.id}>
+                                <TableCell className="flex flex-col gap-2">
+                                     <Select defaultValue={rule.conditionField}>
+                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="age_in_branch">عمر المرتجع بالفرع (أيام)</SelectItem>
+                                            <SelectItem value="reason">سبب الإرجاع</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </TableCell>
+                                <TableCell>
+                                     <div className="flex gap-2">
+                                        <Select defaultValue={rule.conditionOperator} className="w-1/3">
+                                            <SelectTrigger><SelectValue/></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="greater_than">&gt;</SelectItem>
+                                                <SelectItem value="equals">=</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <Input placeholder="القيمة" defaultValue={rule.conditionValue} className="w-2/3"/>
+                                     </div>
+                                </TableCell>
+                                <TableCell>
+                                     <Select defaultValue={rule.action}>
+                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="change_status">تغيير الحالة إلى</SelectItem>
+                                            <SelectItem value="notify_merchant">إرسال تنبيه للتاجر</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </TableCell>
+                                <TableCell>
+                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveRule(rule.id)}><Icon name="Trash2" className="h-4 w-4 text-destructive"/></Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+                <Button variant="outline" className="mt-4 w-full" onClick={handleAddRule}><Icon name="PlusCircle" className="mr-2 h-4 w-4"/> إضافة قاعدة جديدة</Button>
+            </CardContent>
+        </Card>
+    );
+};
+
+
 // --- Component: استلام المرتجعات من السائقين ---
 const ReturnsFromDrivers = () => {
   const { orders, updateOrderStatus } = useOrdersStore();
   const { toast } = useToast();
 
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
-  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<Order | null>(null);
 
   const drivers = useMemo(() => Array.from(new Set(orders.map(o => o.driver).filter(Boolean))), [orders]);
 
   const ordersForReturn = useMemo(() => {
-    // Include orders that are in a returnable state OR are just 'مؤجل'
     let returnableOrders = orders.filter(o => RETURNABLE_STATUSES.includes(o.status) || o.status === 'مؤجل');
-    
     if (selectedDriver) {
       returnableOrders = returnableOrders.filter(o => o.driver === selectedDriver);
     }
-    
-    if (searchQuery) {
-        const lowercasedQuery = searchQuery.toLowerCase();
-        returnableOrders = returnableOrders.filter(o => 
-            o.id.toLowerCase().includes(lowercasedQuery) ||
-            o.recipient.toLowerCase().includes(lowercasedQuery) ||
-            o.merchant.toLowerCase().includes(lowercasedQuery)
-        );
-    }
-
     return returnableOrders;
-  }, [orders, selectedDriver, searchQuery]);
+  }, [orders, selectedDriver]);
 
-  const toggleSelect = (id: string) => {
-    setSelectedOrders(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
+  const handleScan = () => {
+    const foundOrder = ordersForReturn.find(o => o.id === searchQuery || o.referenceNumber === searchQuery || o.phone === searchQuery);
+    if(foundOrder) {
+        if (!selectedOrderIds.includes(foundOrder.id)) {
+            setSelectedOrderIds(prev => [...prev, foundOrder.id]);
+        }
+        setSelectedOrderForDetails(foundOrder);
+        setSearchQuery('');
+        toast({ title: "تم تحديد الطلب", description: `تم تحديد الطلب ${foundOrder.id} بنجاح.`});
+    } else {
+        toast({ variant: 'destructive', title: 'لم يتم العثور على الطلب', description: 'تأكد من الرقم المدخل أو أن الطلب ضمن قائمة المرتجعات.'});
+    }
+  }
 
   const markReturned = () => {
-    selectedOrders.forEach(id => {
-      // We are marking them as 'مرجع للفرع' which is a more specific status
+    selectedOrderIds.forEach(id => {
       updateOrderStatus(id, 'مرجع للفرع');
     });
-    toast({ title: "تم التحديث", description: `تم تحديث ${selectedOrders.length} طلب/طلبات إلى حالة "مرجع للفرع".` });
-    setSelectedOrders([]);
-  };
-
-  const handleSelectAll = (checked: boolean) => {
-    setSelectedOrders(checked ? ordersForReturn.map(o => o.id) : []);
+    toast({ title: "تم التحديث", description: `تم تحديث ${selectedOrderIds.length} طلب/طلبات إلى حالة "مرجع للفرع".` });
+    setSelectedOrderIds([]);
+    setSelectedOrderForDetails(null);
   };
   
-  const areAllSelected = ordersForReturn.length > 0 && selectedOrders.length === ordersForReturn.length;
-
   const getStatusBadgeVariant = (status: string) => {
     if (status === 'راجع' || status === 'مرجع للفرع') return 'outline';
     if (status === 'ملغي' || status.includes('رفض')) return 'destructive';
@@ -86,68 +168,103 @@ const ReturnsFromDrivers = () => {
   };
 
   return (
-    <Card>
-        <CardHeader>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <CardTitle>استلام المرتجعات من السائقين</CardTitle>
-                    <CardDescription>عرض الشحنات الراجعة والمؤجلة لكل سائق وتأكيد استلامها في الفرع.</CardDescription>
-                </div>
-                 <div className="flex flex-wrap gap-2">
-                    <Button onClick={() => setSelectedDriver(null)} variant={!selectedDriver ? 'default' : 'outline'} size="sm">الكل</Button>
-                    {drivers.map(d => (
-                        <Button key={d} onClick={() => setSelectedDriver(d)} variant={selectedDriver === d ? 'default' : 'outline'} size="sm">{d}</Button>
-                    ))}
-                </div>
-            </div>
-             <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
-                <div className="relative w-full sm:max-w-md">
-                    <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input 
-                        placeholder="بحث برقم الطلب، المستلم، التاجر..." 
-                        className="pr-10"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                </div>
-                <div className="flex items-center gap-2 sm:mr-auto">
-                    <Button onClick={markReturned} disabled={selectedOrders.length === 0}>
-                        <Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد استلام المحدد ({selectedOrders.length})
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="lg:col-span-2">
+            <Card>
+                <CardHeader>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <CardTitle>قائمة الاستلام</CardTitle>
+                            <CardDescription>جميع المرتجعات والمؤجلات الموجودة مع السائقين.</CardDescription>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <Button onClick={() => setSelectedDriver(null)} variant={!selectedDriver ? 'default' : 'outline'} size="sm">الكل</Button>
+                            {drivers.map(d => (
+                                <Button key={d} onClick={() => setSelectedDriver(d)} variant={selectedDriver === d ? 'default' : 'outline'} size="sm">{d}</Button>
+                            ))}
+                        </div>
+                    </div>
+                </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead>رقم الطلب</TableHead>
+                      <TableHead>التاجر</TableHead>
+                      <TableHead>المستلم</TableHead>
+                      <TableHead>السائق</TableHead>
+                      <TableHead>الحالة</TableHead>
+                      <TableHead>سبب الإرجاع</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {ordersForReturn.length > 0 ? ordersForReturn.map(o => (
+                      <TableRow 
+                        key={o.id} 
+                        data-state={selectedOrderIds.includes(o.id) && "selected"}
+                        className="cursor-pointer"
+                        onClick={() => setSelectedOrderForDetails(o)}
+                      >
+                        <TableCell><Checkbox checked={selectedOrderIds.includes(o.id)} onCheckedChange={(checked) => setSelectedOrderIds(prev => checked ? [...prev, o.id] : prev.filter(id => id !== o.id))} /></TableCell>
+                        <TableCell className="font-mono">{o.id}</TableCell>
+                        <TableCell>{o.merchant}</TableCell>
+                        <TableCell>{o.recipient}</TableCell>
+                        <TableCell>{o.driver}</TableCell>
+                        <TableCell><Badge variant={getStatusBadgeVariant(o.status)}>{o.status}</Badge></TableCell>
+                        <TableCell className="text-muted-foreground text-xs">{o.notes}</TableCell>
+                      </TableRow>
+                    )) : (
+                      <TableRow><TableCell colSpan={7} className="h-24 text-center">لا توجد طلبات مرتجعة لهذا السائق.</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+        </div>
+        <div className="lg:sticky lg:top-24 space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>تأكيد الاستلام</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="scan-barcode">مسح الباركود أو الرقم المرجعي</Label>
+                        <div className="flex gap-2">
+                            <Input 
+                                id="scan-barcode"
+                                placeholder="امسح الباركود هنا..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleScan()}
+                            />
+                            <Button onClick={handleScan}><Icon name="ScanLine" className="h-4 w-4"/></Button>
+                        </div>
+                    </div>
+                     <Separator />
+                     <p className="text-sm text-center text-muted-foreground">تم تحديد {selectedOrderIds.length} شحنة للاستلام.</p>
+                     <Button onClick={markReturned} disabled={selectedOrderIds.length === 0} className="w-full">
+                        <Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد استلام المحدد في الفرع
                     </Button>
-                </div>
-            </div>
-        </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12"><Checkbox checked={areAllSelected} onCheckedChange={handleSelectAll} /></TableHead>
-              <TableHead>رقم الطلب</TableHead>
-              <TableHead>التاجر</TableHead>
-              <TableHead>المستلم</TableHead>
-              <TableHead>السائق</TableHead>
-              <TableHead>الحالة الحالية</TableHead>
-              <TableHead>سبب الإرجاع</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {ordersForReturn.length > 0 ? ordersForReturn.map(o => (
-              <TableRow key={o.id} data-state={selectedOrders.includes(o.id) && "selected"}>
-                <TableCell><Checkbox checked={selectedOrders.includes(o.id)} onCheckedChange={() => toggleSelect(o.id)} /></TableCell>
-                <TableCell className="font-mono">{o.id}</TableCell>
-                <TableCell>{o.merchant}</TableCell>
-                <TableCell>{o.recipient}</TableCell>
-                <TableCell>{o.driver}</TableCell>
-                <TableCell><Badge variant={getStatusBadgeVariant(o.status)}>{o.status}</Badge></TableCell>
-                <TableCell className="text-muted-foreground text-xs">{o.notes}</TableCell>
-              </TableRow>
-            )) : (
-              <TableRow><TableCell colSpan={7} className="h-24 text-center">لا توجد طلبات مرتجعة لهذا السائق/البحث.</TableCell></TableRow>
+                </CardContent>
+            </Card>
+            {selectedOrderForDetails && (
+                <Card className="animate-in fade-in">
+                    <CardHeader>
+                        <CardTitle className="text-base">تفاصيل الشحنة المحددة</CardTitle>
+                         <CardDescription className="font-mono">{selectedOrderForDetails.id}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="text-sm space-y-2">
+                        <p><strong>العميل:</strong> {selectedOrderForDetails.recipient}</p>
+                        <p><strong>الهاتف:</strong> {selectedOrderForDetails.phone}</p>
+                        <p><strong>العنوان:</strong> {selectedOrderForDetails.address}</p>
+                        <p><strong>الحالة:</strong> <Badge variant={getStatusBadgeVariant(selectedOrderForDetails.status)}>{selectedOrderForDetails.status}</Badge></p>
+                        <p><strong>السبب:</strong> {selectedOrderForDetails.notes || 'لا يوجد'}</p>
+                    </CardContent>
+                </Card>
             )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+        </div>
+    </div>
   );
 };
 
@@ -390,7 +507,7 @@ export default function ReturnsPage() {
 
 
       <Tabs defaultValue="returns-from-drivers">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="returns-from-drivers">
             <Icon name="Truck" className="ml-2 h-4 w-4" />
             استلام من السائقين
@@ -398,6 +515,10 @@ export default function ReturnsPage() {
           <TabsTrigger value="return-slips-to-merchants">
             <Icon name="FileText" className="ml-2 h-4 w-4" />
             كشوفات إرجاع للتجار
+          </TabsTrigger>
+          <TabsTrigger value="automation">
+            <Icon name="Wand2" className="ml-2 h-4 w-4" />
+            الأتمتة
           </TabsTrigger>
         </TabsList>
 
@@ -408,9 +529,12 @@ export default function ReturnsPage() {
         <TabsContent value="return-slips-to-merchants" className="mt-4">
             <ReturnSlipsToMerchants />
         </TabsContent>
+        
+        <TabsContent value="automation" className="mt-4">
+            <AutomationEngine />
+        </TabsContent>
+
       </Tabs>
     </div>
   );
 }
-
-    
