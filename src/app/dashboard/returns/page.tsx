@@ -75,7 +75,7 @@ import Papa from 'papaparse';
 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
-import { type Order } from '@/store/orders-store';
+import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useSettings, type SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
 import { PrintablePolicy } from '@/components/printable-policy';
 import { useStatusesStore } from '@/store/statuses-store';
@@ -313,7 +313,7 @@ const ReturnsTable = ({
                         <TableHead className="sticky right-0 z-30 p-2 text-center border-l w-12 bg-slate-800">
                            <Checkbox
                                 checked={isAllSelected}
-                                onCheckedChange={onSelectAll}
+                                onCheckedChange={(e) => onSelectAll(e as boolean)}
                                 indeterminate={isIndeterminate}
                                 aria-label="Select all rows"
                                 className='border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-800 data-[state=indeterminate]:bg-white data-[state=indeterminate]:text-slate-800'
@@ -350,6 +350,11 @@ const ReturnsTable = ({
     );
 };
 
+const mockStatements = [
+    { id: 'STMT-001', date: '2024-07-20', itemCount: 5, status: 'مدفوع' },
+    { id: 'STMT-002', date: '2024-07-13', itemCount: 8, status: 'مدفوع' },
+    { id: 'STMT-003', date: '2024-07-06', itemCount: 3, status: 'بانتظار الدفع' },
+];
 
 const ReturnsManagementPage = () => {
     const { statuses } = useStatusesStore();
@@ -431,8 +436,9 @@ const ReturnsManagementPage = () => {
         }
     }, [merchantsWithReturns, selectedMerchant]);
     
+    // When merchant changes, clear selection
     useEffect(() => {
-        setSelectedRows([]);
+      setSelectedRows([]);
     }, [selectedMerchant]);
 
     const visibleColumns = useMemo(() => columns.filter(c => visibleColumnKeys.includes(c.key)), [columns, visibleColumnKeys]);
@@ -514,7 +520,7 @@ const ReturnsManagementPage = () => {
                 <div className="md:col-span-3">
                     {renderSidebar()}
                 </div>
-                <div className="md:col-span-9">
+                <div className="md:col-span-9 space-y-6">
                     <Card className="h-full flex flex-col">
                         <CardHeader>
                             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
@@ -604,6 +610,47 @@ const ReturnsManagementPage = () => {
                                 إجمالي {selectedOrders.length} طلبات
                             </span>
                         </CardFooter>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>الكشوفات المصدرة للتاجر</CardTitle>
+                            <CardDescription>
+                                قائمة بالكشوفات التي تم إنشاؤها مسبقًا لهذا التاجر.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>رقم الكشف</TableHead>
+                                        <TableHead>تاريخ الإنشاء</TableHead>
+                                        <TableHead>عدد القطع</TableHead>
+                                        <TableHead>الحالة</TableHead>
+                                        <TableHead className="text-left">إجراءات</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {mockStatements.map((stmt) => (
+                                        <TableRow key={stmt.id}>
+                                            <TableCell className="font-mono">{stmt.id}</TableCell>
+                                            <TableCell>{stmt.date}</TableCell>
+                                            <TableCell>{stmt.itemCount}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={stmt.status === 'مدفوع' ? 'default' : 'secondary'} className={stmt.status === 'مدفوع' ? 'bg-green-100 text-green-700' : ''}>
+                                                    {stmt.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-left">
+                                                <Button variant="outline" size="sm">
+                                                    <Printer className="ml-2 h-4 w-4" /> طباعة
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
                     </Card>
                 </div>
             </div>
