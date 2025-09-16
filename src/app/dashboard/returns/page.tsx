@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -86,7 +87,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
@@ -111,114 +112,165 @@ type ColumnConfig = { key: keyof Order | 'id-link'; label: string; sortable?: bo
 
 // Columns specific to the returns page
 const RETURNS_COLUMNS: ColumnConfig[] = [
-    { key: 'id', label: '#' },
-    { key: 'id-link', label: 'رقم الطلب' },
+    { key: 'id-link', label: 'رقم الطلب', sortable: true },
     { key: 'source', label: 'المصدر' },
-    { key: 'referenceNumber', label: 'الرقم المرجعي' },
-    { key: 'recipient', label: 'المستلم' },
+    { key: 'referenceNumber', label: 'الرقم المرجعي', sortable: true },
+    { key: 'recipient', label: 'المستلم', sortable: true },
     { key: 'phone', label: 'الهاتف' },
     { key: 'address', label: 'العنوان' },
-    { key: 'region', label: 'المنطقة' },
-    { key: 'city', label: 'المدينة' },
-    { key: 'merchant', label: 'التاجر' },
-    { key: 'status', label: 'الحالة' },
-    { key: 'previousStatus', label: 'الحالة السابقة' },
-    { key: 'date', label: 'التاريخ' },
+    { key: 'region', label: 'المنطقة', sortable: true },
+    { key: 'city', label: 'المدينة', sortable: true },
+    { key: 'merchant', label: 'التاجر', sortable: true },
+    { key: 'status', label: 'الحالة', sortable: true },
+    { key: 'previousStatus', label: 'الحالة السابقة', sortable: true },
+    { key: 'date', label: 'التاريخ', sortable: true },
     { key: 'notes', label: 'ملاحظات/سبب الإرجاع' },
 ];
 
-const ReturnsTable = ({ orders, statuses }: { orders: Order[], statuses: any[] }) => {
+const ReturnsTable = ({
+    orders,
+    totalCount,
+    isLoading,
+    columns,
+    onSort,
+    sortConfig,
+    page,
+    rowsPerPage,
+}: {
+    orders: Order[],
+    totalCount: number,
+    isLoading: boolean,
+    columns: ColumnConfig[],
+    onSort: (key: keyof Order) => void,
+    sortConfig: OrderSortConfig | null,
+    page: number,
+    rowsPerPage: number,
+}) => {
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
     
     const isAllSelected = orders.length > 0 && selectedRows.length === orders.length;
-    
-    const handleSelectAll = useCallback((checked: boolean | 'indeterminate') => {
-        if (checked === true) {
-            setSelectedRows(orders.map(order => order.id));
-        } else {
-            setSelectedRows([]);
-        }
-    }, [orders]);
-
-    const handleSelectionChange = useCallback((id: string, isSelected: boolean) => {
-      setSelectedRows(prev => 
-        isSelected ? [...prev, id] : prev.filter(rowId => rowId !== id)
-      );
-    }, []);
-
     const isIndeterminate = selectedRows.length > 0 && selectedRows.length < orders.length;
 
+    const handleSelectAll = (checked: boolean) => {
+        setSelectedRows(checked ? orders.map(o => o.id) : []);
+    };
+    
+    const handleRowSelect = (id: string, checked: boolean) => {
+        setSelectedRows(prev => checked ? [...prev, id] : prev.filter(rowId => rowId !== id));
+    };
+
     return (
-        <div className="overflow-x-auto">
+        <>
             <div className="flex items-center gap-2 mb-4">
-                <Button variant="default" size="sm" disabled={selectedRows.length === 0}>
+                 <Button variant="default" size="sm" disabled={selectedRows.length === 0}>
                     إنشاء كشف مرتجع للتاجر
                 </Button>
                  <Button variant="outline" size="sm" disabled={selectedRows.length === 0}>
-                    <FileText className="ml-2 h-4 w-4" /> تصدير الكشف
+                    <FileText className="ml-2 h-4 w-4" /> تصدير الكشف المحدد
+                </Button>
+                 <Button variant="outline" size="sm">
+                    <Download className="ml-2 h-4 w-4" /> تصدير كل المرتجعات
                 </Button>
             </div>
-             <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead className="w-12 text-center border-l">
-                           <Checkbox
-                                checked={isAllSelected || isIndeterminate}
-                                onCheckedChange={handleSelectAll}
-                                ref={(input: HTMLButtonElement | null) => {
-                                  if (input) input.indeterminate = isIndeterminate;
-                                }}
-                                aria-label="Select all rows"
-                            />
-                        </TableHead>
-                        {RETURNS_COLUMNS.map(col => <TableHead key={col.key}>{col.label}</TableHead>)}
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                {orders.map((order, index) => (
-                    <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? "selected" : ""}>
-                    <TableCell className="text-center border-l">
-                        <Checkbox
-                            checked={selectedRows.includes(order.id)}
-                            onCheckedChange={(checked) => handleSelectionChange(order.id, !!checked)}
-                        />
-                    </TableCell>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell className="font-medium font-mono text-primary hover:underline">
-                        <Link href={`/dashboard/orders/${order.id}`}>{order.id}</Link>
-                    </TableCell>
-                    <TableCell>{order.source}</TableCell>
-                    <TableCell>{order.referenceNumber}</TableCell>
-                    <TableCell>{order.recipient}</TableCell>
-                    <TableCell>{order.phone}</TableCell>
-                    <TableCell>{order.address}</TableCell>
-                    <TableCell>{order.region}</TableCell>
-                    <TableCell>{order.city}</TableCell>
-                    <TableCell>{order.merchant}</TableCell>
-                    <TableCell><Badge variant="secondary">{order.status}</Badge></TableCell>
-                    <TableCell>{order.previousStatus ? <Badge variant="outline">{order.previousStatus}</Badge> : '-'}</TableCell>
-                    <TableCell>{new Date(order.date).toLocaleDateString('ar-JO')}</TableCell>
-                    <TableCell>{order.notes || 'غير محدد'}</TableCell>
-                    </TableRow>
-                ))}
-                </TableBody>
-            </Table>
-        </div>
+            <div className="border rounded-lg overflow-auto flex-1">
+                <Table>
+                    <TableHeader className="sticky top-0 z-10 bg-muted/80 backdrop-blur-sm">
+                        <TableRow>
+                            <TableHead className="w-12 text-center border-l">
+                               <Checkbox
+                                    checked={isAllSelected}
+                                    onCheckedChange={handleSelectAll}
+                                    indeterminate={isIndeterminate}
+                                    aria-label="Select all rows"
+                                />
+                            </TableHead>
+                            <TableHead>#</TableHead>
+                            {columns.map(col => (
+                                <TableHead key={col.key} className="whitespace-nowrap text-center">
+                                     {col.sortable ? (
+                                        <Button variant="ghost" onClick={() => onSort(col.key as keyof Order)} className="px-1">
+                                            {col.label}
+                                            <ArrowUpDown className="mr-2 h-4 w-4" />
+                                        </Button>
+                                    ) : col.label}
+                                </TableHead>
+                            ))}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {isLoading ? (
+                        Array.from({ length: 5 }).map((_, i) => (
+                            <TableRow key={`skel-${i}`}>
+                                <TableCell className="text-center border-l"><Checkbox disabled/></TableCell>
+                                <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+                                {columns.map(c => <TableCell key={c.key}><Skeleton className="h-4 w-full" /></TableCell>)}
+                            </TableRow>
+                        ))
+                    ) : orders.map((order, index) => (
+                        <TableRow key={order.id} data-state={selectedRows.includes(order.id) ? "selected" : ""}>
+                            <TableCell className="text-center border-l">
+                                <Checkbox
+                                    checked={selectedRows.includes(order.id)}
+                                    onCheckedChange={(checked) => handleRowSelect(order.id, !!checked)}
+                                />
+                            </TableCell>
+                            <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                            {columns.map(col => {
+                                let content: React.ReactNode = order[col.key as keyof Order] as string;
+                                if (col.key === 'id-link') {
+                                    content = <Link href={`/dashboard/orders/${order.id}`} className="text-primary hover:underline font-mono">{order.id}</Link>
+                                } else if (col.key === 'status') {
+                                    content = <Badge variant="secondary">{order.status}</Badge>
+                                } else if (col.key === 'previousStatus') {
+                                    content = order.previousStatus ? <Badge variant="outline">{order.previousStatus}</Badge> : '-'
+                                } else if (col.key === 'date') {
+                                    content = new Date(order.date).toLocaleDateString('ar-JO');
+                                }
+                                return <TableCell key={col.key} className="text-center whitespace-nowrap">{content || '-'}</TableCell>
+                            })}
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+            </div>
+        </>
     );
 };
 
 
-export default function ReturnsManagementPage() {
-    const { orders } = useOrdersStore();
+const ReturnsManagementPage = () => {
     const { statuses } = useStatusesStore();
-
     const [selectedMerchant, setSelectedMerchant] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [sortConfig, setSortConfig] = useState<OrderSortConfig | null>(null);
     
+    // Data fetching states
+    const [allReturnedOrders, setAllReturnedOrders] = useState<Order[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const result = await getOrders({
+                page: 0,
+                rowsPerPage: 9999, // Fetch all for now
+                filters: [{ field: 'status', operator: 'equals', value: 'راجع' }],
+            });
+            setAllReturnedOrders(result.orders);
+        } catch (error) {
+            console.error("Failed to fetch returned orders", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+
     const returnsByMerchant = useMemo(() => {
-        return orders
-            .filter(order => order.status === 'راجع')
-            .reduce((acc, order) => {
+        return allReturnedOrders.reduce((acc, order) => {
                 const merchantName = order.merchant;
                 if (!acc[merchantName]) {
                     acc[merchantName] = [];
@@ -226,29 +278,42 @@ export default function ReturnsManagementPage() {
                 acc[merchantName].push(order);
                 return acc;
             }, {} as Record<string, Order[]>);
-    }, [orders]);
+    }, [allReturnedOrders]);
 
     const merchantsWithReturns = Object.keys(returnsByMerchant);
 
     useEffect(() => {
-        if (merchantsWithReturns.length > 0 && !selectedMerchant) {
+        if (!selectedMerchant && merchantsWithReturns.length > 0) {
             setSelectedMerchant(merchantsWithReturns[0]);
         }
     }, [merchantsWithReturns, selectedMerchant]);
     
     const selectedOrders = useMemo(() => {
-        const ordersForMerchant = selectedMerchant ? returnsByMerchant[selectedMerchant] || [] : [];
-        if (!searchQuery) {
-            return ordersForMerchant;
+        let ordersForMerchant = selectedMerchant ? returnsByMerchant[selectedMerchant] || [] : [];
+        
+        if (searchQuery) {
+            const lowercasedQuery = searchQuery.toLowerCase();
+            ordersForMerchant = ordersForMerchant.filter(order =>
+                order.id.toLowerCase().includes(lowercasedQuery) ||
+                (order.referenceNumber || '').toLowerCase().includes(lowercasedQuery) ||
+                order.recipient.toLowerCase().includes(lowercasedQuery) ||
+                order.phone.toLowerCase().includes(lowercasedQuery)
+            );
         }
-        const lowercasedQuery = searchQuery.toLowerCase();
-        return ordersForMerchant.filter(order =>
-            order.id.toLowerCase().includes(lowercasedQuery) ||
-            (order.referenceNumber || '').toLowerCase().includes(lowercasedQuery) ||
-            order.recipient.toLowerCase().includes(lowercasedQuery) ||
-            order.phone.toLowerCase().includes(lowercasedQuery)
-        );
-    }, [selectedMerchant, returnsByMerchant, searchQuery]);
+        
+        if (sortConfig) {
+            ordersForMerchant.sort((a, b) => {
+                const valA = a[sortConfig.key];
+                const valB = b[sortConfig.key];
+                if (valA < valB) return sortConfig.direction === 'ascending' ? -1 : 1;
+                if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        return ordersForMerchant;
+    }, [selectedMerchant, returnsByMerchant, searchQuery, sortConfig]);
+    
     
     const renderSidebar = () => {
         return (
@@ -284,7 +349,6 @@ export default function ReturnsManagementPage() {
         );
     };
 
-
     return (
         <div className="space-y-6">
             <Card>
@@ -303,7 +367,7 @@ export default function ReturnsManagementPage() {
                     {renderSidebar()}
                 </div>
                 <div className="md:col-span-9">
-                    <Card>
+                    <Card className="h-full flex flex-col">
                         <CardHeader>
                             <div className="flex justify-between items-center">
                                 <CardTitle>
@@ -322,10 +386,23 @@ export default function ReturnsManagementPage() {
                                 </div>
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="flex-1 flex flex-col">
                             <ReturnsTable
                                 orders={selectedOrders}
-                                statuses={statuses}
+                                totalCount={selectedOrders.length}
+                                isLoading={isLoading}
+                                columns={RETURNS_COLUMNS}
+                                onSort={(key) => {
+                                    setSortConfig(prev => {
+                                        if (prev?.key === key) {
+                                            return { ...prev, direction: prev.direction === 'ascending' ? 'descending' : 'ascending' };
+                                        }
+                                        return { key, direction: 'ascending' };
+                                    });
+                                }}
+                                sortConfig={sortConfig}
+                                page={0}
+                                rowsPerPage={selectedOrders.length}
                             />
                         </CardContent>
                          <CardFooter className="p-2 border-t">
@@ -340,3 +417,10 @@ export default function ReturnsManagementPage() {
     );
 }
 
+export default function ReturnsPage() {
+    return (
+        <React.Suspense fallback={<Skeleton className="w-full h-screen" />}>
+            <ReturnsManagementPage />
+        </React.Suspense>
+    )
+}
