@@ -879,7 +879,7 @@ const OrdersTableComponent = () => {
                         case 'driver':
                             const options = col.key === 'merchant' ? merchants : drivers;
                             content = (
-                                <div className="flex items-center justify-between w-full h-8 px-1 hover:bg-muted rounded-md group">
+                                <div className="flex items-center justify-between w-full h-8 px-1 group">
                                      <CopyableCell value={value as string}>
                                         <span className='px-2'>{value as string}</span>
                                     </CopyableCell>
@@ -1339,6 +1339,7 @@ export function OrdersTable() {
 
 
     
+
 
 
 
