@@ -429,6 +429,8 @@ const OrdersTableComponent = () => {
     const [rowsPerPage, setRowsPerPage] = useState(100);
     const [sortConfig, setSortConfig] = useState<OrderSortConfig | null>(null);
     const [filters, setFilters] = useState<FilterDefinition[]>([]);
+    const [globalSearch, setGlobalSearch] = useState('');
+
 
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
     const [modalState, setModalState] = useState<ModalState>({ type: 'none' });
@@ -496,6 +498,7 @@ const OrdersTableComponent = () => {
                 rowsPerPage: groupBy ? 9999 : rowsPerPage,
                 sortConfig,
                 filters: allFilters,
+                globalSearch: globalSearch,
             });
             setOrders(result.orders);
             setTotalCount(result.totalCount);
@@ -505,10 +508,13 @@ const OrdersTableComponent = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [page, rowsPerPage, filters, sortConfig, searchParams, groupBy, toast]);
+    }, [page, rowsPerPage, filters, sortConfig, searchParams, groupBy, toast, globalSearch]);
 
     useEffect(() => {
-        fetchData();
+        const handler = setTimeout(() => {
+            fetchData();
+        }, 300); // Debounce search
+        return () => clearTimeout(handler);
     }, [fetchData]);
     
     useEffect(() => {
@@ -979,11 +985,22 @@ const OrdersTableComponent = () => {
                 <Card className="flex flex-col h-[calc(100vh-8rem)] bg-background p-4 gap-4">
                     {/* Header */}
                     <div className="flex-none flex-row items-center justify-between flex flex-wrap gap-2">
-                        <AdvancedSearch
-                            filters={filters}
-                            onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
-                            onRemoveFilter={(index) => setFilters(prev => prev.filter((_, i) => i !== index))}
-                        />
+                        <div className="flex items-center gap-2">
+                             <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                    placeholder="بحث شامل..." 
+                                    className="pl-10" 
+                                    value={globalSearch}
+                                    onChange={(e) => setGlobalSearch(e.target.value)}
+                                />
+                            </div>
+                            <AdvancedSearch
+                                filters={filters}
+                                onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
+                                onRemoveFilter={(index) => setFilters(prev => prev.filter((_, i) => i !== index))}
+                            />
+                        </div>
                         <div className="flex items-center gap-2">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -1263,6 +1280,7 @@ export function OrdersTable() {
 
 
     
+
 
 
 

@@ -19,20 +19,37 @@ type GetOrdersParams = {
   rowsPerPage: number;
   sortConfig?: OrderSortConfig | null;
   filters?: FilterDefinition[];
+  globalSearch?: string; // Add globalSearch parameter
 };
 
 export async function getOrders(params: GetOrdersParams): Promise<{ orders: Order[], totalCount: number }> {
-  const { page, rowsPerPage, sortConfig, filters } = params;
+  const { page, rowsPerPage, sortConfig, filters, globalSearch } = params;
 
   // In a real app, this data would come from a database.
   // For now, we're using the Zustand store as a mock database.
   const allOrders = ordersStore.getState().orders;
 
-  // 1. Filtering
-  let filteredOrders = allOrders;
+  // 1. Global Search
+  let searchedOrders = allOrders;
+  if (globalSearch) {
+    const searchTerm = globalSearch.toLowerCase();
+    searchedOrders = allOrders.filter(order => {
+      return (
+        order.id.toLowerCase().includes(searchTerm) ||
+        order.recipient.toLowerCase().includes(searchTerm) ||
+        order.phone.toLowerCase().includes(searchTerm) ||
+        order.address.toLowerCase().includes(searchTerm) ||
+        (order.referenceNumber && order.referenceNumber.toLowerCase().includes(searchTerm)) ||
+        order.merchant.toLowerCase().includes(searchTerm)
+      );
+    });
+  }
 
+
+  // 2. Advanced Filtering on the result of the global search
+  let filteredOrders = searchedOrders;
   if (filters && filters.length > 0) {
-    filteredOrders = allOrders.filter(order => {
+    filteredOrders = searchedOrders.filter(order => {
       return filters.every(filter => {
         const orderValue = order[filter.field as keyof Order] as string | undefined;
         if (orderValue === undefined) return false;
@@ -51,7 +68,7 @@ export async function getOrders(params: GetOrdersParams): Promise<{ orders: Orde
     });
   }
 
-  // 2. Sorting
+  // 3. Sorting
   if (sortConfig) {
     filteredOrders.sort((a, b) => {
       const valA = a[sortConfig.key];
@@ -65,7 +82,7 @@ export async function getOrders(params: GetOrdersParams): Promise<{ orders: Orde
 
   const totalCount = filteredOrders.length;
 
-  // 3. Pagination
+  // 4. Pagination
   const startIndex = page * rowsPerPage;
   const paginatedOrders = filteredOrders.slice(startIndex, startIndex + rowsPerPage);
 
