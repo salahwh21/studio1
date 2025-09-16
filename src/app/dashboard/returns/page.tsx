@@ -163,6 +163,7 @@ const SortableColumn = ({ id, label, onToggle, isVisible }: { id: string; label:
 };
 
 
+
 const AdvancedSearch = ({
       filters,
       onAddFilter,
@@ -768,16 +769,16 @@ function ReturnsManagementPage() {
     );
 }
 
-const ReturnsPage = () => {
+function ReturnsPage() {
     return (
         <React.Suspense fallback={<Skeleton className="w-full h-screen" />}>
             <ReturnsManagementPage />
         </React.Suspense>
     )
 }
-
 export default ReturnsPage;
     
 
     
+
 
