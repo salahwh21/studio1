@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   MoreHorizontal,
   FileText,
@@ -12,6 +12,7 @@ import {
   Printer,
   FileDown,
   Store,
+  Search,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -48,9 +49,7 @@ import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useStatusesStore } from '@/store/statuses-store';
 import { useUsersStore } from '@/store/user-store';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Label } from '@/components/ui/label';
 
 const getStatusBadge = (status: string, allStatuses: any[]) => {
   const statusInfo = allStatuses.find(s => s.name === status);
@@ -65,12 +64,31 @@ const getStatusBadge = (status: string, allStatuses: any[]) => {
   return <Badge variant="outline">{status}</Badge>;
 };
 
-const ReturnsTable = ({ orders, statuses }: { orders: Order[], statuses: any[] }) => {
+const ReturnsTable = ({ orders, statuses, selectedRows, onSelectionChange }: { 
+    orders: Order[], 
+    statuses: any[],
+    selectedRows: string[],
+    onSelectionChange: (id: string, isSelected: boolean) => void,
+}) => {
+    const isAllSelected = orders.length > 0 && selectedRows.length === orders.length;
+    const isIndeterminate = selectedRows.length > 0 && selectedRows.length < orders.length;
+
+    const handleSelectAll = useCallback((checked: boolean) => {
+        orders.forEach(order => onSelectionChange(order.id, checked));
+    }, [orders, onSelectionChange]);
+
     return (
          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12 text-center border-l">
+                    <Checkbox
+                        checked={isAllSelected}
+                        indeterminate={isIndeterminate}
+                        onCheckedChange={handleSelectAll}
+                    />
+                </TableHead>
                 <TableHead>رقم الطلب</TableHead>
                 <TableHead>المرجع</TableHead>
                 <TableHead>المستلم</TableHead>
@@ -83,14 +101,20 @@ const ReturnsTable = ({ orders, statuses }: { orders: Order[], statuses: any[] }
             </TableHeader>
             <TableBody>
               {orders.map((order) => (
-                <TableRow key={order.id}>
+                <TableRow key={order.id} data-state={selectedRows.includes(order.id) && "selected"}>
+                  <TableCell className="text-center border-l">
+                    <Checkbox
+                        checked={selectedRows.includes(order.id)}
+                        onCheckedChange={(checked) => onSelectionChange(order.id, !!checked)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{order.id}</TableCell>
                   <TableCell>{order.referenceNumber}</TableCell>
                   <TableCell>{order.recipient}</TableCell>
                   <TableCell>{order.phone}</TableCell>
                   <TableCell>{order.region}</TableCell>
                   <TableCell>{getStatusBadge(order.status, statuses)}</TableCell>
-                  <TableCell>{order.date}</TableCell>
+                  <TableCell>{new Date(order.date).toLocaleDateString('ar-JO')}</TableCell>
                   <TableCell>{order.notes || 'غير محدد'}</TableCell>
                 </TableRow>
               ))}
@@ -103,13 +127,11 @@ const ReturnsTable = ({ orders, statuses }: { orders: Order[], statuses: any[] }
 export default function ReturnsManagementPage() {
   const { orders } = useOrdersStore();
   const { statuses } = useStatusesStore();
-  const { users } = useUsersStore();
   
-  const [activeTab, setActiveTab] = useState<'byDriver' | 'byMerchant'>('byDriver');
   const [selectedMerchant, setSelectedMerchant] = useState<string | null>(null);
-  const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [sheetContent, setSheetContent] = useState<{ merchantName: string, orders: Order[] } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+
 
   const returnsByMerchant = useMemo(() => {
     return orders
@@ -123,93 +145,74 @@ export default function ReturnsManagementPage() {
         return acc;
       }, {} as Record<string, Order[]>);
   }, [orders]);
-
-  const returnsByDriver = useMemo(() => {
-    const outForDeliveryOrders = orders.filter(o => o.status === 'جاري التوصيل' || o.status === 'مؤجل' || o.status === 'لا رد');
-    return outForDeliveryOrders.reduce((acc, order) => {
-        const driverName = order.driver;
-        if (!acc[driverName]) {
-            acc[driverName] = [];
-        }
-        acc[driverName].push(order);
-        return acc;
-    }, {} as Record<string, Order[]>);
-  }, [orders]);
   
   const merchantsWithReturns = Object.keys(returnsByMerchant);
-  const driversWithReturns = Object.keys(returnsByDriver);
 
   // Set initial selection
   useMemo(() => {
-      if(activeTab === 'byMerchant' && merchantsWithReturns.length > 0 && !selectedMerchant) {
+      if (merchantsWithReturns.length > 0 && !selectedMerchant) {
           setSelectedMerchant(merchantsWithReturns[0]);
-      } else if (activeTab === 'byDriver' && driversWithReturns.length > 0 && !selectedDriver) {
-          setSelectedDriver(driversWithReturns[0]);
       }
-  }, [activeTab, merchantsWithReturns, selectedMerchant, driversWithReturns, selectedDriver]);
-
-  const selectedOrders = useMemo(() => {
-      if (activeTab === 'byMerchant' && selectedMerchant) {
-          return returnsByMerchant[selectedMerchant] || [];
-      }
-      if (activeTab === 'byDriver' && selectedDriver) {
-          return returnsByDriver[selectedDriver] || [];
-      }
-      return [];
-  }, [activeTab, selectedMerchant, selectedDriver, returnsByMerchant, returnsByDriver]);
-
-  const handleCreateSheet = () => {
-    if (!selectedMerchant || !returnsByMerchant[selectedMerchant]) return;
-    setSheetContent({
-        merchantName: selectedMerchant,
-        orders: returnsByMerchant[selectedMerchant]
-    });
-    setIsSheetOpen(true);
-  };
+  }, [merchantsWithReturns, selectedMerchant]);
   
-  const totalCodReadyForMerchants = useMemo(() => {
+  const selectedOrders = useMemo(() => {
+      const ordersForMerchant = selectedMerchant ? returnsByMerchant[selectedMerchant] || [] : [];
+      if (!searchQuery) {
+          return ordersForMerchant;
+      }
+      return ordersForMerchant.filter(order => 
+        order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.referenceNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.recipient.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.phone.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+  }, [selectedMerchant, returnsByMerchant, searchQuery]);
+  
+  // When merchant changes, clear selection
+  useEffect(() => {
+    setSelectedRows([]);
+  }, [selectedMerchant]);
+
+  const handleSelectionChange = useCallback((id: string, isSelected: boolean) => {
+      setSelectedRows(prev => 
+        isSelected ? [...prev, id] : prev.filter(rowId => rowId !== id)
+      );
+  }, []);
+
+  const totalReturnedOrders = useMemo(() => Object.values(returnsByMerchant).flat().length, [returnsByMerchant]);
+  const totalCodValue = useMemo(() => {
       return Object.values(returnsByMerchant).flat().reduce((sum, order) => sum + order.cod, 0);
   }, [returnsByMerchant]);
 
-  const totalOrdersWithDrivers = useMemo(() => {
-      return Object.values(returnsByDriver).flat().length;
-  }, [returnsByDriver]);
-
 
   const renderSidebar = () => {
-    const isDriverTab = activeTab === 'byDriver';
-    const items = isDriverTab ? driversWithReturns : merchantsWithReturns;
-    const selectedItem = isDriverTab ? selectedDriver : selectedMerchant;
-    const setSelectedItem = isDriverTab ? setSelectedDriver : setSelectedMerchant;
-    const data = isDriverTab ? returnsByDriver : returnsByMerchant;
-    const icon = isDriverTab ? <Truck className="h-4 w-4" /> : <Store className="h-4 w-4" />;
-    
     return (
         <Card className="h-full">
             <CardHeader className="p-4">
-                <CardTitle className="text-lg">
-                    {isDriverTab ? 'قائمة السائقين' : 'قائمة التجار'}
-                </CardTitle>
+                <CardTitle className="text-lg">قائمة التجار</CardTitle>
+                <CardDescription>لديهم مرتجعات في الفرع</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
                  <ScrollArea className="h-[calc(100vh-20rem)]">
-                    {items.map(item => (
+                    {merchantsWithReturns.map(merchant => (
                         <button
-                            key={item}
-                            onClick={() => setSelectedItem(item)}
+                            key={merchant}
+                            onClick={() => setSelectedMerchant(merchant)}
                             className={cn(
                                 "w-full text-right flex justify-between items-center p-4 border-b hover:bg-muted/50 transition-colors",
-                                selectedItem === item && "bg-muted"
+                                selectedMerchant === merchant && "bg-primary/10 text-primary"
                             )}
                         >
                             <div className="flex items-center gap-3">
-                                {icon}
-                                <span className="font-medium">{item}</span>
+                                <Store className="h-4 w-4" />
+                                <span className="font-medium">{merchant}</span>
                             </div>
-                            <Badge variant="secondary">{data[item]?.length || 0}</Badge>
+                            <Badge variant={selectedMerchant === merchant ? "default" : "secondary"}>
+                                {returnsByMerchant[merchant]?.length || 0}
+                            </Badge>
                         </button>
                     ))}
-                    {items.length === 0 && <p className="p-4 text-center text-muted-foreground">لا توجد بيانات.</p>}
+                    {merchantsWithReturns.length === 0 && <p className="p-4 text-center text-muted-foreground">لا توجد مرتجعات حالياً.</p>}
                  </ScrollArea>
             </CardContent>
         </Card>
@@ -219,61 +222,14 @@ export default function ReturnsManagementPage() {
 
   return (
     <div className="space-y-6">
-        <Dialog open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>كشف تسليم مرتجعات للتاجر: {sheetContent?.merchantName}</DialogTitle>
-                    <DialogDescription>
-                        هذا الكشف يحتوي على {sheetContent?.orders.length} طلبات جاهزة للتسليم.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="max-h-[60vh] overflow-y-auto border rounded-md my-4">
-                     <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>رقم الطلب</TableHead>
-                                <TableHead>المستلم</TableHead>
-                                <TableHead>سبب الإرجاع</TableHead>
-                                <TableHead>قيمة التحصيل</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {sheetContent?.orders.map(order => (
-                                <TableRow key={order.id}>
-                                    <TableCell>{order.id}</TableCell>
-                                    <TableCell>{order.recipient}</TableCell>
-                                    <TableCell>{order.notes || 'غير محدد'}</TableCell>
-                                    <TableCell className="font-medium">{order.cod.toFixed(2)}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-                 <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsSheetOpen(false)}>إلغاء</Button>
-                    <Button><Printer className="ml-2 h-4 w-4" /> تأكيد التسليم والطباعة</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">شحنات عالقة مع السائقين</CardTitle>
-                    <Truck className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{totalOrdersWithDrivers}</div>
-                    <p className="text-xs text-muted-foreground">شحنة لم يتم استلامها في الفرع بعد</p>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">مرتجعات جاهزة للتجار</CardTitle>
+                    <CardTitle className="text-sm font-medium">مرتجعات جاهزة للتسليم</CardTitle>
                     <Archive className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{Object.values(returnsByMerchant).flat().length}</div>
+                    <div className="text-2xl font-bold">{totalReturnedOrders}</div>
                     <p className="text-xs text-muted-foreground">شحنة في الفرع بانتظار تسليمها للتاجر</p>
                 </CardContent>
             </Card>
@@ -283,7 +239,7 @@ export default function ReturnsManagementPage() {
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{totalCodReadyForMerchants.toFixed(2)} د.أ</div>
+                    <div className="text-2xl font-bold">{totalCodValue.toFixed(2)} د.أ</div>
                      <p className="text-xs text-muted-foreground">إجمالي قيمة البضاعة المرتجعة للفرع</p>
                 </CardContent>
             </Card>
@@ -307,17 +263,31 @@ export default function ReturnsManagementPage() {
                             <CardHeader>
                                 <div className="flex justify-between items-center">
                                     <CardTitle>
-                                        {activeTab === 'byMerchant' ? `مرتجعات التاجر: ${selectedMerchant}` : `شحنات السائق: ${selectedDriver}`}
+                                        مرتجعات التاجر: <span className="text-primary">{selectedMerchant}</span>
                                     </CardTitle>
                                      <div className="flex items-center gap-2">
-                                        <Button size="sm" variant="outline" onClick={handleCreateSheet} disabled={activeTab !== 'byMerchant' || !selectedMerchant}>
-                                            <FileText className="ml-2 h-4 w-4" /> إنشاء كشف مرتجع للتاجر
+                                        <div className="relative">
+                                            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                            <Input 
+                                                placeholder="بحث في طلبات التاجر..." 
+                                                className="pr-10"
+                                                value={searchQuery}
+                                                onChange={e => setSearchQuery(e.target.value)}
+                                            />
+                                        </div>
+                                        <Button size="sm" variant="outline" disabled={selectedRows.length === 0}>
+                                            <FileText className="ml-2 h-4 w-4" /> إنشاء كشف مرتجع
                                         </Button>
                                     </div>
                                 </div>
                             </CardHeader>
                              <CardContent className="p-0">
-                                <ReturnsTable orders={selectedOrders} statuses={statuses} />
+                                <ReturnsTable 
+                                    orders={selectedOrders} 
+                                    statuses={statuses} 
+                                    selectedRows={selectedRows}
+                                    onSelectionChange={handleSelectionChange}
+                                />
                             </CardContent>
                              <CardFooter className="p-2 border-t">
                                 <span className="text-xs text-muted-foreground">
@@ -332,5 +302,3 @@ export default function ReturnsManagementPage() {
     </div>
   );
 }
-
-    
