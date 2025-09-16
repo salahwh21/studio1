@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,56 +8,103 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import Icon from '@/components/icon';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { useOrdersStore, type Order } from '@/store/orders-store';
+import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { format, parseISO, isWithinInterval } from 'date-fns';
 
-// بيانات تجريبية
-const mockReturns = [
-  { id: 'ORD-1719810004', merchant: 'Brandlet Outlet -1', recipient: 'فاطمة علي', returnDate: '2024-07-05', reason: 'رفض العميل الاستلام' },
-  { id: 'ORD-1719810010', merchant: 'N&L Botique', recipient: 'حسن محمود', returnDate: '2024-07-11', reason: 'ملغي بطلب من التاجر' },
-  { id: 'ORD-1719810016', merchant: 'عود الجدايل', recipient: 'خالد وليد', returnDate: '2024-07-17', reason: 'لم يتم الرد على الهاتف' },
-];
+const RETURNABLE_STATUSES = ['راجع', 'مؤجل', 'ملغي', 'رفض ودفع أجور', 'رفض ولم يدفع أجور', 'تبديل'];
 
 export default function ReturnsPage() {
+  const { orders } = useOrdersStore();
+  const { toast } = useToast();
+  
   const [selectedReturns, setSelectedReturns] = useState<string[]>([]);
   const [slips, setSlips] = useState<any[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [currentSlip, setCurrentSlip] = useState<any>(null);
 
+  // فلترة كشوف الإرجاع
+  const [filterMerchant, setFilterMerchant] = useState<string | null>(null);
+  const [filterStartDate, setFilterStartDate] = useState<string | null>(null);
+  const [filterEndDate, setFilterEndDate] = useState<string | null>(null);
+  
+  const returnsAtBranch = useMemo(() => {
+    const ordersInSlips = new Set(slips.flatMap(slip => slip.orders.map((o: Order) => o.id)));
+    return orders.filter(order => 
+      RETURNABLE_STATUSES.includes(order.status) && !ordersInSlips.has(order.id)
+    );
+  }, [orders, slips]);
+
+  const merchants = Array.from(new Set(slips.map(s => s.merchant)));
+
+  const filteredSlips = slips.filter(slip => {
+    let matchesMerchant = filterMerchant ? slip.merchant === filterMerchant : true;
+    let matchesDate = true;
+    if (filterStartDate && filterEndDate) {
+      try {
+        const slipDate = parseISO(slip.date);
+        matchesDate = isWithinInterval(slipDate, { start: parseISO(filterStartDate), end: parseISO(filterEndDate) });
+      } catch (e) {
+        matchesDate = false;
+      }
+    }
+    return matchesMerchant && matchesDate;
+  });
+
   // إنشاء كشف جديد
   const handleCreateSlip = () => {
-    const newId = `RS-${new Date().getFullYear()}-${String(slips.length + 1).padStart(3, '0')}`;
-    const merchant = mockReturns.find(r => selectedReturns.includes(r.id))?.merchant || 'غير محدد';
+    const selectedOrders = returnsAtBranch.filter(r => selectedReturns.includes(r.id));
+    if(selectedOrders.length === 0) {
+        toast({ variant: 'destructive', title: 'خطأ', description: 'لم يتم تحديد أي طلبات.'});
+        return;
+    }
 
+    const firstMerchant = selectedOrders[0].merchant;
+    if (selectedOrders.some(o => o.merchant !== firstMerchant)) {
+        toast({ variant: 'destructive', title: 'خطأ', description: 'يرجى تحديد طلبات لنفس التاجر فقط.'});
+        return;
+    }
+
+    const newId = `RS-${new Date().getFullYear()}-${String(slips.length + 1).padStart(3, '0')}`;
+    
     const newSlip = {
       id: newId,
-      merchant,
+      merchant: firstMerchant,
       date: new Date().toISOString().slice(0, 10),
       items: selectedReturns.length,
       status: 'جاهز للتسليم',
-      orders: mockReturns.filter(r => selectedReturns.includes(r.id)),
+      orders: selectedOrders,
     };
 
     setSlips(prev => [...prev, newSlip]);
     setSelectedReturns([]);
     setShowCreateDialog(false);
+    toast({ title: 'تم إنشاء الكشف بنجاح!' });
   };
 
-  // فتح تفاصيل كشف محدد
   const handleShowDetails = (slip: any) => {
     setCurrentSlip(slip);
     setShowDetailsDialog(true);
   };
+  
+  const ordersForDialog = useMemo(() => {
+    return returnsAtBranch.filter(r => selectedReturns.includes(r.id));
+  }, [returnsAtBranch, selectedReturns]);
 
   return (
     <div className="space-y-6" dir="rtl">
+      {/* عنوان الصفحة */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl font-bold">
             <Icon name="Undo2" />
             إدارة المرتجعات
           </CardTitle>
-          <CardDescription>
+           <CardDescription>
             تجهيز ومتابعة الطلبات المرتجعة لإعادتها إلى التجار.
           </CardDescription>
         </CardHeader>
@@ -94,52 +140,92 @@ export default function ReturnsPage() {
                   <TableRow>
                     <TableHead className="w-[50px]">
                       <Checkbox
-                        checked={selectedReturns.length === mockReturns.length && mockReturns.length > 0}
+                        checked={selectedReturns.length === returnsAtBranch.length && returnsAtBranch.length > 0}
                         onCheckedChange={(checked) => {
-                          setSelectedReturns(checked ? mockReturns.map(r => r.id) : []);
+                          setSelectedReturns(checked ? returnsAtBranch.map(r => r.id) : []);
                         }}
                       />
                     </TableHead>
                     <TableHead>رقم الطلب</TableHead>
                     <TableHead>التاجر</TableHead>
                     <TableHead>المستلم</TableHead>
-                    <TableHead>تاريخ الإرجاع</TableHead>
-                    <TableHead>سبب الإرجاع</TableHead>
+                    <TableHead>تاريخ الطلب</TableHead>
+                    <TableHead>الحالة</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockReturns.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedReturns.includes(item.id)}
-                          onCheckedChange={(checked) => {
-                            setSelectedReturns(prev =>
-                              checked ? [...prev, item.id] : prev.filter(id => id !== item.id)
-                            );
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell className="font-mono">{item.id}</TableCell>
-                      <TableCell>{item.merchant}</TableCell>
-                      <TableCell>{item.recipient}</TableCell>
-                      <TableCell>{item.returnDate}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{item.reason}</Badge>
+                  {returnsAtBranch.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center">
+                        لا توجد مرتجعات بانتظار التجهيز حاليًا.
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    returnsAtBranch.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedReturns.includes(item.id)}
+                            onCheckedChange={(checked) => {
+                              setSelectedReturns(prev =>
+                                checked ? [...prev, item.id] : prev.filter(id => id !== item.id)
+                              );
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="font-mono">{item.id}</TableCell>
+                        <TableCell>{item.merchant}</TableCell>
+                        <TableCell>{item.recipient}</TableCell>
+                        <TableCell>{item.date}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{item.status}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* لسان كشوفات الإرجاع */}
+        {/* لسان كشوفات الإرجاع مع الفلاتر */}
         <TabsContent value="return-slips" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>كشوفات الإرجاع</CardTitle>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <CardTitle>كشوفات الإرجاع</CardTitle>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select onValueChange={(v) => setFilterMerchant(v === 'all' ? null : v)} value={filterMerchant || 'all'}>
+                    <SelectTrigger className="w-full sm:w-40">
+                      <SelectValue placeholder="اختيار التاجر" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">كل التجار</SelectItem>
+                      {merchants.map((m) => (
+                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="date"
+                      placeholder="من"
+                      value={filterStartDate || ''}
+                      onChange={(e) => setFilterStartDate(e.target.value || null)}
+                      className="w-full sm:w-auto"
+                    />
+                     <span className="text-muted-foreground">-</span>
+                    <Input
+                      type="date"
+                      placeholder="إلى"
+                      value={filterEndDate || ''}
+                      onChange={(e) => setFilterEndDate(e.target.value || null)}
+                      className="w-full sm:w-auto"
+                    />
+                  </div>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -154,7 +240,7 @@ export default function ReturnsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {slips.map((slip) => (
+                  {filteredSlips.map((slip) => (
                     <TableRow key={slip.id}>
                       <TableCell className="font-mono">{slip.id}</TableCell>
                       <TableCell>{slip.merchant}</TableCell>
@@ -168,7 +254,7 @@ export default function ReturnsPage() {
                           {slip.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-left flex gap-2">
+                      <TableCell className="text-left flex gap-2 justify-end">
                         <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}>
                           <Icon name="Eye" className="ml-2 h-4 w-4" /> عرض التفاصيل
                         </Button>
@@ -202,13 +288,12 @@ export default function ReturnsPage() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>إنشاء كشف إرجاع جديد</DialogTitle>
+            <DialogDescription>سيتم إنشاء كشف يضم الطلبات المحددة. تأكد من أن جميعها لنفس التاجر.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <p>سيتم إنشاء كشف يضم {selectedReturns.length} طلب/طلبات.</p>
-            <ul className="list-disc pr-6">
-              {mockReturns
-                .filter(r => selectedReturns.includes(r.id))
-                .map(r => (
+            <p>سيتم إنشاء كشف يضم {ordersForDialog.length} طلب/طلبات.</p>
+            <ul className="list-disc pr-6 max-h-60 overflow-y-auto">
+              {ordersForDialog.map(r => (
                   <li key={r.id}>
                     <span className="font-mono">{r.id}</span> – {r.merchant}
                   </li>
@@ -216,8 +301,51 @@ export default function ReturnsPage() {
             </ul>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>إلغاء</Button>
+            <DialogClose asChild>
+                <Button variant="outline">إلغاء</Button>
+            </DialogClose>
             <Button onClick={handleCreateSlip}>تأكيد وإنشاء</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog عرض تفاصيل الكشف */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>تفاصيل كشف {currentSlip?.id}</DialogTitle>
+             <DialogDescription>
+                للتاجر: {currentSlip?.merchant} | التاريخ: {currentSlip?.date}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>رقم الطلب</TableHead>
+                  <TableHead>المستلم</TableHead>
+                  <TableHead>تاريخ الطلب الأصلي</TableHead>
+                  <TableHead>الحالة</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {currentSlip?.orders.map((order: Order) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-mono">{order.id}</TableCell>
+                    <TableCell>{order.recipient}</TableCell>
+                    <TableCell>{order.date}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{order.status}</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <DialogFooter>
+             <DialogClose asChild>
+                <Button>إغلاق</Button>
+            </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>
