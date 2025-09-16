@@ -76,13 +76,14 @@ import Papa from 'papaparse';
 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
-import { useOrdersStore, type Order } from '@/store/orders-store';
+import { type Order } from '@/store/orders-store';
 import { useSettings, type SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
 import { PrintablePolicy } from '@/components/printable-policy';
 import { useStatusesStore } from '@/store/statuses-store';
 import { useUsersStore } from '@/store/user-store';
 import { getOrders, type OrderSortConfig, type FilterDefinition } from '@/app/actions/get-orders';
 import { updateOrderAction } from '@/app/actions/update-order';
+import { useOrdersStore } from '@/store/orders-store';
 
 
 // ShadCN UI Components
@@ -669,7 +670,7 @@ function ReturnsManagementPage() {
                 
                 <TabsContent value="merchants" className="mt-4">
                      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                        <div className="md:col-span-3 order-first md:order-last">
+                        <div className="md:col-span-3 order-last md:order-first">
                             {renderMerchantSidebar()}
                         </div>
                         <div className="md:col-span-9">
@@ -717,46 +718,6 @@ function ReturnsManagementPage() {
                                     </CardFooter>
                                 </Card>
 
-                                 <Card>
-                                    <CardHeader>
-                                        <CardTitle>الكشوفات المصدرة للتاجر</CardTitle>
-                                        <CardDescription>
-                                            قائمة بالكشوفات التي تم إنشاؤها مسبقًا لهذا التاجر.
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>رقم الكشف</TableHead>
-                                                    <TableHead>تاريخ الإنشاء</TableHead>
-                                                    <TableHead>عدد القطع</TableHead>
-                                                    <TableHead>الحالة</TableHead>
-                                                    <TableHead className="text-left">إجراءات</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {mockStatements.map((stmt) => (
-                                                    <TableRow key={stmt.id}>
-                                                        <TableCell className="font-mono">{stmt.id}</TableCell>
-                                                        <TableCell>{stmt.date}</TableCell>
-                                                        <TableCell>{stmt.itemCount}</TableCell>
-                                                        <TableCell>
-                                                            <Badge variant={stmt.status === 'مدفوع' ? 'default' : 'secondary'} className={stmt.status === 'مدفوع' ? 'bg-green-100 text-green-700' : ''}>
-                                                                {stmt.status}
-                                                            </Badge>
-                                                        </TableCell>
-                                                        <TableCell className="text-left">
-                                                            <Button variant="outline" size="sm">
-                                                                <Printer className="ml-2 h-4 w-4" /> طباعة
-                                                            </Button>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
                              </div>
                         </div>
                     </div>
@@ -764,7 +725,7 @@ function ReturnsManagementPage() {
 
                  <TabsContent value="drivers" className="mt-4">
                      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                        <div className="md:col-span-3 order-first md:order-last">
+                        <div className="md:col-span-3 order-last md:order-first">
                            {renderDriverSidebar()}
                         </div>
                         <div className="md:col-span-9">
@@ -814,7 +775,9 @@ const ReturnsPage = () => {
         </React.Suspense>
     )
 }
+
 export default ReturnsPage;
     
 
     
+
