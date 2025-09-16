@@ -74,6 +74,7 @@
     "recharts": "^2.15.1",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
+    "ws": "^8.18.0",
     "zod": "^3.24.2",
     "zustand": "^4.5.2"
   },
@@ -92,6 +93,7 @@
     "@types/react-dom": "^18",
     "@types/react-leaflet": "^3.0.0",
     "@types/react-rnd": "^8.0.0",
+    "@types/ws": "^8.5.11",
     "genkit-cli": "^1.14.1",
     "postcss": "^8",
     "sass": "^1.77.8",
