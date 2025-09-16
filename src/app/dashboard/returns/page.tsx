@@ -358,9 +358,10 @@ const mockStatements = [
     { id: 'STMT-003', date: '2024-07-06', itemCount: 3, status: 'بانتظار الدفع' },
 ];
 
-export default function ReturnsManagementPage() {
+function ReturnsManagementPage() {
     const { statuses } = useStatusesStore();
     const { users } = useUsersStore();
+    const { orders: allOrdersData } = useOrdersStore(); // Renamed to avoid conflict
     const [allReturnedOrders, setAllReturnedOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     
@@ -395,24 +396,45 @@ export default function ReturnsManagementPage() {
         const settingsToSave = JSON.stringify({ savedColumns: columns, savedVisibleKeys: visibleColumnKeys });
         localStorage.setItem(COLUMN_SETTINGS_KEY, settingsToSave);
     }, [columns, visibleColumnKeys]);
-
+    
     const fetchData = useCallback(async (status: string) => {
         setIsLoading(true);
         try {
-            const baseFilters: FilterDefinition[] = [{ field: 'status', operator: 'equals', value: status }];
-            const result = await getOrders({
-                page: 0,
-                rowsPerPage: 9999, // Fetch all for now, no pagination in this view
-                sortConfig,
-                filters: [...baseFilters, ...filters],
-            });
-            setAllReturnedOrders(result.orders);
+            // Using the client-side store data for filtering directly
+            const baseFilteredOrders = allOrdersData.filter(o => o.status === status);
+            
+            // Apply additional text-based filters
+            let finalFilteredOrders = baseFilteredOrders;
+            if (filters.length > 0) {
+                 finalFilteredOrders = baseFilteredOrders.filter(order => {
+                    return filters.every(filter => {
+                        const orderValue = order[filter.field as keyof Order] as string | undefined;
+                        if (orderValue === undefined) return false;
+                        return String(orderValue).toLowerCase().includes(filter.value.toLowerCase());
+                    });
+                });
+            }
+
+            // Apply sorting
+            if (sortConfig) {
+                finalFilteredOrders.sort((a, b) => {
+                    const valA = a[sortConfig.key];
+                    const valB = b[sortConfig.key];
+                    if (valA < valB) return sortConfig.direction === 'ascending' ? -1 : 1;
+                    if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1;
+                    return 0;
+                });
+            }
+            
+            setAllReturnedOrders(finalFilteredOrders);
+
         } catch (error) {
             console.error("Failed to fetch returned orders", error);
         } finally {
             setIsLoading(false);
         }
-    }, [sortConfig, filters]);
+    }, [sortConfig, filters, allOrdersData]);
+
 
     useEffect(() => {
         // Initially fetch data for merchants
@@ -561,7 +583,7 @@ export default function ReturnsManagementPage() {
         </Card>
     );
     
-    const renderTableControls = () => (
+    const TableControls = ({ onAction, onExport }: { onAction: (action: string) => void, onExport: () => void }) => (
          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
             <div>
                 <CardTitle>
@@ -577,7 +599,7 @@ export default function ReturnsManagementPage() {
                     onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
                     onRemoveFilter={(index) => setFilters(prev => prev.filter((_, i) => i !== index))}
                 />
-                <DropdownMenu>
+                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-1">
                             <ListOrdered className="h-4 w-4" />
@@ -647,11 +669,14 @@ export default function ReturnsManagementPage() {
                 
                 <TabsContent value="merchants" className="mt-4">
                      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                        <div className="md:col-span-9 order-last md:order-first">
+                        <div className="md:col-span-3 order-first md:order-last">
+                            {renderMerchantSidebar()}
+                        </div>
+                        <div className="md:col-span-9">
                              <div className="space-y-6">
                                 <Card className="h-full flex flex-col">
                                     <CardHeader>
-                                       {renderTableControls()}
+                                       <TableControls onAction={() => {}} onExport={() => {}} />
                                     </CardHeader>
                                     <CardContent className="flex-1 flex flex-col">
                                         <div className="flex items-center gap-2 mb-4">
@@ -734,18 +759,18 @@ export default function ReturnsManagementPage() {
                                 </Card>
                              </div>
                         </div>
-                        <div className="md:col-span-3">
-                            {renderMerchantSidebar()}
-                        </div>
                     </div>
                 </TabsContent>
 
                  <TabsContent value="drivers" className="mt-4">
                      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                        <div className="md:col-span-9 order-last md:order-first">
+                        <div className="md:col-span-3 order-first md:order-last">
+                           {renderDriverSidebar()}
+                        </div>
+                        <div className="md:col-span-9">
                              <Card>
                                 <CardHeader>
-                                    {renderTableControls()}
+                                    <TableControls onAction={() => {}} onExport={() => {}} />
                                 </CardHeader>
                                 <CardContent>
                                      <div className="flex items-center gap-2 mb-4">
@@ -757,7 +782,14 @@ export default function ReturnsManagementPage() {
                                         orders={selectedOrders}
                                         isLoading={isLoading}
                                         columns={visibleColumns}
-                                        onSort={(key) => {}}
+                                        onSort={(key) => {
+                                            setSortConfig(prev => {
+                                                if (prev?.key === key) {
+                                                    return { ...prev, direction: prev.direction === 'ascending' ? 'descending' : 'ascending' };
+                                                }
+                                                return { key, direction: 'ascending' };
+                                            });
+                                        }}
                                         sortConfig={sortConfig}
                                         selectedRows={selectedRows}
                                         onSelectRow={(id, checked) => setSelectedRows(prev => checked ? [...prev, id] : prev.filter(rowId => rowId !== id))}
@@ -767,9 +799,6 @@ export default function ReturnsManagementPage() {
                                     />
                                 </CardContent>
                             </Card>
-                        </div>
-                         <div className="md:col-span-3">
-                           {renderDriverSidebar()}
                         </div>
                     </div>
                 </TabsContent>
