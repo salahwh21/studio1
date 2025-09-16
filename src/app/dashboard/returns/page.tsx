@@ -254,7 +254,7 @@ const ReturnsManagementPage = () => {
             const result = await getOrders({
                 page: 0,
                 rowsPerPage: 9999, // Fetch all for now
-                filters: [{ field: 'status', operator: 'equals', value: 'راجع' }],
+                filters: [{ field: 'status', operator: 'equals', value: 'مرجع للفرع' }],
             });
             setAllReturnedOrders(result.orders);
         } catch (error) {
