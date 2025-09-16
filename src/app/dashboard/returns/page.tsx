@@ -1,8 +1,9 @@
 
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef, useTransition } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import {
   ListFilter,
   MoreHorizontal,
@@ -43,11 +44,11 @@ import {
   ChevronsLeft,
   ChevronsUpDown,
   Printer,
+  ArrowRight,
   ArrowLeft as ArrowLeftIcon,
   Save,
   FileSpreadsheet,
 } from 'lucide-react';
-
 
 import { useToast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
@@ -106,11 +107,11 @@ const ReturnsTable = ({ orders, statuses }: { orders: Order[], statuses: any[] }
                     إنشاء كشف مرتجع للتاجر
                 </Button>
             </div>
-            <Table>
+             <Table>
                 <TableHeader>
                     <TableRow>
                         <TableHead className="w-12 text-center border-l">
-                            <Checkbox
+                           <Checkbox
                                 checked={isAllSelected}
                                 onCheckedChange={(checked) => handleSelectAll(!!checked)}
                                 ref={(input: HTMLButtonElement | null) => {
@@ -175,6 +176,7 @@ export default function ReturnsManagementPage() {
 
     const [selectedMerchant, setSelectedMerchant] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedRows, setSelectedRows] = useState<string[]>([]);
 
     const returnsByMerchant = useMemo(() => {
         return orders
@@ -196,6 +198,10 @@ export default function ReturnsManagementPage() {
             setSelectedMerchant(merchantsWithReturns[0]);
         }
     }, [merchantsWithReturns, selectedMerchant]);
+    
+    useEffect(() => {
+        setSelectedRows([]);
+    }, [selectedMerchant]);
 
     const selectedOrders = useMemo(() => {
         const ordersForMerchant = selectedMerchant ? returnsByMerchant[selectedMerchant] || [] : [];
