@@ -125,7 +125,7 @@ export default function ReturnsPage() {
         </TabsList>
 
         {/* لسان مرتجعات في الفرع */}
-        <TabsContent value="at-branch" className="mt-4">
+        <TabsContent value="at-branch" className="mt-4" dir="rtl">
           <Card>
             <CardHeader>
               <div className="flex justify-between items-center">
@@ -192,7 +192,7 @@ export default function ReturnsPage() {
         </TabsContent>
 
         {/* لسان كشوفات الإرجاع مع الفلاتر */}
-        <TabsContent value="return-slips" className="mt-4">
+        <TabsContent value="return-slips" className="mt-4" dir="rtl">
           <Card>
             <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <CardTitle>كشوفات الإرجاع</CardTitle>
