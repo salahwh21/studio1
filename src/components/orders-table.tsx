@@ -1120,7 +1120,7 @@ const OrdersTableComponent = () => {
                     </div>
                     {/* Table Container */}
                      <div className="flex-1 border rounded-lg overflow-auto flex flex-col">
-                        <Table>
+                        <Table className='table-auto'>
                             <TableHeader className="sticky top-0 z-20">
                                 <TableRow className="hover:bg-transparent">
                                     <TableHead className="sticky right-0 z-30 p-2 text-center border-l w-20 bg-slate-800"><div className="flex items-center justify-center gap-2"><span className="text-sm font-bold text-white">#</span><Checkbox onCheckedChange={handleSelectAll} checked={isAllSelected} indeterminate={isIndeterminate} aria-label="Select all rows" className='border-white data-[state=checked]:bg-white data-[state=checked]:text-slate-800 data-[state=indeterminate]:bg-white data-[state=indeterminate]:text-slate-800' /></div></TableHead>
@@ -1303,6 +1303,7 @@ export function OrdersTable() {
 
 
     
+
 
 
 
