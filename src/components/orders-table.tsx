@@ -106,6 +106,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Icon from '@/components/icon';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Switch } from '@/components/ui/switch';
 
 
 const CSVLink = dynamic(() => import('react-csv').then(mod => mod.CSVLink), { ssr: false });
@@ -430,6 +431,7 @@ const OrdersTableComponent = () => {
     const [sortConfig, setSortConfig] = useState<OrderSortConfig | null>(null);
     const [filters, setFilters] = useState<FilterDefinition[]>([]);
     const [globalSearch, setGlobalSearch] = useState('');
+    const [isEditMode, setIsEditMode] = useState(false);
 
 
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -820,8 +822,8 @@ const OrdersTableComponent = () => {
                         case 'status':
                             const sInfo = getStatusInfo(value as string);
                             content = (
-                                <Select value={value as string} onValueChange={(newValue) => handleUpdateField(order.id, 'status', newValue)}>
-                                    <SelectTrigger className="bg-transparent border-0 focus:ring-0 focus:ring-offset-0 h-8 p-0 w-full">
+                                <Select disabled={!isEditMode} value={value as string} onValueChange={(newValue) => handleUpdateField(order.id, 'status', newValue)}>
+                                    <SelectTrigger className="bg-transparent border-0 focus:ring-0 focus:ring-offset-0 h-8 p-0 w-full disabled:opacity-100 disabled:cursor-default">
                                         <SelectValue asChild>
                                             <div className="flex items-center justify-center font-semibold text-xs px-2.5 py-0.5 rounded-sm w-[180px] mx-auto h-full" style={{ backgroundColor: `${sInfo.color}20`, color: sInfo.color }}>
                                                 <div className="flex items-center justify-center w-full gap-2">
@@ -849,8 +851,8 @@ const OrdersTableComponent = () => {
                             const options = col.key === 'merchant' ? merchants : drivers;
                             content = (
                                 <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button variant="ghost" className="w-full h-8 justify-between hover:bg-muted font-normal border">
+                                    <PopoverTrigger asChild disabled={!isEditMode}>
+                                        <Button variant="ghost" className="w-full h-8 justify-between hover:bg-muted font-normal border disabled:opacity-100 disabled:cursor-default disabled:border-transparent">
                                             {value as string}
                                             <ArrowUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
@@ -866,12 +868,12 @@ const OrdersTableComponent = () => {
                                                             key={item.id}
                                                             value={item.name}
                                                             onSelect={(currentValue) => {
-                                                                const selectedName = options.find(o => o.name.toLowerCase() === currentValue)?.name || '';
-                                                                handleUpdateField(order.id, col.key, selectedName);
+                                                                const selectedName = options.find(o => (o.storeName || o.name).toLowerCase() === currentValue)?.name || '';
+                                                                handleUpdateField(order.id, col.key, col.key === 'merchant' ? (options.find(o => (o.storeName || o.name).toLowerCase() === currentValue)?.storeName || '') : selectedName);
                                                             }}
                                                         >
-                                                            <Check className={cn("mr-2 h-4 w-4", value === item.name ? "opacity-100" : "opacity-0")} />
-                                                            {item.name}
+                                                            <Check className={cn("mr-2 h-4 w-4", value === (item.storeName || item.name) ? "opacity-100" : "opacity-0")} />
+                                                            {item.storeName || item.name}
                                                         </CommandItem>
                                                     ))}
                                                 </CommandGroup>
@@ -893,10 +895,25 @@ const OrdersTableComponent = () => {
                         case 'cod':
                         case 'additionalCost':
                         case 'driverAdditionalFare':
-                            content = formatCurrency(value as number);
+                            content = (
+                                <Input
+                                    type="number"
+                                    defaultValue={value as number}
+                                    onBlur={(e) => handleUpdateField(order.id, col.key, parseFloat(e.target.value) || 0)}
+                                    className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-2 bg-transparent hover:bg-muted disabled:opacity-100 disabled:cursor-default"
+                                    disabled={!isEditMode}
+                                />
+                            );
                             break;
                         default:
-                            content = value as React.ReactNode || '-';
+                             content = (
+                                <Input
+                                    defaultValue={value as string}
+                                    onBlur={(e) => handleUpdateField(order.id, col.key, e.target.value)}
+                                    className="h-8 text-center border-0 focus-visible:ring-offset-0 focus-visible:ring-2 bg-transparent hover:bg-muted disabled:opacity-100 disabled:cursor-default"
+                                    disabled={!isEditMode}
+                                />
+                            );
                     }
                     return <TableCell key={col.key} className="p-2 text-center whitespace-nowrap border-l text-sm">{content}</TableCell>
                 })}
@@ -1002,6 +1019,11 @@ const OrdersTableComponent = () => {
                             />
                         </div>
                         <div className="flex items-center gap-2">
+                             <div className="flex items-center space-x-2 space-x-reverse">
+                                <Switch id="edit-mode" checked={isEditMode} onCheckedChange={setIsEditMode} />
+                                <Label htmlFor="edit-mode">قابل للتعديل</Label>
+                            </div>
+                            <Separator orientation="vertical" className="h-6" />
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" size="sm" className="gap-1">
@@ -1280,6 +1302,7 @@ export function OrdersTable() {
 
 
     
+
 
 
 
