@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { parseISO, isWithinInterval } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 
 const RETURNABLE_STATUSES = ['راجع', 'ملغي', 'رفض ودفع أجور', 'رفض ولم يدفع أجور', 'تبديل'];
@@ -112,16 +114,9 @@ export const ReturnSlipsToMerchants = () => {
     const areAllSelected = returnsAtBranch.length > 0 && selectedReturns.length === returnsAtBranch.length;
 
     const printSlip = async (slip: Slip) => {
-        const { default: jsPDF } = await import('jspdf');
-        const { default: autoTable } = await import('jspdf-autotable');
-        
         const doc = new jsPDF();
         
-        // Add Amiri font - this is a simplified way, a real app might host the font file
-        // For this example, we rely on a commonly available font or a pre-configured setup.
-        // The key is setting the font for the document and the table.
         try {
-            // In a real app, you would load a TTF file, but for now we assume a font exists.
             doc.addFont('https://raw.githack.com/MrRio/jsPDF/master/test/reference/Amiri-Regular.ttf', 'Amiri', 'normal');
             doc.setFont('Amiri');
         } catch (e) {
