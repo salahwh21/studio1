@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -54,7 +54,7 @@ export const ReceiveFromDrivers = () => {
   }, [returnsByDriver, users]);
   
   // Select the first driver by default
-  React.useEffect(() => {
+  useEffect(() => {
     if(!selectedDriver && driverData.length > 0) {
         setSelectedDriver(driverData[0].name);
     }
