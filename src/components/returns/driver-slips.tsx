@@ -41,6 +41,7 @@ export const DriverSlips = () => {
         const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
         
         try {
+            // This is a common way to add Arabic fonts. You might need to host the font file or use a CDN.
             doc.addFont('https://raw.githack.com/MrRio/jsPDF/master/test/reference/Amiri-Regular.ttf', 'Amiri', 'normal');
             doc.setFont('Amiri');
         } catch (e) {
@@ -48,68 +49,56 @@ export const DriverSlips = () => {
         }
 
         const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
         const margin = 10;
         
         // --- Header ---
-        doc.setFontSize(16);
-        doc.text('كشف استلام من السائق', pageWidth / 2, margin + 5, { align: 'center' });
+        doc.setFontSize(20);
+        doc.text('كشف استلام مرتجعات من السائق', pageWidth / 2, margin + 10, { align: 'center' });
+
+        doc.setFontSize(12);
+        doc.text(`السائق: ${slip.driverName}`, pageWidth - margin, margin + 25, { align: 'right' });
+        doc.text(`التاريخ: ${new Date(slip.date).toLocaleDateString('ar-JO')}`, pageWidth - margin, margin + 32, { align: 'right' });
+        doc.text(`رقم الكشف: ${slip.id}`, pageWidth - margin, margin + 39, { align: 'right' });
 
         const logo = settings.login.reportsLogo || settings.login.headerLogo;
         if (logo) {
             try {
-               doc.addImage(logo, 'PNG', margin, margin, 30, 15);
+               doc.addImage(logo, 'PNG', margin, margin + 20, 40, 20, undefined, 'FAST');
             } catch(e) { console.error("Error adding logo to PDF:", e); }
         }
 
-        doc.setFontSize(10);
-        doc.text(`السائق: ${slip.driverName}`, pageWidth - margin, margin + 7, { align: 'right' });
-        doc.text(`التاريخ: ${new Date(slip.date).toLocaleString('ar-JO')}`, pageWidth - margin, margin + 12, { align: 'right' });
-        doc.text(`رقم الكشف: ${slip.id}`, pageWidth - margin, margin + 17, { align: 'right' });
-
 
         // --- Table ---
-        const head = [['#', 'رقم الطلب', 'اسم المستلم', 'عنوان المستلم', 'سبب الارجاع', 'المبلغ المطلوب']];
+        const head = [['سبب الارجاع', 'العنوان', 'اسم المستلم', 'رقم الطلب', '#']];
         const body = slip.orders.map((order, index) => [
-            index + 1,
-            order.referenceNumber || order.id,
-            `${order.recipient}\n${order.phone || ''}`,
-            order.address,
             order.previousStatus || order.status,
-            order.cod > 0 ? 'يوجد تحصيل' : '0.00',
+            order.address,
+            `${order.recipient}\n${order.phone || ''}`,
+            order.referenceNumber || order.id,
+            index + 1,
         ]);
         
-        const totalCOD = slip.orders.reduce((sum, order) => sum + order.cod, 0);
-
         autoTable(doc, {
-          startY: margin + 25,
+          startY: margin + 45,
           head: head,
           body: body,
           styles: { font: 'Amiri', halign: 'right', cellPadding: 2 },
           headStyles: { fillColor: [44, 62, 80], halign: 'center' },
           columnStyles: {
-              0: { halign: 'center', cellWidth: 10 },
-              1: { halign: 'center', cellWidth: 30 },
-              2: { halign: 'right', cellWidth: 35 },
-              3: { halign: 'right', cellWidth: 'auto' },
-              4: { halign: 'center', cellWidth: 25 },
-              5: { halign: 'center', cellWidth: 20 },
+              0: { halign: 'center' },
+              1: { halign: 'right' },
+              2: { halign: 'right' },
+              3: { halign: 'center' },
+              4: { halign: 'center' },
           },
           didDrawPage: (data) => {
             // --- Footer ---
             doc.setFontSize(10);
-            const footerY = pageHeight - margin - 10;
+            const footerY = doc.internal.pageSize.getHeight() - margin;
             doc.text(`توقيع المستلم: ............................`, pageWidth - margin, footerY, { align: 'right' });
-            doc.text(`Page ${data.pageNumber}`, margin, footerY, { align: 'left' });
+            doc.text(`صفحة ${data.pageNumber}`, margin, footerY, { align: 'left' });
           }
         });
-
-        // Add final total row
-        const finalY = (doc as any).lastAutoTable.finalY;
-        doc.setFontSize(12);
-        doc.setFont('Amiri', 'bold');
-        doc.text(`الإجمالي`, pageWidth - margin - 25, finalY + 10, { align: 'center'});
-        doc.text(`${totalCOD.toFixed(2)}`, margin + 10, finalY + 10, { align: 'center'});
 
 
         doc.save(`DriverSlip-${slip.id}.pdf`);

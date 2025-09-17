@@ -70,87 +70,57 @@ export const MerchantSlips = () => {
         }
 
         const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
         const margin = 10;
         
         // --- Header ---
-        doc.setFontSize(16);
-        doc.text('كشف المرتجع', pageWidth / 2, margin + 5, { align: 'center' });
+        doc.setFontSize(20);
+        doc.text('كشف تسليم مرتجعات للتاجر', pageWidth / 2, margin + 10, { align: 'center' });
+
+        doc.setFontSize(12);
+        doc.text(`التاجر: ${slip.merchant}`, pageWidth - margin, margin + 25, { align: 'right' });
+        doc.text(`التاريخ: ${new Date(slip.date).toLocaleDateString('ar-JO')}`, pageWidth - margin, margin + 32, { align: 'right' });
+        doc.text(`رقم الكشف: ${slip.id}`, pageWidth - margin, margin + 39, { align: 'right' });
 
         const logo = settings.login.reportsLogo || settings.login.headerLogo;
         if (logo) {
             try {
-               doc.addImage(logo, 'PNG', margin, margin, 30, 15);
+               doc.addImage(logo, 'PNG', margin, margin + 20, 40, 20, undefined, 'FAST');
             } catch(e) { console.error("Error adding logo to PDF:", e); }
         }
-        
-        // Barcode for slip ID
-        try {
-            // Placeholder for barcode generation library if available, e.g., JsBarcode
-            // For now, we'll just write the text
-            doc.setFontSize(12);
-            doc.text(slip.id, pageWidth / 2, margin + 15, { align: 'center' });
-        } catch (e) { console.error("Error adding barcode:", e)}
-
-
-        doc.setFontSize(10);
-        doc.text(`اسم التاجر: ${slip.merchant}`, pageWidth - margin, margin + 7, { align: 'right' });
-        doc.text(`رقم المحمول للتاجر: ${merchantUser?.email || 'غير متوفر'}`, pageWidth - margin, margin + 12, { align: 'right' });
-        doc.text(`التاريخ: ${new Date(slip.date).toLocaleString('ar-JO')}`, pageWidth - margin, margin + 17, { align: 'right' });
-        doc.text(`العنوان: ${'عمان - صويلح'}`, pageWidth - margin, margin + 22, { align: 'right' });
-
 
         // --- Table ---
-        const head = [['#', 'رقم الطلب', 'اسم المستلم', 'عنوان المستلم', 'سبب الارجاع', 'مطلوب للتاجر']];
+        const head = [['سبب الارجاع', 'العنوان', 'اسم المستلم', 'رقم الطلب', '#']];
         const body = slip.orders.map((order, index) => [
-            index + 1,
-            order.referenceNumber || order.id,
-            `${order.recipient}\n${order.phone || ''}`,
-            order.address,
             order.previousStatus || order.status,
-            '0.0', // 'مطلوب للتاجر' seems to be always 0.0 in the example
+            order.address,
+            `${order.recipient}\n${order.phone || ''}`,
+            order.referenceNumber || order.id,
+            index + 1,
         ]);
         
-        const totalAmount = '0.00'; // As per the image example
-
         autoTable(doc, {
-          startY: margin + 35,
+          startY: margin + 45,
           head: head,
           body: body,
           styles: { font: 'Amiri', halign: 'right', cellPadding: 2 },
           headStyles: { fillColor: [44, 62, 80], halign: 'center' },
           columnStyles: {
-              0: { halign: 'center', cellWidth: 10 },
-              1: { halign: 'center', cellWidth: 30 },
-              2: { halign: 'right', cellWidth: 35 },
-              3: { halign: 'right', cellWidth: 'auto' },
-              4: { halign: 'center', cellWidth: 25 },
-              5: { halign: 'center', cellWidth: 20 },
+            0: { halign: 'center' },
+            1: { halign: 'right' },
+            2: { halign: 'right' },
+            3: { halign: 'center' },
+            4: { halign: 'center' },
           },
           didDrawPage: (data) => {
             // --- Footer ---
             doc.setFontSize(10);
-            const footerY = pageHeight - margin - 5;
+            const footerY = doc.internal.pageSize.getHeight() - margin;
             doc.text(`توقيع المستلم: ............................`, pageWidth - margin, footerY, { align: 'right' });
-            doc.text(`Page ${data.pageNumber}`, margin, footerY, { align: 'left' });
-          },
-          didParseCell: function (data) {
-            // For multi-line cells
-            if (data.section === 'body' && (data.column.index === 2)) {
-                data.cell.styles.valign = 'middle';
-            }
+            doc.text(`صفحة ${data.pageNumber}`, margin, footerY, { align: 'left' });
           }
         });
 
-        // Add final total row
-        const finalY = (doc as any).lastAutoTable.finalY;
-        doc.setFontSize(12);
-        doc.setFont('Amiri', 'bold');
-        doc.text(`الإجمالي`, pageWidth - margin - 25, finalY + 10, { align: 'center'});
-        doc.text(`${totalAmount}`, margin + 10, finalY + 10, { align: 'center'});
-
-
-        doc.save(`ReturnSlip-${slip.id}.pdf`);
+        doc.save(`MerchantReturnSlip-${slip.id}.pdf`);
     };
 
     return (
