@@ -1,5 +1,6 @@
+
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,9 +15,10 @@ import { parseISO, isWithinInterval } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useUsersStore } from '@/store/user-store';
+import PrintableSlip from './printable-slip';
 
 export const MerchantSlips = () => {
     const { toast } = useToast();
@@ -26,6 +28,9 @@ export const MerchantSlips = () => {
 
     const [showDetailsDialog, setShowDetailsDialog] = useState(false);
     const [currentSlip, setCurrentSlip] = useState<MerchantSlip | null>(null);
+    const [slipToPrint, setSlipToPrint] = useState<MerchantSlip | null>(null);
+    const printRef = useRef<HTMLDivElement>(null);
+
 
     const [filterMerchant, setFilterMerchant] = useState<string | null>(null);
     const [filterStartDate, setFilterStartDate] = useState<string | null>(null);
@@ -59,65 +64,27 @@ export const MerchantSlips = () => {
     };
 
     const printSlip = async (slip: MerchantSlip) => {
-        const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-        
-        try {
-            doc.addFont('https://raw.githack.com/MrRio/jsPDF/master/test/reference/Amiri-Regular.ttf', 'Amiri', 'normal');
-            doc.setFont('Amiri');
-        } catch (e) {
-            console.warn("Could not load Amiri font for PDF. RTL text might not render correctly.");
-        }
+        setSlipToPrint(slip);
 
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const margin = 10;
-        
-        const logo = settings.login.reportsLogo || settings.login.headerLogo;
-        if (logo) {
-            try {
-               doc.addImage(logo, 'PNG', margin, margin, 40, 20, undefined, 'FAST');
-            } catch(e) { console.error("Error adding logo to PDF:", e); }
-        }
-
-        doc.setFontSize(20);
-        doc.text('كشف تسليم مرتجعات للتاجر', pageWidth / 2, margin + 15, { align: 'center' });
-
-        doc.setFontSize(12);
-        doc.text(`التاجر: ${slip.merchant}`, pageWidth - margin, margin + 25, { align: 'right' });
-        doc.text(`التاريخ: ${new Date(slip.date).toLocaleDateString('ar-JO')}`, pageWidth - margin, margin + 32, { align: 'right' });
-        doc.text(`رقم الكشف: ${slip.id}`, pageWidth - margin, margin + 39, { align: 'right' });
-
-        const head = [['#', 'رقم الطلب', 'اسم المستلم', 'العنوان', 'سبب الارجاع']];
-        const body = slip.orders.map((order, index) => [
-            index + 1,
-            order.referenceNumber || order.id,
-            `${order.recipient}\n${order.phone || ''}`,
-            order.address,
-            order.previousStatus || order.status,
-        ]);
-        
-        autoTable(doc, {
-          startY: margin + 45,
-          head: head,
-          body: body,
-          theme: 'grid',
-          styles: { font: 'Amiri', halign: 'right', cellPadding: 2, lineWidth: 0.1, lineColor: [44, 62, 80] },
-          headStyles: { fillColor: [44, 62, 80], halign: 'center', textColor: 255, fontStyle: 'bold' },
-          columnStyles: {
-            0: { halign: 'center' },
-            1: { halign: 'center' },
-            2: { halign: 'right' },
-            3: { halign: 'right' },
-            4: { halign: 'center' },
-          },
-          didDrawPage: (data) => {
-            doc.setFontSize(10);
-            const footerY = doc.internal.pageSize.getHeight() - margin;
-            doc.text(`توقيع المستلم: ............................`, pageWidth - margin, footerY, { align: 'right' });
-            doc.text(`صفحة ${data.pageNumber}`, margin, footerY, { align: 'left' });
-          }
-        });
-
-        doc.save(`MerchantReturnSlip-${slip.id}.pdf`);
+        setTimeout(async () => {
+            const element = printRef.current;
+            if (!element) return;
+            
+            const canvas = await html2canvas(element, { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            
+            const pdf = new jsPDF({
+                orientation: 'p',
+                unit: 'mm',
+                format: 'a4'
+            });
+            
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`MerchantReturnSlip-${slip.id}.pdf`);
+            setSlipToPrint(null);
+        }, 500);
     };
 
     return (
@@ -175,6 +142,15 @@ export const MerchantSlips = () => {
                 </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Hidden div for printing */}
+            <div className="hidden">
+                {slipToPrint && (
+                    <div ref={printRef}>
+                        <PrintableSlip slip={slipToPrint} logoSrc={settings.login.reportsLogo || settings.login.headerLogo} />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

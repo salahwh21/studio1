@@ -1,5 +1,6 @@
+
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -10,14 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { parseISO, isWithinInterval } from 'date-fns';
 import Icon from '@/components/icon';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 import { useSettings } from '@/contexts/SettingsContext';
-
+import PrintableSlip from './printable-slip';
 
 export const DriverSlips = () => {
   const { driverSlips } = useReturnsStore();
   const { settings } = useSettings();
   const [currentSlipDetails, setCurrentSlipDetails] = useState<DriverSlip | null>(null);
+  const [slipToPrint, setSlipToPrint] = useState<DriverSlip | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
 
   const [filterDriver, setFilterDriver] = useState<string | null>(null);
   const [filterStartDate, setFilterStartDate] = useState<string | null>(null);
@@ -38,67 +41,28 @@ export const DriverSlips = () => {
   }), [driverSlips, filterDriver, filterStartDate, filterEndDate]);
   
     const printSlip = async (slip: DriverSlip) => {
-        const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-        
-        try {
-            doc.addFont('https://raw.githack.com/MrRio/jsPDF/master/test/reference/Amiri-Regular.ttf', 'Amiri', 'normal');
-            doc.setFont('Amiri');
-        } catch (e) {
-            console.warn("Could not load Amiri font for PDF. RTL text might not render correctly.");
-        }
+        setSlipToPrint(slip);
 
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const margin = 10;
-
-        const logo = settings.login.reportsLogo || settings.login.headerLogo;
-        if (logo) {
-            try {
-               doc.addImage(logo, 'PNG', margin, margin, 40, 20, undefined, 'FAST');
-            } catch(e) { console.error("Error adding logo to PDF:", e); }
-        }
-        
-        doc.setFontSize(20);
-        doc.text('كشف استلام مرتجعات من السائق', pageWidth / 2, margin + 15, { align: 'center' });
-
-        doc.setFontSize(12);
-        doc.text(`السائق: ${slip.driverName}`, pageWidth - margin, margin + 25, { align: 'right' });
-        doc.text(`التاريخ: ${new Date(slip.date).toLocaleDateString('ar-JO')}`, pageWidth - margin, margin + 32, { align: 'right' });
-        doc.text(`رقم الكشف: ${slip.id}`, pageWidth - margin, margin + 39, { align: 'right' });
-        
-        const head = [['#', 'رقم الطلب', 'اسم المستلم', 'العنوان', 'سبب الارجاع']];
-        const body = slip.orders.map((order, index) => [
-            index + 1,
-            order.referenceNumber || order.id,
-            `${order.recipient}\n${order.phone || ''}`,
-            order.address,
-            order.previousStatus || order.status,
-        ]);
-        
-        autoTable(doc, {
-          startY: margin + 45,
-          head: head,
-          body: body,
-          theme: 'grid',
-          styles: { font: 'Amiri', halign: 'right', cellPadding: 2, lineWidth: 0.1, lineColor: [44, 62, 80] },
-          headStyles: { fillColor: [44, 62, 80], halign: 'center', textColor: 255, fontStyle: 'bold' },
-          columnStyles: {
-              0: { halign: 'center' },
-              1: { halign: 'center' },
-              2: { halign: 'right' },
-              3: { halign: 'right' },
-              4: { halign: 'center' },
-          },
-          didDrawPage: (data) => {
-            const footerY = doc.internal.pageSize.getHeight() - margin;
-            doc.setFontSize(10);
-            doc.text(`توقيع المستلم: ............................`, pageWidth - margin, footerY, { align: 'right' });
-            doc.text(`صفحة ${data.pageNumber}`, margin, footerY, { align: 'left' });
-          }
-        });
-
-        doc.save(`DriverSlip-${slip.id}.pdf`);
+        setTimeout(async () => {
+            const element = printRef.current;
+            if (!element) return;
+            
+            const canvas = await html2canvas(element, { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            
+            const pdf = new jsPDF({
+                orientation: 'p',
+                unit: 'mm',
+                format: 'a4'
+            });
+            
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`DriverSlip-${slip.id}.pdf`);
+            setSlipToPrint(null);
+        }, 500);
     };
-
 
   return (
     <div dir="rtl">
@@ -172,6 +136,15 @@ export const DriverSlips = () => {
                </div>
           </DialogContent>
       </Dialog>
+
+      {/* Hidden div for printing */}
+      <div className="hidden">
+        {slipToPrint && (
+            <div ref={printRef}>
+                <PrintableSlip slip={slipToPrint} logoSrc={settings.login.reportsLogo || settings.login.headerLogo} />
+            </div>
+        )}
+      </div>
     </div>
   );
 };
