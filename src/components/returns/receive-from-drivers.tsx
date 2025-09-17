@@ -132,7 +132,7 @@ export const ReceiveFromDrivers = () => {
   }, [returnsByDriver, users]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       <Card>
           <CardHeader>
               <CardTitle>مهمة استلام طلبات من السائقين</CardTitle>

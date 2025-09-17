@@ -62,7 +62,7 @@ export const PrepareForMerchants = () => {
     const areAllSelected = returnsAtBranch.length > 0 && selectedReturns.length === returnsAtBranch.length;
 
     return (
-        <>
+        <div dir="rtl">
         <Card>
             <CardHeader>
             <div className="flex justify-between items-center">
@@ -111,6 +111,6 @@ export const PrepareForMerchants = () => {
             </DialogFooter>
             </DialogContent>
         </Dialog>
-        </>
+        </div>
     );
 };

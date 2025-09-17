@@ -79,7 +79,7 @@ export const MerchantSlips = () => {
     };
 
     return (
-        <>
+        <div dir="rtl">
             <Card>
                  <CardHeader>
                     <CardTitle>كشوفات الإرجاع للتجار</CardTitle>
@@ -128,6 +128,6 @@ export const MerchantSlips = () => {
                 </div>
                 </DialogContent>
             </Dialog>
-        </>
+        </div>
     );
 };

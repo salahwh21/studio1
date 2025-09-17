@@ -12,7 +12,7 @@ export const DriverSlips = () => {
   const [currentSlipDetails, setCurrentSlipDetails] = useState<DriverSlip | null>(null);
 
   return (
-    <>
+    <div dir="rtl">
       <Card>
           <CardHeader><CardTitle>كشوفات استلام المرتجعات من السائقين</CardTitle></CardHeader>
           <CardContent>
@@ -58,6 +58,6 @@ export const DriverSlips = () => {
                </div>
           </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 };
