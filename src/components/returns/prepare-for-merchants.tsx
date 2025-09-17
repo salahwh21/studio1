@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -47,7 +47,7 @@ export const PrepareForMerchants = () => {
         }));
     }, [returnsByMerchant, users]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if(!selectedMerchant && merchantData.length > 0) {
             setSelectedMerchant(merchantData[0].name);
         }
