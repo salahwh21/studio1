@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
@@ -143,13 +142,13 @@ export const ReceiveFromDrivers = () => {
                             {driverData.map(({name, user, orderCount}) => (
                                 <button key={name} onClick={() => setSelectedDriver(name)} className={cn("w-full text-right p-3 rounded-lg flex items-center justify-between transition-colors", selectedDriver === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}>
                                     <div className="flex items-center gap-3">
-                                        <Avatar className="h-9 w-9">
-                                            <AvatarImage src={user?.avatar} />
-                                            <AvatarFallback>{name.charAt(0)}</AvatarFallback>
-                                        </Avatar>
+                                        <Badge variant={selectedDriver === name ? 'secondary' : 'default'}>{orderCount}</Badge>
                                         <span className="font-medium">{name}</span>
                                     </div>
-                                    <Badge variant={selectedDriver === name ? 'secondary' : 'default'}>{orderCount}</Badge>
+                                    <Avatar className="h-9 w-9">
+                                        <AvatarImage src={user?.avatar} />
+                                        <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
                                 </button>
                             ))}
                             {driverData.length === 0 && <p className="text-center text-muted-foreground p-4">لا يوجد مرتجعات.</p>}
