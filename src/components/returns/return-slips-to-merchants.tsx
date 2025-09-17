@@ -139,11 +139,11 @@ export const ReturnSlipsToMerchants = () => {
 
 
     return (
-        <>
+        <div className="space-y-6">
             <Card>
                 <CardHeader>
                 <div className="flex justify-between items-center">
-                    <CardTitle>طلبات مرتجعة بانتظار التجهيز</CardTitle>
+                    <CardTitle>طلبات الارجاع للتجار</CardTitle>
                     <Button disabled={selectedReturns.length === 0} onClick={() => setShowCreateDialog(true)}>
                     <Icon name="PlusCircle" className="ml-2 h-4 w-4" />
                     إنشاء كشف إرجاع ({selectedReturns.length})
@@ -181,7 +181,7 @@ export const ReturnSlipsToMerchants = () => {
 
             <Card className="mt-6">
                  <CardHeader>
-                    <CardTitle>كشوفات الإرجاع</CardTitle>
+                    <CardTitle>كشوفات الإرجاع للتجار</CardTitle>
                     <CardDescription>فلترة وبحث في الكشوفات التي تم إنشاؤها.</CardDescription>
                      <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
                         <Select onValueChange={(v) => setFilterMerchant(v === 'all' ? null : v)} value={filterMerchant || 'all'}><SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="اختيار التاجر" /></SelectTrigger><SelectContent><SelectItem value="all">كل التجار</SelectItem>{Array.from(new Set(slips.map(s=>s.merchant))).map((m) => (<SelectItem key={m} value={m}>{m}</SelectItem>))}</SelectContent></Select>
@@ -239,6 +239,6 @@ export const ReturnSlipsToMerchants = () => {
                 <DialogFooter><Button onClick={() => setShowDetailsDialog(false)}>إغلاق</Button></DialogFooter>
                 </DialogContent>
             </Dialog>
-        </>
+        </div>
     );
 };

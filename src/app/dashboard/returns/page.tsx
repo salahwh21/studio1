@@ -1,13 +1,10 @@
 'use client';
-import { useMemo } from 'react';
-import { useOrdersStore } from '@/store/orders-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/icon';
 import { ReturnsFromDrivers } from '@/components/returns/returns-from-drivers';
 import { ReturnSlipsToMerchants } from '@/components/returns/return-slips-to-merchants';
+import { Separator } from '@/components/ui/separator';
 
-// --- Main Page Component ---
 export default function ReturnsPage() {
   return (
     <div className="space-y-6" dir="rtl">
@@ -22,28 +19,28 @@ export default function ReturnsPage() {
           </CardDescription>
         </CardHeader>
       </Card>
+
+      {/* Section 1: Returns from Drivers */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+        <div className="lg:col-span-3">
+           <ReturnsFromDrivers />
+        </div>
+        <div className="lg:col-span-2 lg:sticky lg:top-24">
+           {/* This is where the slips from drivers would go if it were a separate component */}
+        </div>
+      </div>
       
-      <Tabs defaultValue="returns-from-drivers">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="returns-from-drivers">
-            <Icon name="Truck" className="ml-2 h-4 w-4" />
-            استلام المرتجعات من السائقين
-          </TabsTrigger>
-          <TabsTrigger value="return-slips-to-merchants">
-            <Icon name="FileText" className="ml-2 h-4 w-4" />
-            كشوفات إرجاع للتجار
-          </TabsTrigger>
-        </TabsList>
+      <Separator className="my-8" />
 
-        <TabsContent value="returns-from-drivers" className="mt-4">
-            <ReturnsFromDrivers />
-        </TabsContent>
-
-        <TabsContent value="return-slips-to-merchants" className="mt-4">
-            <ReturnSlipsToMerchants />
-        </TabsContent>
-
-      </Tabs>
+      {/* Section 2: Returns to Merchants */}
+       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+        <div className="lg:col-span-3">
+           <ReturnSlipsToMerchants />
+        </div>
+         <div className="lg:col-span-2 lg:sticky lg:top-24">
+           {/* This is where the slips to merchants would go if it were a separate component */}
+        </div>
+      </div>
     </div>
   );
 }

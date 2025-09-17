@@ -144,156 +144,147 @@ export const ReturnsFromDrivers = () => {
   }, [returnsByDriver, users]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="lg:col-span-2 space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>قائمة المرتجعات المعلقة لدى السائقين</CardTitle>
-                    <CardDescription>هذا القسم مخصص لعرض واستلام الشحنات المرتجعة من كل سائق وتسجيلها في المستودع.</CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                     <Table>
-                        <TableHeader>
+    <div className="space-y-6">
+        <Card>
+            <CardHeader>
+                <CardTitle>مهمة استلام طلبات من السائقين</CardTitle>
+                <CardDescription>هذا القسم مخصص لعرض واستلام الشحنات المرتجعة من كل سائق وتسجيلها في المستودع.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 <div className="space-y-2">
+                    <Label htmlFor="scan-barcode">مسح الباركود أو الرقم المرجعي</Label>
+                    <div className="flex gap-2">
+                        <Input 
+                            id="scan-barcode"
+                            placeholder="امسح الباركود هنا..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleScan()}
+                        />
+                        <Button onClick={handleScan}><Icon name="ScanLine" className="h-4 w-4"/></Button>
+                    </div>
+                </div>
+                 <Separator />
+                 <p className="text-sm text-center text-muted-foreground">تم تحديد {selectedOrderIds.length} شحنة للاستلام.</p>
+                 <Button onClick={() => setShowCreateSlipDialog(true)} disabled={selectedOrderIds.length === 0} className="w-full">
+                    <Icon name="PlusCircle" className="ml-2 h-4 w-4" /> إنشاء كشف استلام للمحدد
+                </Button>
+            </CardContent>
+            <CardContent className="p-0">
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-12"></TableHead>
+                            <TableHead>السائق</TableHead>
+                            <TableHead className="text-center">عدد المرتجعات</TableHead>
+                            <TableHead className="text-left">إجراءات</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {driverData.length === 0 && (
                             <TableRow>
-                                <TableHead className="w-12"></TableHead>
-                                <TableHead>السائق</TableHead>
-                                <TableHead className="text-center">عدد المرتجعات</TableHead>
-                                <TableHead className="text-left">إجراءات</TableHead>
+                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                    <Icon name="PackageX" className="mx-auto h-10 w-10 mb-2" />
+                                    لا توجد مرتجعات معلقة مع السائقين حالياً.
+                                </TableCell>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {driverData.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                                        <Icon name="PackageX" className="mx-auto h-10 w-10 mb-2" />
-                                        لا توجد مرتجعات معلقة مع السائقين حالياً.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                            {driverData.map(({ name: driverName, user }) => {
-                                const driverOrders = returnsByDriver[driverName];
-                                const isAllSelectedForDriver = driverOrders.every(o => selectedOrderIds.includes(o.id));
-                                const isDriverOpen = openDrivers[driverName] ?? false;
+                        )}
+                        {driverData.map(({ name: driverName, user }) => {
+                            const driverOrders = returnsByDriver[driverName];
+                            const isAllSelectedForDriver = driverOrders.every(o => selectedOrderIds.includes(o.id));
+                            const isDriverOpen = openDrivers[driverName] ?? false;
 
-                                return (
-                                    <React.Fragment key={driverName}>
-                                        <TableRow 
-                                            onClick={() => setOpenDrivers(prev => ({...prev, [driverName]: !isDriverOpen}))}
-                                            className="cursor-pointer hover:bg-muted/50"
-                                        >
-                                            <TableCell>
-                                                <Icon name={isDriverOpen ? 'ChevronDown' : 'ChevronLeft'} className="h-5 w-5" />
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar className="h-9 w-9">
-                                                        <AvatarImage src={user?.avatar} />
-                                                        <AvatarFallback>{driverName.charAt(0)}</AvatarFallback>
-                                                    </Avatar>
-                                                    <span className="font-medium">{driverName}</span>
+                            return (
+                                <React.Fragment key={driverName}>
+                                    <TableRow 
+                                        onClick={() => setOpenDrivers(prev => ({...prev, [driverName]: !isDriverOpen}))}
+                                        className="cursor-pointer hover:bg-muted/50"
+                                    >
+                                        <TableCell>
+                                            <Icon name={isDriverOpen ? 'ChevronDown' : 'ChevronLeft'} className="h-5 w-5" />
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="h-9 w-9">
+                                                    <AvatarImage src={user?.avatar} />
+                                                    <AvatarFallback>{driverName.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <span className="font-medium">{driverName}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <Badge variant="secondary">{driverOrders.length}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-left">
+                                            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleReceiveAllForDriver(driverName); }}>
+                                                <Icon name="CheckCheck" className="ml-2 h-4 w-4"/> استلام الكل
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                    {isDriverOpen && (
+                                        <TableRow className="bg-muted/30 hover:bg-muted/30">
+                                            <TableCell colSpan={4} className="p-0">
+                                                <div className="p-4">
+                                                    <Table>
+                                                        <TableHeader>
+                                                            <TableRow>
+                                                                <TableHead className="w-12"><Checkbox checked={isAllSelectedForDriver} onCheckedChange={(checked) => handleSelectAllForDriver(driverName, !!checked)} /></TableHead>
+                                                                <TableHead>رقم الطلب</TableHead>
+                                                                <TableHead>التاجر</TableHead>
+                                                                <TableHead>الحالة</TableHead>
+                                                                <TableHead>سبب الإرجاع</TableHead>
+                                                            </TableRow>
+                                                        </TableHeader>
+                                                        <TableBody>
+                                                            {driverOrders.map(o => (
+                                                            <TableRow key={o.id} data-state={selectedOrderIds.includes(o.id) && "selected"} className="bg-background">
+                                                                <TableCell><Checkbox checked={selectedOrderIds.includes(o.id)} onCheckedChange={(checked) => setSelectedOrderIds(prev => checked ? [...prev, o.id] : prev.filter(id => id !== o.id))} /></TableCell>
+                                                                <TableCell><Link href={`/dashboard/orders/${o.id}`} className="font-mono text-primary hover:underline">{o.id}</Link></TableCell>
+                                                                <TableCell>{o.merchant}</TableCell>
+                                                                <TableCell><Badge variant={getStatusBadgeVariant(o.status)}>{o.status}</Badge></TableCell>
+                                                                <TableCell className="text-muted-foreground text-xs">{o.notes}</TableCell>
+                                                            </TableRow>
+                                                            ))}
+                                                        </TableBody>
+                                                    </Table>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-center">
-                                                <Badge variant="secondary">{driverOrders.length}</Badge>
-                                            </TableCell>
-                                            <TableCell className="text-left">
-                                                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleReceiveAllForDriver(driverName); }}>
-                                                    <Icon name="CheckCheck" className="ml-2 h-4 w-4"/> استلام الكل
-                                                </Button>
-                                            </TableCell>
                                         </TableRow>
-                                        {isDriverOpen && (
-                                            <TableRow className="bg-muted/30 hover:bg-muted/30">
-                                                <TableCell colSpan={4} className="p-0">
-                                                    <div className="p-4">
-                                                        <Table>
-                                                            <TableHeader>
-                                                                <TableRow>
-                                                                    <TableHead className="w-12"><Checkbox checked={isAllSelectedForDriver} onCheckedChange={(checked) => handleSelectAllForDriver(driverName, !!checked)} /></TableHead>
-                                                                    <TableHead>رقم الطلب</TableHead>
-                                                                    <TableHead>التاجر</TableHead>
-                                                                    <TableHead>الحالة</TableHead>
-                                                                    <TableHead>سبب الإرجاع</TableHead>
-                                                                </TableRow>
-                                                            </TableHeader>
-                                                            <TableBody>
-                                                                {driverOrders.map(o => (
-                                                                <TableRow key={o.id} data-state={selectedOrderIds.includes(o.id) && "selected"} className="bg-background">
-                                                                    <TableCell><Checkbox checked={selectedOrderIds.includes(o.id)} onCheckedChange={(checked) => setSelectedOrderIds(prev => checked ? [...prev, o.id] : prev.filter(id => id !== o.id))} /></TableCell>
-                                                                    <TableCell><Link href={`/dashboard/orders/${o.id}`} className="font-mono text-primary hover:underline">{o.id}</Link></TableCell>
-                                                                    <TableCell>{o.merchant}</TableCell>
-                                                                    <TableCell><Badge variant={getStatusBadgeVariant(o.status)}>{o.status}</Badge></TableCell>
-                                                                    <TableCell className="text-muted-foreground text-xs">{o.notes}</TableCell>
-                                                                </TableRow>
-                                                                ))}
-                                                            </TableBody>
-                                                        </Table>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </React.Fragment>
-                                )
-                            })}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                                    )}
+                                </React.Fragment>
+                            )
+                        })}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
 
-            <Card>
-                <CardHeader><CardTitle>سجل كشوفات الاستلام من السائقين</CardTitle></CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader><TableRow>
-                            <TableHead>رقم الكشف</TableHead><TableHead>السائق</TableHead><TableHead>التاريخ</TableHead><TableHead>عدد الشحنات</TableHead><TableHead>إجراء</TableHead>
-                        </TableRow></TableHeader>
-                        <TableBody>
-                            {driverSlips.length === 0 ? (
-                                <TableRow><TableCell colSpan={5} className="h-24 text-center">لا توجد كشوفات بعد.</TableCell></TableRow>
-                            ) : (
-                                driverSlips.map(slip => (
-                                    <TableRow key={slip.id}>
-                                        <TableCell className="font-mono">{slip.id}</TableCell>
-                                        <TableCell>{slip.driverName}</TableCell>
-                                        <TableCell>{slip.date}</TableCell>
-                                        <TableCell>{slip.itemCount}</TableCell>
-                                        <TableCell><Button variant="outline" size="sm" onClick={() => setCurrentSlipDetails(slip)}>عرض التفاصيل</Button></TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </div>
-        <div className="lg:sticky lg:top-24 space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>تأكيد الاستلام</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                     <div className="space-y-2">
-                        <Label htmlFor="scan-barcode">مسح الباركود أو الرقم المرجعي</Label>
-                        <div className="flex gap-2">
-                            <Input 
-                                id="scan-barcode"
-                                placeholder="امسح الباركود هنا..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleScan()}
-                            />
-                            <Button onClick={handleScan}><Icon name="ScanLine" className="h-4 w-4"/></Button>
-                        </div>
-                    </div>
-                     <Separator />
-                     <p className="text-sm text-center text-muted-foreground">تم تحديد {selectedOrderIds.length} شحنة للاستلام.</p>
-                     <Button onClick={() => setShowCreateSlipDialog(true)} disabled={selectedOrderIds.length === 0} className="w-full">
-                        <Icon name="PlusCircle" className="ml-2 h-4 w-4" /> إنشاء كشف استلام للمحدد
-                    </Button>
-                </CardContent>
-            </Card>
-        </div>
-
+        <Card>
+            <CardHeader><CardTitle>كشوفات استلام المرتجعات من السائقين</CardTitle></CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader><TableRow>
+                        <TableHead>رقم الكشف</TableHead><TableHead>السائق</TableHead><TableHead>التاريخ</TableHead><TableHead>عدد الشحنات</TableHead><TableHead>إجراء</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                        {driverSlips.length === 0 ? (
+                            <TableRow><TableCell colSpan={5} className="h-24 text-center">لا توجد كشوفات بعد.</TableCell></TableRow>
+                        ) : (
+                            driverSlips.map(slip => (
+                                <TableRow key={slip.id}>
+                                    <TableCell className="font-mono">{slip.id}</TableCell>
+                                    <TableCell>{slip.driverName}</TableCell>
+                                    <TableCell>{slip.date}</TableCell>
+                                    <TableCell>{slip.itemCount}</TableCell>
+                                    <TableCell><Button variant="outline" size="sm" onClick={() => setCurrentSlipDetails(slip)}>عرض التفاصيل</Button></TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+        
          <Dialog open={showCreateSlipDialog} onOpenChange={setShowCreateSlipDialog}>
             <DialogContent>
                 <DialogHeader><DialogTitle>تأكيد إنشاء كشف استلام</DialogTitle></DialogHeader>
