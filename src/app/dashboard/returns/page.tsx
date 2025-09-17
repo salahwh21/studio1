@@ -9,7 +9,7 @@ import { MerchantSlips } from '@/components/returns/merchant-slips';
 
 export default function ReturnsPage() {
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl font-bold">
