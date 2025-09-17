@@ -146,12 +146,9 @@ export const ReceiveFromDrivers = () => {
                                             <AvatarImage src={user?.avatar} />
                                             <AvatarFallback>{name.charAt(0)}</AvatarFallback>
                                         </Avatar>
-                                        <div className="flex-1">
-                                            <span className="font-medium text-sm">{name}</span>
-                                            <p className="text-xs opacity-70">{orderCount} مرتجعات</p>
-                                        </div>
+                                        <span className="font-medium text-sm flex-1">{name}</span>
                                     </div>
-                                    <Badge variant={selectedDriver === name ? 'secondary' : 'default'} className="ml-auto">{orderCount}</Badge>
+                                    <Badge variant={selectedDriver === name ? 'secondary' : 'default'}>{orderCount}</Badge>
                                 </button>
                             ))}
                             {driverData.length === 0 && <p className="text-center text-muted-foreground p-4">لا يوجد مرتجعات.</p>}
