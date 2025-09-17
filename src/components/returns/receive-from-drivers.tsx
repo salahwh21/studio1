@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
@@ -143,15 +144,16 @@ export const ReceiveFromDrivers = () => {
                                     key={name}
                                     onClick={() => setSelectedDriver(name)}
                                     className={cn(
-                                        "w-full p-3 rounded-lg flex items-center gap-3 text-right",
+                                        "w-full p-3 rounded-lg flex items-center justify-start gap-3",
                                         selectedDriver === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                                     )}
+                                    dir="ltr"
                                 >
                                     <Avatar className="h-9 w-9">
                                         <AvatarImage src={user?.avatar} />
                                         <AvatarFallback>{name.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                    <span className="font-medium text-sm flex-1">{name}</span>
+                                    <span className="font-medium text-sm">{name}</span>
                                     <Badge variant={selectedDriver === name ? 'secondary' : 'default'}>{orderCount}</Badge>
                                 </button>
                             ))}
