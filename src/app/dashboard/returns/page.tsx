@@ -34,14 +34,14 @@ export default function ReturnsPage() {
             استلام الشحنات الراجعة من السائقين وتجهيزها في كشوفات لإعادتها إلى التجار.
           </CardDescription>
         </CardHeader>
+        <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <StatCard title="مرتجعات مع السائقين" value={stats.withDrivers} icon="Truck" color="#F9A825" />
+                <StatCard title="مرتجعات في الفرع" value={stats.atBranch} icon="Building" color="#8E24AA" />
+            </div>
+        </CardContent>
       </Card>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="مرتجعات مع السائقين" value={stats.withDrivers} icon="Truck" color="#F9A825" />
-        <StatCard title="مرتجعات في الفرع" value={stats.atBranch} icon="Building" color="#8E24AA" />
-      </div>
-
-
       <Tabs defaultValue="returns-from-drivers">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="returns-from-drivers">

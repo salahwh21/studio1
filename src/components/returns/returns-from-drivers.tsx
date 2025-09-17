@@ -13,11 +13,15 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useUsersStore } from '@/store/user-store';
 
 const RETURNABLE_STATUSES = ['راجع', 'ملغي', 'رفض ودفع أجور', 'رفض ولم يدفع أجور', 'تبديل'];
 
 export const ReturnsFromDrivers = () => {
   const { orders, updateOrderStatus } = useOrdersStore();
+  const { users } = useUsersStore();
   const { toast } = useToast();
 
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
@@ -86,67 +90,109 @@ export const ReturnsFromDrivers = () => {
       setSelectedOrderIds(prev => prev.filter(id => !driverOrderIds.includes(id)));
   }
 
+  const driverData = useMemo(() => {
+    return Object.keys(returnsByDriver).map(driverName => ({
+      name: driverName,
+      user: users.find(u => u.name === driverName)
+    }));
+  }, [returnsByDriver, users]);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="lg:col-span-2 space-y-4">
-             {Object.entries(returnsByDriver).map(([driverName, driverOrders]) => {
-                const isAllSelectedForDriver = driverOrders.every(o => selectedOrderIds.includes(o.id));
-                const isDriverOpen = openDrivers[driverName] ?? false;
+        <div className="lg:col-span-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>قائمة المرتجعات لدى السائقين</CardTitle>
+                    <CardDescription>عرض واستلام الشحنات المرتجعة من كل سائق.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                     <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-12"></TableHead>
+                                <TableHead>السائق</TableHead>
+                                <TableHead className="text-center">عدد المرتجعات</TableHead>
+                                <TableHead className="text-left">إجراءات</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {driverData.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                        <Icon name="PackageX" className="mx-auto h-10 w-10 mb-2" />
+                                        لا توجد مرتجعات معلقة مع السائقين حالياً.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                            {driverData.map(({ name: driverName, user }) => {
+                                const driverOrders = returnsByDriver[driverName];
+                                const isAllSelectedForDriver = driverOrders.every(o => selectedOrderIds.includes(o.id));
+                                const isDriverOpen = openDrivers[driverName] ?? false;
 
-                return (
-                 <Collapsible key={driverName} open={isDriverOpen} onOpenChange={(isOpen) => setOpenDrivers(prev => ({...prev, [driverName]: isOpen}))}>
-                    <Card>
-                        <CollapsibleTrigger asChild>
-                            <CardHeader className="p-4 cursor-pointer hover:bg-muted/50 flex flex-row items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <Icon name={isDriverOpen ? 'ChevronDown' : 'ChevronLeft'} className="h-5 w-5" />
-                                    <Icon name="User" className="h-5 w-5 text-muted-foreground"/>
-                                    <CardTitle className="text-base">{driverName}</CardTitle>
-                                    <Badge variant="secondary">{driverOrders.length} طلبات</Badge>
-                                </div>
-                                <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); handleReceiveAllForDriver(driverName); }}>
-                                    <Icon name="CheckCheck" className="ml-2 h-4 w-4"/> استلام الكل
-                                </Button>
-                            </CardHeader>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                            <CardContent className="p-0">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead className="w-12"><Checkbox checked={isAllSelectedForDriver} onCheckedChange={(checked) => handleSelectAllForDriver(driverName, !!checked)} /></TableHead>
-                                            <TableHead>رقم الطلب</TableHead>
-                                            <TableHead>التاجر</TableHead>
-                                            <TableHead>الحالة</TableHead>
-                                            <TableHead>سبب الإرجاع</TableHead>
+                                return (
+                                    <React.Fragment key={driverName}>
+                                        <TableRow 
+                                            onClick={() => setOpenDrivers(prev => ({...prev, [driverName]: !isDriverOpen}))}
+                                            className="cursor-pointer hover:bg-muted/50"
+                                        >
+                                            <TableCell>
+                                                <Icon name={isDriverOpen ? 'ChevronDown' : 'ChevronLeft'} className="h-5 w-5" />
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-9 w-9">
+                                                        <AvatarImage src={user?.avatar} />
+                                                        <AvatarFallback>{driverName.charAt(0)}</AvatarFallback>
+                                                    </Avatar>
+                                                    <span className="font-medium">{driverName}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <Badge variant="secondary">{driverOrders.length}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-left">
+                                                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleReceiveAllForDriver(driverName); }}>
+                                                    <Icon name="CheckCheck" className="ml-2 h-4 w-4"/> استلام الكل
+                                                </Button>
+                                            </TableCell>
                                         </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {driverOrders.map(o => (
-                                        <TableRow key={o.id} data-state={selectedOrderIds.includes(o.id) && "selected"}>
-                                            <TableCell><Checkbox checked={selectedOrderIds.includes(o.id)} onCheckedChange={(checked) => setSelectedOrderIds(prev => checked ? [...prev, o.id] : prev.filter(id => id !== o.id))} /></TableCell>
-                                            <TableCell><Link href={`/dashboard/orders/${o.id}`} className="font-mono text-primary hover:underline">{o.id}</Link></TableCell>
-                                            <TableCell>{o.merchant}</TableCell>
-                                            <TableCell><Badge variant={getStatusBadgeVariant(o.status)}>{o.status}</Badge></TableCell>
-                                            <TableCell className="text-muted-foreground text-xs">{o.notes}</TableCell>
-                                        </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                         </CollapsibleContent>
-                    </Card>
-                </Collapsible>
-                )
-             })}
-              {Object.keys(returnsByDriver).length === 0 && (
-                <Card>
-                    <CardContent className="p-10 text-center text-muted-foreground">
-                        <Icon name="PackageX" className="mx-auto h-12 w-12 mb-4" />
-                        <p>لا توجد أي مرتجعات حالياً مع السائقين.</p>
-                    </CardContent>
-                </Card>
-            )}
+                                        {isDriverOpen && (
+                                            <TableRow className="bg-muted/30 hover:bg-muted/30">
+                                                <TableCell colSpan={4} className="p-0">
+                                                    <div className="p-4">
+                                                        <Table>
+                                                            <TableHeader>
+                                                                <TableRow>
+                                                                    <TableHead className="w-12"><Checkbox checked={isAllSelectedForDriver} onCheckedChange={(checked) => handleSelectAllForDriver(driverName, !!checked)} /></TableHead>
+                                                                    <TableHead>رقم الطلب</TableHead>
+                                                                    <TableHead>التاجر</TableHead>
+                                                                    <TableHead>الحالة</TableHead>
+                                                                    <TableHead>سبب الإرجاع</TableHead>
+                                                                </TableRow>
+                                                            </TableHeader>
+                                                            <TableBody>
+                                                                {driverOrders.map(o => (
+                                                                <TableRow key={o.id} data-state={selectedOrderIds.includes(o.id) && "selected"} className="bg-background">
+                                                                    <TableCell><Checkbox checked={selectedOrderIds.includes(o.id)} onCheckedChange={(checked) => setSelectedOrderIds(prev => checked ? [...prev, o.id] : prev.filter(id => id !== o.id))} /></TableCell>
+                                                                    <TableCell><Link href={`/dashboard/orders/${o.id}`} className="font-mono text-primary hover:underline">{o.id}</Link></TableCell>
+                                                                    <TableCell>{o.merchant}</TableCell>
+                                                                    <TableCell><Badge variant={getStatusBadgeVariant(o.status)}>{o.status}</Badge></TableCell>
+                                                                    <TableCell className="text-muted-foreground text-xs">{o.notes}</TableCell>
+                                                                </TableRow>
+                                                                ))}
+                                                            </TableBody>
+                                                        </Table>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </React.Fragment>
+                                )
+                            })}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
         </div>
         <div className="lg:sticky lg:top-24 space-y-6">
             <Card>
