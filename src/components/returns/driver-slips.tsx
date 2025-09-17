@@ -57,7 +57,11 @@ export const DriverSlips = () => {
           <CardContent>
               <Table>
                   <TableHeader><TableRow>
-                      <TableHead>رقم الكشف</TableHead><TableHead>السائق</TableHead><TableHead>التاريخ</TableHead><TableHead>عدد الشحنات</TableHead><TableHead>إجراء</TableHead>
+                      <TableHead className="border-l text-center whitespace-nowrap">رقم الكشف</TableHead>
+                      <TableHead className="border-l text-center whitespace-nowrap">السائق</TableHead>
+                      <TableHead className="border-l text-center whitespace-nowrap">التاريخ</TableHead>
+                      <TableHead className="border-l text-center whitespace-nowrap">عدد الشحنات</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">إجراء</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
                       {filteredSlips.length === 0 ? (
@@ -65,11 +69,11 @@ export const DriverSlips = () => {
                       ) : (
                           filteredSlips.map(slip => (
                               <TableRow key={slip.id}>
-                                  <TableCell className="font-mono">{slip.id}</TableCell>
-                                  <TableCell>{slip.driverName}</TableCell>
-                                  <TableCell>{slip.date}</TableCell>
-                                  <TableCell>{slip.itemCount}</TableCell>
-                                  <TableCell><Button variant="outline" size="sm" onClick={() => setCurrentSlipDetails(slip)}>عرض التفاصيل</Button></TableCell>
+                                  <TableCell className="font-mono border-l text-center whitespace-nowrap">{slip.id}</TableCell>
+                                  <TableCell className="border-l text-center whitespace-nowrap">{slip.driverName}</TableCell>
+                                  <TableCell className="border-l text-center whitespace-nowrap">{slip.date}</TableCell>
+                                  <TableCell className="border-l text-center whitespace-nowrap">{slip.itemCount}</TableCell>
+                                  <TableCell className="text-center whitespace-nowrap"><Button variant="outline" size="sm" onClick={() => setCurrentSlipDetails(slip)}>عرض التفاصيل</Button></TableCell>
                               </TableRow>
                           ))
                       )}

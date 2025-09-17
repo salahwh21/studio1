@@ -94,17 +94,22 @@ export const MerchantSlips = () => {
                 <CardContent>
                     <Table>
                         <TableHeader><TableRow>
-                            <TableHead>رقم الكشف</TableHead><TableHead>التاجر</TableHead><TableHead>تاريخ الإنشاء</TableHead><TableHead>عدد الطلبات</TableHead><TableHead>الحالة</TableHead><TableHead className="text-left">إجراءات</TableHead>
+                            <TableHead className="border-l text-center whitespace-nowrap">رقم الكشف</TableHead>
+                            <TableHead className="border-l text-center whitespace-nowrap">التاجر</TableHead>
+                            <TableHead className="border-l text-center whitespace-nowrap">تاريخ الإنشاء</TableHead>
+                            <TableHead className="border-l text-center whitespace-nowrap">عدد الطلبات</TableHead>
+                            <TableHead className="border-l text-center whitespace-nowrap">الحالة</TableHead>
+                            <TableHead className="text-center whitespace-nowrap">إجراءات</TableHead>
                         </TableRow></TableHeader>
                         <TableBody>
                         {filteredSlips.map((slip) => (
                             <TableRow key={slip.id}>
-                            <TableCell className="font-mono">{slip.id}</TableCell>
-                            <TableCell>{slip.merchant}</TableCell>
-                            <TableCell>{slip.date}</TableCell>
-                            <TableCell>{slip.items}</TableCell>
-                            <TableCell><Badge variant={slip.status === 'تم التسليم' ? 'default' : 'outline'} className={slip.status === 'تم التسليم' ? 'bg-green-100 text-green-800' : ''}>{slip.status}</Badge></TableCell>
-                            <TableCell className="text-left flex gap-2 justify-end">
+                            <TableCell className="font-mono border-l text-center whitespace-nowrap">{slip.id}</TableCell>
+                            <TableCell className="border-l text-center whitespace-nowrap">{slip.merchant}</TableCell>
+                            <TableCell className="border-l text-center whitespace-nowrap">{slip.date}</TableCell>
+                            <TableCell className="border-l text-center whitespace-nowrap">{slip.items}</TableCell>
+                            <TableCell className="border-l text-center whitespace-nowrap"><Badge variant={slip.status === 'تم التسليم' ? 'default' : 'outline'} className={slip.status === 'تم التسليم' ? 'bg-green-100 text-green-800' : ''}>{slip.status}</Badge></TableCell>
+                            <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
                                 <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
                                 <Button variant="outline" size="sm" disabled={slip.status === 'تم التسليم'} onClick={() => confirmSlipDelivery(slip.id)}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
                                 <Button variant="ghost" size="icon" onClick={() => printSlip(slip)}><Icon name="Printer" className="h-4 w-4" /></Button>
