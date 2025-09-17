@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
@@ -148,7 +147,7 @@ export const ReceiveFromDrivers = () => {
                                         selectedDriver === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                                     )}
                                 >
-                                    <Badge variant={selectedDriver === name ? 'secondary' : 'default'} className="ml-auto">{orderCount}</Badge>
+                                    <Badge variant={selectedDriver === name ? 'secondary' : 'default'}>{orderCount}</Badge>
                                     <span className="font-medium text-sm">{name}</span>
                                     <Avatar className="h-9 w-9">
                                         <AvatarImage src={user?.avatar} />
