@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
@@ -143,16 +144,18 @@ export const ReceiveFromDrivers = () => {
                                     key={name}
                                     onClick={() => setSelectedDriver(name)}
                                     className={cn(
-                                        "w-full p-3 rounded-lg flex items-center justify-end gap-3 text-right",
+                                        "w-full p-3 rounded-lg flex items-center justify-end text-right",
                                         selectedDriver === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                                     )}
                                 >
-                                    <Badge variant={selectedDriver === name ? 'secondary' : 'default'}>{orderCount}</Badge>
-                                    <span className="font-medium text-sm">{name}</span>
-                                    <Avatar className="h-9 w-9">
-                                        <AvatarImage src={user?.avatar} />
-                                        <AvatarFallback>{name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
+                                    <div className="flex items-center gap-3 w-full">
+                                        <Avatar className="h-9 w-9">
+                                            <AvatarImage src={user?.avatar} />
+                                            <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <span className="font-medium text-sm flex-1">{name}</span>
+                                        <Badge variant={selectedDriver === name ? 'secondary' : 'default'} className="w-8 justify-center">{orderCount}</Badge>
+                                    </div>
                                 </button>
                             ))}
                             {driverData.length === 0 && <p className="text-center text-muted-foreground p-4">لا يوجد مرتجعات.</p>}
