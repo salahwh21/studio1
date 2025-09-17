@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import Icon from '@/components/icon';
 import { ReturnsFromDrivers } from '@/components/returns/returns-from-drivers';
 import { ReturnSlipsToMerchants } from '@/components/returns/return-slips-to-merchants';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ReturnsPage() {
   return (
@@ -20,27 +20,24 @@ export default function ReturnsPage() {
         </CardHeader>
       </Card>
 
-      {/* Section 1: Returns from Drivers */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-        <div className="lg:col-span-3">
-           <ReturnsFromDrivers />
-        </div>
-        <div className="lg:col-span-2 lg:sticky lg:top-24">
-           {/* This is where the slips from drivers would go if it were a separate component */}
-        </div>
-      </div>
-      
-      <Separator className="my-8" />
-
-      {/* Section 2: Returns to Merchants */}
-       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-        <div className="lg:col-span-3">
-           <ReturnSlipsToMerchants />
-        </div>
-         <div className="lg:col-span-2 lg:sticky lg:top-24">
-           {/* This is where the slips to merchants would go if it were a separate component */}
-        </div>
-      </div>
+      <Tabs defaultValue="from-drivers">
+        <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="from-drivers">
+                <Icon name="Users" className="ml-2 h-4 w-4" />
+                استلام المرتجعات من السائقين
+            </TabsTrigger>
+            <TabsTrigger value="to-merchants">
+                <Icon name="Store" className="ml-2 h-4 w-4" />
+                إدارة كشوفات الإرجاع للتجار
+            </TabsTrigger>
+        </TabsList>
+        <TabsContent value="from-drivers" className="mt-6">
+            <ReturnsFromDrivers />
+        </TabsContent>
+        <TabsContent value="to-merchants" className="mt-6">
+            <ReturnSlipsToMerchants />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
