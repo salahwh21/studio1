@@ -68,7 +68,7 @@ export const DriverSlips = () => {
                 const imgData = canvas.toDataURL('image/png');
                 
                 if (i > 0) pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
+                pdf.addImage(imgData, 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
             }
             
             pdf.save(`DriverSlips.pdf`);
