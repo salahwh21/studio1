@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
@@ -130,7 +129,6 @@ export const ReceiveFromDrivers = () => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start" dir="rtl">
-        {/* Left Panel - Drivers List */}
         <div className="lg:col-span-3 xl:col-span-2">
              <Card>
                 <CardHeader>
@@ -145,7 +143,7 @@ export const ReceiveFromDrivers = () => {
                                     key={name}
                                     onClick={() => setSelectedDriver(name)}
                                     className={cn(
-                                        "w-full p-3 rounded-lg flex items-center gap-3 transition-colors",
+                                        "w-full p-3 rounded-lg flex items-center gap-3 text-right",
                                         selectedDriver === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                                     )}
                                 >
@@ -153,7 +151,7 @@ export const ReceiveFromDrivers = () => {
                                         <AvatarImage src={user?.avatar} />
                                         <AvatarFallback>{name.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                    <span className="font-medium text-sm flex-1 text-right">{name}</span>
+                                    <span className="font-medium text-sm flex-1">{name}</span>
                                     <Badge variant={selectedDriver === name ? 'secondary' : 'default'}>{orderCount}</Badge>
                                 </button>
                             ))}
@@ -164,7 +162,6 @@ export const ReceiveFromDrivers = () => {
             </Card>
         </div>
 
-        {/* Right Panel - Orders Table */}
         <div className="lg:col-span-9 xl:col-span-10">
             <Card>
                 <CardHeader>
