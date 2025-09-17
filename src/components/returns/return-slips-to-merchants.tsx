@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
@@ -94,25 +95,24 @@ export const ReturnSlipsToMerchants = () => {
     const areAllSelected = returnsAtBranch.length > 0 && selectedReturns.length === returnsAtBranch.length;
 
     const printSlip = (slip: Slip) => {
-      const doc = new jsPDF();
-      
-      // Since we can't easily load arabic fonts in this environment for jspdf,
-      // we will draw english text and rely on browser pdf viewer to render it.
-      // In a real production app, you would embed the font file.
-      doc.setRTL(true);
-      doc.text(`Return Slip: ${slip.id}`, 200, 20, { align: 'right' });
-      doc.text(`Merchant: ${slip.merchant}`, 200, 30, { align: 'right' });
-      doc.text(`Date: ${slip.date}`, 200, 40, { align: 'right' });
-      
-      (doc as any).autoTable({
-        startY: 50,
-        head: [['Status', 'Recipient', 'Order ID']],
-        body: slip.orders.map(o => [o.status, o.recipient, o.id]),
-        styles: { halign: 'right' },
-        headStyles: { fillColor: [41, 128, 185], halign: 'center' },
-      });
-      doc.save(`ReturnSlip-${slip.id}.pdf`);
-  };
+        const doc = new jsPDF();
+
+        // In a real production app, you would embed the font file.
+        doc.setRTL(true);
+        doc.text(`Return Slip: ${slip.id}`, 200, 20, { align: 'right' });
+        doc.text(`Merchant: ${slip.merchant}`, 200, 30, { align: 'right' });
+        doc.text(`Date: ${slip.date}`, 200, 40, { align: 'right' });
+        
+        (doc as any).autoTable({
+          startY: 50,
+          head: [['Status', 'Recipient', 'Order ID']],
+          body: slip.orders.map(o => [o.status, o.recipient, o.id]),
+          styles: { halign: 'right' },
+          headStyles: { fillColor: [41, 128, 185], halign: 'center' },
+        });
+        doc.save(`ReturnSlip-${slip.id}.pdf`);
+    };
+
 
     return (
         <>
