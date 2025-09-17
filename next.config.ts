@@ -3,10 +3,6 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
-  devIndicators: {
-    buildActivity: true, 
-    autoPrerender: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
