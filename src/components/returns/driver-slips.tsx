@@ -8,6 +8,10 @@ import { useReturnsStore, type DriverSlip } from '@/store/returns-store';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { parseISO, isWithinInterval } from 'date-fns';
+import Icon from '@/components/icon';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
 
 export const DriverSlips = () => {
   const { driverSlips } = useReturnsStore();
@@ -30,6 +34,32 @@ export const DriverSlips = () => {
       }
       return matchesDriver && matchesDate;
   }), [driverSlips, filterDriver, filterStartDate, filterEndDate]);
+  
+    const printSlip = async (slip: DriverSlip) => {
+        const doc = new jsPDF();
+        
+        try {
+            // This is a workaround for jsPDF font issues with Arabic in some environments.
+            // You might need a more robust solution.
+            doc.addFont('https://raw.githack.com/MrRio/jsPDF/master/test/reference/Amiri-Regular.ttf', 'Amiri', 'normal');
+            doc.setFont('Amiri');
+        } catch (e) {
+            console.warn("Could not load Amiri font for PDF. RTL text might not render correctly.");
+        }
+
+        doc.text(`كشف استلام من السائق: ${slip.driverName}`, 200, 20, { align: 'right' });
+        doc.text(`رقم الكشف: ${slip.id}`, 200, 30, { align: 'right' });
+        doc.text(`التاريخ: ${slip.date}`, 200, 40, { align: 'right' });
+        
+        autoTable(doc, {
+          startY: 50,
+          head: [['التاجر', 'المستلم', 'رقم الطلب']],
+          body: slip.orders.map(o => [o.merchant, o.recipient, o.id]),
+          styles: { halign: 'right', font: 'Amiri' },
+          headStyles: { fillColor: [41, 128, 185], halign: 'center' },
+        });
+        doc.save(`DriverSlip-${slip.id}.pdf`);
+    };
 
 
   return (
@@ -73,7 +103,10 @@ export const DriverSlips = () => {
                                   <TableCell className="border-l text-center whitespace-nowrap">{slip.driverName}</TableCell>
                                   <TableCell className="border-l text-center whitespace-nowrap">{slip.date}</TableCell>
                                   <TableCell className="border-l text-center whitespace-nowrap">{slip.itemCount}</TableCell>
-                                  <TableCell className="text-center whitespace-nowrap"><Button variant="outline" size="sm" onClick={() => setCurrentSlipDetails(slip)}>عرض التفاصيل</Button></TableCell>
+                                  <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
+                                        <Button variant="outline" size="sm" onClick={() => setCurrentSlipDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
+                                        <Button variant="ghost" size="icon" onClick={() => printSlip(slip)}><Icon name="Printer" className="h-4 w-4" /></Button>
+                                  </TableCell>
                               </TableRow>
                           ))
                       )}
