@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef }from 'react';
@@ -123,8 +124,15 @@ const AddOrderPage = () => {
   useEffect(() => {
     try {
         const savedTemplatesJson = localStorage.getItem('policyTemplates');
-        const savedTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
-        setAvailableTemplates([...readyTemplates, ...savedTemplates]);
+        const userTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
+        const uniqueTemplates = [...readyTemplates];
+        const readyIds = new Set(readyTemplates.map(t => t.id));
+        userTemplates.forEach((t: SavedTemplate) => {
+            if (!readyIds.has(t.id)) {
+                uniqueTemplates.push(t);
+            }
+        });
+        setAvailableTemplates(uniqueTemplates);
     } catch (e) {
         setAvailableTemplates(readyTemplates);
     }

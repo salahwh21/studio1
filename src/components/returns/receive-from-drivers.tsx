@@ -77,7 +77,14 @@ export const ReceiveFromDrivers = () => {
     try {
         const savedTemplatesJson = localStorage.getItem('policyTemplates');
         const userTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
-        setAvailableTemplates([...readyTemplates, ...userTemplates]);
+        const uniqueTemplates = [...readyTemplates];
+        const readyIds = new Set(readyTemplates.map(t => t.id));
+        userTemplates.forEach((t: SavedTemplate) => {
+            if (!readyIds.has(t.id)) {
+                uniqueTemplates.push(t);
+            }
+        });
+        setAvailableTemplates(uniqueTemplates);
     } catch(e) {
       setAvailableTemplates(readyTemplates);
     }
