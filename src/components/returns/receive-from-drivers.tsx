@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
@@ -144,18 +143,16 @@ export const ReceiveFromDrivers = () => {
                                     key={name}
                                     onClick={() => setSelectedDriver(name)}
                                     className={cn(
-                                        "w-full p-3 rounded-lg flex items-center justify-end text-right",
+                                        "w-full p-3 rounded-lg flex items-center gap-3 text-right",
                                         selectedDriver === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                                     )}
                                 >
-                                    <div className="flex items-center justify-end gap-3 w-full">
-                                        <Badge variant={selectedDriver === name ? 'secondary' : 'default'} className="w-8 h-6 justify-center">{orderCount}</Badge>
-                                        <span className="font-medium text-sm flex-1 text-right">{name}</span>
-                                        <Avatar className="h-9 w-9">
-                                            <AvatarImage src={user?.avatar} />
-                                            <AvatarFallback>{name.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                    </div>
+                                     <Avatar className="h-9 w-9">
+                                        <AvatarImage src={user?.avatar} />
+                                        <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="font-medium text-sm flex-1">{name}</span>
+                                    <Badge variant={selectedDriver === name ? 'secondary' : 'default'} className="w-8 h-6 justify-center">{orderCount}</Badge>
                                 </button>
                             ))}
                             {driverData.length === 0 && <p className="text-center text-muted-foreground p-4">لا يوجد مرتجعات.</p>}
@@ -194,21 +191,25 @@ export const ReceiveFromDrivers = () => {
                             <TableRow>
                                 <TableHead className="w-12"><Checkbox onCheckedChange={(checked) => handleSelectAllForDriver(selectedDriver || '', !!checked)} /></TableHead>
                                 <TableHead>رقم الطلب</TableHead>
+                                <TableHead>المستلم</TableHead>
                                 <TableHead>التاجر</TableHead>
+                                <TableHead>تاريخ الطلب</TableHead>
                                 <TableHead>الحالة الأصلية</TableHead>
                                 <TableHead>سبب الإرجاع</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {!selectedDriver ? (
-                                <TableRow><TableCell colSpan={5} className="h-48 text-center text-muted-foreground">الرجاء اختيار سائق لعرض مرتجعاته.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={7} className="h-48 text-center text-muted-foreground">الرجاء اختيار سائق لعرض مرتجعاته.</TableCell></TableRow>
                             ) : selectedDriverOrders.length === 0 ? (
-                                <TableRow><TableCell colSpan={5} className="h-48 text-center text-muted-foreground">لا توجد مرتجعات لهذا السائق.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={7} className="h-48 text-center text-muted-foreground">لا توجد مرتجعات لهذا السائق.</TableCell></TableRow>
                             ) : selectedDriverOrders.map(o => (
                                 <TableRow key={o.id} data-state={selectedOrderIds.includes(o.id) && "selected"} className="bg-background">
                                     <TableCell><Checkbox checked={selectedOrderIds.includes(o.id)} onCheckedChange={(checked) => setSelectedOrderIds(prev => checked ? [...prev, o.id] : prev.filter(id => id !== o.id))} /></TableCell>
                                     <TableCell><Link href={`/dashboard/orders/${o.id}`} className="font-mono text-primary hover:underline">{o.id}</Link></TableCell>
+                                    <TableCell>{o.recipient}</TableCell>
                                     <TableCell>{o.merchant}</TableCell>
+                                    <TableCell>{o.date}</TableCell>
                                     <TableCell><Badge variant={getStatusBadgeVariant(o.status)}>{o.status}</Badge></TableCell>
                                     <TableCell className="text-muted-foreground text-xs">{o.notes}</TableCell>
                                 </TableRow>

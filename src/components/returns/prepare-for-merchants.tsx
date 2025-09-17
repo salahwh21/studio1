@@ -102,18 +102,16 @@ export const PrepareForMerchants = () => {
                                         key={name}
                                         onClick={() => setSelectedMerchant(name)}
                                         className={cn(
-                                            "w-full p-3 rounded-lg flex items-center justify-end text-right",
+                                            "w-full p-3 rounded-lg flex items-center gap-3 text-right",
                                             selectedMerchant === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                                         )}
                                     >
-                                       <div className="flex items-center justify-end gap-3 w-full">
-                                            <Badge variant={selectedMerchant === name ? 'secondary' : 'default'} className="w-8 h-6 justify-center">{orderCount}</Badge>
-                                            <span className="font-medium text-sm flex-1 text-right">{name}</span>
-                                            <Avatar className="h-9 w-9">
-                                                <AvatarImage src={user?.avatar} />
-                                                <AvatarFallback>{name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                        </div>
+                                       <Avatar className="h-9 w-9">
+                                            <AvatarImage src={user?.avatar} />
+                                            <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <span className="font-medium text-sm flex-1">{name}</span>
+                                        <Badge variant={selectedMerchant === name ? 'secondary' : 'default'} className="w-8 h-6 justify-center">{orderCount}</Badge>
                                     </button>
                                 ))}
                                 {merchantData.length === 0 && <p className="text-center text-muted-foreground p-4">لا يوجد مرتجعات.</p>}
@@ -144,15 +142,16 @@ export const PrepareForMerchants = () => {
                                     <TableHead className="w-12"><Checkbox checked={areAllSelected} onCheckedChange={handleSelectAll} /></TableHead>
                                     <TableHead>رقم الطلب</TableHead>
                                     <TableHead>المستلم</TableHead>
-                                    <TableHead>تاريخ الطلب الأصلي</TableHead>
+                                    <TableHead>تاريخ الإرجاع</TableHead>
+                                    <TableHead>السائق الأصلي</TableHead>
                                     <TableHead>سبب الإرجاع</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {!selectedMerchant ? (
-                                    <TableRow><TableCell colSpan={5} className="h-48 text-center text-muted-foreground">الرجاء اختيار تاجر لعرض مرتجعاته.</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={6} className="h-48 text-center text-muted-foreground">الرجاء اختيار تاجر لعرض مرتجعاته.</TableCell></TableRow>
                                 ) : selectedMerchantOrders.length === 0 ? (
-                                    <TableRow><TableCell colSpan={5} className="h-48 text-center text-muted-foreground">لا توجد مرتجعات جاهزة لهذا التاجر.</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={6} className="h-48 text-center text-muted-foreground">لا توجد مرتجعات جاهزة لهذا التاجر.</TableCell></TableRow>
                                 ) : (
                                     selectedMerchantOrders.map((item) => (
                                         <TableRow key={item.id} data-state={selectedReturns.includes(item.id) && "selected"}>
@@ -160,6 +159,7 @@ export const PrepareForMerchants = () => {
                                             <TableCell><Link href={`/dashboard/orders/${item.id}`} className="font-mono text-primary hover:underline">{item.id}</Link></TableCell>
                                             <TableCell>{item.recipient}</TableCell>
                                             <TableCell>{item.date}</TableCell>
+                                            <TableCell>{item.driver}</TableCell>
                                             <TableCell><Badge variant="outline">{item.previousStatus}</Badge></TableCell>
                                         </TableRow>
                                     ))
