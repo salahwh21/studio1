@@ -1,5 +1,4 @@
 
-'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
@@ -106,14 +105,13 @@ export const PrepareForMerchants = () => {
                                             "w-full p-3 rounded-lg flex items-center justify-start gap-3",
                                             selectedMerchant === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                                         )}
-                                        dir="ltr"
                                     >
                                         <Avatar className="h-9 w-9">
                                             <AvatarImage src={user?.avatar} />
                                             <AvatarFallback>{name.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                         <span className="font-medium text-sm">{name}</span>
-                                        <Badge variant={selectedMerchant === name ? 'secondary' : 'default'}>{orderCount}</Badge>
+                                        <Badge variant={selectedMerchant === name ? 'secondary' : 'default'} className="mr-auto">{orderCount}</Badge>
                                     </button>
                                 ))}
                                 {merchantData.length === 0 && <p className="text-center text-muted-foreground p-4">لا يوجد مرتجعات.</p>}
