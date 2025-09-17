@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,9 +14,14 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUsersStore } from '@/store/user-store';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useReturnsStore, type DriverSlip } from '@/store/returns-store';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { PrintablePolicy } from '@/components/printable-policy';
+import { type SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 const RETURNABLE_STATUSES = ['راجع', 'ملغي', 'رفض ودفع أجور', 'رفض ولم يدفع أجور', 'تبديل'];
 
@@ -30,6 +35,13 @@ export const ReceiveFromDrivers = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateSlipDialog, setShowCreateSlipDialog] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
+
+  // Print Dialog State
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [availableTemplates, setAvailableTemplates] = useState<SavedTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<SavedTemplate | null>(null);
+  const printablePolicyRef = useRef<{ handleExport: () => void; handleDirectPrint: (order: any, type: 'zpl' | 'escpos') => Promise<void> }>(null);
+
 
   const returnsByDriver = useMemo(() => {
     let returnableOrders = orders.filter(o => (RETURNABLE_STATUSES.includes(o.status) || o.status === 'مؤجل') && o.status !== 'مرجع للفرع' );
@@ -59,6 +71,17 @@ export const ReceiveFromDrivers = () => {
         setSelectedDriver(driverData[0].name);
     }
   }, [driverData, selectedDriver]);
+
+  // Load print templates
+  useEffect(() => {
+    try {
+        const savedTemplatesJson = localStorage.getItem('policyTemplates');
+        const userTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
+        setAvailableTemplates([...readyTemplates, ...userTemplates]);
+    } catch(e) {
+      setAvailableTemplates(readyTemplates);
+    }
+  }, []);
 
   const selectedDriverOrders = useMemo(() => {
       if (!selectedDriver) return [];
@@ -126,8 +149,23 @@ export const ReceiveFromDrivers = () => {
         setSelectedOrderIds(prev => prev.filter(id => !driverOrderIds.includes(id)));
     }
   }
+  
+  const handlePrintClick = () => {
+    if (selectedOrderIds.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "لم يتم تحديد طلبات",
+            description: "الرجاء تحديد طلب واحد على الأقل للطباعة."
+        });
+        return;
+    }
+    setSelectedTemplate(availableTemplates.length > 0 ? availableTemplates[0] : null);
+    setIsPrintDialogOpen(true);
+  };
+
 
   return (
+    <>
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start" dir="rtl">
         <div className="lg:col-span-3 xl:col-span-2">
              <Card>
@@ -165,14 +203,35 @@ export const ReceiveFromDrivers = () => {
         <div className="lg:col-span-9 xl:col-span-10">
             <Card>
                 <CardHeader>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center flex-wrap gap-2">
                         <div>
                             <CardTitle>مرتجعات السائق: {selectedDriver || 'لم يتم الاختيار'}</CardTitle>
                              <CardDescription>امسح باركود الشحنة لتحديدها أو حددها يدوياً من الجدول.</CardDescription>
                         </div>
-                        <Button onClick={() => setShowCreateSlipDialog(true)} disabled={selectedOrderIds.length === 0}>
-                            <Icon name="PlusCircle" className="ml-2 h-4 w-4" /> إنشاء كشف ({selectedOrderIds.length})
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" disabled={selectedOrderIds.length === 0}>
+                                        <Icon name="Printer" className="ml-2 h-4 w-4" />
+                                        إجراءات الطباعة
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onSelect={handlePrintClick}>
+                                        <Icon name="ReceiptText" className="ml-2 h-4 w-4" />
+                                        طباعة بوالص
+                                    </DropdownMenuItem>
+                                     <DropdownMenuItem onSelect={() => toast({ title: "قيد التطوير" })}>
+                                        <Icon name="FileDown" className="ml-2 h-4 w-4" />
+                                        تصدير بيانات
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <Button onClick={() => setShowCreateSlipDialog(true)} disabled={selectedOrderIds.length === 0}>
+                                <Icon name="PlusCircle" className="ml-2 h-4 w-4" /> إنشاء كشف ({selectedOrderIds.length})
+                            </Button>
+                        </div>
                     </div>
                      <div className="flex gap-2 pt-4">
                         <Input 
@@ -232,6 +291,58 @@ export const ReceiveFromDrivers = () => {
               </DialogFooter>
           </DialogContent>
       </Dialog>
+      <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+            <DialogHeader>
+            <DialogTitle>طباعة البوالص</DialogTitle>
+            <DialogDescription>اختر القالب وقم بمعاينة البوالص قبل الطباعة النهائية.</DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 min-h-0">
+                <div className="md:col-span-1 flex flex-col gap-4">
+                    <Card>
+                        <CardHeader className='p-4'><CardTitle className='text-base'>1. اختر القالب</CardTitle></CardHeader>
+                        <CardContent className='p-4'>
+                            <RadioGroup
+                                value={selectedTemplate?.id}
+                                onValueChange={(id) => setSelectedTemplate(availableTemplates.find(t => t.id === id) || null)}
+                            >
+                                {availableTemplates.map(template => (
+                                    <div key={template.id} className="flex items-center space-x-2 space-x-reverse">
+                                        <RadioGroupItem value={template.id} id={`print-${template.id}`} />
+                                        <Label htmlFor={`print-${template.id}`}>{template.name}</Label>
+                                    </div>
+                                ))}
+                            </RadioGroup>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader className='p-4'><CardTitle className='text-base'>2. إجراء الطباعة</CardTitle></CardHeader>
+                        <CardContent className='p-4 flex flex-col gap-2'>
+                             <Button onClick={() => printablePolicyRef.current?.handleExport()} className="w-full">
+                                <Icon name="Save" className="ml-2 h-4 w-4 inline" /> طباعة PDF
+                            </Button>
+                            <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(orders.find(o => o.id === selectedOrderIds[0]), 'zpl')}>
+                                <Icon name="Printer" className="ml-2 h-4 w-4 inline" /> طباعة ZPL (أول طلب)
+                            </Button>
+                             <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(orders.find(o => o.id === selectedOrderIds[0]), 'escpos')}>
+                                <Icon name="Printer" className="ml-2 h-4 w-4 inline" /> طباعة ESC/POS (أول طلب)
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+                 <div className="md:col-span-3 bg-muted rounded-md flex items-center justify-center overflow-hidden">
+                    <ScrollArea className="h-full w-full">
+                        <div className="p-4 flex items-center justify-center">
+                            {selectedTemplate && (
+                                <PrintablePolicy ref={printablePolicyRef} orders={orders.filter(o => selectedOrderIds.includes(o.id))} template={selectedTemplate} />
+                            )}
+                        </div>
+                    </ScrollArea>
+                </div>
+            </div>
+        </DialogContent>
+    </Dialog>
     </div>
+    </>
   );
 };
