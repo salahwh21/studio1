@@ -15,9 +15,13 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useSettings } from '@/contexts/SettingsContext';
+import { useUsersStore } from '@/store/user-store';
 
 export const MerchantSlips = () => {
     const { toast } = useToast();
+    const { users } = useUsersStore();
+    const { settings } = useSettings();
     const { merchantSlips, updateMerchantSlipStatus } = useReturnsStore();
 
     const [showDetailsDialog, setShowDetailsDialog] = useState(false);
@@ -55,8 +59,9 @@ export const MerchantSlips = () => {
     };
 
     const printSlip = async (slip: MerchantSlip) => {
-        const doc = new jsPDF();
-        
+        const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+        const merchantUser = users.find(u => u.storeName === slip.merchant);
+
         try {
             doc.addFont('https://raw.githack.com/MrRio/jsPDF/master/test/reference/Amiri-Regular.ttf', 'Amiri', 'normal');
             doc.setFont('Amiri');
@@ -64,17 +69,87 @@ export const MerchantSlips = () => {
             console.warn("Could not load Amiri font for PDF. RTL text might not render correctly.");
         }
 
-        doc.text(`كشف مرتجع: ${slip.id}`, 200, 20, { align: 'right' });
-        doc.text(`التاجر: ${slip.merchant}`, 200, 30, { align: 'right' });
-        doc.text(`التاريخ: ${slip.date}`, 200, 40, { align: 'right' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 10;
         
+        // --- Header ---
+        doc.setFontSize(16);
+        doc.text('كشف المرتجع', pageWidth / 2, margin + 5, { align: 'center' });
+
+        const logo = settings.login.reportsLogo || settings.login.headerLogo;
+        if (logo) {
+            try {
+               doc.addImage(logo, 'PNG', margin, margin, 30, 15);
+            } catch(e) { console.error("Error adding logo to PDF:", e); }
+        }
+        
+        // Barcode for slip ID
+        try {
+            // Placeholder for barcode generation library if available, e.g., JsBarcode
+            // For now, we'll just write the text
+            doc.setFontSize(12);
+            doc.text(slip.id, pageWidth / 2, margin + 15, { align: 'center' });
+        } catch (e) { console.error("Error adding barcode:", e)}
+
+
+        doc.setFontSize(10);
+        doc.text(`اسم التاجر: ${slip.merchant}`, pageWidth - margin, margin + 7, { align: 'right' });
+        doc.text(`رقم المحمول للتاجر: ${merchantUser?.email || 'غير متوفر'}`, pageWidth - margin, margin + 12, { align: 'right' });
+        doc.text(`التاريخ: ${new Date(slip.date).toLocaleString('ar-JO')}`, pageWidth - margin, margin + 17, { align: 'right' });
+        doc.text(`العنوان: ${'عمان - صويلح'}`, pageWidth - margin, margin + 22, { align: 'right' });
+
+
+        // --- Table ---
+        const head = [['#', 'رقم الطلب', 'اسم المستلم', 'عنوان المستلم', 'سبب الارجاع', 'مطلوب للتاجر']];
+        const body = slip.orders.map((order, index) => [
+            index + 1,
+            order.referenceNumber || order.id,
+            `${order.recipient}\n${order.phone || ''}`,
+            order.address,
+            order.previousStatus || order.status,
+            '0.0', // 'مطلوب للتاجر' seems to be always 0.0 in the example
+        ]);
+        
+        const totalAmount = '0.00'; // As per the image example
+
         autoTable(doc, {
-          startY: 50,
-          head: [['الحالة', 'المستلم', 'رقم الطلب']],
-          body: slip.orders.map(o => [o.status, o.recipient, o.id]),
-          styles: { halign: 'right', font: 'Amiri' },
-          headStyles: { fillColor: [41, 128, 185], halign: 'center' },
+          startY: margin + 35,
+          head: head,
+          body: body,
+          styles: { font: 'Amiri', halign: 'right', cellPadding: 2 },
+          headStyles: { fillColor: [44, 62, 80], halign: 'center' },
+          columnStyles: {
+              0: { halign: 'center', cellWidth: 10 },
+              1: { halign: 'center', cellWidth: 30 },
+              2: { halign: 'right', cellWidth: 35 },
+              3: { halign: 'right', cellWidth: 'auto' },
+              4: { halign: 'center', cellWidth: 25 },
+              5: { halign: 'center', cellWidth: 20 },
+          },
+          didDrawPage: (data) => {
+            // --- Footer ---
+            doc.setFontSize(10);
+            const footerY = pageHeight - margin - 5;
+            doc.text(`توقيع المستلم: ............................`, pageWidth - margin, footerY, { align: 'right' });
+            doc.text(`Page ${data.pageNumber}`, margin, footerY, { align: 'left' });
+          },
+          didParseCell: function (data) {
+            // For multi-line cells
+            if (data.section === 'body' && (data.column.index === 2)) {
+                data.cell.styles.valign = 'middle';
+            }
+          }
         });
+
+        // Add final total row
+        const finalY = (doc as any).lastAutoTable.finalY;
+        doc.setFontSize(12);
+        doc.setFont('Amiri', 'bold');
+        doc.text(`الإجمالي`, pageWidth - margin - 25, finalY + 10, { align: 'center'});
+        doc.text(`${totalAmount}`, margin + 10, finalY + 10, { align: 'center'});
+
+
         doc.save(`ReturnSlip-${slip.id}.pdf`);
     };
 
