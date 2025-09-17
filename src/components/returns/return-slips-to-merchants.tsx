@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
@@ -12,8 +11,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { parseISO, isWithinInterval } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+
 
 const RETURNABLE_STATUSES = ['راجع', 'ملغي', 'رفض ودفع أجور', 'رفض ولم يدفع أجور', 'تبديل'];
 
@@ -28,6 +30,7 @@ type Slip = {
 
 export const ReturnSlipsToMerchants = () => {
     const { orders } = useOrdersStore();
+    const { toast } = useToast();
     const [selectedReturns, setSelectedReturns] = useState<string[]>([]);
     const [slips, setSlips] = useState<Slip[]>([]);
     const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -41,7 +44,7 @@ export const ReturnSlipsToMerchants = () => {
 
     const returnsAtBranch = useMemo(() => {
         const slipOrderIds = new Set(slips.flatMap(s => s.orders.map(o => o.id)));
-        return orders.filter(o => [...RETURNABLE_STATUSES, 'مرجع للفرع'].includes(o.status) && !slipOrderIds.has(o.id));
+        return orders.filter(o => o.status === 'مرجع للفرع' && !slipOrderIds.has(o.id));
     }, [orders, slips]);
     
     const merchants = useMemo(() => Array.from(new Set(returnsAtBranch.map(s => s.merchant))), [returnsAtBranch]);
@@ -65,7 +68,11 @@ export const ReturnSlipsToMerchants = () => {
 
         const firstMerchant = selectedOrdersData[0].merchant;
         if (selectedOrdersData.some(o => o.merchant !== firstMerchant)) {
-            alert("خطأ: يرجى تحديد طلبات لنفس التاجر فقط لإنشاء كشف.");
+            toast({
+                variant: "destructive",
+                title: "خطأ في التحديد",
+                description: "يرجى تحديد طلبات لنفس التاجر فقط لإنشاء كشف واحد.",
+            });
             return;
         }
 
@@ -81,7 +88,19 @@ export const ReturnSlipsToMerchants = () => {
         setSlips(prev => [...prev, newSlip]);
         setSelectedReturns([]);
         setShowCreateDialog(false);
+        toast({
+            title: "تم إنشاء الكشف بنجاح",
+            description: `تم إنشاء كشف إرجاع للتاجر ${firstMerchant} يحتوي على ${selectedOrdersData.length} طلبات. (محاكاة: تم إرسال إشعار للتاجر).`
+        });
     };
+    
+    const confirmSlipDelivery = (slipId: string) => {
+        setSlips(prev => prev.map(s => s.id === slipId ? { ...s, status: 'تم التسليم' } : s));
+        toast({
+            title: "تم تأكيد التسليم",
+            description: `تم تحديث حالة الكشف ${slipId}. (محاكاة: جاري تحديث الرصيد المالي للتاجر).`
+        });
+    }
 
     const handleShowDetails = (slip: Slip) => {
         setCurrentSlip(slip);
@@ -94,16 +113,18 @@ export const ReturnSlipsToMerchants = () => {
     
     const areAllSelected = returnsAtBranch.length > 0 && selectedReturns.length === returnsAtBranch.length;
 
-    const printSlip = (slip: Slip) => {
+    const printSlip = async (slip: Slip) => {
+        const { default: jsPDF } = await import('jspdf');
+        const { default: autoTable } = await import('jspdf-autotable');
+        
         const doc = new jsPDF();
-
-        // In a real production app, you would embed the font file.
+        
         doc.setRTL(true);
         doc.text(`Return Slip: ${slip.id}`, 200, 20, { align: 'right' });
         doc.text(`Merchant: ${slip.merchant}`, 200, 30, { align: 'right' });
         doc.text(`Date: ${slip.date}`, 200, 40, { align: 'right' });
         
-        (doc as any).autoTable({
+        autoTable(doc, {
           startY: 50,
           head: [['Status', 'Recipient', 'Order ID']],
           body: slip.orders.map(o => [o.status, o.recipient, o.id]),
@@ -140,7 +161,7 @@ export const ReturnSlipsToMerchants = () => {
                         {returnsAtBranch.map((item) => (
                             <TableRow key={item.id} data-state={selectedReturns.includes(item.id) && "selected"}>
                             <TableCell><Checkbox checked={selectedReturns.includes(item.id)} onCheckedChange={(checked) => setSelectedReturns(prev => checked ? [...prev, item.id] : prev.filter(id => id !== item.id))} /></TableCell>
-                            <TableCell className="font-mono">{item.id}</TableCell>
+                            <TableCell><Link href={`/dashboard/orders/${item.id}`} className="font-mono text-primary hover:underline">{item.id}</Link></TableCell>
                             <TableCell>{item.merchant}</TableCell>
                             <TableCell>{item.recipient}</TableCell>
                             <TableCell>{item.date}</TableCell>
@@ -181,7 +202,7 @@ export const ReturnSlipsToMerchants = () => {
                             <TableCell><Badge variant={slip.status === 'تم التسليم' ? 'default' : 'outline'} className={slip.status === 'تم التسليم' ? 'bg-green-100 text-green-800' : ''}>{slip.status}</Badge></TableCell>
                             <TableCell className="text-left flex gap-2 justify-end">
                                 <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
-                                <Button variant="outline" size="sm" disabled={slip.status === 'تم التسليم'} onClick={() => setSlips(prev => prev.map(s => s.id === slip.id ? { ...s, status: 'تم التسليم' } : s))}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
+                                <Button variant="outline" size="sm" disabled={slip.status === 'تم التسليم'} onClick={() => confirmSlipDelivery(slip.id)}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
                                 <Button variant="ghost" size="icon" onClick={() => printSlip(slip)}><Icon name="Printer" className="h-4 w-4" /></Button>
                             </TableCell>
                             </TableRow>
@@ -210,7 +231,7 @@ export const ReturnSlipsToMerchants = () => {
                 <DialogHeader><DialogTitle>تفاصيل كشف {currentSlip?.id}</DialogTitle></DialogHeader>
                 <div className="space-y-4">
                     <Table><TableHeader><TableRow><TableHead>رقم الطلب</TableHead><TableHead>المستلم</TableHead><TableHead>تاريخ الإرجاع الأصلي</TableHead><TableHead>الحالة الأصلية</TableHead></TableRow></TableHeader>
-                    <TableBody>{currentSlip?.orders.map((order: any) => (<TableRow key={order.id}><TableCell className="font-mono">{order.id}</TableCell><TableCell>{order.recipient}</TableCell><TableCell>{order.date}</TableCell><TableCell><Badge variant="secondary">{order.status}</Badge></TableCell></TableRow>))}</TableBody></Table>
+                    <TableBody>{currentSlip?.orders.map((order: any) => (<TableRow key={order.id}><TableCell><Link href={`/dashboard/orders/${order.id}`} className="font-mono text-primary hover:underline">{order.id}</Link></TableCell><TableCell>{order.recipient}</TableCell><TableCell>{order.date}</TableCell><TableCell><Badge variant="secondary">{order.status}</Badge></TableCell></TableRow>))}</TableBody></Table>
                 </div>
                 <DialogFooter><Button onClick={() => setShowDetailsDialog(false)}>إغلاق</Button></DialogFooter>
                 </DialogContent>

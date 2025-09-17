@@ -11,6 +11,8 @@ import Icon from '@/components/icon';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import Link from 'next/link';
 
 const RETURNABLE_STATUSES = ['راجع', 'ملغي', 'رفض ودفع أجور', 'رفض ولم يدفع أجور', 'تبديل'];
 
@@ -18,28 +20,34 @@ export const ReturnsFromDrivers = () => {
   const { orders, updateOrderStatus } = useOrdersStore();
   const { toast } = useToast();
 
-  const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<Order | null>(null);
+  const [openDrivers, setOpenDrivers] = useState<Record<string, boolean>>({});
 
-  const drivers = useMemo(() => Array.from(new Set(orders.map(o => o.driver).filter(Boolean))), [orders]);
-
-  const ordersForReturn = useMemo(() => {
+  const returnsByDriver = useMemo(() => {
     let returnableOrders = orders.filter(o => RETURNABLE_STATUSES.includes(o.status) || o.status === 'مؤجل');
-    if (selectedDriver) {
-      returnableOrders = returnableOrders.filter(o => o.driver === selectedDriver);
-    }
-    return returnableOrders;
-  }, [orders, selectedDriver]);
+    
+    return returnableOrders.reduce((acc, order) => {
+        const driverName = order.driver || 'غير معين';
+        if (!acc[driverName]) {
+            acc[driverName] = [];
+        }
+        acc[driverName].push(order);
+        return acc;
+    }, {} as Record<string, Order[]>);
+
+  }, [orders]);
 
   const handleScan = () => {
-    const foundOrder = ordersForReturn.find(o => o.id === searchQuery || o.referenceNumber === searchQuery || o.phone === searchQuery);
+    const allOrders = Object.values(returnsByDriver).flat();
+    const foundOrder = allOrders.find(o => o.id === searchQuery || o.referenceNumber === searchQuery || o.phone === searchQuery);
+    
     if(foundOrder) {
         if (!selectedOrderIds.includes(foundOrder.id)) {
             setSelectedOrderIds(prev => [...prev, foundOrder.id]);
         }
-        setSelectedOrderForDetails(foundOrder);
+        const driverName = foundOrder.driver || 'غير معين';
+        setOpenDrivers(prev => ({...prev, [driverName]: true }));
         setSearchQuery('');
         toast({ title: "تم تحديد الطلب", description: `تم تحديد الطلب ${foundOrder.id} بنجاح.`});
     } else {
@@ -53,70 +61,92 @@ export const ReturnsFromDrivers = () => {
     });
     toast({ title: "تم التحديث", description: `تم تحديث ${selectedOrderIds.length} طلب/طلبات إلى حالة "مرجع للفرع".` });
     setSelectedOrderIds([]);
-    setSelectedOrderForDetails(null);
   };
-  
+
   const getStatusBadgeVariant = (status: string) => {
     if (status === 'راجع' || status === 'مرجع للفرع') return 'outline';
     if (status === 'ملغي' || status.includes('رفض')) return 'destructive';
     if (status === 'مؤجل') return 'secondary';
     return 'default';
   };
+  
+  const handleSelectAllForDriver = (driverName: string, checked: boolean) => {
+    const driverOrderIds = (returnsByDriver[driverName] || []).map(o => o.id);
+    if(checked) {
+        setSelectedOrderIds(prev => [...new Set([...prev, ...driverOrderIds])]);
+    } else {
+        setSelectedOrderIds(prev => prev.filter(id => !driverOrderIds.includes(id)));
+    }
+  }
+  
+  const handleReceiveAllForDriver = (driverName: string) => {
+      const driverOrderIds = (returnsByDriver[driverName] || []).map(o => o.id);
+      driverOrderIds.forEach(id => updateOrderStatus(id, 'مرجع للفرع'));
+      toast({ title: "تم الاستلام", description: `تم استلام كل مرتجعات السائق ${driverName}.`});
+      setSelectedOrderIds(prev => prev.filter(id => !driverOrderIds.includes(id)));
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="lg:col-span-2">
-            <Card>
-                <CardHeader>
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div>
-                            <CardTitle>قائمة الاستلام</CardTitle>
-                            <CardDescription>جميع المرتجعات والمؤجلات الموجودة مع السائقين.</CardDescription>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            <Button onClick={() => setSelectedDriver(null)} variant={!selectedDriver ? 'default' : 'outline'} size="sm">الكل</Button>
-                            {drivers.map(d => (
-                                <Button key={d} onClick={() => setSelectedDriver(d)} variant={selectedDriver === d ? 'default' : 'outline'} size="sm">{d}</Button>
-                            ))}
-                        </div>
-                    </div>
-                </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12"></TableHead>
-                      <TableHead>رقم الطلب</TableHead>
-                      <TableHead>التاجر</TableHead>
-                      <TableHead>المستلم</TableHead>
-                      <TableHead>السائق</TableHead>
-                      <TableHead>الحالة</TableHead>
-                      <TableHead>سبب الإرجاع</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {ordersForReturn.length > 0 ? ordersForReturn.map(o => (
-                      <TableRow 
-                        key={o.id} 
-                        data-state={selectedOrderIds.includes(o.id) && "selected"}
-                        className="cursor-pointer"
-                        onClick={() => setSelectedOrderForDetails(o)}
-                      >
-                        <TableCell><Checkbox checked={selectedOrderIds.includes(o.id)} onCheckedChange={(checked) => setSelectedOrderIds(prev => checked ? [...prev, o.id] : prev.filter(id => id !== o.id))} /></TableCell>
-                        <TableCell className="font-mono">{o.id}</TableCell>
-                        <TableCell>{o.merchant}</TableCell>
-                        <TableCell>{o.recipient}</TableCell>
-                        <TableCell>{o.driver}</TableCell>
-                        <TableCell><Badge variant={getStatusBadgeVariant(o.status)}>{o.status}</Badge></TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{o.notes}</TableCell>
-                      </TableRow>
-                    )) : (
-                      <TableRow><TableCell colSpan={7} className="h-24 text-center">لا توجد طلبات مرتجعة لهذا السائق.</TableCell></TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+        <div className="lg:col-span-2 space-y-4">
+             {Object.entries(returnsByDriver).map(([driverName, driverOrders]) => {
+                const isAllSelectedForDriver = driverOrders.every(o => selectedOrderIds.includes(o.id));
+                const isDriverOpen = openDrivers[driverName] ?? false;
+
+                return (
+                 <Collapsible key={driverName} open={isDriverOpen} onOpenChange={(isOpen) => setOpenDrivers(prev => ({...prev, [driverName]: isOpen}))}>
+                    <Card>
+                        <CollapsibleTrigger asChild>
+                            <CardHeader className="p-4 cursor-pointer hover:bg-muted/50 flex flex-row items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Icon name={isDriverOpen ? 'ChevronDown' : 'ChevronLeft'} className="h-5 w-5" />
+                                    <Icon name="User" className="h-5 w-5 text-muted-foreground"/>
+                                    <CardTitle className="text-base">{driverName}</CardTitle>
+                                    <Badge variant="secondary">{driverOrders.length} طلبات</Badge>
+                                </div>
+                                <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); handleReceiveAllForDriver(driverName); }}>
+                                    <Icon name="CheckCheck" className="ml-2 h-4 w-4"/> استلام الكل
+                                </Button>
+                            </CardHeader>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                            <CardContent className="p-0">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="w-12"><Checkbox checked={isAllSelectedForDriver} onCheckedChange={(checked) => handleSelectAllForDriver(driverName, !!checked)} /></TableHead>
+                                            <TableHead>رقم الطلب</TableHead>
+                                            <TableHead>التاجر</TableHead>
+                                            <TableHead>الحالة</TableHead>
+                                            <TableHead>سبب الإرجاع</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {driverOrders.map(o => (
+                                        <TableRow key={o.id} data-state={selectedOrderIds.includes(o.id) && "selected"}>
+                                            <TableCell><Checkbox checked={selectedOrderIds.includes(o.id)} onCheckedChange={(checked) => setSelectedOrderIds(prev => checked ? [...prev, o.id] : prev.filter(id => id !== o.id))} /></TableCell>
+                                            <TableCell><Link href={`/dashboard/orders/${o.id}`} className="font-mono text-primary hover:underline">{o.id}</Link></TableCell>
+                                            <TableCell>{o.merchant}</TableCell>
+                                            <TableCell><Badge variant={getStatusBadgeVariant(o.status)}>{o.status}</Badge></TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">{o.notes}</TableCell>
+                                        </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                         </CollapsibleContent>
+                    </Card>
+                </Collapsible>
+                )
+             })}
+              {Object.keys(returnsByDriver).length === 0 && (
+                <Card>
+                    <CardContent className="p-10 text-center text-muted-foreground">
+                        <Icon name="PackageX" className="mx-auto h-12 w-12 mb-4" />
+                        <p>لا توجد أي مرتجعات حالياً مع السائقين.</p>
+                    </CardContent>
+                </Card>
+            )}
         </div>
         <div className="lg:sticky lg:top-24 space-y-6">
             <Card>
@@ -144,21 +174,6 @@ export const ReturnsFromDrivers = () => {
                     </Button>
                 </CardContent>
             </Card>
-            {selectedOrderForDetails && (
-                <Card className="animate-in fade-in">
-                    <CardHeader>
-                        <CardTitle className="text-base">تفاصيل الشحنة المحددة</CardTitle>
-                         <CardDescription className="font-mono">{selectedOrderForDetails.id}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-sm space-y-2">
-                        <p><strong>العميل:</strong> {selectedOrderForDetails.recipient}</p>
-                        <p><strong>الهاتف:</strong> {selectedOrderForDetails.phone}</p>
-                        <p><strong>العنوان:</strong> {selectedOrderForDetails.address}</p>
-                        <p><strong>الحالة:</strong> <Badge variant={getStatusBadgeVariant(selectedOrderForDetails.status)}>{selectedOrderForDetails.status}</Badge></p>
-                        <p><strong>السبب:</strong> {selectedOrderForDetails.notes || 'لا يوجد'}</p>
-                    </CardContent>
-                </Card>
-            )}
         </div>
     </div>
   );
