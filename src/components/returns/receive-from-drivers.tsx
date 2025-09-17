@@ -141,14 +141,17 @@ export const ReceiveFromDrivers = () => {
                         <div className="space-y-2">
                             {driverData.map(({name, user, orderCount}) => (
                                 <button key={name} onClick={() => setSelectedDriver(name)} className={cn("w-full text-right p-3 rounded-lg flex items-center justify-between transition-colors", selectedDriver === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}>
-                                    <div className="flex items-center gap-3">
-                                        <Badge variant={selectedDriver === name ? 'secondary' : 'default'}>{orderCount}</Badge>
-                                        <span className="font-medium">{name}</span>
+                                    <div className="flex items-center gap-3 flex-1">
+                                        <Avatar className="h-9 w-9">
+                                            <AvatarImage src={user?.avatar} />
+                                            <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1">
+                                            <span className="font-medium text-sm">{name}</span>
+                                            <p className="text-xs opacity-70">{orderCount} مرتجعات</p>
+                                        </div>
                                     </div>
-                                    <Avatar className="h-9 w-9">
-                                        <AvatarImage src={user?.avatar} />
-                                        <AvatarFallback>{name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
+                                    <Badge variant={selectedDriver === name ? 'secondary' : 'default'} className="ml-auto">{orderCount}</Badge>
                                 </button>
                             ))}
                             {driverData.length === 0 && <p className="text-center text-muted-foreground p-4">لا يوجد مرتجعات.</p>}
@@ -189,7 +192,7 @@ export const ReceiveFromDrivers = () => {
                                 <TableHead className="w-12"><Checkbox onCheckedChange={(checked) => handleSelectAllForDriver(selectedDriver || '', !!checked)} /></TableHead>
                                 <TableHead>رقم الطلب</TableHead>
                                 <TableHead>التاجر</TableHead>
-                                <TableHead>الحالة</TableHead>
+                                <TableHead>الحالة الأصلية</TableHead>
                                 <TableHead>سبب الإرجاع</TableHead>
                             </TableRow>
                         </TableHeader>

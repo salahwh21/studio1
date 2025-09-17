@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
@@ -100,14 +101,17 @@ export const PrepareForMerchants = () => {
                             <div className="space-y-2">
                                 {merchantData.map(({name, user, orderCount}) => (
                                     <button key={name} onClick={() => setSelectedMerchant(name)} className={cn("w-full text-right p-3 rounded-lg flex items-center justify-between transition-colors", selectedMerchant === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}>
-                                        <div className="flex items-center gap-3">
-                                            <Badge variant={selectedMerchant === name ? 'secondary' : 'default'}>{orderCount}</Badge>
-                                            <span className="font-medium">{name}</span>
+                                        <div className="flex items-center gap-3 flex-1">
+                                            <Avatar className="h-9 w-9">
+                                                <AvatarImage src={user?.avatar} />
+                                                <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1">
+                                                <span className="font-medium text-sm">{name}</span>
+                                                <p className="text-xs opacity-70">{orderCount} مرتجعات</p>
+                                            </div>
                                         </div>
-                                        <Avatar className="h-9 w-9">
-                                            <AvatarImage src={user?.avatar} />
-                                            <AvatarFallback>{name.charAt(0)}</AvatarFallback>
-                                        </Avatar>
+                                        <Badge variant={selectedMerchant === name ? 'secondary' : 'default'} className="ml-auto">{orderCount}</Badge>
                                     </button>
                                 ))}
                                 {merchantData.length === 0 && <p className="text-center text-muted-foreground p-4">لا يوجد مرتجعات.</p>}
@@ -139,7 +143,7 @@ export const PrepareForMerchants = () => {
                                     <TableHead className="w-[50px]"><Checkbox checked={areAllSelected} onCheckedChange={handleSelectAll} /></TableHead>
                                     <TableHead>رقم الطلب</TableHead>
                                     <TableHead>المستلم</TableHead>
-                                    <TableHead>تاريخ الطلب</TableHead>
+                                    <TableHead>تاريخ الطلب الأصلي</TableHead>
                                     <TableHead>الحالة الأصلية</TableHead>
                                 </TableRow>
                             </TableHeader>
