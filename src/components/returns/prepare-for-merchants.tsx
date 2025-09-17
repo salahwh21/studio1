@@ -102,16 +102,16 @@ export const PrepareForMerchants = () => {
                                         key={name}
                                         onClick={() => setSelectedMerchant(name)}
                                         className={cn(
-                                            "w-full p-3 rounded-lg flex items-center justify-start gap-3",
+                                            "w-full p-3 rounded-lg flex items-center justify-end gap-3 text-right",
                                             selectedMerchant === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                                         )}
                                     >
+                                        <Badge variant={selectedMerchant === name ? 'secondary' : 'default'} className="ml-auto">{orderCount}</Badge>
+                                        <span className="font-medium text-sm">{name}</span>
                                         <Avatar className="h-9 w-9">
                                             <AvatarImage src={user?.avatar} />
                                             <AvatarFallback>{name.charAt(0)}</AvatarFallback>
                                         </Avatar>
-                                        <span className="font-medium text-sm">{name}</span>
-                                        <Badge variant={selectedMerchant === name ? 'secondary' : 'default'} className="mr-auto">{orderCount}</Badge>
                                     </button>
                                 ))}
                                 {merchantData.length === 0 && <p className="text-center text-muted-foreground p-4">لا يوجد مرتجعات.</p>}
