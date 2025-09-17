@@ -128,7 +128,7 @@ export const ReceiveFromDrivers = () => {
   }
 
   return (
-    <div dir="rtl" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Panel - Drivers List */}
         <div className="lg:col-span-4 xl:col-span-3">
              <Card>
