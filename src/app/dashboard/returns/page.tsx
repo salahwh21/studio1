@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/icon';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { parseISO, isWithinInterval } from 'date-fns';
 import jsPDF from 'jspdf';
