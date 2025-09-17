@@ -15,8 +15,18 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUsersStore } from '@/store/user-store';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+
 
 const RETURNABLE_STATUSES = ['راجع', 'ملغي', 'رفض ودفع أجور', 'رفض ولم يدفع أجور', 'تبديل'];
+
+type DriverSlip = {
+  id: string;
+  driverName: string;
+  date: string;
+  itemCount: number;
+  orders: Order[];
+};
 
 export const ReturnsFromDrivers = () => {
   const { orders, updateOrderStatus } = useOrdersStore();
@@ -26,9 +36,14 @@ export const ReturnsFromDrivers = () => {
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [openDrivers, setOpenDrivers] = useState<Record<string, boolean>>({});
+  
+  const [driverSlips, setDriverSlips] = useState<DriverSlip[]>([]);
+  const [showCreateSlipDialog, setShowCreateSlipDialog] = useState(false);
+  const [currentSlipDetails, setCurrentSlipDetails] = useState<DriverSlip | null>(null);
+
 
   const returnsByDriver = useMemo(() => {
-    let returnableOrders = orders.filter(o => RETURNABLE_STATUSES.includes(o.status) || o.status === 'مؤجل');
+    let returnableOrders = orders.filter(o => (RETURNABLE_STATUSES.includes(o.status) || o.status === 'مؤجل') && o.status !== 'مرجع للفرع' );
     
     return returnableOrders.reduce((acc, order) => {
         const driverName = order.driver || 'غير معين';
@@ -58,12 +73,33 @@ export const ReturnsFromDrivers = () => {
     }
   }
 
-  const markReturned = () => {
+  const handleCreateSlip = () => {
+    if (selectedOrderIds.length === 0) return;
+
+    const selectedOrdersData = Object.values(returnsByDriver).flat().filter(o => selectedOrderIds.includes(o.id));
+    const firstDriver = selectedOrdersData[0]?.driver || 'غير معين';
+
+    if (selectedOrdersData.some(o => (o.driver || 'غير معين') !== firstDriver)) {
+        toast({ variant: 'destructive', title: 'خطأ', description: 'يرجى تحديد مرتجعات لنفس السائق فقط.' });
+        return;
+    }
+    
+    const newSlip: DriverSlip = {
+        id: `DS-${Date.now()}`,
+        driverName: firstDriver,
+        date: new Date().toISOString().slice(0, 10),
+        itemCount: selectedOrdersData.length,
+        orders: selectedOrdersData,
+    };
+
+    setDriverSlips(prev => [newSlip, ...prev]);
+
     selectedOrderIds.forEach(id => {
       updateOrderStatus(id, 'مرجع للفرع');
     });
-    toast({ title: "تم التحديث", description: `تم تحديث ${selectedOrderIds.length} طلب/طلبات إلى حالة "مرجع للفرع".` });
+    toast({ title: "تم إنشاء كشف الاستلام", description: `تم استلام ${selectedOrderIds.length} طلبات من السائق ${firstDriver}.` });
     setSelectedOrderIds([]);
+    setShowCreateSlipDialog(false);
   };
 
   const getStatusBadgeVariant = (status: string) => {
@@ -83,10 +119,21 @@ export const ReturnsFromDrivers = () => {
   }
   
   const handleReceiveAllForDriver = (driverName: string) => {
-      const driverOrderIds = (returnsByDriver[driverName] || []).map(o => o.id);
-      driverOrderIds.forEach(id => updateOrderStatus(id, 'مرجع للفرع'));
-      toast({ title: "تم الاستلام", description: `تم استلام كل مرتجعات السائق ${driverName}.`});
-      setSelectedOrderIds(prev => prev.filter(id => !driverOrderIds.includes(id)));
+      const driverOrders = returnsByDriver[driverName] || [];
+      if(driverOrders.length === 0) return;
+
+      const newSlip: DriverSlip = {
+        id: `DS-${Date.now()}`,
+        driverName: driverName,
+        date: new Date().toISOString().slice(0, 10),
+        itemCount: driverOrders.length,
+        orders: driverOrders,
+    };
+    setDriverSlips(prev => [newSlip, ...prev]);
+
+      driverOrders.forEach(o => updateOrderStatus(o.id, 'مرجع للفرع'));
+      toast({ title: "تم الاستلام", description: `تم استلام كل مرتجعات السائق ${driverName} وإنشاء كشف بذلك.`});
+      setSelectedOrderIds(prev => prev.filter(id => !driverOrders.map(o => o.id).includes(id)));
   }
 
   const driverData = useMemo(() => {
@@ -98,7 +145,7 @@ export const ReturnsFromDrivers = () => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
             <Card>
                 <CardHeader>
                     <CardTitle>قائمة المرتجعات المعلقة لدى السائقين</CardTitle>
@@ -192,6 +239,32 @@ export const ReturnsFromDrivers = () => {
                     </Table>
                 </CardContent>
             </Card>
+
+            <Card>
+                <CardHeader><CardTitle>سجل كشوفات الاستلام من السائقين</CardTitle></CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader><TableRow>
+                            <TableHead>رقم الكشف</TableHead><TableHead>السائق</TableHead><TableHead>التاريخ</TableHead><TableHead>عدد الشحنات</TableHead><TableHead>إجراء</TableHead>
+                        </TableRow></TableHeader>
+                        <TableBody>
+                            {driverSlips.length === 0 ? (
+                                <TableRow><TableCell colSpan={5} className="h-24 text-center">لا توجد كشوفات بعد.</TableCell></TableRow>
+                            ) : (
+                                driverSlips.map(slip => (
+                                    <TableRow key={slip.id}>
+                                        <TableCell className="font-mono">{slip.id}</TableCell>
+                                        <TableCell>{slip.driverName}</TableCell>
+                                        <TableCell>{slip.date}</TableCell>
+                                        <TableCell>{slip.itemCount}</TableCell>
+                                        <TableCell><Button variant="outline" size="sm" onClick={() => setCurrentSlipDetails(slip)}>عرض التفاصيل</Button></TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
         </div>
         <div className="lg:sticky lg:top-24 space-y-6">
             <Card>
@@ -214,12 +287,46 @@ export const ReturnsFromDrivers = () => {
                     </div>
                      <Separator />
                      <p className="text-sm text-center text-muted-foreground">تم تحديد {selectedOrderIds.length} شحنة للاستلام.</p>
-                     <Button onClick={markReturned} disabled={selectedOrderIds.length === 0} className="w-full">
-                        <Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد استلام المحدد في الفرع
+                     <Button onClick={() => setShowCreateSlipDialog(true)} disabled={selectedOrderIds.length === 0} className="w-full">
+                        <Icon name="PlusCircle" className="ml-2 h-4 w-4" /> إنشاء كشف استلام للمحدد
                     </Button>
                 </CardContent>
             </Card>
         </div>
+
+         <Dialog open={showCreateSlipDialog} onOpenChange={setShowCreateSlipDialog}>
+            <DialogContent>
+                <DialogHeader><DialogTitle>تأكيد إنشاء كشف استلام</DialogTitle></DialogHeader>
+                <DialogDescription>
+                   سيتم إنشاء كشف استلام للمرتجعات المحددة ({selectedOrderIds.length} طلبات) وتغيير حالتها إلى "مرجع للفرع". هل أنت متأكد؟
+                </DialogDescription>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowCreateSlipDialog(false)}>إلغاء</Button>
+                    <Button onClick={handleCreateSlip}>نعم، إنشاء الكشف</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+        
+        <Dialog open={!!currentSlipDetails} onOpenChange={() => setCurrentSlipDetails(null)}>
+            <DialogContent className="max-w-2xl">
+                 <DialogHeader><DialogTitle>تفاصيل كشف الاستلام {currentSlipDetails?.id}</DialogTitle></DialogHeader>
+                 <div className="max-h-[60vh] overflow-y-auto">
+                    <Table>
+                        <TableHeader><TableRow><TableHead>رقم الطلب</TableHead><TableHead>التاجر</TableHead><TableHead>المستلم</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                            {currentSlipDetails?.orders.map(o => (
+                                <TableRow key={o.id}>
+                                    <TableCell>{o.id}</TableCell>
+                                    <TableCell>{o.merchant}</TableCell>
+                                    <TableCell>{o.recipient}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                 </div>
+            </DialogContent>
+        </Dialog>
+
     </div>
   );
 };
