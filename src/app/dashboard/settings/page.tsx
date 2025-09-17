@@ -21,6 +21,7 @@ const settingsItems: {
   { href: '/dashboard/settings/areas', iconName: 'MapPin', title: 'المناطق', description: 'تحديد المدن والمناطق لعمليات التوصيل.' },
   { href: '/dashboard/settings/pricing', iconName: 'DollarSign', title: 'قوائم الأسعار', description: 'إنشاء وتعديل قوائم أسعار التوصيل المختلفة.' },
   { href: '/dashboard/settings/statuses', iconName: 'ListChecks', title: 'حالات التوصيل', description: 'تخصيص مراحل وحالات دورة حياة الطلب.' },
+  { href: '/dashboard/settings/returns', iconName: 'Undo2', title: 'إعدادات المرتجعات', description: 'أتمتة وتخصيص عمليات إدارة المرتجعات.' },
   { href: '/dashboard/settings/notifications', iconName: 'Bell', title: 'الإشعارات', description: 'التحكم في قوالب الرسائل والإشعارات التلقائية.' },
   { href: '/dashboard/settings/integrations', iconName: 'Share2', title: 'التكاملات', description: 'ربط النظام مع خدمات وتطبيقات خارجية.' },
   { href: '/dashboard/settings/ai-agent', iconName: 'Bot', title: 'وكيل خدمة العملاء الذكي', description: 'توليد ردود احترافية لاستفسارات العملاء.' },
