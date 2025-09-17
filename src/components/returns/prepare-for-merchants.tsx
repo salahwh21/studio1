@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
@@ -99,14 +100,19 @@ export const PrepareForMerchants = () => {
                         <ScrollArea className="h-[60vh]">
                             <div className="space-y-2">
                                 {merchantData.map(({name, user, orderCount}) => (
-                                    <button key={name} onClick={() => setSelectedMerchant(name)} className={cn("w-full text-right p-3 rounded-lg flex items-center justify-between transition-colors", selectedMerchant === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}>
-                                        <div className="flex items-center gap-3 flex-1">
-                                            <Avatar className="h-9 w-9">
-                                                <AvatarImage src={user?.avatar} />
-                                                <AvatarFallback>{name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <span className="font-medium text-sm flex-1">{name}</span>
-                                        </div>
+                                    <button
+                                        key={name}
+                                        onClick={() => setSelectedMerchant(name)}
+                                        className={cn(
+                                            "w-full p-3 rounded-lg flex items-center gap-3 transition-colors",
+                                            selectedMerchant === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                                        )}
+                                    >
+                                        <Avatar className="h-9 w-9">
+                                            <AvatarImage src={user?.avatar} />
+                                            <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <span className="font-medium text-sm flex-1 text-right">{name}</span>
                                         <Badge variant={selectedMerchant === name ? 'secondary' : 'default'}>{orderCount}</Badge>
                                     </button>
                                 ))}

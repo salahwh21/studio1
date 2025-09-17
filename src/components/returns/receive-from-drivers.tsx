@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
@@ -140,14 +141,19 @@ export const ReceiveFromDrivers = () => {
                     <ScrollArea className="h-[60vh]">
                         <div className="space-y-2">
                             {driverData.map(({name, user, orderCount}) => (
-                                <button key={name} onClick={() => setSelectedDriver(name)} className={cn("w-full text-right p-3 rounded-lg flex items-center justify-between transition-colors", selectedDriver === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}>
-                                    <div className="flex items-center gap-3 flex-1">
-                                        <Avatar className="h-9 w-9">
-                                            <AvatarImage src={user?.avatar} />
-                                            <AvatarFallback>{name.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <span className="font-medium text-sm flex-1">{name}</span>
-                                    </div>
+                                <button
+                                    key={name}
+                                    onClick={() => setSelectedDriver(name)}
+                                    className={cn(
+                                        "w-full p-3 rounded-lg flex items-center gap-3 transition-colors",
+                                        selectedDriver === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                                    )}
+                                >
+                                    <Avatar className="h-9 w-9">
+                                        <AvatarImage src={user?.avatar} />
+                                        <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="font-medium text-sm flex-1 text-right">{name}</span>
                                     <Badge variant={selectedDriver === name ? 'secondary' : 'default'}>{orderCount}</Badge>
                                 </button>
                             ))}
@@ -162,7 +168,7 @@ export const ReceiveFromDrivers = () => {
         <div className="lg:col-span-9 xl:col-span-10">
             <Card>
                 <CardHeader>
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex justify-between items-center">
                         <div>
                             <CardTitle>مرتجعات السائق: {selectedDriver || 'لم يتم الاختيار'}</CardTitle>
                              <CardDescription>امسح باركود الشحنة لتحديدها أو حددها يدوياً من الجدول.</CardDescription>
