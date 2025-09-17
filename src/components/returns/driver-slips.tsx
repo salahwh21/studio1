@@ -41,7 +41,6 @@ export const DriverSlips = () => {
         const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
         
         try {
-            // This is a professional-looking Arabic font that supports RTL text.
             doc.addFont('https://raw.githack.com/MrRio/jsPDF/master/test/reference/Amiri-Regular.ttf', 'Amiri', 'normal');
             doc.setFont('Amiri');
         } catch (e) {
@@ -50,9 +49,16 @@ export const DriverSlips = () => {
 
         const pageWidth = doc.internal.pageSize.getWidth();
         const margin = 10;
+
+        const logo = settings.login.reportsLogo || settings.login.headerLogo;
+        if (logo) {
+            try {
+               doc.addImage(logo, 'PNG', margin, margin, 40, 20, undefined, 'FAST');
+            } catch(e) { console.error("Error adding logo to PDF:", e); }
+        }
         
         doc.setFontSize(20);
-        doc.text('كشف استلام مرتجعات من السائق', pageWidth / 2, margin + 10, { align: 'center' });
+        doc.text('كشف استلام مرتجعات من السائق', pageWidth / 2, margin + 15, { align: 'center' });
 
         doc.setFontSize(12);
         doc.text(`السائق: ${slip.driverName}`, pageWidth - margin, margin + 25, { align: 'right' });
@@ -72,9 +78,9 @@ export const DriverSlips = () => {
           startY: margin + 45,
           head: head,
           body: body,
-          theme: 'grid', // Use 'grid' theme for visible borders
+          theme: 'grid',
           styles: { font: 'Amiri', halign: 'right', cellPadding: 2, lineWidth: 0.1, lineColor: [44, 62, 80] },
-          headStyles: { fillColor: [44, 62, 80], halign: 'center', textColor: 255 },
+          headStyles: { fillColor: [44, 62, 80], halign: 'center', textColor: 255, fontStyle: 'bold' },
           columnStyles: {
               0: { halign: 'center' },
               1: { halign: 'center' },

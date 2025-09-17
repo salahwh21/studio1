@@ -71,20 +71,20 @@ export const MerchantSlips = () => {
         const pageWidth = doc.internal.pageSize.getWidth();
         const margin = 10;
         
+        const logo = settings.login.reportsLogo || settings.login.headerLogo;
+        if (logo) {
+            try {
+               doc.addImage(logo, 'PNG', margin, margin, 40, 20, undefined, 'FAST');
+            } catch(e) { console.error("Error adding logo to PDF:", e); }
+        }
+
         doc.setFontSize(20);
-        doc.text('كشف تسليم مرتجعات للتاجر', pageWidth / 2, margin + 10, { align: 'center' });
+        doc.text('كشف تسليم مرتجعات للتاجر', pageWidth / 2, margin + 15, { align: 'center' });
 
         doc.setFontSize(12);
         doc.text(`التاجر: ${slip.merchant}`, pageWidth - margin, margin + 25, { align: 'right' });
         doc.text(`التاريخ: ${new Date(slip.date).toLocaleDateString('ar-JO')}`, pageWidth - margin, margin + 32, { align: 'right' });
         doc.text(`رقم الكشف: ${slip.id}`, pageWidth - margin, margin + 39, { align: 'right' });
-
-        const logo = settings.login.reportsLogo || settings.login.headerLogo;
-        if (logo) {
-            try {
-               doc.addImage(logo, 'PNG', margin, margin + 20, 40, 20, undefined, 'FAST');
-            } catch(e) { console.error("Error adding logo to PDF:", e); }
-        }
 
         const head = [['#', 'رقم الطلب', 'اسم المستلم', 'العنوان', 'سبب الارجاع']];
         const body = slip.orders.map((order, index) => [
@@ -101,7 +101,7 @@ export const MerchantSlips = () => {
           body: body,
           theme: 'grid',
           styles: { font: 'Amiri', halign: 'right', cellPadding: 2, lineWidth: 0.1, lineColor: [44, 62, 80] },
-          headStyles: { fillColor: [44, 62, 80], halign: 'center', textColor: 255 },
+          headStyles: { fillColor: [44, 62, 80], halign: 'center', textColor: 255, fontStyle: 'bold' },
           columnStyles: {
             0: { halign: 'center' },
             1: { halign: 'center' },
