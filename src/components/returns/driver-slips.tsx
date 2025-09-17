@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -41,7 +42,6 @@ export const DriverSlips = () => {
         const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
         
         try {
-            // This is a common way to add Arabic fonts. You might need to host the font file or use a CDN.
             doc.addFont('https://raw.githack.com/MrRio/jsPDF/master/test/reference/Amiri-Regular.ttf', 'Amiri', 'normal');
             doc.setFont('Amiri');
         } catch (e) {
@@ -51,7 +51,6 @@ export const DriverSlips = () => {
         const pageWidth = doc.internal.pageSize.getWidth();
         const margin = 10;
         
-        // --- Header ---
         doc.setFontSize(20);
         doc.text('كشف استلام مرتجعات من السائق', pageWidth / 2, margin + 10, { align: 'center' });
 
@@ -59,16 +58,7 @@ export const DriverSlips = () => {
         doc.text(`السائق: ${slip.driverName}`, pageWidth - margin, margin + 25, { align: 'right' });
         doc.text(`التاريخ: ${new Date(slip.date).toLocaleDateString('ar-JO')}`, pageWidth - margin, margin + 32, { align: 'right' });
         doc.text(`رقم الكشف: ${slip.id}`, pageWidth - margin, margin + 39, { align: 'right' });
-
-        const logo = settings.login.reportsLogo || settings.login.headerLogo;
-        if (logo) {
-            try {
-               doc.addImage(logo, 'PNG', margin, margin + 20, 40, 20, undefined, 'FAST');
-            } catch(e) { console.error("Error adding logo to PDF:", e); }
-        }
-
-
-        // --- Table ---
+        
         const head = [['سبب الارجاع', 'العنوان', 'اسم المستلم', 'رقم الطلب', '#']];
         const body = slip.orders.map((order, index) => [
             order.previousStatus || order.status,
@@ -92,14 +82,12 @@ export const DriverSlips = () => {
               4: { halign: 'center' },
           },
           didDrawPage: (data) => {
-            // --- Footer ---
-            doc.setFontSize(10);
             const footerY = doc.internal.pageSize.getHeight() - margin;
+            doc.setFontSize(10);
             doc.text(`توقيع المستلم: ............................`, pageWidth - margin, footerY, { align: 'right' });
             doc.text(`صفحة ${data.pageNumber}`, margin, footerY, { align: 'left' });
           }
         });
-
 
         doc.save(`DriverSlip-${slip.id}.pdf`);
     };
@@ -180,3 +168,5 @@ export const DriverSlips = () => {
     </div>
   );
 };
+
+    

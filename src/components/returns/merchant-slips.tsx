@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
@@ -60,8 +61,7 @@ export const MerchantSlips = () => {
 
     const printSlip = async (slip: MerchantSlip) => {
         const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-        const merchantUser = users.find(u => u.storeName === slip.merchant);
-
+        
         try {
             doc.addFont('https://raw.githack.com/MrRio/jsPDF/master/test/reference/Amiri-Regular.ttf', 'Amiri', 'normal');
             doc.setFont('Amiri');
@@ -72,7 +72,6 @@ export const MerchantSlips = () => {
         const pageWidth = doc.internal.pageSize.getWidth();
         const margin = 10;
         
-        // --- Header ---
         doc.setFontSize(20);
         doc.text('كشف تسليم مرتجعات للتاجر', pageWidth / 2, margin + 10, { align: 'center' });
 
@@ -88,7 +87,6 @@ export const MerchantSlips = () => {
             } catch(e) { console.error("Error adding logo to PDF:", e); }
         }
 
-        // --- Table ---
         const head = [['سبب الارجاع', 'العنوان', 'اسم المستلم', 'رقم الطلب', '#']];
         const body = slip.orders.map((order, index) => [
             order.previousStatus || order.status,
@@ -112,7 +110,6 @@ export const MerchantSlips = () => {
             4: { halign: 'center' },
           },
           didDrawPage: (data) => {
-            // --- Footer ---
             doc.setFontSize(10);
             const footerY = doc.internal.pageSize.getHeight() - margin;
             doc.text(`توقيع المستلم: ............................`, pageWidth - margin, footerY, { align: 'right' });
@@ -181,3 +178,5 @@ export const MerchantSlips = () => {
         </div>
     );
 };
+
+    
