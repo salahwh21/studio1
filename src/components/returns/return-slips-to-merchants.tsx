@@ -13,8 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { parseISO, isWithinInterval } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 
 
 const RETURNABLE_STATUSES = ['راجع', 'ملغي', 'رفض ودفع أجور', 'رفض ولم يدفع أجور', 'تبديل'];
@@ -119,16 +117,26 @@ export const ReturnSlipsToMerchants = () => {
         
         const doc = new jsPDF();
         
-        doc.setRTL(true);
-        doc.text(`Return Slip: ${slip.id}`, 200, 20, { align: 'right' });
-        doc.text(`Merchant: ${slip.merchant}`, 200, 30, { align: 'right' });
-        doc.text(`Date: ${slip.date}`, 200, 40, { align: 'right' });
+        // Add Amiri font - this is a simplified way, a real app might host the font file
+        // For this example, we rely on a commonly available font or a pre-configured setup.
+        // The key is setting the font for the document and the table.
+        try {
+            // In a real app, you would load a TTF file, but for now we assume a font exists.
+            doc.addFont('https://raw.githack.com/MrRio/jsPDF/master/test/reference/Amiri-Regular.ttf', 'Amiri', 'normal');
+            doc.setFont('Amiri');
+        } catch (e) {
+            console.warn("Could not load Amiri font for PDF. RTL text might not render correctly.");
+        }
+
+        doc.text(`كشف مرتجع: ${slip.id}`, 200, 20, { align: 'right' });
+        doc.text(`التاجر: ${slip.merchant}`, 200, 30, { align: 'right' });
+        doc.text(`التاريخ: ${slip.date}`, 200, 40, { align: 'right' });
         
         autoTable(doc, {
           startY: 50,
-          head: [['Status', 'Recipient', 'Order ID']],
+          head: [['الحالة', 'المستلم', 'رقم الطلب']],
           body: slip.orders.map(o => [o.status, o.recipient, o.id]),
-          styles: { halign: 'right' },
+          styles: { halign: 'right', font: 'Amiri' },
           headStyles: { fillColor: [41, 128, 185], halign: 'center' },
         });
         doc.save(`ReturnSlip-${slip.id}.pdf`);
