@@ -141,7 +141,7 @@ export const PrepareForMerchants = () => {
                                     <TableHead>رقم الطلب</TableHead>
                                     <TableHead>المستلم</TableHead>
                                     <TableHead>تاريخ الطلب</TableHead>
-                                    <TableHead>الحالة الحالية</TableHead>
+                                    <TableHead>الحالة الأصلية</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -156,7 +156,7 @@ export const PrepareForMerchants = () => {
                                             <TableCell><Link href={`/dashboard/orders/${item.id}`} className="font-mono text-primary hover:underline">{item.id}</Link></TableCell>
                                             <TableCell>{item.recipient}</TableCell>
                                             <TableCell>{item.date}</TableCell>
-                                            <TableCell><Badge variant="secondary">{item.status}</Badge></TableCell>
+                                            <TableCell><Badge variant="outline">{item.previousStatus}</Badge></TableCell>
                                         </TableRow>
                                     ))
                                 )}
