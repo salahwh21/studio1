@@ -189,13 +189,13 @@ export const ReceiveFromDrivers = () => {
                      <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-12"><Checkbox onCheckedChange={(checked) => handleSelectAllForDriver(selectedDriver || '', !!checked)} /></TableHead>
-                                <TableHead>رقم الطلب</TableHead>
-                                <TableHead>المستلم</TableHead>
-                                <TableHead>التاجر</TableHead>
-                                <TableHead>تاريخ الطلب</TableHead>
-                                <TableHead>الحالة الأصلية</TableHead>
-                                <TableHead>سبب الإرجاع</TableHead>
+                                <TableHead className="w-12 text-center whitespace-nowrap"><Checkbox onCheckedChange={(checked) => handleSelectAllForDriver(selectedDriver || '', !!checked)} /></TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">رقم الطلب</TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">المستلم</TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">التاجر</TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">تاريخ الطلب</TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">الحالة الأصلية</TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">سبب الإرجاع</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -205,13 +205,13 @@ export const ReceiveFromDrivers = () => {
                                 <TableRow><TableCell colSpan={7} className="h-48 text-center text-muted-foreground">لا توجد مرتجعات لهذا السائق.</TableCell></TableRow>
                             ) : selectedDriverOrders.map(o => (
                                 <TableRow key={o.id} data-state={selectedOrderIds.includes(o.id) && "selected"} className="bg-background">
-                                    <TableCell><Checkbox checked={selectedOrderIds.includes(o.id)} onCheckedChange={(checked) => setSelectedOrderIds(prev => checked ? [...prev, o.id] : prev.filter(id => id !== o.id))} /></TableCell>
-                                    <TableCell><Link href={`/dashboard/orders/${o.id}`} className="font-mono text-primary hover:underline">{o.id}</Link></TableCell>
-                                    <TableCell>{o.recipient}</TableCell>
-                                    <TableCell>{o.merchant}</TableCell>
-                                    <TableCell>{o.date}</TableCell>
-                                    <TableCell><Badge variant={getStatusBadgeVariant(o.status)}>{o.status}</Badge></TableCell>
-                                    <TableCell className="text-muted-foreground text-xs">{o.notes}</TableCell>
+                                    <TableCell className="text-center whitespace-nowrap"><Checkbox checked={selectedOrderIds.includes(o.id)} onCheckedChange={(checked) => setSelectedOrderIds(prev => checked ? [...prev, o.id] : prev.filter(id => id !== o.id))} /></TableCell>
+                                    <TableCell className="border-l text-center whitespace-nowrap"><Link href={`/dashboard/orders/${o.id}`} className="font-mono text-primary hover:underline">{o.id}</Link></TableCell>
+                                    <TableCell className="border-l text-center whitespace-nowrap">{o.recipient}</TableCell>
+                                    <TableCell className="border-l text-center whitespace-nowrap">{o.merchant}</TableCell>
+                                    <TableCell className="border-l text-center whitespace-nowrap">{o.date}</TableCell>
+                                    <TableCell className="border-l text-center whitespace-nowrap"><Badge variant={getStatusBadgeVariant(o.status)}>{o.status}</Badge></TableCell>
+                                    <TableCell className="border-l text-center whitespace-nowrap text-muted-foreground text-xs">{o.notes}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>

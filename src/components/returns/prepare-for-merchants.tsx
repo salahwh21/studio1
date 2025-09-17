@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
@@ -139,12 +138,12 @@ export const PrepareForMerchants = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-12"><Checkbox checked={areAllSelected} onCheckedChange={handleSelectAll} /></TableHead>
-                                    <TableHead>رقم الطلب</TableHead>
-                                    <TableHead>المستلم</TableHead>
-                                    <TableHead>تاريخ الإرجاع</TableHead>
-                                    <TableHead>السائق الأصلي</TableHead>
-                                    <TableHead>سبب الإرجاع</TableHead>
+                                    <TableHead className="w-12 text-center whitespace-nowrap"><Checkbox checked={areAllSelected} onCheckedChange={handleSelectAll} /></TableHead>
+                                    <TableHead className="border-l text-center whitespace-nowrap">رقم الطلب</TableHead>
+                                    <TableHead className="border-l text-center whitespace-nowrap">المستلم</TableHead>
+                                    <TableHead className="border-l text-center whitespace-nowrap">تاريخ الإرجاع</TableHead>
+                                    <TableHead className="border-l text-center whitespace-nowrap">السائق الأصلي</TableHead>
+                                    <TableHead className="border-l text-center whitespace-nowrap">سبب الإرجاع</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -155,12 +154,12 @@ export const PrepareForMerchants = () => {
                                 ) : (
                                     selectedMerchantOrders.map((item) => (
                                         <TableRow key={item.id} data-state={selectedReturns.includes(item.id) && "selected"}>
-                                            <TableCell><Checkbox checked={selectedReturns.includes(item.id)} onCheckedChange={(checked) => setSelectedReturns(prev => checked ? [...prev, item.id] : prev.filter(id => id !== item.id))} /></TableCell>
-                                            <TableCell><Link href={`/dashboard/orders/${item.id}`} className="font-mono text-primary hover:underline">{item.id}</Link></TableCell>
-                                            <TableCell>{item.recipient}</TableCell>
-                                            <TableCell>{item.date}</TableCell>
-                                            <TableCell>{item.driver}</TableCell>
-                                            <TableCell><Badge variant="outline">{item.previousStatus}</Badge></TableCell>
+                                            <TableCell className="text-center whitespace-nowrap"><Checkbox checked={selectedReturns.includes(item.id)} onCheckedChange={(checked) => setSelectedReturns(prev => checked ? [...prev, item.id] : prev.filter(id => id !== item.id))} /></TableCell>
+                                            <TableCell className="border-l text-center whitespace-nowrap"><Link href={`/dashboard/orders/${item.id}`} className="font-mono text-primary hover:underline">{item.id}</Link></TableCell>
+                                            <TableCell className="border-l text-center whitespace-nowrap">{item.recipient}</TableCell>
+                                            <TableCell className="border-l text-center whitespace-nowrap">{item.date}</TableCell>
+                                            <TableCell className="border-l text-center whitespace-nowrap">{item.driver}</TableCell>
+                                            <TableCell className="border-l text-center whitespace-nowrap"><Badge variant="outline">{item.previousStatus}</Badge></TableCell>
                                         </TableRow>
                                     ))
                                 )}
