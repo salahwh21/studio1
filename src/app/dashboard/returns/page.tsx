@@ -24,21 +24,21 @@ export default function ReturnsPage() {
 
       <Tabs defaultValue="receive-from-drivers" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="receive-from-drivers">
-            <Icon name="Truck" className="ml-2 h-4 w-4" />
-            مهمة استلام من السائقين
+           <TabsTrigger value="merchant-slips">
+            <Icon name="ClipboardList" className="ml-2 h-4 w-4" />
+            كشوفات الإرجاع للتجار
+          </TabsTrigger>
+           <TabsTrigger value="prepare-for-merchants">
+            <Icon name="Package" className="ml-2 h-4 w-4" />
+            طلبات الإرجاع للتجار
           </TabsTrigger>
           <TabsTrigger value="driver-slips">
             <Icon name="History" className="ml-2 h-4 w-4" />
             كشوفات استلام السائقين
           </TabsTrigger>
-          <TabsTrigger value="prepare-for-merchants">
-            <Icon name="Package" className="ml-2 h-4 w-4" />
-            طلبات الإرجاع للتجار
-          </TabsTrigger>
-          <TabsTrigger value="merchant-slips">
-            <Icon name="ClipboardList" className="ml-2 h-4 w-4" />
-            كشوفات الإرجاع للتجار
+          <TabsTrigger value="receive-from-drivers">
+            <Icon name="Truck" className="ml-2 h-4 w-4" />
+            مهمة استلام من السائقين
           </TabsTrigger>
         </TabsList>
         <TabsContent value="receive-from-drivers" className="mt-6">
