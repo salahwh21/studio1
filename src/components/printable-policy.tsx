@@ -170,7 +170,7 @@ export const PrintablePolicy = forwardRef(({ orders, template }: PrintablePolicy
                 if (i > 0) {
                     pdf.addPage([paperDimensions.width, paperDimensions.height], paperDimensions.width > paperDimensions.height ? 'landscape' : 'portrait');
                 }
-                pdf.addImage(imgData, 0, 0, paperDimensions.width, paperDimensions.height);
+                pdf.addImage(imgData, 'PNG', 0, 0, paperDimensions.width, paperDimensions.height);
             } catch (e) {
                 console.error("Error generating PDF page:", e);
                 toast({ variant: 'destructive', title: 'خطأ في الطباعة', description: `حدث خطأ أثناء توليد الصفحة ${i+1}.` });
