@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import Icon from '@/components/icon';
+import { Switch } from '@/components/ui/switch';
 
 type AutomationRule = {
     id: string;
@@ -46,6 +47,10 @@ const AutomationEngine = () => {
         setRules(prev => prev.filter(r => r.id !== id));
     };
 
+    const handleRuleChange = (id: string, field: keyof AutomationRule, value: any) => {
+        setRules(prev => prev.map(rule => rule.id === id ? { ...rule, [field]: value } : rule));
+    }
+
     return (
         <Card className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
             <CardHeader>
@@ -59,7 +64,8 @@ const AutomationEngine = () => {
                             <TableHead className="w-1/4">إذا كان</TableHead>
                             <TableHead className="w-1/4">والشرط</TableHead>
                             <TableHead className="w-1/4">إذن نفذ الإجراء</TableHead>
-                            <TableHead>إجراء</TableHead>
+                            <TableHead className="w-auto text-center">الحالة</TableHead>
+                            <TableHead className="w-auto text-center">حذف</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -95,7 +101,13 @@ const AutomationEngine = () => {
                                         </SelectContent>
                                     </Select>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="text-center">
+                                    <Switch
+                                        checked={rule.enabled}
+                                        onCheckedChange={(checked) => handleRuleChange(rule.id, 'enabled', checked)}
+                                    />
+                                </TableCell>
+                                <TableCell className="text-center">
                                     <Button variant="ghost" size="icon" onClick={() => handleRemoveRule(rule.id)}><Icon name="Trash2" className="h-4 w-4 text-destructive"/></Button>
                                 </TableCell>
                             </TableRow>
