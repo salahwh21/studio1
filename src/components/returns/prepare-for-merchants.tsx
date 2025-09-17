@@ -106,13 +106,13 @@ export const PrepareForMerchants = () => {
                                             selectedMerchant === name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                                         )}
                                     >
-                                       <div className="flex items-center gap-3 w-full">
+                                       <div className="flex items-center justify-end gap-3 w-full">
+                                            <Badge variant={selectedMerchant === name ? 'secondary' : 'default'} className="w-8 h-6 justify-center">{orderCount}</Badge>
+                                            <span className="font-medium text-sm flex-1 text-right">{name}</span>
                                             <Avatar className="h-9 w-9">
                                                 <AvatarImage src={user?.avatar} />
                                                 <AvatarFallback>{name.charAt(0)}</AvatarFallback>
                                             </Avatar>
-                                            <span className="font-medium text-sm flex-1">{name}</span>
-                                            <Badge variant={selectedMerchant === name ? 'secondary' : 'default'} className="w-8 justify-center">{orderCount}</Badge>
                                         </div>
                                     </button>
                                 ))}
@@ -145,7 +145,7 @@ export const PrepareForMerchants = () => {
                                     <TableHead>رقم الطلب</TableHead>
                                     <TableHead>المستلم</TableHead>
                                     <TableHead>تاريخ الطلب الأصلي</TableHead>
-                                    <TableHead>الحالة الأصلية</TableHead>
+                                    <TableHead>سبب الإرجاع</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
