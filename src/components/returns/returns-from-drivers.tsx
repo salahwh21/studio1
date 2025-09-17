@@ -101,8 +101,8 @@ export const ReturnsFromDrivers = () => {
         <div className="lg:col-span-2">
             <Card>
                 <CardHeader>
-                    <CardTitle>قائمة المرتجعات لدى السائقين</CardTitle>
-                    <CardDescription>عرض واستلام الشحنات المرتجعة من كل سائق.</CardDescription>
+                    <CardTitle>قائمة المرتجعات المعلقة لدى السائقين</CardTitle>
+                    <CardDescription>هذا القسم مخصص لعرض واستلام الشحنات المرتجعة من كل سائق وتسجيلها في المستودع.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                      <Table>

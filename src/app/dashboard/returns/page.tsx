@@ -27,7 +27,7 @@ export default function ReturnsPage() {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="returns-from-drivers">
             <Icon name="Truck" className="ml-2 h-4 w-4" />
-            استلام من السائقين
+            استلام المرتجعات من السائقين
           </TabsTrigger>
           <TabsTrigger value="return-slips-to-merchants">
             <Icon name="FileText" className="ml-2 h-4 w-4" />
