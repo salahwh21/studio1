@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
@@ -87,26 +86,27 @@ export const MerchantSlips = () => {
             } catch(e) { console.error("Error adding logo to PDF:", e); }
         }
 
-        const head = [['سبب الارجاع', 'العنوان', 'اسم المستلم', 'رقم الطلب', '#']];
+        const head = [['#', 'رقم الطلب', 'اسم المستلم', 'العنوان', 'سبب الارجاع']];
         const body = slip.orders.map((order, index) => [
-            order.previousStatus || order.status,
-            order.address,
-            `${order.recipient}\n${order.phone || ''}`,
-            order.referenceNumber || order.id,
             index + 1,
+            order.referenceNumber || order.id,
+            `${order.recipient}\n${order.phone || ''}`,
+            order.address,
+            order.previousStatus || order.status,
         ]);
         
         autoTable(doc, {
           startY: margin + 45,
           head: head,
           body: body,
-          styles: { font: 'Amiri', halign: 'right', cellPadding: 2 },
-          headStyles: { fillColor: [44, 62, 80], halign: 'center' },
+          theme: 'grid',
+          styles: { font: 'Amiri', halign: 'right', cellPadding: 2, lineWidth: 0.1, lineColor: [44, 62, 80] },
+          headStyles: { fillColor: [44, 62, 80], halign: 'center', textColor: 255 },
           columnStyles: {
             0: { halign: 'center' },
-            1: { halign: 'right' },
+            1: { halign: 'center' },
             2: { halign: 'right' },
-            3: { halign: 'center' },
+            3: { halign: 'right' },
             4: { halign: 'center' },
           },
           didDrawPage: (data) => {
@@ -178,5 +178,3 @@ export const MerchantSlips = () => {
         </div>
     );
 };
-
-    

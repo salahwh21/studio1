@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -42,6 +41,7 @@ export const DriverSlips = () => {
         const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
         
         try {
+            // This is a professional-looking Arabic font that supports RTL text.
             doc.addFont('https://raw.githack.com/MrRio/jsPDF/master/test/reference/Amiri-Regular.ttf', 'Amiri', 'normal');
             doc.setFont('Amiri');
         } catch (e) {
@@ -59,26 +59,27 @@ export const DriverSlips = () => {
         doc.text(`التاريخ: ${new Date(slip.date).toLocaleDateString('ar-JO')}`, pageWidth - margin, margin + 32, { align: 'right' });
         doc.text(`رقم الكشف: ${slip.id}`, pageWidth - margin, margin + 39, { align: 'right' });
         
-        const head = [['سبب الارجاع', 'العنوان', 'اسم المستلم', 'رقم الطلب', '#']];
+        const head = [['#', 'رقم الطلب', 'اسم المستلم', 'العنوان', 'سبب الارجاع']];
         const body = slip.orders.map((order, index) => [
-            order.previousStatus || order.status,
-            order.address,
-            `${order.recipient}\n${order.phone || ''}`,
-            order.referenceNumber || order.id,
             index + 1,
+            order.referenceNumber || order.id,
+            `${order.recipient}\n${order.phone || ''}`,
+            order.address,
+            order.previousStatus || order.status,
         ]);
         
         autoTable(doc, {
           startY: margin + 45,
           head: head,
           body: body,
-          styles: { font: 'Amiri', halign: 'right', cellPadding: 2 },
-          headStyles: { fillColor: [44, 62, 80], halign: 'center' },
+          theme: 'grid', // Use 'grid' theme for visible borders
+          styles: { font: 'Amiri', halign: 'right', cellPadding: 2, lineWidth: 0.1, lineColor: [44, 62, 80] },
+          headStyles: { fillColor: [44, 62, 80], halign: 'center', textColor: 255 },
           columnStyles: {
               0: { halign: 'center' },
-              1: { halign: 'right' },
+              1: { halign: 'center' },
               2: { halign: 'right' },
-              3: { halign: 'center' },
+              3: { halign: 'right' },
               4: { halign: 'center' },
           },
           didDrawPage: (data) => {
@@ -168,5 +169,3 @@ export const DriverSlips = () => {
     </div>
   );
 };
-
-    
