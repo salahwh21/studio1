@@ -89,7 +89,7 @@ export const PrepareForMerchants = () => {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start" dir="rtl">
             {/* Left Panel - Merchants List */}
-            <div className="lg:col-span-4 xl:col-span-3">
+            <div className="lg:col-span-3 xl:col-span-2">
                 <Card>
                     <CardHeader>
                         <CardTitle>التجار</CardTitle>
@@ -118,7 +118,7 @@ export const PrepareForMerchants = () => {
             </div>
             
              {/* Right Panel - Orders Table */}
-             <div className="lg:col-span-8 xl:col-span-9">
+             <div className="lg:col-span-9 xl:col-span-10">
                 <Card>
                     <CardHeader>
                         <div className="flex justify-between items-center">

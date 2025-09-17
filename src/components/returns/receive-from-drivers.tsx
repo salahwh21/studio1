@@ -130,7 +130,7 @@ export const ReceiveFromDrivers = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start" dir="rtl">
         {/* Left Panel - Drivers List */}
-        <div className="lg:col-span-4 xl:col-span-3">
+        <div className="lg:col-span-3 xl:col-span-2">
              <Card>
                 <CardHeader>
                     <CardTitle>السائقين</CardTitle>
@@ -159,7 +159,7 @@ export const ReceiveFromDrivers = () => {
         </div>
 
         {/* Right Panel - Orders Table */}
-        <div className="lg:col-span-8 xl:col-span-9">
+        <div className="lg:col-span-9 xl:col-span-10">
             <Card>
                 <CardHeader>
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
