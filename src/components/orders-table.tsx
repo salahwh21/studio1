@@ -72,6 +72,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import dynamic from 'next/dynamic';
 import Papa from 'papaparse';
+import ExcelJS from 'exceljs';
 
 
 
@@ -357,8 +358,34 @@ const ExportDataDialog = ({
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        } else if (fileFormat === 'excel') {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Orders');
+            worksheet.addRow(headers);
+            worksheet.addRows(dataRows);
+
+            worksheet.columns.forEach(column => {
+                let maxLen = 0;
+                column.eachCell({ includeEmpty: true }, cell => {
+                    const columnLength = cell.value ? cell.value.toString().length : 10;
+                    if (columnLength > maxLen) {
+                        maxLen = columnLength;
+                    }
+                });
+                column.width = maxLen < 10 ? 10 : maxLen + 2;
+            });
+
+            workbook.xlsx.writeBuffer().then((buffer) => {
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.setAttribute('download', 'orders_export.xlsx');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
         } else {
-             toast({ variant: 'destructive', title: 'غير متوفر', description: 'تصدير Excel غير متوفر حاليًا.' });
+             toast({ variant: 'destructive', title: 'غير متوفر', description: 'صيغة الملف المحددة غير مدعومة حاليًا.' });
         }
     }
   
@@ -482,11 +509,14 @@ const OrdersTableComponent = () => {
             const userTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
             const uniqueTemplates = [...readyTemplates];
             const readyIds = new Set(readyTemplates.map(t => t.id));
+            
             userTemplates.forEach((t: SavedTemplate) => {
-                if (!readyIds.has(t.id)) {
+                const templateExists = uniqueTemplates.some(ut => ut.id === t.id);
+                if (!templateExists) {
                     uniqueTemplates.push(t);
                 }
             });
+
             setAvailableTemplates(uniqueTemplates);
 
             const savedColumnSettings = localStorage.getItem(COLUMN_SETTINGS_KEY);
@@ -499,6 +529,7 @@ const OrdersTableComponent = () => {
             }
 
         } catch (e) {
+            console.error("Error loading settings from localStorage:", e);
             setAvailableTemplates(readyTemplates);
         }
     }, []);
@@ -1352,6 +1383,7 @@ export function OrdersTable() {
 
 
     
+
 
 
 
