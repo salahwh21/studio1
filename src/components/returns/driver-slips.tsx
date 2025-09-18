@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -11,9 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { parseISO, isWithinInterval } from 'date-fns';
 import Icon from '@/components/icon';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import 'jspdf-autotable';
 import { useSettings } from '@/contexts/SettingsContext';
-import PrintableSlip from './printable-slip';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
@@ -25,8 +24,6 @@ export const DriverSlips = () => {
   const { settings } = useSettings();
   const { toast } = useToast();
   const [currentSlipDetails, setCurrentSlipDetails] = useState<DriverSlip | null>(null);
-  const [slipsToPrint, setSlipsToPrint] = useState<DriverSlip[]>([]);
-  const printRef = useRef<HTMLDivElement>(null);
   const [selectedSlips, setSelectedSlips] = useState<string[]>([]);
 
   const [filterDriver, setFilterDriver] = useState<string | null>(null);
@@ -49,31 +46,59 @@ export const DriverSlips = () => {
   
     const printSlips = async (slips: DriverSlip[]) => {
         if (slips.length === 0) return;
-        setSlipsToPrint(slips);
 
         toast({ title: "جاري تجهيز الملف...", description: `سيتم طباعة ${slips.length} كشوفات.` });
 
-        setTimeout(async () => {
-            const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-            const elements = printRef.current?.children;
-            if (!elements) {
-                 toast({ variant: 'destructive', title: 'خطأ', description: 'لم يتم العثور على محتوى للطباعة.' });
-                setSlipsToPrint([]);
-                return;
+        const doc = new jsPDF();
+
+        // This is a placeholder for a base64 encoded font that supports Arabic.
+        // In a real scenario, you would fetch or have this font available.
+        // For demonstration, we'll proceed without it, which might cause Arabic text rendering issues.
+        // doc.addFileToVFS('Tajawal-Regular.ttf', '...');
+        // doc.addFont('Tajawal-Regular.ttf', 'Tajawal', 'normal');
+        // doc.setFont('Tajawal');
+
+        for (let i = 0; i < slips.length; i++) {
+            const slip = slips[i];
+            if (i > 0) doc.addPage();
+            
+            doc.setR2L(true); // Enable Right-to-Left text direction
+
+            // Add Logo if available
+            const logoSrc = settings.login.reportsLogo || settings.login.headerLogo;
+            if (logoSrc) {
+                try {
+                    const img = new Image();
+                    img.src = logoSrc;
+                    await new Promise(resolve => img.onload = resolve);
+                    doc.addImage(img, 'PNG', 150, 10, 50, 20);
+                } catch(e) { console.error("Could not add logo to PDF", e); }
             }
 
-            for (let i = 0; i < elements.length; i++) {
-                const element = elements[i] as HTMLElement;
-                const canvas = await html2canvas(element, { scale: 2 });
-                const imgData = canvas.toDataURL('image/png');
-                
-                if (i > 0) pdf.addPage();
-                pdf.addImage(imgData, 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
-            }
+            doc.setFontSize(18);
+            doc.text("كشف استلام مرتجعات من السائق", 200, 20, { align: 'right' });
             
-            pdf.save(`DriverSlips.pdf`);
-            setSlipsToPrint([]);
-        }, 500);
+            doc.setFontSize(12);
+            doc.text(`اسم السائق: ${slip.driverName}`, 200, 40, { align: 'right' });
+            doc.text(`رقم الكشف: ${slip.id}`, 200, 48, { align: 'right' });
+            doc.text(`التاريخ: ${slip.date}`, 200, 56, { align: 'right' });
+
+            (doc as any).autoTable({
+                startY: 65,
+                head: [['#', 'رقم الطلب', 'التاجر', 'المستلم']],
+                body: slip.orders.map((o, index) => [index + 1, o.id, o.merchant, o.recipient]),
+                theme: 'grid',
+                styles: { halign: 'center', font: 'Tajawal', direction: 'rtl' },
+                headStyles: { fillColor: [41, 128, 185], halign: 'center' },
+            });
+            
+            const finalY = (doc as any).lastAutoTable.finalY || 250;
+            doc.text(`الإجمالي: ${slip.itemCount} شحنة`, 200, finalY + 10, { align: 'right' });
+            doc.text('توقيع المستلم: ............................', 200, finalY + 20, { align: 'right' });
+            doc.text('توقيع المسلِّم: ............................', 80, finalY + 20, { align: 'right' });
+        }
+        
+        doc.save(`DriverSlips.pdf`);
     };
 
     const handleExport = () => {
@@ -83,13 +108,17 @@ export const DriverSlips = () => {
             return;
         }
 
-        const data = slipsToExport.map(slip => ({
-            'رقم الكشف': slip.id,
-            'اسم السائق': slip.driverName,
-            'التاريخ': slip.date,
-            'عدد الشحنات': slip.itemCount,
-            'أرقام الطلبات': slip.orders.map(o => o.id).join(', '),
-        }));
+        const data = slipsToExport.flatMap(slip => 
+            slip.orders.map(order => ({
+                'رقم الكشف': slip.id,
+                'اسم السائق': slip.driverName,
+                'تاريخ الكشف': slip.date,
+                'رقم الطلب': order.id,
+                'التاجر': order.merchant,
+                'المستلم': order.recipient,
+                'سبب الارجاع': order.previousStatus || order.status,
+            }))
+        );
 
         const csv = Papa.unparse(data);
         const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
@@ -161,7 +190,7 @@ export const DriverSlips = () => {
                           <TableRow><TableCell colSpan={6} className="h-24 text-center">لا توجد كشوفات تطابق الفلترة.</TableCell></TableRow>
                       ) : (
                           filteredSlips.map(slip => (
-                              <TableRow key={slip.id} data-state={selectedSlips.includes(slip.id) && "selected"}>
+                              <TableRow key={slip.id} data-state={selectedSlips.includes(slip.id) ? "selected" : "unselected"}>
                                   <TableCell className="border-l text-center"><Checkbox checked={selectedSlips.includes(slip.id)} onCheckedChange={(checked) => setSelectedSlips(p => checked ? [...p, slip.id] : p.filter(id => id !== slip.id))} /></TableCell>
                                   <TableCell className="font-mono border-l text-center whitespace-nowrap">{slip.id}</TableCell>
                                   <TableCell className="border-l text-center whitespace-nowrap">{slip.driverName}</TableCell>
@@ -198,17 +227,6 @@ export const DriverSlips = () => {
                </div>
           </DialogContent>
       </Dialog>
-
-      {/* Hidden div for printing */}
-      <div className="hidden">
-        {slipsToPrint.length > 0 && (
-            <div ref={printRef}>
-              {slipsToPrint.map(slip => (
-                <PrintableSlip key={slip.id} slip={slip} logoSrc={settings.login.reportsLogo || settings.login.headerLogo} />
-              ))}
-            </div>
-        )}
-      </div>
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo, useRef } from 'react';
 import { useOrdersStore, type Order } from '@/store/orders-store';
@@ -15,10 +14,9 @@ import { parseISO, isWithinInterval } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import 'jspdf-autotable';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useUsersStore } from '@/store/user-store';
-import PrintableSlip from './printable-slip';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Papa from 'papaparse';
@@ -32,8 +30,6 @@ export const MerchantSlips = () => {
 
     const [showDetailsDialog, setShowDetailsDialog] = useState(false);
     const [currentSlip, setCurrentSlip] = useState<MerchantSlip | null>(null);
-    const [slipsToPrint, setSlipsToPrint] = useState<MerchantSlip[]>([]);
-    const printRef = useRef<HTMLDivElement>(null);
     const [selectedSlips, setSelectedSlips] = useState<string[]>([]);
 
 
@@ -70,28 +66,50 @@ export const MerchantSlips = () => {
 
     const printSlips = async (slips: MerchantSlip[]) => {
         if (slips.length === 0) return;
-        setSlipsToPrint(slips);
 
         toast({ title: "جاري تجهيز الملف...", description: `سيتم طباعة ${slips.length} كشوفات.` });
 
-        setTimeout(async () => {
-            const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-            const elements = printRef.current?.children;
-            if (!elements) {
-                toast({ variant: 'destructive', title: 'خطأ', description: 'لم يتم العثور على محتوى للطباعة.' });
-                setSlipsToPrint([]);
-                return;
+        const doc = new jsPDF();
+        doc.setR2L(true);
+
+        for (let i = 0; i < slips.length; i++) {
+            const slip = slips[i];
+            if (i > 0) doc.addPage();
+            
+            const logoSrc = settings.login.reportsLogo || settings.login.headerLogo;
+            if (logoSrc) {
+                try {
+                    const img = new Image();
+                    img.src = logoSrc;
+                    await new Promise(resolve => img.onload = resolve);
+                    doc.addImage(img, 'PNG', 150, 10, 50, 20);
+                } catch(e) { console.error("Could not add logo to PDF", e); }
             }
-             for (let i = 0; i < elements.length; i++) {
-                const element = elements[i] as HTMLElement;
-                const canvas = await html2canvas(element, { scale: 2 });
-                const imgData = canvas.toDataURL('image/png');
-                if (i > 0) pdf.addPage();
-                pdf.addImage(imgData, 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
-            }
-            pdf.save(`MerchantSlips.pdf`);
-            setSlipsToPrint([]);
-        }, 500);
+
+            doc.setFontSize(18);
+            doc.text("كشف تسليم مرتجعات للتاجر", 200, 20, { align: 'right' });
+            
+            doc.setFontSize(12);
+            doc.text(`اسم التاجر: ${slip.merchant}`, 200, 40, { align: 'right' });
+            doc.text(`رقم الكشف: ${slip.id}`, 200, 48, { align: 'right' });
+            doc.text(`التاريخ: ${slip.date}`, 200, 56, { align: 'right' });
+
+            (doc as any).autoTable({
+                startY: 65,
+                head: [['#', 'رقم الطلب', 'المستلم', 'سبب الإرجاع']],
+                body: slip.orders.map((o, index) => [index + 1, o.id, o.recipient, o.previousStatus || o.status]),
+                theme: 'grid',
+                styles: { halign: 'center', font: 'Tajawal', direction: 'rtl' },
+                headStyles: { fillColor: [41, 128, 185], halign: 'center' },
+            });
+            
+            const finalY = (doc as any).lastAutoTable.finalY || 250;
+            doc.text(`الإجمالي: ${slip.items} شحنة`, 200, finalY + 10, { align: 'right' });
+            doc.text('توقيع المستلم: ............................', 200, finalY + 20, { align: 'right' });
+            doc.text('توقيع المسلِّم: ............................', 80, finalY + 20, { align: 'right' });
+        }
+        
+        doc.save(`MerchantSlips.pdf`);
     };
 
      const handleExport = () => {
@@ -101,14 +119,18 @@ export const MerchantSlips = () => {
             return;
         }
 
-        const data = slipsToExport.map(slip => ({
-            'رقم الكشف': slip.id,
-            'اسم التاجر': slip.merchant,
-            'تاريخ الإنشاء': slip.date,
-            'عدد الطلبات': slip.items,
-            'الحالة': slip.status,
-            'أرقام الطلبات': slip.orders.map(o => o.id).join(', '),
-        }));
+        const data = slipsToExport.flatMap(slip => 
+            slip.orders.map(order => ({
+                'رقم الكشف': slip.id,
+                'اسم التاجر': slip.merchant,
+                'تاريخ الإنشاء': slip.date,
+                'حالة الكشف': slip.status,
+                'رقم الطلب': order.id,
+                'المستلم الأصلي': order.recipient,
+                'تاريخ الإرجاع الأصلي': order.date,
+                'سبب الإرجاع': order.previousStatus || order.status,
+            }))
+        );
 
         const csv = Papa.unparse(data);
         const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
@@ -169,7 +191,7 @@ export const MerchantSlips = () => {
                         </TableRow></TableHeader>
                         <TableBody>
                         {filteredSlips.map((slip) => (
-                            <TableRow key={slip.id} data-state={selectedSlips.includes(slip.id) && "selected"}>
+                            <TableRow key={slip.id} data-state={selectedSlips.includes(slip.id) ? "selected" : "unselected"}>
                             <TableCell className="border-l text-center"><Checkbox checked={selectedSlips.includes(slip.id)} onCheckedChange={(checked) => setSelectedSlips(p => checked ? [...p, slip.id] : p.filter(id => id !== slip.id))} /></TableCell>
                             <TableCell className="font-mono border-l text-center whitespace-nowrap">{slip.id}</TableCell>
                             <TableCell className="border-l text-center whitespace-nowrap">{slip.merchant}</TableCell>
@@ -200,17 +222,6 @@ export const MerchantSlips = () => {
                 </div>
                 </DialogContent>
             </Dialog>
-
-            {/* Hidden div for printing */}
-            <div className="hidden">
-                {slipsToPrint.length > 0 && (
-                    <div ref={printRef}>
-                        {slipsToPrint.map(slip => (
-                            <PrintableSlip key={slip.id} slip={slip} logoSrc={settings.login.reportsLogo || settings.login.headerLogo} />
-                        ))}
-                    </div>
-                )}
-            </div>
         </div>
     );
 };
