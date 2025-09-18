@@ -17,7 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Papa from 'papaparse';
 import pdfMake from "pdfmake/build/pdfmake";
-import { toBuffer } from "bwip-js";
+import bwipjs from "bwip-js";
 
 // Font setup for pdfmake
 const amiriRegularBase64 = "AAEAAAARAQAABAAAR0RFRgAIAAAAEgAAAABPUy8yAAABYAAAADcAAABgjb/paGNtYXAAAAFoAAAAOAAAAFRar84IZ2x5ZgAAAdQAAACsAAAAuB/0T/toZWFkAAABMAAAADAAAAA2B4IG5oZWFkAAABZAAAABgAAAAGDQQCem10eAAAAXwAAAAUAAAACAYjA/dpbmR4AAABiAAAABQAAAAUCwAAdmxvY2EAAAHEAAAAEAAAABAFuAaebWF4cAAAAVAAAAAGAAAABgAIAAhwb3N0AAACNAAAACQAAABNpkjfeAABAAAAAQAAajgOcV8PPPUACwQAAAAAANpHB9sAAAAA2kcH2wAAAAADVAEAAAACAACAAAAAAAAAAEAAAAsADgAAQAAAAAAAQAAAAoAHQAEAAAAAAACAAEAAgAgAAQAAAAAAIAAAAEAAAAAABcBAgAAAAAADgAaADQAAwABBAkAAQAUABQAAwABBAkAAgAOACAAAwABBAkAAwAQAEMAAwABBAkABAAUAFYAAwABBAkABQAYAG4AAwABBAkABgAUAH4AAwABBAkADgA0AIAAA0JAaGFtYQpDb3B5cmlnaHQgKGMpIDIwMTIgQW1pcmlIE"
@@ -85,7 +85,13 @@ export const MerchantSlips = () => {
         for (const slip of slips) {
             let barcodeBase64 = "";
             try {
-                const png = await toBuffer({ bcid: 'code128', text: slip.id, scale: 3, height: 10, includetext: true });
+                const png = await bwipjs.toBuffer({
+                    bcid: 'code128',
+                    text: slip.id,
+                    scale: 3,
+                    height: 10,
+                    includetext: true
+                });
                 barcodeBase64 = 'data:image/png;base64,' + png.toString('base64');
             } catch (e) {
                 console.error("خطأ في توليد الباركود:", e);
@@ -116,7 +122,7 @@ export const MerchantSlips = () => {
                             ]
                         ]
                     },
-                    { image: barcodeBase64, width: 150, alignment: 'center', margin: [0, 10, 0, 10] },
+                    barcodeBase64 ? { image: barcodeBase64, width: 150, alignment: 'center', margin: [0, 10, 0, 10] } : {},
                     {
                         table: { headerRows: 1, widths: ['auto', '*', '*', '*'], body: tableBody },
                         layout: 'lightHorizontalLines'
@@ -249,3 +255,5 @@ export const MerchantSlips = () => {
         </div>
     );
 };
+
+    
