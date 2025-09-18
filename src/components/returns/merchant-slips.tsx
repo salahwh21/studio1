@@ -1,6 +1,5 @@
 'use client';
-import { useState, useMemo, useRef } from 'react';
-import { useOrdersStore, type Order } from '@/store/orders-store';
+import { useState, useMemo } from 'react';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -13,18 +12,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { parseISO, isWithinInterval } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { useSettings } from '@/contexts/SettingsContext';
-import { useUsersStore } from '@/store/user-store';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Papa from 'papaparse';
+import pdfMake from 'pdfmake/build/pdfmake';
+import { toBuffer } from 'bwip-js';
+import { vfs } from './fonts-vfs';
+
+pdfMake.vfs = vfs;
+pdfMake.fonts = {
+  Amiri: {
+    normal: "Amiri-Regular.ttf",
+    bold: "Amiri-Bold.ttf"
+  }
+};
 
 
 export const MerchantSlips = () => {
     const { toast } = useToast();
-    const { users } = useUsersStore();
     const { settings } = useSettings();
     const { merchantSlips, updateMerchantSlipStatus } = useReturnsStore();
 
@@ -69,47 +75,58 @@ export const MerchantSlips = () => {
 
         toast({ title: "جاري تجهيز الملف...", description: `سيتم طباعة ${slips.length} كشوفات.` });
 
-        const doc = new jsPDF();
-        doc.setR2L(true);
-
-        for (let i = 0; i < slips.length; i++) {
-            const slip = slips[i];
-            if (i > 0) doc.addPage();
-            
-            const logoSrc = settings.login.reportsLogo || settings.login.headerLogo;
-            if (logoSrc) {
-                try {
-                    const img = new Image();
-                    img.src = logoSrc;
-                    await new Promise(resolve => img.onload = resolve);
-                    doc.addImage(img, 'PNG', 150, 10, 50, 20);
-                } catch(e) { console.error("Could not add logo to PDF", e); }
+        for (const slip of slips) {
+            let barcodeBase64 = "";
+            try {
+                const png = await toBuffer({ bcid: 'code128', text: slip.id, scale: 3, height: 10, includetext: true });
+                barcodeBase64 = 'data:image/png;base64,' + png.toString('base64');
+            } catch (e) {
+                console.error("خطأ في توليد الباركود:", e);
             }
 
-            doc.setFontSize(18);
-            doc.text("كشف تسليم مرتجعات للتاجر", 200, 20, { align: 'right' });
-            
-            doc.setFontSize(12);
-            doc.text(`اسم التاجر: ${slip.merchant}`, 200, 40, { align: 'right' });
-            doc.text(`رقم الكشف: ${slip.id}`, 200, 48, { align: 'right' });
-            doc.text(`التاريخ: ${slip.date}`, 200, 56, { align: 'right' });
+            const logoBase64 = settings.login.reportsLogo || settings.login.headerLogo;
 
-            (doc as any).autoTable({
-                startY: 65,
-                head: [['#', 'رقم الطلب', 'المستلم', 'سبب الإرجاع']],
-                body: slip.orders.map((o, index) => [index + 1, o.id, o.recipient, o.previousStatus || o.status]),
-                theme: 'grid',
-                styles: { halign: 'center', font: 'Tajawal', direction: 'rtl' },
-                headStyles: { fillColor: [41, 128, 185], halign: 'center' },
-            });
-            
-            const finalY = (doc as any).lastAutoTable.finalY || 250;
-            doc.text(`الإجمالي: ${slip.items} شحنة`, 200, finalY + 10, { align: 'right' });
-            doc.text('توقيع المستلم: ............................', 200, finalY + 20, { align: 'right' });
-            doc.text('توقيع المسلِّم: ............................', 80, finalY + 20, { align: 'right' });
+            const tableBody = [
+                [{ text: '#', bold: true }, { text: 'رقم الطلب', bold: true }, { text: 'المستلم', bold: true }, { text: 'سبب الإرجاع', bold: true }],
+                ...slip.orders.map((o, index) => [
+                    (index + 1).toString(),
+                    o.id,
+                    o.recipient,
+                    o.previousStatus || o.status
+                ])
+            ];
+
+            const docDefinition: any = {
+                defaultStyle: { font: "Amiri", fontSize: 10, alignment: "right" },
+                content: [
+                    {
+                        columns: [
+                            logoBase64 ? { image: logoBase64, width: 70 } : { text: '' },
+                            [
+                                { text: "كشف تسليم مرتجعات للتاجر", style: "header" },
+                                { text: `اسم التاجر: ${slip.merchant}` },
+                                { text: `التاريخ: ${new Date(slip.date).toLocaleDateString('ar-JO')}` }
+                            ]
+                        ]
+                    },
+                    { image: barcodeBase64, width: 150, alignment: 'center', margin: [0, 10, 0, 10] },
+                    {
+                        table: { headerRows: 1, widths: ['auto', '*', '*', '*'], body: tableBody },
+                        layout: 'lightHorizontalLines'
+                    },
+                    { text: `الإجمالي: ${slip.items} شحنة`, margin: [0, 10, 0, 0] },
+                    {
+                        columns: [
+                            { text: "توقيع المستلم: ............................", margin: [0, 30, 0, 0] },
+                            { text: "توقيع المسلِّم: ............................", margin: [0, 30, 0, 0], alignment: 'left' }
+                        ]
+                    }
+                ],
+                styles: { header: { fontSize: 16, bold: true, alignment: 'right', margin: [0, 0, 0, 10] } }
+            };
+
+            pdfMake.createPdf(docDefinition).open();
         }
-        
-        doc.save(`MerchantSlips.pdf`);
     };
 
      const handleExport = () => {

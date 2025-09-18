@@ -10,13 +10,22 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { parseISO, isWithinInterval } from 'date-fns';
 import Icon from '@/components/icon';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import Papa from 'papaparse';
+import pdfMake from 'pdfmake/build/pdfmake';
+import { toBuffer } from 'bwip-js';
+import { vfs } from './fonts-vfs';
+
+pdfMake.vfs = vfs;
+pdfMake.fonts = {
+  Amiri: {
+    normal: "Amiri-Regular.ttf",
+    bold: "Amiri-Bold.ttf"
+  }
+};
 
 
 export const DriverSlips = () => {
@@ -44,62 +53,64 @@ export const DriverSlips = () => {
       return matchesDriver && matchesDate;
   }), [driverSlips, filterDriver, filterStartDate, filterEndDate]);
   
-    const printSlips = async (slips: DriverSlip[]) => {
-        if (slips.length === 0) return;
-
-        toast({ title: "جاري تجهيز الملف...", description: `سيتم طباعة ${slips.length} كشوفات.` });
-
-        const doc = new jsPDF();
-
-        // This is a placeholder for a base64 encoded font that supports Arabic.
-        // In a real scenario, you would fetch or have this font available.
-        // For demonstration, we'll proceed without it, which might cause Arabic text rendering issues.
-        // doc.addFileToVFS('Tajawal-Regular.ttf', '...');
-        // doc.addFont('Tajawal-Regular.ttf', 'Tajawal', 'normal');
-        // doc.setFont('Tajawal');
-
-        for (let i = 0; i < slips.length; i++) {
-            const slip = slips[i];
-            if (i > 0) doc.addPage();
-            
-            doc.setR2L(true); // Enable Right-to-Left text direction
-
-            // Add Logo if available
-            const logoSrc = settings.login.reportsLogo || settings.login.headerLogo;
-            if (logoSrc) {
-                try {
-                    const img = new Image();
-                    img.src = logoSrc;
-                    await new Promise(resolve => img.onload = resolve);
-                    doc.addImage(img, 'PNG', 150, 10, 50, 20);
-                } catch(e) { console.error("Could not add logo to PDF", e); }
-            }
-
-            doc.setFontSize(18);
-            doc.text("كشف استلام مرتجعات من السائق", 200, 20, { align: 'right' });
-            
-            doc.setFontSize(12);
-            doc.text(`اسم السائق: ${slip.driverName}`, 200, 40, { align: 'right' });
-            doc.text(`رقم الكشف: ${slip.id}`, 200, 48, { align: 'right' });
-            doc.text(`التاريخ: ${slip.date}`, 200, 56, { align: 'right' });
-
-            (doc as any).autoTable({
-                startY: 65,
-                head: [['#', 'رقم الطلب', 'التاجر', 'المستلم']],
-                body: slip.orders.map((o, index) => [index + 1, o.id, o.merchant, o.recipient]),
-                theme: 'grid',
-                styles: { halign: 'center', font: 'Tajawal', direction: 'rtl' },
-                headStyles: { fillColor: [41, 128, 185], halign: 'center' },
-            });
-            
-            const finalY = (doc as any).lastAutoTable.finalY || 250;
-            doc.text(`الإجمالي: ${slip.itemCount} شحنة`, 200, finalY + 10, { align: 'right' });
-            doc.text('توقيع المستلم: ............................', 200, finalY + 20, { align: 'right' });
-            doc.text('توقيع المسلِّم: ............................', 80, finalY + 20, { align: 'right' });
-        }
-        
-        doc.save(`DriverSlips.pdf`);
-    };
+  const printSlips = async (slips: DriverSlip[]) => {
+      if (slips.length === 0) return;
+  
+      toast({ title: "جاري تجهيز الملف...", description: `سيتم طباعة ${slips.length} كشوفات.` });
+  
+      for (const slip of slips) {
+          let barcodeBase64 = "";
+          try {
+              const png = await toBuffer({ bcid: 'code128', text: slip.id, scale: 3, height: 10, includetext: true });
+              barcodeBase64 = 'data:image/png;base64,' + png.toString('base64');
+          } catch (e) {
+              console.error("خطأ في توليد الباركود:", e);
+          }
+  
+          const logoBase64 = settings.login.reportsLogo || settings.login.headerLogo;
+  
+          const tableBody = [
+              [{ text: '#', bold: true }, { text: 'رقم الطلب', bold: true }, { text: 'التاجر', bold: true }, { text: 'المستلم', bold: true }],
+              ...slip.orders.map((o, index) => [
+                  (index + 1).toString(),
+                  o.id,
+                  o.merchant,
+                  o.recipient
+              ])
+          ];
+  
+          const docDefinition: any = {
+              defaultStyle: { font: "Amiri", fontSize: 10, alignment: "right" },
+              content: [
+                  {
+                      columns: [
+                          logoBase64 ? { image: logoBase64, width: 70 } : { text: '' },
+                          [
+                              { text: "كشف استلام مرتجعات من السائق", style: "header" },
+                              { text: `اسم السائق: ${slip.driverName}` },
+                              { text: `التاريخ: ${new Date(slip.date).toLocaleDateString('ar-JO')}` }
+                          ]
+                      ]
+                  },
+                  { image: barcodeBase64, width: 150, alignment: 'center', margin: [0, 10, 0, 10] },
+                  {
+                      table: { headerRows: 1, widths: ['auto', '*', '*', '*'], body: tableBody },
+                      layout: 'lightHorizontalLines'
+                  },
+                   { text: `الإجمالي: ${slip.itemCount} شحنة`, margin: [0, 10, 0, 0] },
+                  {
+                      columns: [
+                          { text: "توقيع المستلم: ............................", margin: [0, 30, 0, 0] },
+                          { text: "توقيع المسلِّم: ............................", margin: [0, 30, 0, 0], alignment: 'left' }
+                      ]
+                  }
+              ],
+              styles: { header: { fontSize: 16, bold: true, alignment: 'right', margin: [0, 0, 0, 10] } }
+          };
+  
+          pdfMake.createPdf(docDefinition).open();
+      }
+  };
 
     const handleExport = () => {
         const slipsToExport = filteredSlips.filter(s => selectedSlips.includes(s.id));
