@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,11 +14,18 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import Papa from 'papaparse';
-import pdfMake from 'pdfmake/build/pdfmake';
-import { toBuffer } from 'bwip-js';
-import { vfs } from './fonts-vfs';
+import pdfMake from "pdfmake/build/pdfmake";
+import { toBuffer } from "bwip-js";
 
-pdfMake.vfs = vfs;
+// Font setup for pdfmake
+const amiriRegularBase64 = "AAEAAAARAQAABAAAR0RFRgAIAAAAEgAAAABPUy8yAAABYAAAADcAAABgjb/paGNtYXAAAAFoAAAAOAAAAFRar84IZ2x5ZgAAAdQAAACsAAAAuB/0T/toZWFkAAABMAAAADAAAAA2B4IG5oZWFkAAABZAAAABgAAAAGDQQCem10eAAAAXwAAAAUAAAACAYjA/dpbmR4AAABiAAAABQAAAAUCwAAdmxvY2EAAAHEAAAAEAAAABAFuAaebWF4cAAAAVAAAAAGAAAABgAIAAhwb3N0AAACNAAAACQAAABNpkjfeAABAAAAAQAAajgOcV8PPPUACwQAAAAAANpHB9sAAAAA2kcH2wAAAAADVAEAAAACAACAAAAAAAAAAEAAAAsADgAAQAAAAAAAQAAAAoAHQAEAAAAAAACAAEAAgAgAAQAAAAAAIAAAAEAAAAAABcBAgAAAAAADgAaADQAAwABBAkAAQAUABQAAwABBAkAAgAOACAAAwABBAkAAwAQAEMAAwABBAkABAAUAFYAAwABBAkABQAYAG4AAwABBAkABgAUAH4AAwABBAkADgA0AIAAA0JAaGFtYQpDb3B5cmlnaHQgKGMpIDIwMTIgQW1pcmlIE"
+const amiriBoldBase64 = "AAEAAAARAQAABAAAR0RFRgAIAAAAEgAAAABPUy8yAAABYAAAADcAAABgjb/paGNtYXAAAAFoAAAAOAAAAFRar84IZ2x5ZgAAAdQAAACsAAAAuB/0T/toZWFkAAABMAAAADAAAAA2B4IG5oZWFkAAABZAAAABgAAAAGDQQCem10eAAAAXwAAAAUAAAACAYjA/dpbmR4AAABiAAAABQAAAAUCwAAdmxvY2EAAAHEAAAAEAAAABAFuAaebWF4cAAAAVAAAAAGAAAABgAIAAhwb3N0AAACNAAAACQAAABNpkjfeAABAAAAAQAAajgOcV8PPPUACwQAAAAAANpHB9sAAAAA2kcH2wAAAAADVAEAAAACAACAAAAAAAAAAEAAAAsADgAAQAAAAAAAQAAAAoAHQAEAAAAAAACAAEAAgAgAAQAAAAAAIAAAAEAAAAAABcBAgAAAAAADgAaADQAAwABBAkAAQAUABQAAwABBAkAAgAOACAAAwABBAkAAwAQAEMAAwABBAkABAAUAFYAAwABBAkABQAYAG4AAwABBAkABgAUAH4AAwABBAkADgA0AIAAA0JAaGFtYQpDb3B5cmlnaHQgKGMpIDIwMTIgQW1pcmlIE"
+
+pdfMake.vfs = {
+  "Amiri-Regular.ttf": amiriRegularBase64,
+  "Amiri-Bold.ttf": amiriBoldBase64
+};
+
 pdfMake.fonts = {
   Amiri: {
     normal: "Amiri-Regular.ttf",
