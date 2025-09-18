@@ -255,5 +255,3 @@ export const MerchantSlips = () => {
         </div>
     );
 };
-
-    

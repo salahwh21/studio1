@@ -253,5 +253,3 @@ export const DriverSlips = () => {
     </div>
   );
 };
-
-    
