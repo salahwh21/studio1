@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
@@ -22,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import type { Order } from '@/store/orders-store';
-import { useUsersStore } from '@/store/user-store';
+import { useUsersStore, type User } from '@/store/user-store';
 
 
 // Font setup for pdfmake
@@ -81,7 +82,7 @@ export const MerchantSlips = () => {
         setShowDetailsDialog(true);
     };
 
-    const printSlips = async (slips: MerchantSlip[]) => {
+    const printSlips = async (slips: MerchantSlip[], users: User[]) => {
         if (slips.length === 0) return;
 
         toast({ title: "جاري تجهيز الملف...", description: `سيتم طباعة ${slips.length} كشوفات.` });
@@ -143,10 +144,10 @@ export const MerchantSlips = () => {
                          {
                             width: 'auto',
                             stack: [
-                                { text: `اسم التاجر : ${slip.merchant}`, fontSize: 9 },
-                                { text: `رقم المحمول للتاجر : ${user?.email || 'غير متوفر'}`, fontSize: 9 },
+                                { text: `اسم التاجر : ${String(slip.merchant || '')}`, fontSize: 9 },
+                                { text: `رقم المحمول للتاجر : ${String(user?.email || 'غير متوفر')}`, fontSize: 9 },
                                 { text: `التاريخ : ${new Date(slip.date).toLocaleString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`, fontSize: 9 },
-                                { text: `العنوان : ${slip.orders[0]?.city || 'غير متوفر'}`, fontSize: 9 },
+                                { text: `العنوان : ${String(slip.orders[0]?.city || 'غير متوفر')}`, fontSize: 9 },
                             ],
                             alignment: 'right'
                         },
@@ -270,7 +271,7 @@ export const MerchantSlips = () => {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                 <DropdownMenuItem onSelect={() => printSlips(filteredSlips.filter(s => selectedSlips.includes(s.id)))}>
+                                 <DropdownMenuItem onSelect={() => printSlips(filteredSlips.filter(s => selectedSlips.includes(s.id)), users)}>
                                     <Icon name="Printer" className="ml-2 h-4 w-4" />
                                     طباعة المحدد
                                 </DropdownMenuItem>
@@ -305,7 +306,7 @@ export const MerchantSlips = () => {
                             <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
                                 <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
                                 <Button variant="outline" size="sm" disabled={slip.status === 'تم التسليم'} onClick={() => confirmSlipDelivery(slip.id)}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
-                                <Button variant="ghost" size="icon" onClick={() => printSlips([slip])}><Icon name="Printer" className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => printSlips([slip], users)}><Icon name="Printer" className="h-4 w-4" /></Button>
                             </TableCell>
                             </TableRow>
                         ))}
