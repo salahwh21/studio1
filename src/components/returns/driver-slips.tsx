@@ -356,12 +356,10 @@ export const DriverSlips = () => {
                         <Textarea id="email-body" defaultValue="مرحباً، مرفق طيه كشوفات المرتجعات الخاصة بكم. يرجى المراجعة." />
                     </div>
                     {pdfBlob && (
-                         <div className="text-sm text-muted-foreground">
-                            <Button variant="link" className="p-0 h-auto" onClick={handleDownloadAttachment}>
-                                <Icon name="Paperclip" className="inline h-4 w-4 ml-1" />
-                                slips.pdf ({Math.round(pdfBlob.size / 1024)} KB)
-                            </Button>
-                        </div>
+                         <Button variant="link" className="p-0 h-auto" onClick={handleDownloadAttachment}>
+                            <Icon name="Paperclip" className="inline h-4 w-4 ml-1" />
+                            slips.pdf ({Math.round(pdfBlob.size / 1024)} KB)
+                        </Button>
                     )}
                 </div>
                 <DialogFooter>
