@@ -88,9 +88,9 @@ export const MerchantSlips = () => {
                 [{ text: '#', bold: true }, { text: 'رقم الطلب', bold: true }, { text: 'المستلم', bold: true }, { text: 'سبب الإرجاع', bold: true }],
                 ...slip.orders.map((o, index) => [
                     (index + 1).toString(),
-                    o.id,
-                    o.recipient,
-                    o.previousStatus || o.status
+                    String(o.id || ''),
+                    String(o.recipient || ''),
+                    String(o.previousStatus || o.status || '')
                 ])
             ];
 

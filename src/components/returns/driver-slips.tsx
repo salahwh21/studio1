@@ -70,9 +70,9 @@ export const DriverSlips = () => {
               [{ text: '#', bold: true }, { text: 'رقم الطلب', bold: true }, { text: 'التاجر', bold: true }, { text: 'المستلم', bold: true }],
               ...slip.orders.map((o, index) => [
                   (index + 1).toString(),
-                  o.id,
-                  o.merchant,
-                  o.recipient
+                  String(o.id || ''),
+                  String(o.merchant || ''),
+                  String(o.recipient || '')
               ])
           ];
   
