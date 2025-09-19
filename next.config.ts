@@ -8,11 +8,13 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  experimental: {
+  webpack: (config, { isServer }) => {
+    // This is to prevent server-side errors from canvas dependency in bwip-js
+    if (isServer) {
+        config.externals.push('canvas');
+    }
+    return config;
   },
-  allowedDevOrigins: [
-    'https://6000-firebase-al-wameed-delivery-1-1757800056570.cluster-zj37zwdounao2uiqvtma64veco.cloudworkstations.dev',
-  ],
   images: {
     remotePatterns: [
       {

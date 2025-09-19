@@ -31,25 +31,31 @@ async function generateBarcodeBase64(text: string): Promise<string> {
 }
 
 async function generateSlipWorksheet(workbook: ExcelJS.Workbook, slip: DriverSlip | MerchantSlip, users: User[], reportsLogo: string | null, isDriver: boolean) {
-    const worksheet = workbook.addWorksheet(`Slip ${slip.id.substring(3, 7)}`);
+    const worksheet = workbook.addWorksheet(`Slip ${slip.id.substring(3, 7)}`, {
+        pageSetup: { paperSize: 9, orientation: 'portrait', margins: { left: 0.25, right: 0.25, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 } },
+        views: [{ rightToLeft: true }]
+    });
 
-    // --- Page Setup ---
-    worksheet.views = [{ rightToLeft: true }];
-    worksheet.pageSetup = { paperSize: 9, orientation: 'portrait', margins: { left: 0.25, right: 0.25, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 } };
-    worksheet.properties.defaultColWidth = 12;
-    worksheet.getColumn('C').width = 25;
-    worksheet.getColumn('D').width = 25;
+    // --- Column Widths ---
+    worksheet.columns = [
+        { key: 'colA', width: 5 },
+        { key: 'colB', width: 20 },
+        { key: 'colC', width: 25 },
+        { key: 'colD', width: 25 },
+        { key: 'colE', width: 15 },
+        { key: 'colF', width: 15 }
+    ];
 
     // --- Logo & Barcode ---
     if (reportsLogo) {
         const logoImageId = workbook.addImage({ base64: reportsLogo.split(',')[1], extension: 'png' });
-        worksheet.addImage(logoImageId, { tl: { col: 3, row: 1 }, ext: { width: 100, height: 40 } });
+        worksheet.addImage(logoImageId, { tl: { col: 4, row: 1 }, ext: { width: 100, height: 40 } });
     }
     
     const barcodeBase64 = await generateBarcodeBase64(slip.id);
     if (barcodeBase64) {
         const barcodeImageId = workbook.addImage({ base64: barcodeBase64.split(',')[1], extension: 'png' });
-        worksheet.addImage(barcodeImageId, { tl: { col: 0.5, row: 1 }, ext: { width: 150, height: 50 } });
+        worksheet.addImage(barcodeImageId, { tl: { col: 0, row: 1 }, ext: { width: 150, height: 50 } });
     } else {
         worksheet.getCell('A2').value = slip.id;
     }
@@ -67,10 +73,10 @@ async function generateSlipWorksheet(workbook: ExcelJS.Workbook, slip: DriverSli
         ? users.find(u => u.name === partyName)
         : users.find(u => u.storeName === partyName);
 
-    worksheet.getCell('F3').value = `${isDriver ? 'اسم السائق' : 'اسم التاجر'}: ${partyName}`;
-    worksheet.getCell('F4').value = `رقم الهاتف/البريد: ${user?.email || 'N/A'}`;
-    worksheet.getCell('F5').value = `التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`;
-    worksheet.getCell('G3').value = `الفرع: ${slip.orders[0]?.city || ''}`;
+    worksheet.getCell('B4').value = `${isDriver ? 'اسم السائق' : 'اسم التاجر'}: ${partyName}`;
+    worksheet.getCell('B5').value = `رقم الهاتف/البريد: ${user?.email || 'N/A'}`;
+    worksheet.getCell('E4').value = `التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`;
+    worksheet.getCell('E5').value = `الفرع: ${slip.orders[0]?.city || ''}`;
 
     // --- Table Header ---
     const headerRow = worksheet.getRow(7);
@@ -92,9 +98,9 @@ async function generateSlipWorksheet(workbook: ExcelJS.Workbook, slip: DriverSli
             order.previousStatus || order.status,
             order.itemPrice || 0
         ]);
-        row.getCell(3).alignment = { wrapText: true };
-        row.getCell(4).alignment = { wrapText: true };
-        row.getCell(6).numFmt = '#,##0.00 "د.أ"';
+        row.getCell('C').alignment = { wrapText: true, vertical: 'middle' };
+        row.getCell('D').alignment = { wrapText: true, vertical: 'middle' };
+        row.getCell('F').numFmt = '#,##0.00 "د.أ"';
         row.eachCell(cell => { cell.alignment = { ...cell.alignment, vertical: 'middle' }; });
     });
 
@@ -102,13 +108,16 @@ async function generateSlipWorksheet(workbook: ExcelJS.Workbook, slip: DriverSli
     const totalRow = worksheet.addRow(['', 'الإجمالي', '', '', '', slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0)]);
     worksheet.mergeCells(`B${totalRow.number}:E${totalRow.number}`);
     totalRow.font = { bold: true };
-    totalRow.getCell(6).numFmt = '#,##0.00 "د.أ"';
+    totalRow.getCell('B').alignment = { horizontal: 'center' };
+    totalRow.getCell('F').numFmt = '#,##0.00 "د.أ"';
 
     // --- Footer ---
     const signatureRow = worksheet.addRow(['']);
-    worksheet.mergeCells(`A${signatureRow.number}:C${signatureRow.number}`);
-    worksheet.getCell(`A${signatureRow.number}`).value = 'توقيع المستلم: .........................';
-    worksheet.getCell(`A${signatureRow.number}`).font = { size: 12 };
+    signatureRow.height = 40;
+    worksheet.mergeCells(`B${signatureRow.number}:C${signatureRow.number}`);
+    worksheet.getCell(`B${signatureRow.number}`).value = 'توقيع المستلم: .........................';
+    worksheet.getCell(`B${signatureRow.number}`).font = { size: 12 };
+    worksheet.getCell(`B${signatureRow.number}`).alignment = { vertical: 'bottom' };
 }
 
 async function generateExcel(slips: (DriverSlip | MerchantSlip)[], users: User[], reportsLogo: string | null, isDriver: boolean, filename: string) {

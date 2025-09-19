@@ -6,27 +6,25 @@ import type { User } from '@/store/user-store';
 import { amiriRegularBase64, amiriBoldBase64 } from '@/components/returns/amiri_base64';
 
 async function getPdfMake() {
-  // Dynamically import pdfmake on the client-side
-  if (typeof window !== 'undefined') {
-    const pdfmakeModule = await import('pdfmake/build/pdfmake');
-    
-    // Manually define vfs with the Amiri font data
-    pdfmakeModule.vfs = {
-      "Amiri-Regular.ttf": amiriRegularBase64,
-      "Amiri-Bold.ttf": amiriBoldBase64,
-    };
-    
-    pdfmakeModule.fonts = {
-      Amiri: {
-        normal: 'Amiri-Regular.ttf',
-        bold: 'Amiri-Bold.ttf',
-        italics: 'Amiri-Regular.ttf',
-        bolditalics: 'Amiri-Bold.ttf'
-      }
-    };
-    return pdfmakeModule;
+  if (typeof window === 'undefined') {
+    throw new Error('pdfmake can only be used on the client side.');
   }
-  throw new Error('Could not load pdfmake library.');
+  const pdfmakeModule = await import('pdfmake/build/pdfmake');
+  
+  pdfmakeModule.vfs = {
+    "Amiri-Regular.ttf": amiriRegularBase64,
+    "Amiri-Bold.ttf": amiriBoldBase64,
+  };
+  
+  pdfmakeModule.fonts = {
+    Amiri: {
+      normal: 'Amiri-Regular.ttf',
+      bold: 'Amiri-Bold.ttf',
+      italics: 'Amiri-Regular.ttf',
+      bolditalics: 'Amiri-Bold.ttf'
+    }
+  };
+  return pdfmakeModule;
 }
 
 async function generateBarcode(text: string): Promise<string> {
