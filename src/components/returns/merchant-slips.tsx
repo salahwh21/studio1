@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, Suspense } from 'react';
+import { useState, useMemo } from 'react';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -114,10 +114,10 @@ export const MerchantSlips = () => {
                 ...slip.orders.map((o: Order, i: number) => [
                     { text: String(i + 1), style: 'tableCell' },
                     { text: String(o.id || ''), style: 'tableCell', alignment: 'center' },
-                    { text: `${o.recipient || ''}\n${o.phone || ''}`, style: 'tableCell' },
-                    { text: `${o.city || ''} - ${o.address || ''}`, style: 'tableCell' },
-                    { text: o.previousStatus || o.status || 'غير محدد', style: 'tableCell' },
-                    { text: (o.itemPrice?.toFixed(2) || '0.00'), style: 'tableCell', alignment: 'center' }
+                    { text: `${String(o.recipient || '')}\n${String(o.phone || '')}`, style: 'tableCell' },
+                    { text: `${String(o.city || '')} - ${String(o.address || '')}`, style: 'tableCell' },
+                    { text: String(o.previousStatus || o.status || 'غير محدد'), style: 'tableCell' },
+                    { text: String(o.itemPrice?.toFixed(2) || '0.00'), style: 'tableCell', alignment: 'center' }
                 ]),
                 [{ text: 'الإجمالي', colSpan: 5, bold: true, style: 'tableCell', alignment: 'left' }, {}, {}, {}, {}, { text: slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0).toFixed(2), bold: true, style: 'tableCell', alignment: 'center' }]
             ];
@@ -367,7 +367,7 @@ export const MerchantSlips = () => {
                         <div className="text-sm text-muted-foreground">
                             <Button variant="link" className="p-0 h-auto" onClick={handleDownloadAttachment} disabled={!pdfBlob}>
                                 <Icon name="Paperclip" className="inline h-4 w-4 ml-1" />
-                                سيتم إرفاق {selectedSlipData.length} ملفات PDF.
+                                slips.pdf
                             </Button>
                         </div>
                     </div>
