@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useReturnsStore, type DriverSlip } from '@/store/returns-store';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { parseISO, isWithinInterval } from 'date-fns';
+import { parseISO, isWithinInterval, format } from 'date-fns';
 import Icon from '@/components/icon';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,6 +17,9 @@ import Papa from 'papaparse';
 import pdfMake from "pdfmake/build/pdfmake";
 import bwipjs from "bwip-js/browser";
 import { amiriRegularBase64, amiriBoldBase64 } from "./amiri_base64";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 
 // Font setup for pdfmake
@@ -41,8 +44,8 @@ export const DriverSlips = () => {
   const [selectedSlips, setSelectedSlips] = useState<string[]>([]);
 
   const [filterDriver, setFilterDriver] = useState<string | null>(null);
-  const [filterStartDate, setFilterStartDate] = useState<string | null>(null);
-  const [filterEndDate, setFilterEndDate] = useState<string | null>(null);
+  const [filterStartDate, setFilterStartDate] = useState<Date | null>(null);
+  const [filterEndDate, setFilterEndDate] = useState<Date | null>(null);
   
   const uniqueDrivers = useMemo(() => Array.from(new Set(driverSlips.map(s => s.driverName))), [driverSlips]);
   
@@ -52,7 +55,7 @@ export const DriverSlips = () => {
       if (filterStartDate && filterEndDate) {
           try {
               const slipDate = parseISO(slip.date);
-              matchesDate = isWithinInterval(slipDate, { start: parseISO(filterStartDate), end: parseISO(filterEndDate) });
+              matchesDate = isWithinInterval(slipDate, { start: filterStartDate, end: filterEndDate });
           } catch(e) { matchesDate = false; }
       }
       return matchesDriver && matchesDate;
@@ -178,8 +181,28 @@ export const DriverSlips = () => {
                         ))}
                     </SelectContent>
                 </Select>
-                <Input type="date" placeholder="من تاريخ" value={filterStartDate || ''} onChange={(e) => setFilterStartDate(e.target.value || null)} className="w-full sm:w-auto" />
-                <Input type="date" placeholder="إلى تاريخ" value={filterEndDate || ''} onChange={(e) => setFilterEndDate(e.target.value || null)} className="w-full sm:w-auto" />
+                 <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant={"outline"} className={cn("w-full sm:w-auto justify-start text-left font-normal", !filterStartDate && "text-muted-foreground")}>
+                            <Icon name="Calendar" className="ml-2 h-4 w-4" />
+                            {filterStartDate ? format(filterStartDate, "yyyy/MM/dd") : <span>من تاريخ</span>}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                        <Calendar mode="single" selected={filterStartDate || undefined} onSelect={(d) => setFilterStartDate(d || null)} initialFocus />
+                    </PopoverContent>
+                </Popover>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant={"outline"} className={cn("w-full sm:w-auto justify-start text-left font-normal", !filterEndDate && "text-muted-foreground")}>
+                            <Icon name="Calendar" className="ml-2 h-4 w-4" />
+                            {filterEndDate ? format(filterEndDate, "yyyy/MM/dd") : <span>إلى تاريخ</span>}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                         <Calendar mode="single" selected={filterEndDate || undefined} onSelect={(d) => setFilterEndDate(d || null)} initialFocus />
+                    </PopoverContent>
+                </Popover>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="gap-1.5" disabled={selectedSlips.length === 0}>
