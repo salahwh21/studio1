@@ -14,7 +14,6 @@ export const usePdfMakeFonts = () => {
                 import('pdfmake/build/vfs_fonts').then(pdfFonts => {
                     // Assign vfs and fonts upon initialization.
                     pdfmakeInstance.vfs = {
-                        ...pdfFonts.pdfMake.vfs, // Include default fonts
                         "Amiri-Regular.ttf": amiriRegularBase64,
                         "Amiri-Bold.ttf": amiriBoldBase64
                     };
