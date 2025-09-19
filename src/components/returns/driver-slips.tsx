@@ -252,7 +252,7 @@ export const DriverSlips = () => {
                          <Calendar mode="single" selected={filterEndDate || undefined} onSelect={(d) => setFilterEndDate(d || null)} initialFocus />
                     </PopoverContent>
                 </Popover>
-                <DropdownMenu>
+                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="gap-1.5" disabled={selectedSlips.length === 0 || !isPdfReady}>
                             <Icon name="Send" className="h-4 w-4" />

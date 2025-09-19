@@ -10,22 +10,16 @@ export const usePdfMakeFonts = () => {
     useEffect(() => {
         // Ensure this runs only in the browser and only once
         if (typeof window !== 'undefined' && !state.isReady) {
-            import('pdfmake/build/pdfmake').then(pdfmakeInstance => {
-                import('pdfmake/build/vfs_fonts').then(pdfFonts => {
+            import('pdfmake/build/pdfmake').then(pdfmakeModule => {
+                import('pdfmake/build/vfs_fonts').then(pdfFontsModule => {
+                    const pdfmakeInstance = pdfmakeModule.default;
                     
-                    // The correct way is to use the imported vfs, not assign to the instance.
-                    // The vfs object is on pdfFonts.default.pdfMake.vfs
-                    if (pdfFonts.default.pdfMake) {
-                       pdfmakeInstance.vfs = pdfFonts.default.pdfMake.vfs;
+                    // The vfs object is on pdfFontsModule.default.pdfMake.vfs
+                    if (pdfFontsModule.default.pdfMake) {
+                       pdfmakeInstance.vfs = pdfFontsModule.default.pdfMake.vfs;
                     }
 
                     // Now, define the custom fonts
-                    if (pdfmakeInstance.vfs) {
-                      pdfmakeInstance.vfs["Amiri-Regular.ttf"] = amiriRegularBase64;
-                      pdfmakeInstance.vfs["Amiri-Bold.ttf"] = amiriBoldBase64;
-                    }
-
-
                     pdfmakeInstance.fonts = {
                         ...pdfmakeInstance.fonts, // Keep existing fonts like Roboto
                         Amiri: {
@@ -33,6 +27,11 @@ export const usePdfMakeFonts = () => {
                             bold: "Amiri-Bold.ttf"
                         }
                     };
+                    // Add the font files to the vfs
+                    if(pdfmakeInstance.vfs){
+                      pdfmakeInstance.vfs["Amiri-Regular.ttf"] = amiriRegularBase64;
+                      pdfmakeInstance.vfs["Amiri-Bold.ttf"] = amiriBoldBase64;
+                    }
                     
                     setState({ pdfMake: pdfmakeInstance, isReady: true });
                 });
