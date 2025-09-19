@@ -30,7 +30,7 @@ export default function ReturnsPage() {
           </TabsTrigger>
            <TabsTrigger value="prepare-for-merchants">
             <Icon name="Package" className="ml-2 h-4 w-4" />
-            طلبات الإرجاع للتجار
+            تجهيز مرتجعات التجار
           </TabsTrigger>
           <TabsTrigger value="driver-slips">
             <Icon name="History" className="ml-2 h-4 w-4" />
@@ -38,7 +38,7 @@ export default function ReturnsPage() {
           </TabsTrigger>
           <TabsTrigger value="receive-from-drivers">
             <Icon name="Truck" className="ml-2 h-4 w-4" />
-            مهمة استلام من السائقين
+            استلام من السائقين
           </TabsTrigger>
         </TabsList>
         <TabsContent value="receive-from-drivers" className="mt-6">

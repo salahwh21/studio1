@@ -114,7 +114,7 @@ const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], 
         },
         footer: (currentPage: number, pageCount: number) => ({ text: `صفحة ${currentPage} من ${pageCount}`, alignment: 'center', fontSize: 8, margin: [0, 10, 0, 0] }),
         pageSize: 'A4',
-        pageMargins: [40, 60, 40, 60]
+        pageMargins: [20, 40, 20, 40]
     };
 
     return pdfMake.createPdf(docDefinition);
