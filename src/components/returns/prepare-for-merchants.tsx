@@ -59,7 +59,7 @@ export const PrepareForMerchants = () => {
     }, [returnsByMerchant, users]);
 
     useEffect(() => {
-        if(!selectedMerchant && merchantData.length > 0) {
+        if (!selectedMerchant && merchantData.length > 0 && merchantData[0]) {
             setSelectedMerchant(merchantData[0].name);
         }
     }, [merchantData, selectedMerchant]);
