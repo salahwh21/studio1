@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { amiriRegularBase64, amiriBoldBase64 } from '@/components/returns/amiri_base64';
+import { amiriRegularBase64, amiriBoldBase64 } from '@/components/returns/amiri-fonts';
 
 // This hook initializes pdfmake with custom Arabic fonts.
 // It ensures that font loading happens only on the client-side and only once.

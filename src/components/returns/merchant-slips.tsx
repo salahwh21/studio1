@@ -26,7 +26,7 @@ import { Textarea } from '../ui/textarea';
 import { usePdfMakeFonts } from '@/hooks/use-pdf-make-fonts';
 
 // Lazy loading for PDF generation libraries
-const lazyBwipJs = async () => (await import('bwip-js/browser')).default;
+const lazyBwipJs = async () => (await import('bwip-js')).default;
 
 
 export const MerchantSlips = () => {
