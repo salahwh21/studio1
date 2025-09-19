@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import Papa from 'papaparse';
-import pdfMake from "pdfmake/build/pdfmake";
-import bwipjs from "bwip-js/browser";
-import { amiriRegularBase64, amiriBoldBase64 } from "./amiri_base64";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
@@ -25,20 +22,16 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 
-
-// Font setup for pdfmake
-pdfMake.vfs = {
-  "Amiri-Regular.ttf": amiriRegularBase64,
-  "Amiri-Bold.ttf": amiriBoldBase64
+// Lazy loading for PDF generation libraries
+const lazyPdfMake = async () => (await import('pdfmake/build/pdfmake')).default;
+const lazyBwipJs = async () => (await import('bwip-js/browser')).default;
+const lazyVfsFonts = async () => {
+    const { amiriRegularBase64, amiriBoldBase64 } = await import('./amiri_base64');
+    return {
+        "Amiri-Regular.ttf": amiriRegularBase64,
+        "Amiri-Bold.ttf": amiriBoldBase64
+    };
 };
-
-pdfMake.fonts = {
-  Amiri: {
-    normal: "Amiri-Regular.ttf",
-    bold: "Amiri-Bold.ttf"
-  }
-};
-
 
 export const DriverSlips = () => {
   const { driverSlips } = useReturnsStore();
@@ -67,102 +60,54 @@ export const DriverSlips = () => {
       return matchesDriver && matchesDate;
   }), [driverSlips, filterDriver, filterStartDate, filterEndDate]);
   
-    const printSlips = async (slips: DriverSlip[], users: User[]) => {
+    const printSlips = async (slips: DriverSlip[]) => {
         if (slips.length === 0) return;
 
-        toast({ title: "جاري تجهيز الملف...", description: `سيتم طباعة ${slips.length} كشوفات.` });
+        toast({ title: "جاري تجهيز الملفات...", description: `سيتم طباعة ${slips.length} كشوفات.` });
+        
+        const pdfMake = await lazyPdfMake();
+        const bwipjs = await lazyBwipJs();
+        const vfs = await lazyVfsFonts();
+
+        pdfMake.vfs = vfs;
+        pdfMake.fonts = { Amiri: { normal: "Amiri-Regular.ttf", bold: "Amiri-Bold.ttf" } };
         
         const allPagesContent: any[] = [];
+        const logoBase64 = settings.login.reportsLogo || settings.login.headerLogo;
 
         for (let i = 0; i < slips.length; i++) {
             const slip = slips[i];
-            const logoBase64 = settings.login.reportsLogo || settings.login.headerLogo;
             let barcodeBase64 = "";
 
             try {
                 const canvas = document.createElement('canvas');
                 await bwipjs.toCanvas(canvas, {
-                    bcid: 'code128',
-                    text: slip.id,
-                    scale: 3,
-                    height: 15,
-                    includetext: true,
-                    textsize: 12
+                    bcid: 'code128', text: slip.id, scale: 3, height: 15, includetext: true, textsize: 12
                 });
                 barcodeBase64 = canvas.toDataURL('image/png');
-            } catch (e) {
-                console.error("Barcode generation error:", e);
-            }
+            } catch (e) { console.error("Barcode generation error:", e); }
 
             const user = users.find(u => u.name === slip.driverName);
 
             const tableBody = [
-                [
-                    { text: '#', style: 'tableHeader' },
-                    { text: 'رقم الطلب', style: 'tableHeader' },
-                    { text: 'المستلم', style: 'tableHeader' },
-                    { text: 'العنوان', style: 'tableHeader' },
-                    { text: 'سبب الإرجاع', style: 'tableHeader' },
-                    { text: 'المبلغ', style: 'tableHeader' },
-                ],
+                [{ text: '#', style: 'tableHeader' }, { text: 'رقم الطلب', style: 'tableHeader' }, { text: 'المستلم', style: 'tableHeader' }, { text: 'العنوان', style: 'tableHeader' }, { text: 'سبب الإرجاع', style: 'tableHeader' }, { text: 'المبلغ', style: 'tableHeader' }],
                 ...slip.orders.map((o: Order, i: number) => [
-                    { text: String(i + 1), style: 'tableCell' },
-                    { text: String(o.id || ''), style: 'tableCell', alignment: 'center' },
-                    { text: `${o.recipient || ''}\n${o.phone || ''}`, style: 'tableCell' },
-                    { text: `${o.city || ''} - ${o.address || ''}`, style: 'tableCell' },
-                    { text: o.previousStatus || o.status || 'غير محدد', style: 'tableCell' },
-                    { text: (o.itemPrice?.toFixed(2) || '0.00'), style: 'tableCell', alignment: 'center' },
+                    { text: String(i + 1), style: 'tableCell' }, { text: String(o.id || ''), style: 'tableCell', alignment: 'center' }, { text: `${o.recipient || ''}\n${o.phone || ''}`, style: 'tableCell' }, { text: `${o.city || ''} - ${o.address || ''}`, style: 'tableCell' }, { text: o.previousStatus || o.status || 'غير محدد', style: 'tableCell' }, { text: (o.itemPrice?.toFixed(2) || '0.00'), style: 'tableCell', alignment: 'center' }
                 ]),
-                [
-                    { text: 'الإجمالي', colSpan: 5, bold: true, style: 'tableCell', alignment: 'left' }, {}, {}, {}, {},
-                    { text: slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0).toFixed(2), bold: true, style: 'tableCell', alignment: 'center' }
-                ]
+                [{ text: 'الإجمالي', colSpan: 5, bold: true, style: 'tableCell', alignment: 'left' }, {}, {}, {}, {}, { text: slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0).toFixed(2), bold: true, style: 'tableCell', alignment: 'center' }]
             ];
 
             const pageContent = [
                 {
                     columns: [
-                        {
-                            width: 'auto',
-                            stack: [
-                                { text: `اسم السائق: ${slip.driverName}`, fontSize: 9 },
-                                { text: `رقم الهاتف: ${user?.email || 'غير متوفر'}`, fontSize: 9 },
-                                { text: `التاريخ: ${new Date(slip.date).toLocaleString('ar-EG')}`, fontSize: 9 },
-                                { text: `الفرع: ${slip.orders[0]?.city || 'غير متوفر'}`, fontSize: 9 },
-                            ],
-                            alignment: 'right'
-                        },
-                        {
-                            width: '*',
-                            stack: [
-                                logoBase64 ? { image: logoBase64, width: 70, alignment: 'center', margin: [0, 0, 0, 5] } : {},
-                                { text: 'كشف استلام مرتجعات من السائق', style: 'header' }
-                            ]
-                        },
-                        {
-                            width: 'auto',
-                            stack: [
-                                barcodeBase64 ? { image: barcodeBase64, width: 120, alignment: 'center' } : { text: slip.id, alignment: 'center' }
-                            ],
-                            alignment: 'left'
-                        }
+                        { width: 'auto', stack: [{ text: `اسم السائق: ${slip.driverName}`, fontSize: 9 }, { text: `رقم الهاتف: ${user?.email || 'غير متوفر'}`, fontSize: 9 }, { text: `التاريخ: ${new Date(slip.date).toLocaleString('ar-EG')}`, fontSize: 9 }, { text: `الفرع: ${slip.orders[0]?.city || 'غير متوفر'}`, fontSize: 9 },], alignment: 'right' },
+                        { width: '*', stack: [ logoBase64 ? { image: logoBase64, width: 70, alignment: 'center', margin: [0, 0, 0, 5] } : {}, { text: 'كشف استلام مرتجعات من السائق', style: 'header' }] },
+                        { width: 'auto', stack: [ barcodeBase64 ? { image: barcodeBase64, width: 120, alignment: 'center' } : { text: slip.id, alignment: 'center' }], alignment: 'left' }
                     ],
                     columnGap: 10
                 },
-                {
-                    table: {
-                        headerRows: 1,
-                        widths: ['auto', 'auto', '*', '*', '*', 'auto'],
-                        body: tableBody,
-                    },
-                    layout: 'lightHorizontalLines',
-                    margin: [0, 20, 0, 10]
-                },
-                {
-                    columns: [
-                        { text: `توقيع المستلم (موظف الفرع): .........................`, margin: [0, 50, 0, 0] },
-                    ]
-                }
+                { table: { headerRows: 1, widths: ['auto', 'auto', '*', '*', '*', 'auto'], body: tableBody, }, layout: 'lightHorizontalLines', margin: [0, 20, 0, 10] },
+                { columns: [{ text: `توقيع المستلم (موظف الفرع): .........................`, margin: [0, 50, 0, 0] }] }
             ];
             
             allPagesContent.push(...pageContent);
@@ -180,12 +125,7 @@ export const DriverSlips = () => {
                 tableHeader: { bold: true, fontSize: 11, fillColor: '#eeeeee', alignment: 'center' },
                 tableCell: { margin: [5, 5, 5, 5] },
             },
-            footer: (currentPage: number, pageCount: number) => ({
-                text: `صفحة ${currentPage} من ${pageCount}`,
-                alignment: 'center',
-                fontSize: 8,
-                margin: [0, 10, 0, 0]
-            }),
+            footer: (currentPage: number, pageCount: number) => ({ text: `صفحة ${currentPage} من ${pageCount}`, alignment: 'center', fontSize: 8, margin: [0, 10, 0, 0] }),
             pageSize: 'A4',
             pageMargins: [40, 60, 40, 60]
         };
@@ -293,7 +233,7 @@ export const DriverSlips = () => {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                         <DropdownMenuItem onSelect={() => printSlips(selectedSlipData, users)}>
+                         <DropdownMenuItem onSelect={() => printSlips(selectedSlipData)}>
                             <Icon name="Printer" className="ml-2 h-4 w-4" />
                             طباعة المحدد
                         </DropdownMenuItem>
@@ -337,7 +277,7 @@ export const DriverSlips = () => {
                                   <TableCell className="border-l text-center whitespace-nowrap">{slip.itemCount}</TableCell>
                                   <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
                                         <Button variant="outline" size="sm" onClick={() => setCurrentSlipDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
-                                        <Button variant="ghost" size="icon" onClick={() => printSlips([slip], users)}><Icon name="Printer" className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => printSlips([slip])}><Icon name="Printer" className="h-4 w-4" /></Button>
                                   </TableCell>
                               </TableRow>
                           ))
