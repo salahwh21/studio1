@@ -68,115 +68,115 @@ export const DriverSlips = () => {
 
     toast({ title: "جاري تجهيز الملف...", description: `سيتم طباعة ${slips.length} كشوفات.` });
 
-    const docDefinition: any = {
-      defaultStyle: { font: "Amiri", fontSize: 10, alignment: "right" },
-      content: [],
-      styles: {
-        header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-        tableHeader: { bold: true, fontSize: 11, color: 'black', fillColor: '#eeeeee', alignment: 'center' },
-        tableCell: { margin: [5, 5, 5, 5] },
-        footer: { fontSize: 8, alignment: 'center', color: 'grey' }
-      }
-    };
+    for (const slip of slips) {
+        const logoBase64 = settings.login.reportsLogo || settings.login.headerLogo;
+        let barcodeBase64 = "";
 
-    for (const [index, slip] of slips.entries()) {
-      const logoBase64 = settings.login.reportsLogo || settings.login.headerLogo;
-      let barcodeBase64 = "";
-
-      try {
-        const canvas = document.createElement('canvas');
-        await bwipjs.toCanvas(canvas, {
-          bcid: 'code128', text: slip.id, scale: 3, height: 12, includetext: true, textyalign: 'below', textsize: 11,
-        });
-        barcodeBase64 = canvas.toDataURL('image/png');
-      } catch (e) {
-        console.error("Barcode generation error:", e);
-      }
-      
-      const user = users.find(u => u.name === slip.driverName);
-
-      const tableBody = [
-        [
-          { text: '#', style: 'tableHeader' },
-          { text: 'رقم المتسلسل', style: 'tableHeader' },
-          { text: 'اسم المستلم', style: 'tableHeader' },
-          { text: 'عنوان المستلم', style: 'tableHeader' },
-          { text: 'سبب الارجاع', style: 'tableHeader' },
-          { text: 'مطلوب للتاجر', style: 'tableHeader' },
-        ],
-        ...slip.orders.map((o: Order, i: number) => [
-          { text: String(i + 1), style: 'tableCell' },
-          { text: String(o.id || ''), style: 'tableCell', alignment: 'center' },
-          { text: `${String(o.recipient || '')}\n${String(o.phone || '')}`, style: 'tableCell' },
-          { text: `${String(o.city || '')} - ${String(o.address || '')}`, style: 'tableCell' },
-          { text: String(o.previousStatus || o.status || 'غير محدد'), style: 'tableCell' },
-          { text: String(o.itemPrice?.toFixed(2) || '0.00'), style: 'tableCell', alignment: 'center' },
-        ]),
-        [
-          { text: 'الإجمالي', colSpan: 5, bold: true, style: 'tableCell', alignment: 'left' },
-          {}, {}, {}, {},
-          { text: slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0).toFixed(2), bold: true, style: 'tableCell', alignment: 'center' }
-        ]
-      ];
-
-      docDefinition.content.push(
-        {
-          columns: [
-            {
-              width: 'auto',
-              stack: [
-                { text: `اسم التاجر : ${String(user?.storeName || slip.driverName)}`, fontSize: 9 },
-                { text: `رقم المحمول للتاجر : ${String(user?.email || 'غير متوفر')}`, fontSize: 9 },
-                { text: `التاريخ : ${new Date(slip.date).toLocaleString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`, fontSize: 9 },
-                { text: `العنوان : ${String(slip.orders[0]?.city || 'غير متوفر')}`, fontSize: 9 },
-              ],
-              alignment: 'right'
-            },
-            {
-              width: '*',
-              stack: [
-                logoBase64 ? { image: logoBase64, width: 70, alignment: 'center', margin: [0, 0, 0, 5] } : {},
-                { text: 'كشف المرتجع', style: 'header', alignment: 'center' }
-              ]
-            },
-            {
-              width: 'auto',
-              stack: [
-                 barcodeBase64 ? { image: barcodeBase64, width: 120, alignment: 'center' } : {text: slip.id, alignment: 'center'},
-              ],
-              alignment: 'left'
-            }
-          ],
-          columnGap: 10
-        },
-        {
-          table: {
-            headerRows: 1,
-            widths: ['auto', 'auto', '*', '*', '*', 'auto'],
-            body: tableBody,
-          },
-          layout: 'lightHorizontalLines',
-          margin: [0, 20, 0, 10]
-        },
-        {
-            columns: [
-                { text: `توقيع المستلم: .........................`, margin: [0, 50, 0, 0] },
-            ],
-        },
-        {
-          text: `Page 1 of 1`,
-          style: 'footer',
-          margin: [0, 20, 0, 0]
+        try {
+            const canvas = document.createElement('canvas');
+            await bwipjs.toCanvas(canvas, {
+                bcid: 'code128',
+                text: slip.id,
+                scale: 3,
+                height: 15,
+                includetext: true,
+                textsize: 12
+            });
+            barcodeBase64 = canvas.toDataURL('image/png');
+        } catch (e) {
+            console.error("Barcode generation error:", e);
         }
-      );
 
-      if (index < slips.length - 1) {
-        docDefinition.content.push({ text: '', pageBreak: 'after' });
-      }
+        const user = users.find(u => u.name === slip.driverName);
+
+        const tableBody = [
+            [
+                { text: '#', style: 'tableHeader' },
+                { text: 'رقم الطلب', style: 'tableHeader' },
+                { text: 'المستلم', style: 'tableHeader' },
+                { text: 'العنوان', style: 'tableHeader' },
+                { text: 'سبب الإرجاع', style: 'tableHeader' },
+                { text: 'المبلغ', style: 'tableHeader' },
+            ],
+            ...slip.orders.map((o: Order, i: number) => [
+                { text: String(i + 1), style: 'tableCell' },
+                { text: String(o.id || ''), style: 'tableCell', alignment: 'center' },
+                { text: `${o.recipient || ''}\n${o.phone || ''}`, style: 'tableCell' },
+                { text: `${o.city || ''} - ${o.address || ''}`, style: 'tableCell' },
+                { text: o.previousStatus || o.status || 'غير محدد', style: 'tableCell' },
+                { text: (o.itemPrice?.toFixed(2) || '0.00'), style: 'tableCell', alignment: 'center' },
+            ]),
+            [
+                { text: 'الإجمالي', colSpan: 5, bold: true, style: 'tableCell', alignment: 'left' }, {}, {}, {}, {},
+                { text: slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0).toFixed(2), bold: true, style: 'tableCell', alignment: 'center' }
+            ]
+        ];
+
+        const docDefinition: any = {
+            defaultStyle: { font: "Amiri", fontSize: 10, alignment: "right" },
+            content: [
+                {
+                    columns: [
+                        {
+                            width: 'auto',
+                            stack: [
+                                { text: `اسم السائق: ${slip.driverName}`, fontSize: 9 },
+                                { text: `رقم الهاتف: ${user?.email || 'غير متوفر'}`, fontSize: 9 },
+                                { text: `التاريخ: ${new Date(slip.date).toLocaleString('ar-EG')}`, fontSize: 9 },
+                                { text: `الفرع: ${slip.orders[0]?.city || 'غير متوفر'}`, fontSize: 9 },
+                            ],
+                            alignment: 'right'
+                        },
+                        {
+                            width: '*',
+                            stack: [
+                                logoBase64 ? { image: logoBase64, width: 70, alignment: 'center', margin: [0, 0, 0, 5] } : {},
+                                { text: 'كشف استلام مرتجعات من السائق', style: 'header' }
+                            ]
+                        },
+                        {
+                            width: 'auto',
+                            stack: [
+                                barcodeBase64 ? { image: barcodeBase64, width: 120, alignment: 'center' } : { text: slip.id, alignment: 'center' }
+                            ],
+                            alignment: 'left'
+                        }
+                    ],
+                    columnGap: 10
+                },
+                {
+                    table: {
+                        headerRows: 1,
+                        widths: ['auto', 'auto', '*', '*', '*', 'auto'],
+                        body: tableBody,
+                    },
+                    layout: 'lightHorizontalLines',
+                    margin: [0, 20, 0, 10]
+                },
+                {
+                    columns: [
+                        { text: `توقيع المستلم (موظف الفرع): .........................`, margin: [0, 50, 0, 0] },
+                    ]
+                }
+            ],
+            styles: {
+                header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+                tableHeader: { bold: true, fontSize: 11, fillColor: '#eeeeee', alignment: 'center' },
+                tableCell: { margin: [5, 5, 5, 5] },
+            },
+            footer: (currentPage: number, pageCount: number) => ({
+                text: `صفحة ${currentPage} من ${pageCount}`,
+                alignment: 'center',
+                fontSize: 8,
+                margin: [0, 10, 0, 0]
+            }),
+            pageSize: 'A4',
+            pageMargins: [40, 60, 40, 60]
+        };
+
+        pdfMake.createPdf(docDefinition).open();
     }
-
-    pdfMake.createPdf(docDefinition).open();
-  };
+};
 
     const handleExport = () => {
         const slipsToExport = filteredSlips.filter(s => selectedSlips.includes(s.id));
