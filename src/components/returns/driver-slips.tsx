@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,9 @@ export const DriverSlips = () => {
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
 
+  const [pdfMake, setPdfMake] = useState<any>(null);
+  const [isPdfReady, setIsPdfReady] = useState(false);
+
 
   const [filterDriver, setFilterDriver] = useState<string | null>(null);
   const [filterStartDate, setFilterStartDate] = useState<Date | null>(null);
@@ -61,18 +64,34 @@ export const DriverSlips = () => {
       }
       return matchesDriver && matchesDate;
   }), [driverSlips, filterDriver, filterStartDate, filterEndDate]);
+
+  useEffect(() => {
+    const initializePdfMake = async () => {
+        try {
+            const pdfmakeInstance = await lazyPdfMake();
+            const vfs = await lazyVfsFonts();
+            pdfmakeInstance.vfs = vfs;
+            pdfmakeInstance.fonts = { Amiri: { normal: "Amiri-Regular.ttf", bold: "Amiri-Bold.ttf" } };
+            setPdfMake(() => pdfmakeInstance);
+            setIsPdfReady(true);
+        } catch (error) {
+            console.error("Failed to initialize pdfmake:", error);
+            toast({ variant: 'destructive', title: "خطأ في تهيئة الطباعة", description: "لم يتم تحميل مكتبة طباعة الـ PDF." });
+        }
+    };
+    initializePdfMake();
+  }, [toast]);
   
     const printSlips = async (slips: DriverSlip[]) => {
+        if (!isPdfReady || !pdfMake) {
+             toast({ title: "الطباعة غير جاهزة", description: "الرجاء الانتظار لحظات ثم المحاولة مرة أخرى." });
+            return;
+        }
         if (slips.length === 0) return;
 
         toast({ title: "جاري تجهيز الملفات...", description: `سيتم طباعة ${slips.length} كشوفات.` });
         
-        const pdfMake = await lazyPdfMake();
         const bwipjs = await lazyBwipJs();
-        const vfs = await lazyVfsFonts();
-
-        pdfMake.vfs = vfs;
-        pdfMake.fonts = { Amiri: { normal: "Amiri-Regular.ttf", bold: "Amiri-Bold.ttf" } };
         
         const allPagesContent: any[] = [];
         const logoBase64 = settings.login.reportsLogo || settings.login.headerLogo;
@@ -107,7 +126,7 @@ export const DriverSlips = () => {
             const pageContent = [
                 {
                     columns: [
-                        { width: 'auto', stack: [{ text: `اسم السائق: ${slip.driverName}`, fontSize: 9 }, { text: `رقم الهاتف: ${user?.email || 'غير متوفر'}`, fontSize: 9 }, { text: `التاريخ: ${new Date(slip.date).toLocaleString('ar-EG')}`, fontSize: 9 }, { text: `الفرع: ${slip.orders[0]?.city || 'غير متوفر'}`, fontSize: 9 },], alignment: 'right' },
+                        { width: 'auto', stack: [{ text: `اسم السائق: ${slip.driverName}`, fontSize: 9 }, { text: `رقم الهاتف: ${String(user?.email || 'غير متوفر')}`, fontSize: 9 }, { text: `التاريخ: ${new Date(slip.date).toLocaleString('ar-EG')}`, fontSize: 9 }, { text: `الفرع: ${String(slip.orders[0]?.city || 'غير متوفر')}`, fontSize: 9 },], alignment: 'right' },
                         { width: '*', stack: [ logoBase64 ? { image: logoBase64, width: 70, alignment: 'center', margin: [0, 0, 0, 5] } : {}, { text: 'كشف استلام مرتجعات من السائق', style: 'header' }] },
                         { width: 'auto', stack: [ barcodeBase64 ? { image: barcodeBase64, width: 120, alignment: 'center' } : { text: slip.id, alignment: 'center' }], alignment: 'left' }
                     ],
@@ -142,12 +161,12 @@ export const DriverSlips = () => {
 
     const handlePrintAction = async (slips: DriverSlip[]) => {
         const pdfDoc = await printSlips(slips);
-        pdfDoc.open();
+        pdfDoc?.open();
     };
     
     const handleEmailAction = async (slips: DriverSlip[]) => {
         const pdfDoc = await printSlips(slips);
-        pdfDoc.getBlob((blob) => {
+        pdfDoc?.getBlob((blob) => {
             setPdfBlob(blob);
             setIsEmailDialogOpen(true);
         });
@@ -261,7 +280,7 @@ export const DriverSlips = () => {
                 </Popover>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="gap-1.5" disabled={selectedSlips.length === 0}>
+                        <Button variant="outline" className="gap-1.5" disabled={selectedSlips.length === 0 || !isPdfReady}>
                             <Icon name="Send" className="h-4 w-4" />
                             إجراءات ({selectedSlips.length})
                         </Button>
@@ -311,7 +330,7 @@ export const DriverSlips = () => {
                                   <TableCell className="border-l text-center whitespace-nowrap">{slip.itemCount}</TableCell>
                                   <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
                                         <Button variant="outline" size="sm" onClick={() => setCurrentSlipDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
-                                        <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])}><Icon name="Printer" className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])} disabled={!isPdfReady}><Icon name="Printer" className="h-4 w-4" /></Button>
                                   </TableCell>
                               </TableRow>
                           ))
@@ -362,12 +381,14 @@ export const DriverSlips = () => {
                         <Label htmlFor="email-body">نص الرسالة</Label>
                         <Textarea id="email-body" defaultValue="مرحباً، مرفق طيه كشوفات المرتجعات الخاصة بكم. يرجى المراجعة." />
                     </div>
-                     <div className="text-sm text-muted-foreground">
-                        <Button variant="link" className="p-0 h-auto" onClick={handleDownloadAttachment} disabled={!pdfBlob}>
-                            <Icon name="Paperclip" className="inline h-4 w-4 ml-1" />
-                            slips.pdf
-                        </Button>
-                    </div>
+                    {pdfBlob && (
+                         <div className="text-sm text-muted-foreground">
+                            <Button variant="link" className="p-0 h-auto" onClick={handleDownloadAttachment}>
+                                <Icon name="Paperclip" className="inline h-4 w-4 ml-1" />
+                                slips.pdf ({Math.round(pdfBlob.size / 1024)} KB)
+                            </Button>
+                        </div>
+                    )}
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>إلغاء</Button>
