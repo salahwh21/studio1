@@ -16,7 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from '@/hooks/use-toast';
 import Papa from 'papaparse';
 import pdfMake from "pdfmake/build/pdfmake";
-import bwipjs from "bwip-js";
+import bwipjs from "bwip-js/browser";
 import { amiriRegularBase64, amiriBoldBase64 } from "./amiri_base64";
 
 
