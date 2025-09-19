@@ -118,7 +118,7 @@ export const DriverSlips = () => {
         }
         
         const docDefinition: any = {
-            defaultStyle: { font: "Amiri", fontSize: 10, alignment: "right" },
+            defaultStyle: { font: "Roboto", fontSize: 10, alignment: "right" },
             content: allPagesContent,
             styles: {
                 header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
