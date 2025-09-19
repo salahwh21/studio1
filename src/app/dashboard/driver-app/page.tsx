@@ -80,7 +80,7 @@ export default function DriverWebAppPage() {
 
   const outForDeliveryAmount = driverOrders
     .filter(order => order.status === 'جاري التوصيل')
-    .reduce((sum, order) => sum + order.cod, 0);
+    .reduce((sum, order) => sum + (order.cod || 0), 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -307,3 +307,4 @@ export default function DriverWebAppPage() {
   );
 }
 
+    

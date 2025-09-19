@@ -156,11 +156,12 @@ const AddOrderPage = () => {
 
 
   const calculatedFees = useMemo(() => {
-    if (!selectedCity || codValue === undefined) {
+    const safeCodValue = codValue || 0;
+    if (!selectedCity) {
       return { deliveryFee: 0, itemPrice: 0 };
     }
     const deliveryFee = selectedCity === 'عمان' ? 2.5 : 3.5;
-    const itemPrice = isPrepaid ? 0 : (codValue - deliveryFee);
+    const itemPrice = isPrepaid ? 0 : (safeCodValue - deliveryFee);
     return { deliveryFee, itemPrice };
   }, [codValue, selectedCity, isPrepaid]);
 
@@ -770,3 +771,5 @@ const AddOrderPage = () => {
 };
 
 export default AddOrderPage;
+
+    
