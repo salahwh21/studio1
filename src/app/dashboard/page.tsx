@@ -143,7 +143,7 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        <RevenueCard title="إجمالي الإيرادات" value={formatCurrency(profitChartData.reduce((sum, item) => sum + item.profit, 0))} iconName="TrendingUp" />
+                        <RevenueCard title="إجمالي الإيرادات" value={formatCurrency(profitChartData.reduce((sum, item) => sum + (item.profit || 0), 0))} iconName="TrendingUp" />
                          <RevenueCard title="إجمالي الطلبات" value={orders.length} iconName="ShoppingCart" color="text-blue-500" />
                         {Object.values(orderStatusData).map((stat) => (
                              <Button
