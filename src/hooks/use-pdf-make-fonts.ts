@@ -9,35 +9,37 @@ export const usePdfMakeFonts = () => {
 
     useEffect(() => {
         // Ensure this runs only in the browser and only once
-        if (typeof window !== 'undefined' && !state.isReady) {
-            import('pdfmake/build/pdfmake').then(pdfmakeModule => {
-                import('pdfmake/build/vfs_fonts').then(pdfFontsModule => {
-                    const pdfmakeInstance = pdfmakeModule.default;
-                    
-                    // The vfs object is on pdfFontsModule.default.pdfMake.vfs
-                    if (pdfFontsModule.default.pdfMake) {
-                       pdfmakeInstance.vfs = pdfFontsModule.default.pdfMake.vfs;
-                    }
+        if (typeof window !== 'undefined' && !state.isReady && !state.pdfMake) {
+            Promise.all([
+                import('pdfmake/build/pdfmake'),
+                import('pdfmake/build/vfs_fonts'),
+            ]).then(([pdfmakeModule, pdfFontsModule]) => {
+                const pdfmakeInstance = pdfmakeModule.default;
+                
+                // The vfs object is on pdfFontsModule.default.pdfMake.vfs
+                if (pdfFontsModule.default.pdfMake) {
+                    pdfmakeInstance.vfs = pdfFontsModule.default.pdfMake.vfs;
+                }
 
-                    // Now, define the custom fonts
-                    pdfmakeInstance.fonts = {
-                        ...pdfmakeInstance.fonts, // Keep existing fonts like Roboto
-                        Amiri: {
-                            normal: "Amiri-Regular.ttf",
-                            bold: "Amiri-Bold.ttf"
-                        }
-                    };
-                    // Add the font files to the vfs
-                    if(pdfmakeInstance.vfs){
-                      pdfmakeInstance.vfs["Amiri-Regular.ttf"] = amiriRegularBase64;
-                      pdfmakeInstance.vfs["Amiri-Bold.ttf"] = amiriBoldBase64;
+                // Now, define the custom fonts
+                // Add the font files to the vfs
+                if(pdfmakeInstance.vfs){
+                    pdfmakeInstance.vfs["Amiri-Regular.ttf"] = amiriRegularBase64;
+                    pdfmakeInstance.vfs["Amiri-Bold.ttf"] = amiriBoldBase64;
+                }
+                
+                pdfmakeInstance.fonts = {
+                    ...pdfmakeInstance.fonts, // Keep existing fonts like Roboto
+                    Amiri: {
+                        normal: "Amiri-Regular.ttf",
+                        bold: "Amiri-Bold.ttf"
                     }
-                    
-                    setState({ pdfMake: pdfmakeInstance, isReady: true });
-                });
+                };
+                
+                setState({ pdfMake: pdfmakeInstance, isReady: true });
             });
         }
-    }, [state.isReady]); // Depend on isReady to prevent re-running
+    }, [state.isReady, state.pdfMake]);
 
     return state;
 };
