@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -21,24 +21,23 @@ import { useUsersStore } from '@/store/user-store';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
-import { usePdfMakeFonts } from '@/hooks/use-pdf-make-fonts';
 import Link from 'next/link';
-import ExcelJS from 'exceljs';
 
-// Lazy loading for PDF generation libraries
-const lazyBwipJs = async () => (await import('bwip-js')).default;
+import { generateDriverSlipPdf } from '@/services/pdf-export-service';
+import { generateDriverSlipExcel } from '@/services/excel-export-service';
+
 
 export const DriverSlips = () => {
   const { driverSlips } = useReturnsStore();
   const { settings } = useSettings();
   const { users } = useUsersStore();
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+
   const [currentSlipDetails, setCurrentSlipDetails] = useState<DriverSlip | null>(null);
   const [selectedSlips, setSelectedSlips] = useState<string[]>([]);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
-
-  const { pdfMake, isReady: isPdfReady } = usePdfMakeFonts();
 
   const [filterDriver, setFilterDriver] = useState<string | null>(null);
   const [filterStartDate, setFilterStartDate] = useState<Date | null>(null);
@@ -58,102 +57,45 @@ export const DriverSlips = () => {
       return matchesDriver && matchesDate;
   }), [driverSlips, filterDriver, filterStartDate, filterEndDate]);
   
-    const printSlips = async (slips: DriverSlip[]) => {
-        if (!isPdfReady || !pdfMake) {
-             toast({ title: "الطباعة غير جاهزة", description: "الرجاء الانتظار لحظات ثم المحاولة مرة أخرى." });
-            return;
-        }
+    const handlePrintAction = (slips: DriverSlip[]) => {
         if (slips.length === 0) return;
-
-        toast({ title: "جاري تجهيز الملفات...", description: `سيتم طباعة ${slips.length} كشوفات.` });
-        
-        const bwipjs = await lazyBwipJs();
-        
-        const allPagesContent: any[] = [];
-        const logoBase64 = settings.login.reportsLogo || settings.login.headerLogo;
-
-        for (let i = 0; i < slips.length; i++) {
-            const slip = slips[i];
-            let barcodeBase64 = "";
-
-            try {
-                const canvas = document.createElement('canvas');
-                await bwipjs.toCanvas(canvas, {
-                    bcid: 'code128', text: slip.id, scale: 3, height: 15, includetext: true, textsize: 12
-                });
-                barcodeBase64 = canvas.toDataURL('image/png');
-            } catch (e) { console.error("Barcode generation error:", e); }
-
-            const user = users.find(u => u.name === slip.driverName);
-
-            const tableBody = [
-                [{ text: '#', style: 'tableHeader' }, { text: 'رقم الطلب', style: 'tableHeader' }, { text: 'المستلم', style: 'tableHeader' }, { text: 'العنوان', style: 'tableHeader' }, { text: 'سبب الإرجاع', style: 'tableHeader' }, { text: 'المبلغ', style: 'tableHeader' }],
-                ...slip.orders.map((o: Order, i: number) => [
-                    { text: String(i + 1), style: 'tableCell' },
-                    { text: String(o.id || ''), style: 'tableCell', alignment: 'center' },
-                    { text: `${String(o.recipient || '')}\n${String(o.phone || '')}`, style: 'tableCell' },
-                    { text: `${String(o.city || '')} - ${String(o.address || '')}`, style: 'tableCell' },
-                    { text: String(o.previousStatus || o.status || 'غير محدد'), style: 'tableCell' },
-                    { text: String(o.itemPrice?.toFixed(2) || '0.00'), style: 'tableCell', alignment: 'center' }
-                ]),
-                [{ text: 'الإجمالي', colSpan: 5, bold: true, style: 'tableCell', alignment: 'left' }, {}, {}, {}, {}, { text: slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0).toFixed(2), bold: true, style: 'tableCell', alignment: 'center' }]
-            ];
-
-            const pageContent = [
-                {
-                    columns: [
-                        { width: 'auto', stack: [{ text: `اسم السائق: ${slip.driverName}`, fontSize: 9 }, { text: `رقم الهاتف: ${String(user?.email || 'غير متوفر')}`, fontSize: 9 }, { text: `التاريخ: ${new Date(slip.date).toLocaleString('ar-EG')}`, fontSize: 9 }, { text: `الفرع: ${String(slip.orders[0]?.city || 'غير متوفر')}`, fontSize: 9 },], alignment: 'right' },
-                        { width: '*', stack: [ logoBase64 ? { image: logoBase64, width: 70, alignment: 'center', margin: [0, 0, 0, 5] } : {}, { text: 'كشف استلام مرتجعات من السائق', style: 'header' }] },
-                        { width: 'auto', stack: [ barcodeBase64 ? { image: barcodeBase64, width: 120, alignment: 'center' } : { text: slip.id, alignment: 'center' }], alignment: 'left' }
-                    ],
-                    columnGap: 10
-                },
-                { table: { headerRows: 1, widths: ['auto', 'auto', '*', '*', '*', 'auto'], body: tableBody, }, layout: 'lightHorizontalLines', margin: [0, 20, 0, 10] },
-                { columns: [{ text: `توقيع المستلم (موظف الفرع): .........................`, margin: [0, 50, 0, 0] }] }
-            ];
-            
-            allPagesContent.push(...pageContent);
-
-            if (i < slips.length - 1) {
-                allPagesContent.push({ text: '', pageBreak: 'after' });
-            }
-        }
-        
-        const docDefinition: any = {
-            defaultStyle: { font: "Roboto", fontSize: 10, alignment: "right" },
-            content: allPagesContent,
-            styles: {
-                header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-                tableHeader: { bold: true, fontSize: 11, fillColor: '#eeeeee', alignment: 'center' },
-                tableCell: { margin: [5, 5, 5, 5] },
-            },
-            footer: (currentPage: number, pageCount: number) => ({ text: `صفحة ${currentPage} من ${pageCount}`, alignment: 'center', fontSize: 8, margin: [0, 10, 0, 0] }),
-            pageSize: 'A4',
-            pageMargins: [40, 60, 40, 60]
-        };
-
-        return pdfMake.createPdf(docDefinition);
-    };
-
-    const handlePrintAction = async (slips: DriverSlip[]) => {
-        const pdfDoc = await printSlips(slips);
-        pdfDoc?.open();
-    };
-    
-    const handleEmailAction = async (slips: DriverSlip[]) => {
-        const pdfDoc = await printSlips(slips);
-        pdfDoc?.getBlob((blob) => {
-            setPdfBlob(blob);
-            setIsEmailDialogOpen(true);
+        startTransition(async () => {
+            toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${slips.length} كشوفات.` });
+            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+            const pdfDoc = await generateDriverSlipPdf(slips, users, reportsLogo);
+            pdfDoc.open();
         });
     };
+    
+    const handleEmailAction = (slips: DriverSlip[]) => {
+        if (slips.length === 0) return;
+        startTransition(async () => {
+            toast({ title: "جاري تجهيز المرفق...", description: "قد تستغرق العملية بضع لحظات." });
+            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+            const pdfDoc = await generateDriverSlipPdf(slips, users, reportsLogo);
+            pdfDoc.getBlob((blob) => {
+                setPdfBlob(blob);
+                setIsEmailDialogOpen(true);
+            });
+        });
+    };
+
+    const handleExcelExport = (slips: DriverSlip[]) => {
+        if (slips.length === 0) return;
+        startTransition(async () => {
+             toast({ title: "جاري تجهيز ملف Excel..." });
+            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+            await generateDriverSlipExcel(slips, users, reportsLogo);
+             toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
+        });
+    }
     
     const handleDownloadAttachment = () => {
         if(pdfBlob) {
             const url = URL.createObjectURL(pdfBlob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'slips.pdf';
+            a.download = 'driver-slips.pdf';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -203,113 +145,6 @@ export const DriverSlips = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    };
-
-    const handleExcelExport = async (slips: DriverSlip[]) => {
-        if (slips.length === 0) return;
-        toast({ title: "جاري تجهيز ملف Excel..." });
-
-        const workbook = new ExcelJS.Workbook();
-        const bwipjs = await lazyBwipJs();
-        const logoBase64 = settings.login.reportsLogo || settings.login.headerLogo;
-
-        for (const slip of slips) {
-            const worksheet = workbook.addWorksheet(`Slip ${slip.id.substring(3, 7)}`);
-
-            // --- Page Setup ---
-            worksheet.views = [{ rightToLeft: true }];
-            worksheet.pageSetup = { paperSize: 9, orientation: 'portrait', margins: { left: 0.25, right: 0.25, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 } };
-            worksheet.properties.defaultColWidth = 12;
-            worksheet.getColumn('C').width = 25;
-            worksheet.getColumn('D').width = 25;
-
-            // --- Logo & Barcode ---
-            let logoImageId;
-            if (logoBase64) {
-                 logoImageId = workbook.addImage({
-                    base64: logoBase64,
-                    extension: 'png',
-                });
-                worksheet.addImage(logoImageId, {
-                    tl: { col: 3, row: 1 },
-                    ext: { width: 100, height: 40 },
-                });
-            }
-            
-            let barcodeImageId;
-            try {
-                const canvas = document.createElement('canvas');
-                await bwipjs.toCanvas(canvas, { bcid: 'code128', text: slip.id, scale: 3, height: 10, includetext: true, textsize: 10 });
-                const barcodeBase64 = canvas.toDataURL('image/png');
-                 barcodeImageId = workbook.addImage({ base64: barcodeBase64, extension: 'png' });
-                 worksheet.addImage(barcodeImageId, { tl: { col: 0.5, row: 1 }, ext: { width: 150, height: 50 } });
-            } catch (e) { worksheet.getCell('A2').value = slip.id; }
-
-
-            // --- Header ---
-            worksheet.mergeCells('B2:E2');
-            const titleCell = worksheet.getCell('B2');
-            titleCell.value = 'كشف استلام مرتجعات من السائق';
-            titleCell.font = { size: 16, bold: true };
-            titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
-            worksheet.getRow(2).height = 30;
-
-            const user = users.find(u => u.name === slip.driverName);
-            worksheet.getCell('F3').value = `اسم السائق: ${slip.driverName}`;
-            worksheet.getCell('F4').value = `رقم الهاتف: ${user?.email || 'N/A'}`;
-            worksheet.getCell('F5').value = `التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`;
-            worksheet.getCell('G3').value = `الفرع: ${slip.orders[0]?.city || ''}`;
-
-
-            // --- Table Header ---
-            const headerRow = worksheet.getRow(7);
-            headerRow.values = ['#', 'رقم الطلب', 'المستلم', 'العنوان', 'سبب الإرجاع', 'المبلغ'];
-            headerRow.font = { bold: true };
-            headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-            headerRow.eachCell(cell => {
-                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEEEEE' } };
-                cell.border = { bottom: { style: 'thin' } };
-            });
-
-            // --- Table Data ---
-            slip.orders.forEach((order, index) => {
-                const row = worksheet.addRow([
-                    index + 1,
-                    order.id,
-                    `${order.recipient}\n${order.phone}`,
-                    `${order.city} - ${order.address}`,
-                    order.previousStatus || order.status,
-                    order.itemPrice || 0
-                ]);
-                row.getCell(3).alignment = { wrapText: true };
-                row.getCell(4).alignment = { wrapText: true };
-                row.getCell(6).numFmt = '#,##0.00 "د.أ"';
-                row.eachCell(cell => { cell.alignment = { ...cell.alignment, vertical: 'middle' }; });
-            });
-
-            // --- Table Footer ---
-            const totalRow = worksheet.addRow(['', 'الإجمالي', '', '', '', slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0)]);
-            worksheet.mergeCells(`B${totalRow.number}:E${totalRow.number}`);
-            totalRow.font = { bold: true };
-            totalRow.getCell(6).numFmt = '#,##0.00 "د.أ"';
-
-
-            // --- Footer ---
-            const signatureRow = worksheet.addRow(['']);
-            worksheet.mergeCells(`A${signatureRow.number}:C${signatureRow.number}`);
-            worksheet.getCell(`A${signatureRow.number}`).value = 'توقيع المستلم (موظف الفرع): .........................';
-            worksheet.getCell(`A${signatureRow.number}`).font = { size: 12 };
-        }
-
-        const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `driver_slips_${new Date().toISOString().slice(0,10)}.xlsx`;
-        link.click();
-        URL.revokeObjectURL(link.href);
-        
-        toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
     };
 
     const handleSelectAll = (checked: boolean) => {
@@ -369,7 +204,7 @@ export const DriverSlips = () => {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                         <DropdownMenuItem onSelect={() => handlePrintAction(selectedSlipData)} disabled={!isPdfReady}>
+                         <DropdownMenuItem onSelect={() => handlePrintAction(selectedSlipData)}>
                             <Icon name="Printer" className="ml-2 h-4 w-4" />
                             طباعة المحدد (PDF)
                         </DropdownMenuItem>
@@ -383,7 +218,7 @@ export const DriverSlips = () => {
                             تصدير المحدد (Excel)
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => handleEmailAction(selectedSlipData)} disabled={!isPdfReady}>
+                        <DropdownMenuItem onSelect={() => handleEmailAction(selectedSlipData)}>
                             <Icon name="Mail" className="ml-2 h-4 w-4" />
                             إرسال المحدد (بريد إلكتروني)
                         </DropdownMenuItem>
@@ -420,7 +255,7 @@ export const DriverSlips = () => {
                                   <TableCell className="border-l text-center whitespace-nowrap">{slip.itemCount}</TableCell>
                                   <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
                                         <Button variant="outline" size="sm" onClick={() => setCurrentSlipDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
-                                        <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])} disabled={!isPdfReady}><Icon name="Printer" className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])}><Icon name="Printer" className="h-4 w-4" /></Button>
                                   </TableCell>
                               </TableRow>
                           ))
@@ -474,14 +309,15 @@ export const DriverSlips = () => {
                     {pdfBlob && (
                          <Button variant="link" className="p-0 h-auto" onClick={handleDownloadAttachment}>
                             <Icon name="Paperclip" className="inline h-4 w-4 ml-1" />
-                            slips.pdf ({Math.round(pdfBlob.size / 1024)} KB)
+                            driver-slips.pdf ({Math.round(pdfBlob.size / 1024)} KB)
                         </Button>
                     )}
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>إلغاء</Button>
-                    <Button onClick={() => toast({title: "تم الإرسال (محاكاة)", description: "في التطبيق الفعلي، سيتم إرسال البريد الآن."})}>
-                        <Icon name="Send" className="ml-2 h-4 w-4" /> إرسال
+                    <Button onClick={() => toast({title: "تم الإرسال (محاكاة)", description: "في التطبيق الفعلي، سيتم إرسال البريد الآن."})} disabled={isPending}>
+                        {isPending ? <Icon name="Loader2" className="ml-2 h-4 w-4 animate-spin"/> : <Icon name="Send" className="ml-2 h-4 w-4" />}
+                         إرسال
                     </Button>
                 </DialogFooter>
             </DialogContent>
