@@ -87,10 +87,11 @@ export const MerchantSlips = () => {
             
             let barcodeBase64 = "";
             try {
-                const png = await bwipjs.toBuffer({
+                const canvas = document.createElement('canvas');
+                bwipjs.toCanvas(canvas, {
                     bcid: 'code128', text: slip.id, scale: 3, height: 10, includetext: false,
                 });
-                barcodeBase64 = 'data:image/png;base64,' + png.toString('base64');
+                barcodeBase64 = canvas.toDataURL('image/png');
             } catch (e) {
                 console.error("Barcode generation error:", e);
             }

@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import Papa from 'papaparse';
 import pdfMake from "pdfmake/build/pdfmake";
 import bwipjs from "bwip-js";
-import { amiriRegularBase64, amiriBoldBase64 } from './amiri_base64';
+import { amiriRegularBase64, amiriBoldBase64 } from "./amiri_base64";
 
 
 // Font setup for pdfmake
@@ -69,10 +69,11 @@ export const DriverSlips = () => {
   
           let barcodeBase64 = "";
           try {
-              const png = await bwipjs.toBuffer({
-                  bcid: 'code128', text: slip.id, scale: 3, height: 10, includetext: false,
-              });
-              barcodeBase64 = 'data:image/png;base64,' + png.toString('base64');
+            const canvas = document.createElement('canvas');
+            bwipjs.toCanvas(canvas, {
+                bcid: 'code128', text: slip.id, scale: 3, height: 10, includetext: false,
+            });
+            barcodeBase64 = canvas.toDataURL('image/png');
           } catch (e) {
               console.error("Barcode generation error:", e);
           }
