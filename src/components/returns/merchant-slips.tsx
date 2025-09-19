@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,21 +19,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import type { Order } from '@/store/orders-store';
-import { useUsersStore, type User } from '@/store/user-store';
+import { useUsersStore } from '@/store/user-store';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
+import { usePdfMakeFonts } from '@/hooks/use-pdf-make-fonts';
 
 // Lazy loading for PDF generation libraries
-const lazyPdfMake = async () => (await import('pdfmake/build/pdfmake')).default;
 const lazyBwipJs = async () => (await import('bwip-js/browser')).default;
-const lazyVfsFonts = async () => {
-    const { amiriRegularBase64, amiriBoldBase64 } = await import('./amiri_base64');
-    return {
-        "Amiri-Regular.ttf": amiriRegularBase64,
-        "Amiri-Bold.ttf": amiriBoldBase64
-    };
-};
 
 
 export const MerchantSlips = () => {
@@ -48,9 +41,7 @@ export const MerchantSlips = () => {
     const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
     const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
 
-    const [pdfMake, setPdfMake] = useState<any>(null);
-    const [isPdfReady, setIsPdfReady] = useState(false);
-
+    const { pdfMake, isReady: isPdfReady } = usePdfMakeFonts();
 
     const [filterMerchant, setFilterMerchant] = useState<string | null>(null);
     const [filterStartDate, setFilterStartDate] = useState<Date | null>(null);
@@ -82,23 +73,6 @@ export const MerchantSlips = () => {
         setCurrentSlip(slip);
         setShowDetailsDialog(true);
     };
-
-    useEffect(() => {
-        const initializePdfMake = async () => {
-            try {
-                const pdfmakeInstance = await lazyPdfMake();
-                const vfs = await lazyVfsFonts();
-                pdfmakeInstance.vfs = vfs;
-                pdfmakeInstance.fonts = { Amiri: { normal: "Amiri-Regular.ttf", bold: "Amiri-Bold.ttf" } };
-                setPdfMake(() => pdfmakeInstance);
-                setIsPdfReady(true);
-            } catch (error) {
-                console.error("Failed to initialize pdfmake:", error);
-                toast({ variant: 'destructive', title: "خطأ في تهيئة الطباعة", description: "لم يتم تحميل مكتبة طباعة الـ PDF." });
-            }
-        };
-        initializePdfMake();
-    }, [toast]);
 
     const printSlips = async (slips: MerchantSlip[]) => {
         if (!isPdfReady || !pdfMake) {
