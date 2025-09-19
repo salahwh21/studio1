@@ -122,8 +122,10 @@ async function generateExcel(slips: (DriverSlip | MerchantSlip)[], users: User[]
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = filename;
+    document.body.appendChild(link);
     link.click();
     URL.revokeObjectURL(link.href);
+    document.body.removeChild(link);
 }
 
 export const generateDriverSlipExcel = (slips: DriverSlip[], users: User[], reportsLogo: string | null) => {

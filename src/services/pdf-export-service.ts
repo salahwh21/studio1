@@ -2,26 +2,28 @@
 import type { Order } from '@/store/orders-store';
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
 import type { User } from '@/store/user-store';
+import { amiriRegularBase64, amiriBoldBase64 } from '@/components/returns/amiri_base64';
 
 async function getPdfMake() {
-  // Dynamically import pdfmake and vfs_fonts on the client-side
+  // Dynamically import pdfmake on the client-side
   if (typeof window !== 'undefined') {
     const pdfmakeModule = await import('pdfmake/build/pdfmake');
-    const pdfFontsModule = await import('pdfmake/build/vfs_fonts');
     
-    if (pdfmakeModule && pdfFontsModule.default) {
-      pdfmakeModule.vfs = pdfFontsModule.default.pdfMake.vfs;
-      // Use the default Roboto font which has basic Arabic support
-      pdfmakeModule.fonts = {
-        Roboto: {
-          normal: 'Roboto-Regular.ttf',
-          bold: 'Roboto-Medium.ttf',
-          italics: 'Roboto-Italic.ttf',
-          bolditalics: 'Roboto-MediumItalic.ttf'
-        }
-      };
-      return pdfmakeModule;
-    }
+    // Manually define vfs with the Amiri font data
+    pdfmakeModule.vfs = {
+      "Amiri-Regular.ttf": amiriRegularBase64,
+      "Amiri-Bold.ttf": amiriBoldBase64,
+    };
+    
+    pdfmakeModule.fonts = {
+      Amiri: {
+        normal: 'Amiri-Regular.ttf',
+        bold: 'Amiri-Bold.ttf',
+        italics: 'Amiri-Regular.ttf',
+        bolditalics: 'Amiri-Bold.ttf'
+      }
+    };
+    return pdfmakeModule;
   }
   throw new Error('Could not load pdfmake library.');
 }
@@ -105,7 +107,7 @@ const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], 
     }
     
     const docDefinition = {
-        defaultStyle: { font: "Roboto", fontSize: 10, alignment: "right" },
+        defaultStyle: { font: "Amiri", fontSize: 10, alignment: "right" },
         content: allPagesContent,
         styles: {
             header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
