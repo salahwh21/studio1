@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import type { Order } from '@/store/orders-store';
+import { useUsersStore, type User } from '@/store/user-store';
 
 
 // Font setup for pdfmake
@@ -39,6 +40,7 @@ pdfMake.fonts = {
 export const DriverSlips = () => {
   const { driverSlips } = useReturnsStore();
   const { settings } = useSettings();
+  const { users } = useUsersStore();
   const { toast } = useToast();
   const [currentSlipDetails, setCurrentSlipDetails] = useState<DriverSlip | null>(null);
   const [selectedSlips, setSelectedSlips] = useState<string[]>([]);
@@ -123,10 +125,10 @@ export const DriverSlips = () => {
             {
               width: 'auto',
               stack: [
-                { text: `اسم التاجر : ${user?.storeName || slip.driverName}`, fontSize: 9 },
-                { text: `رقم المحمول للتاجر : ${user?.email || 'غير متوفر'}`, fontSize: 9 },
+                { text: `اسم التاجر : ${String(user?.storeName || slip.driverName)}`, fontSize: 9 },
+                { text: `رقم المحمول للتاجر : ${String(user?.email || 'غير متوفر')}`, fontSize: 9 },
                 { text: `التاريخ : ${new Date(slip.date).toLocaleString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`, fontSize: 9 },
-                { text: `العنوان : ${slip.orders[0]?.city || 'غير متوفر'}`, fontSize: 9 },
+                { text: `العنوان : ${String(slip.orders[0]?.city || 'غير متوفر')}`, fontSize: 9 },
               ],
               alignment: 'right'
             },
