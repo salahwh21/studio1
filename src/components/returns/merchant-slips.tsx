@@ -46,6 +46,7 @@ export const MerchantSlips = () => {
     const [currentSlip, setCurrentSlip] = useState<MerchantSlip | null>(null);
     const [selectedSlips, setSelectedSlips] = useState<string[]>([]);
     const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+    const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
 
 
     const [filterMerchant, setFilterMerchant] = useState<string | null>(null);
@@ -111,7 +112,12 @@ export const MerchantSlips = () => {
             const tableBody = [
                 [{ text: '#', style: 'tableHeader' }, { text: 'رقم الطلب', style: 'tableHeader' }, { text: 'المستلم', style: 'tableHeader' }, { text: 'العنوان', style: 'tableHeader' }, { text: 'سبب الإرجاع', style: 'tableHeader' }, { text: 'المبلغ', style: 'tableHeader' },],
                 ...slip.orders.map((o: Order, i: number) => [
-                    { text: String(i + 1), style: 'tableCell' }, { text: String(o.id || ''), style: 'tableCell', alignment: 'center' }, { text: `${o.recipient || ''}\n${o.phone || ''}`, style: 'tableCell' }, { text: `${o.city || ''} - ${o.address || ''}`, style: 'tableCell' }, { text: o.previousStatus || o.status || 'غير محدد', style: 'tableCell' }, { text: (o.itemPrice?.toFixed(2) || '0.00'), style: 'tableCell', alignment: 'center' }
+                    { text: String(i + 1), style: 'tableCell' },
+                    { text: String(o.id || ''), style: 'tableCell', alignment: 'center' },
+                    { text: `${o.recipient || ''}\n${o.phone || ''}`, style: 'tableCell' },
+                    { text: `${o.city || ''} - ${o.address || ''}`, style: 'tableCell' },
+                    { text: o.previousStatus || o.status || 'غير محدد', style: 'tableCell' },
+                    { text: (o.itemPrice?.toFixed(2) || '0.00'), style: 'tableCell', alignment: 'center' }
                 ]),
                 [{ text: 'الإجمالي', colSpan: 5, bold: true, style: 'tableCell', alignment: 'left' }, {}, {}, {}, {}, { text: slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0).toFixed(2), bold: true, style: 'tableCell', alignment: 'center' }]
             ];
@@ -149,8 +155,35 @@ export const MerchantSlips = () => {
             pageMargins: [40, 60, 40, 60]
         };
 
-        pdfMake.createPdf(docDefinition).open();
+        return pdfMake.createPdf(docDefinition);
     };
+    
+    const handlePrintAction = async (slips: MerchantSlip[]) => {
+        const pdfDoc = await printSlips(slips);
+        pdfDoc.open();
+    };
+    
+    const handleEmailAction = async (slips: MerchantSlip[]) => {
+        const pdfDoc = await printSlips(slips);
+        pdfDoc.getBlob((blob) => {
+            setPdfBlob(blob);
+            setIsEmailDialogOpen(true);
+        });
+    };
+    
+    const handleDownloadAttachment = () => {
+        if(pdfBlob) {
+            const url = URL.createObjectURL(pdfBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'slips.pdf';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    }
+
 
     const handleSendWhatsApp = () => {
         const slipsToSend = filteredSlips.filter(s => selectedSlips.includes(s.id));
@@ -244,7 +277,7 @@ export const MerchantSlips = () => {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                 <DropdownMenuItem onSelect={() => printSlips(selectedSlipData)}>
+                                 <DropdownMenuItem onSelect={() => handlePrintAction(selectedSlipData)}>
                                     <Icon name="Printer" className="ml-2 h-4 w-4" />
                                     طباعة المحدد
                                 </DropdownMenuItem>
@@ -253,7 +286,7 @@ export const MerchantSlips = () => {
                                     تصدير المحدد (CSV)
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => setIsEmailDialogOpen(true)}>
+                                <DropdownMenuItem onSelect={() => handleEmailAction(selectedSlipData)}>
                                     <Icon name="Mail" className="ml-2 h-4 w-4" />
                                     إرسال المحدد (بريد إلكتروني)
                                 </DropdownMenuItem>
@@ -288,7 +321,7 @@ export const MerchantSlips = () => {
                             <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
                                 <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
                                 <Button variant="outline" size="sm" disabled={slip.status === 'تم التسليم'} onClick={() => confirmSlipDelivery(slip.id)}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
-                                <Button variant="ghost" size="icon" onClick={() => printSlips([slip])}><Icon name="Printer" className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])}><Icon name="Printer" className="h-4 w-4" /></Button>
                             </TableCell>
                             </TableRow>
                         ))}
@@ -311,7 +344,7 @@ export const MerchantSlips = () => {
             </Dialog>
 
             <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
-                <DialogContent className="sm:max-w-lg">
+                <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>إرسال الكشوفات عبر البريد الإلكتروني</DialogTitle>
                         <DialogDescription>
@@ -331,9 +364,11 @@ export const MerchantSlips = () => {
                             <Label htmlFor="email-body">نص الرسالة</Label>
                             <Textarea id="email-body" defaultValue="مرحباً، مرفق طيه كشوفات المرتجعات الخاصة بكم. يرجى المراجعة." />
                         </div>
-                         <div className="text-sm text-muted-foreground">
-                            <Icon name="Paperclip" className="inline h-4 w-4 ml-1" />
-                            سيتم إرفاق {selectedSlipData.length} ملفات PDF.
+                        <div className="text-sm text-muted-foreground">
+                            <Button variant="link" className="p-0 h-auto" onClick={handleDownloadAttachment} disabled={!pdfBlob}>
+                                <Icon name="Paperclip" className="inline h-4 w-4 ml-1" />
+                                سيتم إرفاق {selectedSlipData.length} ملفات PDF.
+                            </Button>
                         </div>
                     </div>
                     <DialogFooter>
