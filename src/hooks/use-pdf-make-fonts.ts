@@ -13,25 +13,26 @@ export const usePdfMakeFonts = () => {
 
   useEffect(() => {
     // Ensure this runs only in the browser
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !pdfMake) {
       lazyPdfMake().then(pdfmakeInstance => {
-        // Check if vfs is already configured to avoid re-running
-        if (!pdfmakeInstance.vfs['Amiri-Regular.ttf']) {
-          pdfmakeInstance.vfs = {
-              "Amiri-Regular.ttf": amiriRegularBase64,
-              "Amiri-Bold.ttf": amiriBoldBase64
-          };
-          pdfmakeInstance.fonts = {
-              Amiri: {
-                  normal: "Amiri-Regular.ttf",
-                  bold: "Amiri-Bold.ttf"
-              }
-          };
-        }
+        // Always assign VFS and fonts upon initialization.
+        // This is safer and ensures they are always available.
+        pdfmakeInstance.vfs = {
+            "Amiri-Regular.ttf": amiriRegularBase64,
+            "Amiri-Bold.ttf": amiriBoldBase64
+        };
+        pdfmakeInstance.fonts = {
+            Amiri: {
+                normal: "Amiri-Regular.ttf",
+                bold: "Amiri-Bold.ttf"
+            }
+        };
+        
         setPdfMake(() => pdfmakeInstance); // Use a function to set state to ensure it gets the instance
         setIsReady(true);
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return { pdfMake, isReady };
