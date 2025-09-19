@@ -3,14 +3,14 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useReturnsStore, type DriverSlip } from '@/store/returns-store';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { parseISO, isWithinInterval, format } from 'date-fns';
 import Icon from '@/components/icon';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Checkbox } from '@/components/ui/checkbox';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import Papa from 'papaparse';
 import pdfMake from "pdfmake/build/pdfmake";
@@ -21,6 +21,9 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import type { Order } from '@/store/orders-store';
 import { useUsersStore, type User } from '@/store/user-store';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
 
 
 // Font setup for pdfmake
@@ -44,6 +47,7 @@ export const DriverSlips = () => {
   const { toast } = useToast();
   const [currentSlipDetails, setCurrentSlipDetails] = useState<DriverSlip | null>(null);
   const [selectedSlips, setSelectedSlips] = useState<string[]>([]);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
 
   const [filterDriver, setFilterDriver] = useState<string | null>(null);
   const [filterStartDate, setFilterStartDate] = useState<Date | null>(null);
@@ -63,131 +67,145 @@ export const DriverSlips = () => {
       return matchesDriver && matchesDate;
   }), [driverSlips, filterDriver, filterStartDate, filterEndDate]);
   
-  const printSlips = async (slips: DriverSlip[]) => {
-    if (slips.length === 0) return;
+    const printSlips = async (slips: DriverSlip[], users: User[]) => {
+        if (slips.length === 0) return;
 
-    toast({ title: "جاري تجهيز الملف...", description: `سيتم طباعة ${slips.length} كشوفات.` });
-    
-    const allContent: any[] = [];
-
-    for (let i = 0; i < slips.length; i++) {
-        const slip = slips[i];
-        const logoBase64 = settings.login.reportsLogo || settings.login.headerLogo;
-        let barcodeBase64 = "";
-
-        try {
-            const canvas = document.createElement('canvas');
-            await bwipjs.toCanvas(canvas, {
-                bcid: 'code128',
-                text: slip.id,
-                scale: 3,
-                height: 15,
-                includetext: true,
-                textsize: 12
-            });
-            barcodeBase64 = canvas.toDataURL('image/png');
-        } catch (e) {
-            console.error("Barcode generation error:", e);
-        }
-
-        const user = users.find(u => u.name === slip.driverName);
-
-        const tableBody = [
-            [
-                { text: '#', style: 'tableHeader' },
-                { text: 'رقم الطلب', style: 'tableHeader' },
-                { text: 'المستلم', style: 'tableHeader' },
-                { text: 'العنوان', style: 'tableHeader' },
-                { text: 'سبب الإرجاع', style: 'tableHeader' },
-                { text: 'المبلغ', style: 'tableHeader' },
-            ],
-            ...slip.orders.map((o: Order, i: number) => [
-                { text: String(i + 1), style: 'tableCell' },
-                { text: String(o.id || ''), style: 'tableCell', alignment: 'center' },
-                { text: `${o.recipient || ''}\n${o.phone || ''}`, style: 'tableCell' },
-                { text: `${o.city || ''} - ${o.address || ''}`, style: 'tableCell' },
-                { text: o.previousStatus || o.status || 'غير محدد', style: 'tableCell' },
-                { text: (o.itemPrice?.toFixed(2) || '0.00'), style: 'tableCell', alignment: 'center' },
-            ]),
-            [
-                { text: 'الإجمالي', colSpan: 5, bold: true, style: 'tableCell', alignment: 'left' }, {}, {}, {}, {},
-                { text: slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0).toFixed(2), bold: true, style: 'tableCell', alignment: 'center' }
-            ]
-        ];
-
-        const pageContent = [
-            {
-                columns: [
-                    {
-                        width: 'auto',
-                        stack: [
-                            { text: `اسم السائق: ${slip.driverName}`, fontSize: 9 },
-                            { text: `رقم الهاتف: ${user?.email || 'غير متوفر'}`, fontSize: 9 },
-                            { text: `التاريخ: ${new Date(slip.date).toLocaleString('ar-EG')}`, fontSize: 9 },
-                            { text: `الفرع: ${slip.orders[0]?.city || 'غير متوفر'}`, fontSize: 9 },
-                        ],
-                        alignment: 'right'
-                    },
-                    {
-                        width: '*',
-                        stack: [
-                            logoBase64 ? { image: logoBase64, width: 70, alignment: 'center', margin: [0, 0, 0, 5] } : {},
-                            { text: 'كشف استلام مرتجعات من السائق', style: 'header' }
-                        ]
-                    },
-                    {
-                        width: 'auto',
-                        stack: [
-                            barcodeBase64 ? { image: barcodeBase64, width: 120, alignment: 'center' } : { text: slip.id, alignment: 'center' }
-                        ],
-                        alignment: 'left'
-                    }
-                ],
-                columnGap: 10
-            },
-            {
-                table: {
-                    headerRows: 1,
-                    widths: ['auto', 'auto', '*', '*', '*', 'auto'],
-                    body: tableBody,
-                },
-                layout: 'lightHorizontalLines',
-                margin: [0, 20, 0, 10]
-            },
-            {
-                columns: [
-                    { text: `توقيع المستلم (موظف الفرع): .........................`, margin: [0, 50, 0, 0] },
-                ]
-            }
-        ];
+        toast({ title: "جاري تجهيز الملف...", description: `سيتم طباعة ${slips.length} كشوفات.` });
         
-        allContent.push(...pageContent);
+        const allPagesContent: any[] = [];
 
-        if (i < slips.length - 1) {
-            allContent.push({ text: '', pageBreak: 'after' });
+        for (let i = 0; i < slips.length; i++) {
+            const slip = slips[i];
+            const logoBase64 = settings.login.reportsLogo || settings.login.headerLogo;
+            let barcodeBase64 = "";
+
+            try {
+                const canvas = document.createElement('canvas');
+                await bwipjs.toCanvas(canvas, {
+                    bcid: 'code128',
+                    text: slip.id,
+                    scale: 3,
+                    height: 15,
+                    includetext: true,
+                    textsize: 12
+                });
+                barcodeBase64 = canvas.toDataURL('image/png');
+            } catch (e) {
+                console.error("Barcode generation error:", e);
+            }
+
+            const user = users.find(u => u.name === slip.driverName);
+
+            const tableBody = [
+                [
+                    { text: '#', style: 'tableHeader' },
+                    { text: 'رقم الطلب', style: 'tableHeader' },
+                    { text: 'المستلم', style: 'tableHeader' },
+                    { text: 'العنوان', style: 'tableHeader' },
+                    { text: 'سبب الإرجاع', style: 'tableHeader' },
+                    { text: 'المبلغ', style: 'tableHeader' },
+                ],
+                ...slip.orders.map((o: Order, i: number) => [
+                    { text: String(i + 1), style: 'tableCell' },
+                    { text: String(o.id || ''), style: 'tableCell', alignment: 'center' },
+                    { text: `${o.recipient || ''}\n${o.phone || ''}`, style: 'tableCell' },
+                    { text: `${o.city || ''} - ${o.address || ''}`, style: 'tableCell' },
+                    { text: o.previousStatus || o.status || 'غير محدد', style: 'tableCell' },
+                    { text: (o.itemPrice?.toFixed(2) || '0.00'), style: 'tableCell', alignment: 'center' },
+                ]),
+                [
+                    { text: 'الإجمالي', colSpan: 5, bold: true, style: 'tableCell', alignment: 'left' }, {}, {}, {}, {},
+                    { text: slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0).toFixed(2), bold: true, style: 'tableCell', alignment: 'center' }
+                ]
+            ];
+
+            const pageContent = [
+                {
+                    columns: [
+                        {
+                            width: 'auto',
+                            stack: [
+                                { text: `اسم السائق: ${slip.driverName}`, fontSize: 9 },
+                                { text: `رقم الهاتف: ${user?.email || 'غير متوفر'}`, fontSize: 9 },
+                                { text: `التاريخ: ${new Date(slip.date).toLocaleString('ar-EG')}`, fontSize: 9 },
+                                { text: `الفرع: ${slip.orders[0]?.city || 'غير متوفر'}`, fontSize: 9 },
+                            ],
+                            alignment: 'right'
+                        },
+                        {
+                            width: '*',
+                            stack: [
+                                logoBase64 ? { image: logoBase64, width: 70, alignment: 'center', margin: [0, 0, 0, 5] } : {},
+                                { text: 'كشف استلام مرتجعات من السائق', style: 'header' }
+                            ]
+                        },
+                        {
+                            width: 'auto',
+                            stack: [
+                                barcodeBase64 ? { image: barcodeBase64, width: 120, alignment: 'center' } : { text: slip.id, alignment: 'center' }
+                            ],
+                            alignment: 'left'
+                        }
+                    ],
+                    columnGap: 10
+                },
+                {
+                    table: {
+                        headerRows: 1,
+                        widths: ['auto', 'auto', '*', '*', '*', 'auto'],
+                        body: tableBody,
+                    },
+                    layout: 'lightHorizontalLines',
+                    margin: [0, 20, 0, 10]
+                },
+                {
+                    columns: [
+                        { text: `توقيع المستلم (موظف الفرع): .........................`, margin: [0, 50, 0, 0] },
+                    ]
+                }
+            ];
+            
+            allPagesContent.push(...pageContent);
+
+            if (i < slips.length - 1) {
+                allPagesContent.push({ text: '', pageBreak: 'after' });
+            }
         }
-    }
-    
-    const docDefinition: any = {
-        defaultStyle: { font: "Amiri", fontSize: 10, alignment: "right" },
-        content: allContent,
-        styles: {
-            header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-            tableHeader: { bold: true, fontSize: 11, fillColor: '#eeeeee', alignment: 'center' },
-            tableCell: { margin: [5, 5, 5, 5] },
-        },
-        footer: (currentPage: number, pageCount: number) => ({
-            text: `صفحة ${currentPage} من ${pageCount}`,
-            alignment: 'center',
-            fontSize: 8,
-            margin: [0, 10, 0, 0]
-        }),
-        pageSize: 'A4',
-        pageMargins: [40, 60, 40, 60]
+        
+        const docDefinition: any = {
+            defaultStyle: { font: "Amiri", fontSize: 10, alignment: "right" },
+            content: allPagesContent,
+            styles: {
+                header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+                tableHeader: { bold: true, fontSize: 11, fillColor: '#eeeeee', alignment: 'center' },
+                tableCell: { margin: [5, 5, 5, 5] },
+            },
+            footer: (currentPage: number, pageCount: number) => ({
+                text: `صفحة ${currentPage} من ${pageCount}`,
+                alignment: 'center',
+                fontSize: 8,
+                margin: [0, 10, 0, 0]
+            }),
+            pageSize: 'A4',
+            pageMargins: [40, 60, 40, 60]
+        };
+
+        pdfMake.createPdf(docDefinition).open();
     };
 
-    pdfMake.createPdf(docDefinition).open();
-};
+    const handleSendWhatsApp = () => {
+        const slipsToSend = filteredSlips.filter(s => selectedSlips.includes(s.id));
+        slipsToSend.forEach(slip => {
+            const user = users.find(u => u.name === slip.driverName);
+            if(user?.whatsapp) {
+                const message = `مرحباً ${slip.driverName}, تم إنشاء كشف المرتجعات رقم ${slip.id}.`;
+                const url = `https://wa.me/${user.whatsapp}?text=${encodeURIComponent(message)}`;
+                window.open(url, '_blank');
+            } else {
+                 toast({ variant: 'destructive', title: `فشل الإرسال إلى ${slip.driverName}`, description: "لا يوجد رقم واتساب مسجل لهذا السائق." });
+            }
+        })
+    }
 
     const handleExport = () => {
         const slipsToExport = filteredSlips.filter(s => selectedSlips.includes(s.id));
@@ -222,6 +240,10 @@ export const DriverSlips = () => {
         setSelectedSlips(checked ? filteredSlips.map(s => s.id) : []);
     }
     const areAllSelected = filteredSlips.length > 0 && selectedSlips.length === filteredSlips.length;
+
+    const selectedSlipData = useMemo(() => {
+        return filteredSlips.filter(s => selectedSlips.includes(s.id));
+    }, [selectedSlips, filteredSlips]);
 
   return (
     <div dir="rtl">
@@ -266,18 +288,27 @@ export const DriverSlips = () => {
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="gap-1.5" disabled={selectedSlips.length === 0}>
-                            <Icon name="Printer" className="h-4 w-4" />
-                            طباعة/تصدير ({selectedSlips.length})
+                            <Icon name="Send" className="h-4 w-4" />
+                            إجراءات ({selectedSlips.length})
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                         <DropdownMenuItem onSelect={() => printSlips(filteredSlips.filter(s => selectedSlips.includes(s.id)))}>
+                         <DropdownMenuItem onSelect={() => printSlips(selectedSlipData, users)}>
                             <Icon name="Printer" className="ml-2 h-4 w-4" />
                             طباعة المحدد
                         </DropdownMenuItem>
                         <DropdownMenuItem onSelect={handleExport}>
                             <Icon name="FileDown" className="ml-2 h-4 w-4" />
                             تصدير المحدد (CSV)
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={() => setIsEmailDialogOpen(true)}>
+                            <Icon name="Mail" className="ml-2 h-4 w-4" />
+                            إرسال المحدد (بريد إلكتروني)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={handleSendWhatsApp}>
+                            <Icon name="MessageSquare" className="ml-2 h-4 w-4" />
+                            إرسال المحدد (واتساب)
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -306,7 +337,7 @@ export const DriverSlips = () => {
                                   <TableCell className="border-l text-center whitespace-nowrap">{slip.itemCount}</TableCell>
                                   <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
                                         <Button variant="outline" size="sm" onClick={() => setCurrentSlipDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
-                                        <Button variant="ghost" size="icon" onClick={() => printSlips([slip])}><Icon name="Printer" className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => printSlips([slip], users)}><Icon name="Printer" className="h-4 w-4" /></Button>
                                   </TableCell>
                               </TableRow>
                           ))
@@ -335,6 +366,41 @@ export const DriverSlips = () => {
                </div>
           </DialogContent>
       </Dialog>
+
+        <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>إرسال الكشوفات عبر البريد الإلكتروني</DialogTitle>
+                    <DialogDescription>
+                        سيتم إرسال {selectedSlipData.length} كشوفات إلى السائقين المعنيين.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="email-recipients">المستلمون</Label>
+                        <Input id="email-recipients" readOnly value={selectedSlipData.map(s => `${s.driverName} <${users.find(u => u.name === s.driverName)?.email || 'N/A'}>`).join(', ')} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="email-subject">الموضوع</Label>
+                        <Input id="email-subject" defaultValue={`كشوفات مرتجعات بتاريخ ${new Date().toLocaleDateString('ar-EG')}`} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="email-body">نص الرسالة</Label>
+                        <Textarea id="email-body" defaultValue="مرحباً، مرفق طيه كشوفات المرتجعات الخاصة بكم. يرجى المراجعة." />
+                    </div>
+                     <div className="text-sm text-muted-foreground">
+                        <Icon name="Paperclip" className="inline h-4 w-4 ml-1" />
+                        سيتم إرفاق {selectedSlipData.length} ملفات PDF.
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>إلغاء</Button>
+                    <Button onClick={() => toast({title: "تم الإرسال (محاكاة)", description: "في التطبيق الفعلي، سيتم إرسال البريد الآن."})}>
+                        <Icon name="Send" className="ml-2 h-4 w-4" /> إرسال
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 };

@@ -6,14 +6,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/icon';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { parseISO, isWithinInterval, format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Checkbox } from '@/components/ui/checkbox';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import Papa from 'papaparse';
 import pdfMake from "pdfmake/build/pdfmake";
 import bwipjs from "bwip-js/browser";
@@ -23,6 +23,9 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import type { Order } from '@/store/orders-store';
 import { useUsersStore, type User } from '@/store/user-store';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
 
 
 // Font setup for pdfmake
@@ -48,6 +51,7 @@ export const MerchantSlips = () => {
     const [showDetailsDialog, setShowDetailsDialog] = useState(false);
     const [currentSlip, setCurrentSlip] = useState<MerchantSlip | null>(null);
     const [selectedSlips, setSelectedSlips] = useState<string[]>([]);
+    const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
 
 
     const [filterMerchant, setFilterMerchant] = useState<string | null>(null);
@@ -81,12 +85,12 @@ export const MerchantSlips = () => {
         setShowDetailsDialog(true);
     };
 
-    const printSlips = async (slips: MerchantSlip[]) => {
+    const printSlips = async (slips: MerchantSlip[], users: User[]) => {
         if (slips.length === 0) return;
     
         toast({ title: "جاري تجهيز الملفات...", description: `سيتم طباعة ${slips.length} كشوفات.` });
 
-        const allContent: any[] = [];
+        const allPagesContent: any[] = [];
     
         for (let i = 0; i < slips.length; i++) {
             const slip = slips[i];
@@ -179,16 +183,16 @@ export const MerchantSlips = () => {
                 }
             ];
 
-            allContent.push(...pageContent);
+            allPagesContent.push(...pageContent);
 
             if (i < slips.length - 1) {
-                allContent.push({ text: '', pageBreak: 'after' });
+                allPagesContent.push({ text: '', pageBreak: 'after' });
             }
         }
 
         const docDefinition: any = {
             defaultStyle: { font: "Amiri", fontSize: 10, alignment: "right" },
-            content: allContent,
+            content: allPagesContent,
             styles: {
                 header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
                 tableHeader: { bold: true, fontSize: 11, fillColor: '#eeeeee', alignment: 'center' },
@@ -206,6 +210,20 @@ export const MerchantSlips = () => {
 
         pdfMake.createPdf(docDefinition).open();
     };
+
+    const handleSendWhatsApp = () => {
+        const slipsToSend = filteredSlips.filter(s => selectedSlips.includes(s.id));
+        slipsToSend.forEach(slip => {
+            const user = users.find(u => u.storeName === slip.merchant);
+            if(user?.whatsapp) {
+                const message = `مرحباً ${slip.merchant}, تم تجهيز كشف المرتجعات الخاص بكم رقم ${slip.id}.`;
+                const url = `https://wa.me/${user.whatsapp}?text=${encodeURIComponent(message)}`;
+                window.open(url, '_blank');
+            } else {
+                 toast({ variant: 'destructive', title: `فشل الإرسال إلى ${slip.merchant}`, description: "لا يوجد رقم واتساب مسجل لهذا التاجر." });
+            }
+        })
+    }
 
      const handleExport = () => {
         const slipsToExport = filteredSlips.filter(s => selectedSlips.includes(s.id));
@@ -242,6 +260,10 @@ export const MerchantSlips = () => {
     }
     const areAllSelected = filteredSlips.length > 0 && selectedSlips.length === filteredSlips.length;
 
+    const selectedSlipData = useMemo(() => {
+        return filteredSlips.filter(s => selectedSlips.includes(s.id));
+    }, [selectedSlips, filteredSlips]);
+
     return (
         <div dir="rtl">
             <Card>
@@ -273,21 +295,30 @@ export const MerchantSlips = () => {
                                 <Calendar mode="single" selected={filterEndDate || undefined} onSelect={(d) => setFilterEndDate(d || null)} initialFocus />
                             </PopoverContent>
                         </Popover>
-                        <DropdownMenu>
+                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="gap-1.5" disabled={selectedSlips.length === 0}>
-                                    <Icon name="Printer" className="h-4 w-4" />
-                                    طباعة/تصدير ({selectedSlips.length})
+                                    <Icon name="Send" className="h-4 w-4" />
+                                    إجراءات ({selectedSlips.length})
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                 <DropdownMenuItem onSelect={() => printSlips(filteredSlips.filter(s => selectedSlips.includes(s.id)))}>
+                                 <DropdownMenuItem onSelect={() => printSlips(selectedSlipData, users)}>
                                     <Icon name="Printer" className="ml-2 h-4 w-4" />
                                     طباعة المحدد
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={handleExport}>
                                     <Icon name="FileDown" className="ml-2 h-4 w-4" />
                                     تصدير المحدد (CSV)
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={() => setIsEmailDialogOpen(true)}>
+                                    <Icon name="Mail" className="ml-2 h-4 w-4" />
+                                    إرسال المحدد (بريد إلكتروني)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={handleSendWhatsApp}>
+                                    <Icon name="MessageSquare" className="ml-2 h-4 w-4" />
+                                    إرسال المحدد (واتساب)
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -316,7 +347,7 @@ export const MerchantSlips = () => {
                             <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
                                 <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
                                 <Button variant="outline" size="sm" disabled={slip.status === 'تم التسليم'} onClick={() => confirmSlipDelivery(slip.id)}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
-                                <Button variant="ghost" size="icon" onClick={() => printSlips([slip])}><Icon name="Printer" className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => printSlips([slip], users)}><Icon name="Printer" className="h-4 w-4" /></Button>
                             </TableCell>
                             </TableRow>
                         ))}
@@ -335,6 +366,41 @@ export const MerchantSlips = () => {
                     <Table><TableHeader><TableRow><TableHead>رقم الطلب</TableHead><TableHead>المستلم</TableHead><TableHead>تاريخ الإرجاع الأصلي</TableHead><TableHead>الحالة الأصلية</TableHead></TableRow></TableHeader>
                     <TableBody>{currentSlip?.orders.map((order: any) => (<TableRow key={order.id}><TableCell><Link href={`/dashboard/orders/${order.id}`} className="font-mono text-primary hover:underline">{order.id}</Link></TableCell><TableCell>{order.recipient}</TableCell><TableCell>{order.date}</TableCell><TableCell><Badge variant="secondary">{order.status}</Badge></TableCell></TableRow>))}</TableBody></Table>
                 </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>إرسال الكشوفات عبر البريد الإلكتروني</DialogTitle>
+                        <DialogDescription>
+                            سيتم إرسال {selectedSlipData.length} كشوفات إلى التجار المعنيين.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="email-recipients">المستلمون</Label>
+                            <Input id="email-recipients" readOnly value={selectedSlipData.map(s => `${s.merchant} <${users.find(u => u.storeName === s.merchant)?.email || 'N/A'}>`).join(', ')} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="email-subject">الموضوع</Label>
+                            <Input id="email-subject" defaultValue={`كشوفات مرتجعات بتاريخ ${new Date().toLocaleDateString('ar-EG')}`} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="email-body">نص الرسالة</Label>
+                            <Textarea id="email-body" defaultValue="مرحباً، مرفق طيه كشوفات المرتجعات الخاصة بكم. يرجى المراجعة." />
+                        </div>
+                         <div className="text-sm text-muted-foreground">
+                            <Icon name="Paperclip" className="inline h-4 w-4 ml-1" />
+                            سيتم إرفاق {selectedSlipData.length} ملفات PDF.
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>إلغاء</Button>
+                        <Button onClick={() => toast({title: "تم الإرسال (محاكاة)", description: "في التطبيق الفعلي، سيتم إرسال البريد الآن."})}>
+                            <Icon name="Send" className="ml-2 h-4 w-4" /> إرسال
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>
