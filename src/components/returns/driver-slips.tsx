@@ -84,12 +84,11 @@ export const DriverSlips = () => {
                           logoBase64 ? { image: logoBase64, width: 70 } : { text: '' },
                           [
                               { text: "كشف استلام مرتجعات من السائق", style: "header" },
-                              { text: `اسم السائق: ${slip.driverName}` },
+                              { text: `اسم السائق: ${String(slip.driverName || '')}` },
                               { text: `التاريخ: ${new Date(slip.date).toLocaleDateString('ar-JO')}` }
                           ]
                       ]
                   },
-                  // Barcode removed for now
                   {
                       table: { headerRows: 1, widths: ['auto', '*', '*', '*'], body: tableBody },
                       layout: 'lightHorizontalLines'

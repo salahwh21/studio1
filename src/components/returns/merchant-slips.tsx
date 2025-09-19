@@ -102,12 +102,11 @@ export const MerchantSlips = () => {
                             logoBase64 ? { image: logoBase64, width: 70 } : { text: '' },
                             [
                                 { text: "كشف تسليم مرتجعات للتاجر", style: "header" },
-                                { text: `اسم التاجر: ${slip.merchant}` },
+                                { text: `اسم التاجر: ${String(slip.merchant || '')}` },
                                 { text: `التاريخ: ${new Date(slip.date).toLocaleDateString('ar-JO')}` }
                             ]
                         ]
                     },
-                    // Barcode removed for now
                     {
                         table: { headerRows: 1, widths: ['auto', '*', '*', '*'], body: tableBody },
                         layout: 'lightHorizontalLines'
