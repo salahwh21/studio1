@@ -306,7 +306,9 @@ export const MerchantSlips = () => {
                         {filteredSlips.map((slip) => (
                             <TableRow key={slip.id} data-state={selectedSlips.includes(slip.id) ? "selected" : "unselected"}>
                             <TableCell className="border-l text-center"><Checkbox checked={selectedSlips.includes(slip.id)} onCheckedChange={(checked) => setSelectedSlips(p => checked ? [...p, slip.id] : p.filter(id => id !== slip.id))} /></TableCell>
-                            <TableCell className="font-mono border-l text-center whitespace-nowrap">{slip.id}</TableCell>
+                            <TableCell className="font-mono border-l text-center whitespace-nowrap">
+                                <Link href={`/dashboard/returns/slips/${slip.id}`} className="text-primary hover:underline">{slip.id}</Link>
+                            </TableCell>
                             <TableCell className="border-l text-center whitespace-nowrap">{slip.merchant}</TableCell>
                             <TableCell className="border-l text-center whitespace-nowrap">{slip.date}</TableCell>
                             <TableCell className="border-l text-center whitespace-nowrap">{slip.items}</TableCell>

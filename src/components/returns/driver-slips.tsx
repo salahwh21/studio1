@@ -22,6 +22,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { usePdfMakeFonts } from '@/hooks/use-pdf-make-fonts';
+import Link from 'next/link';
 
 // Lazy loading for PDF generation libraries
 const lazyBwipJs = async () => (await import('bwip-js')).default;
@@ -298,7 +299,9 @@ export const DriverSlips = () => {
                           filteredSlips.map(slip => (
                               <TableRow key={slip.id} data-state={selectedSlips.includes(slip.id) ? "selected" : "unselected"}>
                                   <TableCell className="border-l text-center"><Checkbox checked={selectedSlips.includes(slip.id)} onCheckedChange={(checked) => setSelectedSlips(p => checked ? [...p, slip.id] : p.filter(id => id !== slip.id))} /></TableCell>
-                                  <TableCell className="font-mono border-l text-center whitespace-nowrap">{slip.id}</TableCell>
+                                  <TableCell className="font-mono border-l text-center whitespace-nowrap">
+                                    <Link href={`/dashboard/returns/slips/${slip.id}`} className="text-primary hover:underline">{slip.id}</Link>
+                                  </TableCell>
                                   <TableCell className="border-l text-center whitespace-nowrap">{slip.driverName}</TableCell>
                                   <TableCell className="border-l text-center whitespace-nowrap">{slip.date}</TableCell>
                                   <TableCell className="border-l text-center whitespace-nowrap">{slip.itemCount}</TableCell>
