@@ -81,12 +81,15 @@ export const MerchantSlips = () => {
         setShowDetailsDialog(true);
     };
 
-    const printSlips = async (slips: MerchantSlip[], users: User[]) => {
+    const printSlips = async (slips: MerchantSlip[]) => {
         if (slips.length === 0) return;
     
         toast({ title: "جاري تجهيز الملفات...", description: `سيتم طباعة ${slips.length} كشوفات.` });
+
+        const allContent: any[] = [];
     
-        for (const slip of slips) {
+        for (let i = 0; i < slips.length; i++) {
+            const slip = slips[i];
             const logoBase64 = settings.login.reportsLogo || settings.login.headerLogo;
             let barcodeBase64 = "";
     
@@ -130,70 +133,78 @@ export const MerchantSlips = () => {
                 ]
             ];
     
-            const docDefinition: any = {
-                defaultStyle: { font: "Amiri", fontSize: 10, alignment: "right" },
-                content: [
-                    {
-                        columns: [
-                            {
-                                width: 'auto',
-                                stack: [
-                                    { text: `اسم التاجر: ${slip.merchant}`, fontSize: 9 },
-                                    { text: `البريد: ${user?.email || 'غير متوفر'}`, fontSize: 9 },
-                                    { text: `التاريخ: ${new Date(slip.date).toLocaleString('ar-EG')}`, fontSize: 9 },
-                                    { text: `العنوان: ${slip.orders[0]?.city || 'غير متوفر'}`, fontSize: 9 },
-                                ],
-                                alignment: 'right'
-                            },
-                            {
-                                width: '*',
-                                stack: [
-                                    logoBase64 ? { image: logoBase64, width: 70, alignment: 'center', margin: [0, 0, 0, 5] } : {},
-                                    { text: 'كشف المرتجع', style: 'header' }
-                                ]
-                            },
-                            {
-                                width: 'auto',
-                                stack: [
-                                    barcodeBase64 ? { image: barcodeBase64, width: 120, alignment: 'center' } : { text: slip.id, alignment: 'center' }
-                                ],
-                                alignment: 'left'
-                            }
-                        ],
-                        columnGap: 10
-                    },
-                    {
-                        table: {
-                            headerRows: 1,
-                            widths: ['auto', 'auto', '*', '*', '*', 'auto'],
-                            body: tableBody,
+            const pageContent = [
+                {
+                    columns: [
+                        {
+                            width: 'auto',
+                            stack: [
+                                { text: `اسم التاجر: ${slip.merchant}`, fontSize: 9 },
+                                { text: `البريد: ${user?.email || 'غير متوفر'}`, fontSize: 9 },
+                                { text: `التاريخ: ${new Date(slip.date).toLocaleString('ar-EG')}`, fontSize: 9 },
+                                { text: `العنوان: ${slip.orders[0]?.city || 'غير متوفر'}`, fontSize: 9 },
+                            ],
+                            alignment: 'right'
                         },
-                        layout: 'lightHorizontalLines',
-                        margin: [0, 20, 0, 10]
-                    },
-                    {
-                        columns: [
-                            { text: `توقيع المستلم: .........................`, margin: [0, 50, 0, 0] },
-                        ]
-                    }
-                ],
-                styles: {
-                    header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
-                    tableHeader: { bold: true, fontSize: 11, fillColor: '#eeeeee', alignment: 'center' },
-                    tableCell: { margin: [5, 5, 5, 5] },
+                        {
+                            width: '*',
+                            stack: [
+                                logoBase64 ? { image: logoBase64, width: 70, alignment: 'center', margin: [0, 0, 0, 5] } : {},
+                                { text: 'كشف المرتجع', style: 'header' }
+                            ]
+                        },
+                        {
+                            width: 'auto',
+                            stack: [
+                                barcodeBase64 ? { image: barcodeBase64, width: 120, alignment: 'center' } : { text: slip.id, alignment: 'center' }
+                            ],
+                            alignment: 'left'
+                        }
+                    ],
+                    columnGap: 10
                 },
-                footer: (currentPage: number, pageCount: number) => ({
-                    text: `صفحة ${currentPage} من ${pageCount}`,
-                    alignment: 'center',
-                    fontSize: 8,
-                    margin: [0, 10, 0, 0]
-                }),
-                pageSize: 'A4',
-                pageMargins: [40, 60, 40, 60]
-            };
-    
-            pdfMake.createPdf(docDefinition).open();
+                {
+                    table: {
+                        headerRows: 1,
+                        widths: ['auto', 'auto', '*', '*', '*', 'auto'],
+                        body: tableBody,
+                    },
+                    layout: 'lightHorizontalLines',
+                    margin: [0, 20, 0, 10]
+                },
+                {
+                    columns: [
+                        { text: `توقيع المستلم: .........................`, margin: [0, 50, 0, 0] },
+                    ]
+                }
+            ];
+
+            allContent.push(...pageContent);
+
+            if (i < slips.length - 1) {
+                allContent.push({ text: '', pageBreak: 'after' });
+            }
         }
+
+        const docDefinition: any = {
+            defaultStyle: { font: "Amiri", fontSize: 10, alignment: "right" },
+            content: allContent,
+            styles: {
+                header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
+                tableHeader: { bold: true, fontSize: 11, fillColor: '#eeeeee', alignment: 'center' },
+                tableCell: { margin: [5, 5, 5, 5] },
+            },
+            footer: (currentPage: number, pageCount: number) => ({
+                text: `صفحة ${currentPage} من ${pageCount}`,
+                alignment: 'center',
+                fontSize: 8,
+                margin: [0, 10, 0, 0]
+            }),
+            pageSize: 'A4',
+            pageMargins: [40, 60, 40, 60]
+        };
+
+        pdfMake.createPdf(docDefinition).open();
     };
 
      const handleExport = () => {
@@ -270,7 +281,7 @@ export const MerchantSlips = () => {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                 <DropdownMenuItem onSelect={() => printSlips(filteredSlips.filter(s => selectedSlips.includes(s.id)), users)}>
+                                 <DropdownMenuItem onSelect={() => printSlips(filteredSlips.filter(s => selectedSlips.includes(s.id)))}>
                                     <Icon name="Printer" className="ml-2 h-4 w-4" />
                                     طباعة المحدد
                                 </DropdownMenuItem>
@@ -305,7 +316,7 @@ export const MerchantSlips = () => {
                             <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
                                 <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
                                 <Button variant="outline" size="sm" disabled={slip.status === 'تم التسليم'} onClick={() => confirmSlipDelivery(slip.id)}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
-                                <Button variant="ghost" size="icon" onClick={() => printSlips([slip], users)}><Icon name="Printer" className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => printSlips([slip])}><Icon name="Printer" className="h-4 w-4" /></Button>
                             </TableCell>
                             </TableRow>
                         ))}
