@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo } from 'react';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
@@ -447,7 +448,7 @@ export const MerchantSlips = () => {
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label htmlFor="email-recipients">المستلمون</Label>
-                            <Input id="email-recipients" readOnly value={selectedSlipData.map(s => `${s.merchant} &lt;${users.find(u => u.storeName === s.merchant)?.email || 'N/A'}&gt;`).join(', ')} />
+                            <Input id="email-recipients" readOnly value={selectedSlipData.map(s => `${s.merchant} <${users.find(u => u.storeName === s.merchant)?.email || 'N/A'}>`).join(', ')} />
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="email-subject">الموضوع</Label>
@@ -475,5 +476,3 @@ export const MerchantSlips = () => {
         </div>
     );
 };
-
-    

@@ -1,3 +1,4 @@
+
 'use client';
 import { useEffect, useState } from 'react';
 
@@ -16,6 +17,15 @@ export const usePdfMakeFonts = () => {
                 
                 if (pdfmakeInstance && pdfFontsModule.default?.pdfMake?.vfs) {
                     pdfmakeInstance.vfs = pdfFontsModule.default.pdfMake.vfs;
+                    // Use the default Roboto font which has basic Arabic support
+                    pdfmakeInstance.fonts = {
+                        Roboto: {
+                            normal: 'Roboto-Regular.ttf',
+                            bold: 'Roboto-Medium.ttf',
+                            italics: 'Roboto-Italic.ttf',
+                            bolditalics: 'Roboto-MediumItalic.ttf'
+                        }
+                    };
                 }
                 
                 setState({ pdfMake: pdfmakeInstance, isReady: true });
