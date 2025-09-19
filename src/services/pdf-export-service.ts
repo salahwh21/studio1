@@ -31,15 +31,19 @@ async function generateBarcode(text: string): Promise<string> {
     try {
         const bwipjs = (await import('bwip-js')).default;
         const canvas = document.createElement('canvas');
-        await bwipjs.toCanvas(canvas, {
-            bcid: 'code128',
-            text: text,
-            scale: 3,
-            height: 15,
-            includetext: true,
-            textsize: 12
+        return new Promise((resolve, reject) => {
+             bwipjs.toCanvas(canvas, {
+                bcid: 'code128',
+                text: text,
+                scale: 3,
+                height: 15,
+                includetext: true,
+                textsize: 12
+            }, (err) => {
+                if (err) return reject(err);
+                resolve(canvas.toDataURL('image/png'));
+            });
         });
-        return canvas.toDataURL('image/png');
     } catch (e) {
         console.error("Barcode generation error:", e);
         return '';

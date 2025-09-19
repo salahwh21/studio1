@@ -9,13 +9,18 @@ async function generateBarcodeBase64(text: string): Promise<string> {
     try {
         const bwipjs = (await import('bwip-js')).default;
         const canvas = document.createElement('canvas');
-        await bwipjs.toCanvas(canvas, {
-            bcid: 'code128',
-            text: text,
-            scale: 3,
-            height: 10,
-            includetext: true,
-            textsize: 10
+        await new Promise((resolve, reject) => {
+            bwipjs.toCanvas(canvas, {
+                bcid: 'code128',
+                text: text,
+                scale: 3,
+                height: 10,
+                includetext: true,
+                textsize: 10
+            }, (err) => {
+                if (err) return reject(err);
+                resolve(canvas);
+            });
         });
         return canvas.toDataURL('image/png');
     } catch (e) {
@@ -36,13 +41,13 @@ async function generateSlipWorksheet(workbook: ExcelJS.Workbook, slip: DriverSli
 
     // --- Logo & Barcode ---
     if (reportsLogo) {
-        const logoImageId = workbook.addImage({ base64: reportsLogo, extension: 'png' });
+        const logoImageId = workbook.addImage({ base64: reportsLogo.split(',')[1], extension: 'png' });
         worksheet.addImage(logoImageId, { tl: { col: 3, row: 1 }, ext: { width: 100, height: 40 } });
     }
     
     const barcodeBase64 = await generateBarcodeBase64(slip.id);
     if (barcodeBase64) {
-        const barcodeImageId = workbook.addImage({ base64: barcodeBase64, extension: 'png' });
+        const barcodeImageId = workbook.addImage({ base64: barcodeBase64.split(',')[1], extension: 'png' });
         worksheet.addImage(barcodeImageId, { tl: { col: 0.5, row: 1 }, ext: { width: 150, height: 50 } });
     } else {
         worksheet.getCell('A2').value = slip.id;
