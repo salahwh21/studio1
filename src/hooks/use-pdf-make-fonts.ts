@@ -14,13 +14,17 @@ export const usePdfMakeFonts = () => {
                 import('pdfmake/build/vfs_fonts').then(pdfFonts => {
                     
                     // The correct way is to use the imported vfs, not assign to the instance.
-                    // The pdfmakeInstance itself might be a frozen module.
-                    // We directly use the vfs from the import.
-                    pdfmakeInstance.vfs = pdfFonts.pdfMake.vfs;
+                    // The vfs object is on pdfFonts.default.pdfMake.vfs
+                    if (pdfFonts.default.pdfMake) {
+                       pdfmakeInstance.vfs = pdfFonts.default.pdfMake.vfs;
+                    }
 
                     // Now, define the custom fonts
-                    pdfmakeInstance.vfs["Amiri-Regular.ttf"] = amiriRegularBase64;
-                    pdfmakeInstance.vfs["Amiri-Bold.ttf"] = amiriBoldBase64;
+                    if (pdfmakeInstance.vfs) {
+                      pdfmakeInstance.vfs["Amiri-Regular.ttf"] = amiriRegularBase64;
+                      pdfmakeInstance.vfs["Amiri-Bold.ttf"] = amiriBoldBase64;
+                    }
+
 
                     pdfmakeInstance.fonts = {
                         ...pdfmakeInstance.fonts, // Keep existing fonts like Roboto
