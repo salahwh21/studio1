@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from '@/hooks/use-toast';
 import Papa from 'papaparse';
 import pdfMake from "pdfmake/build/pdfmake";
+import bwipjs from "bwip-js";
 
 // Font setup for pdfmake
 const amiriRegularBase64 = "AAEAAAARAQAABAAAR0RFRgAIAAAAEgAAAABPUy8yAAABYAAAADcAAABgjb/paGNtYXAAAAFoAAAAOAAAAFRar84IZ2x5ZgAAAdQAAACsAAAAuB/0T/toZWFkAAABMAAAADAAAAA2B4IG5oZWFkAAABZAAAABgAAAAGDQQCem10eAAAAXwAAAAUAAAACAYjA/dpbmR4AAABiAAAABQAAAAUCwAAdmxvY2EAAAHEAAAAEAAAABAFuAaebWF4cAAAAVAAAAAGAAAABgAIAAhwb3N0AAACNAAAACQAAABNpkjfeAABAAAAAQAAajgOcV8PPPUACwQAAAAAANpHB9sAAAAA2kcH2wAAAAADVAEAAAACAACAAAAAAAAAAEAAAAsADgAAQAAAAAAAQAAAAoAHQAEAAAAAAACAAEAAgAgAAQAAAAAAIAAAAEAAAAAABcBAgAAAAAADgAaADQAAwABBAkAAQAUABQAAwABBAkAAgAOACAAAwABBAkAAwAQAEMAAwABBAkABAAUAFYAAwABBAkABQAYAG4AAwABBAkABgAUAH4AAwABBAkADgA0AIAAA0JAaGFtYQpDb3B5cmlnaHQgKGMpIDIwMTIgQW1pcmlIE"
@@ -66,10 +67,20 @@ export const DriverSlips = () => {
       for (const slip of slips) {
           const logoBase64 = settings.login.reportsLogo || settings.login.headerLogo;
   
+          let barcodeBase64 = "";
+          try {
+              const png = await bwipjs.toBuffer({
+                  bcid: 'code128', text: slip.id, scale: 3, height: 10, includetext: false,
+              });
+              barcodeBase64 = 'data:image/png;base64,' + png.toString('base64');
+          } catch (e) {
+              console.error("Barcode generation error:", e);
+          }
+
           const tableBody = [
               [{ text: '#', bold: true }, { text: 'رقم الطلب', bold: true }, { text: 'التاجر', bold: true }, { text: 'المستلم', bold: true }],
               ...slip.orders.map((o, index) => [
-                  (index + 1).toString(),
+                  String(index + 1),
                   String(o.id || ''),
                   String(o.merchant || ''),
                   String(o.recipient || '')
@@ -89,6 +100,8 @@ export const DriverSlips = () => {
                           ]
                       ]
                   },
+                  barcodeBase64 ? { image: barcodeBase64, width: 150, alignment: "center", margin: [0, 5, 0, 5] } : {},
+                  { text: slip.id, alignment: 'center', bold: true, margin: [0, 0, 0, 15] },
                   {
                       table: { headerRows: 1, widths: ['auto', '*', '*', '*'], body: tableBody },
                       layout: 'lightHorizontalLines'
