@@ -23,6 +23,7 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { usePdfMakeFonts } from '@/hooks/use-pdf-make-fonts';
 import Link from 'next/link';
+import ExcelJS from 'exceljs';
 
 // Lazy loading for PDF generation libraries
 const lazyBwipJs = async () => (await import('bwip-js')).default;
@@ -175,7 +176,7 @@ export const DriverSlips = () => {
         })
     }
 
-    const handleExport = () => {
+    const handleCsvExport = () => {
         const slipsToExport = filteredSlips.filter(s => selectedSlips.includes(s.id));
         if (slipsToExport.length === 0) {
             toast({ variant: 'destructive', title: 'لم يتم تحديد كشوفات', description: 'الرجاء تحديد كشف واحد على الأقل للتصدير.' });
@@ -202,6 +203,113 @@ export const DriverSlips = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    };
+
+    const handleExcelExport = async (slips: DriverSlip[]) => {
+        if (slips.length === 0) return;
+        toast({ title: "جاري تجهيز ملف Excel..." });
+
+        const workbook = new ExcelJS.Workbook();
+        const bwipjs = await lazyBwipJs();
+        const logoBase64 = settings.login.reportsLogo || settings.login.headerLogo;
+
+        for (const slip of slips) {
+            const worksheet = workbook.addWorksheet(`Slip ${slip.id.substring(3, 7)}`);
+
+            // --- Page Setup ---
+            worksheet.views = [{ rightToLeft: true }];
+            worksheet.pageSetup = { paperSize: 9, orientation: 'portrait', margins: { left: 0.25, right: 0.25, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 } };
+            worksheet.properties.defaultColWidth = 12;
+            worksheet.getColumn('C').width = 25;
+            worksheet.getColumn('D').width = 25;
+
+            // --- Logo & Barcode ---
+            let logoImageId;
+            if (logoBase64) {
+                 logoImageId = workbook.addImage({
+                    base64: logoBase64,
+                    extension: 'png',
+                });
+                worksheet.addImage(logoImageId, {
+                    tl: { col: 3, row: 1 },
+                    ext: { width: 100, height: 40 },
+                });
+            }
+            
+            let barcodeImageId;
+            try {
+                const canvas = document.createElement('canvas');
+                await bwipjs.toCanvas(canvas, { bcid: 'code128', text: slip.id, scale: 3, height: 10, includetext: true, textsize: 10 });
+                const barcodeBase64 = canvas.toDataURL('image/png');
+                 barcodeImageId = workbook.addImage({ base64: barcodeBase64, extension: 'png' });
+                 worksheet.addImage(barcodeImageId, { tl: { col: 0.5, row: 1 }, ext: { width: 150, height: 50 } });
+            } catch (e) { worksheet.getCell('A2').value = slip.id; }
+
+
+            // --- Header ---
+            worksheet.mergeCells('B2:E2');
+            const titleCell = worksheet.getCell('B2');
+            titleCell.value = 'كشف استلام مرتجعات من السائق';
+            titleCell.font = { size: 16, bold: true };
+            titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+            worksheet.getRow(2).height = 30;
+
+            const user = users.find(u => u.name === slip.driverName);
+            worksheet.getCell('F3').value = `اسم السائق: ${slip.driverName}`;
+            worksheet.getCell('F4').value = `رقم الهاتف: ${user?.email || 'N/A'}`;
+            worksheet.getCell('F5').value = `التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`;
+            worksheet.getCell('G3').value = `الفرع: ${slip.orders[0]?.city || ''}`;
+
+
+            // --- Table Header ---
+            const headerRow = worksheet.getRow(7);
+            headerRow.values = ['#', 'رقم الطلب', 'المستلم', 'العنوان', 'سبب الإرجاع', 'المبلغ'];
+            headerRow.font = { bold: true };
+            headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+            headerRow.eachCell(cell => {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEEEEE' } };
+                cell.border = { bottom: { style: 'thin' } };
+            });
+
+            // --- Table Data ---
+            slip.orders.forEach((order, index) => {
+                const row = worksheet.addRow([
+                    index + 1,
+                    order.id,
+                    `${order.recipient}\n${order.phone}`,
+                    `${order.city} - ${order.address}`,
+                    order.previousStatus || order.status,
+                    order.itemPrice || 0
+                ]);
+                row.getCell(3).alignment = { wrapText: true };
+                row.getCell(4).alignment = { wrapText: true };
+                row.getCell(6).numFmt = '#,##0.00 "د.أ"';
+                row.eachCell(cell => { cell.alignment = { ...cell.alignment, vertical: 'middle' }; });
+            });
+
+            // --- Table Footer ---
+            const totalRow = worksheet.addRow(['', 'الإجمالي', '', '', '', slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0)]);
+            worksheet.mergeCells(`B${totalRow.number}:E${totalRow.number}`);
+            totalRow.font = { bold: true };
+            totalRow.getCell(6).numFmt = '#,##0.00 "د.أ"';
+
+
+            // --- Footer ---
+            const signatureRow = worksheet.addRow(['']);
+            worksheet.mergeCells(`A${signatureRow.number}:C${signatureRow.number}`);
+            worksheet.getCell(`A${signatureRow.number}`).value = 'توقيع المستلم (موظف الفرع): .........................';
+            worksheet.getCell(`A${signatureRow.number}`).font = { size: 12 };
+        }
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `driver_slips_${new Date().toISOString().slice(0,10)}.xlsx`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        
+        toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
     };
 
     const handleSelectAll = (checked: boolean) => {
@@ -255,22 +363,27 @@ export const DriverSlips = () => {
                 </Popover>
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="gap-1.5" disabled={selectedSlips.length === 0 || !isPdfReady}>
+                        <Button variant="outline" className="gap-1.5" disabled={selectedSlips.length === 0}>
                             <Icon name="Send" className="h-4 w-4" />
                             إجراءات ({selectedSlips.length})
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                         <DropdownMenuItem onSelect={() => handlePrintAction(selectedSlipData)}>
+                         <DropdownMenuItem onSelect={() => handlePrintAction(selectedSlipData)} disabled={!isPdfReady}>
                             <Icon name="Printer" className="ml-2 h-4 w-4" />
-                            طباعة المحدد
+                            طباعة المحدد (PDF)
                         </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={handleExport}>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={handleCsvExport}>
                             <Icon name="FileDown" className="ml-2 h-4 w-4" />
                             تصدير المحدد (CSV)
                         </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleExcelExport(selectedSlipData)}>
+                            <Icon name="FileSpreadsheet" className="ml-2 h-4 w-4" />
+                            تصدير المحدد (Excel)
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => handleEmailAction(selectedSlipData)}>
+                        <DropdownMenuItem onSelect={() => handleEmailAction(selectedSlipData)} disabled={!isPdfReady}>
                             <Icon name="Mail" className="ml-2 h-4 w-4" />
                             إرسال المحدد (بريد إلكتروني)
                         </DropdownMenuItem>
