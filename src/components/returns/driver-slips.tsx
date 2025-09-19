@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -70,8 +69,13 @@ export const DriverSlips = () => {
           let barcodeBase64 = "";
           try {
             const canvas = document.createElement('canvas');
-            bwipjs.toCanvas(canvas, {
-                bcid: 'code128', text: slip.id, scale: 3, height: 10, includetext: false,
+            await new Promise<void>((resolve, reject) => {
+              bwipjs.toCanvas(canvas, {
+                  bcid: 'code128', text: slip.id, scale: 3, height: 10, includetext: false,
+              }, (err) => {
+                if (err) return reject(err);
+                resolve();
+              });
             });
             barcodeBase64 = canvas.toDataURL('image/png');
           } catch (e) {

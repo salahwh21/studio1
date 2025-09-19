@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo } from 'react';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
@@ -86,10 +85,15 @@ export const MerchantSlips = () => {
             const logoBase64 = settings.login.reportsLogo || settings.login.headerLogo;
             
             let barcodeBase64 = "";
-            try {
+             try {
                 const canvas = document.createElement('canvas');
-                bwipjs.toCanvas(canvas, {
-                    bcid: 'code128', text: slip.id, scale: 3, height: 10, includetext: false,
+                await new Promise<void>((resolve, reject) => {
+                    bwipjs.toCanvas(canvas, {
+                        bcid: 'code128', text: slip.id, scale: 3, height: 10, includetext: false,
+                    }, (err) => {
+                        if (err) return reject(err);
+                        resolve();
+                    });
                 });
                 barcodeBase64 = canvas.toDataURL('image/png');
             } catch (e) {
