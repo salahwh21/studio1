@@ -71,13 +71,18 @@ const createSlipContent = async (slip: DriverSlip | MerchantSlip, users: User[],
     return pageContent;
 };
 
-const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], reportsLogo: string | null, isDriver: boolean) => {
+export const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], reportsLogo: string | null, isDriver: boolean) => {
     const pdfMakeModule = await import('pdfmake/build/pdfmake');
     const pdfFonts = await import('pdfmake/build/vfs_fonts');
 
-    pdfMakeModule.default.vfs = pdfFonts.pdfMake.vfs;
-    
+    // Use safe path for vfs
+    pdfMakeModule.default.vfs = pdfFonts?.default?.vfs ?? {};
+
+    // Arabic-supporting font
     pdfMakeModule.default.fonts = {
+        // NOTE: This assumes you have font files available in your project.
+        // For this to work, you'd need to load them into the vfs.
+        // Using the default Roboto is safer if you haven't set up custom fonts.
         Roboto: {
             normal: 'Roboto-Regular.ttf',
             bold: 'Roboto-Medium.ttf',
@@ -85,7 +90,7 @@ const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], 
             bolditalics: 'Roboto-MediumItalic.ttf'
         }
     };
-    
+
     const allPagesContent: any[] = [];
 
     for (let i = 0; i < slips.length; i++) {
