@@ -1,3 +1,4 @@
+
 // @ts-nocheck
 import type { Order } from '@/store/orders-store';
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
@@ -81,10 +82,9 @@ const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], 
     const pdfMakeModule = await import('pdfmake/build/pdfmake');
     const pdfFonts = await import('pdfmake/build/vfs_fonts');
 
-    // Correctly assign the vfs from the imported module
-    // The imported 'pdfFonts' object is the vfs itself.
+    // The correct way to assign vfs without extending a frozen module
     pdfMakeModule.vfs = pdfFonts.pdfMake.vfs;
-
+    
     const allPagesContent: any[] = [];
 
     for (let i = 0; i < slips.length; i++) {
