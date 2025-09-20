@@ -1,5 +1,4 @@
 // @ts-nocheck
-import type { Order } from '@/store/orders-store';
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
 import type { User } from '@/store/user-store';
 
@@ -45,7 +44,7 @@ const createSlipContent = async (slip: DriverSlip | MerchantSlip, users: User[],
     
     const tableBody = [
         [{ text: '#', style: 'tableHeader' }, { text: 'رقم الطلب', style: 'tableHeader' }, { text: 'المستلم', style: 'tableHeader' }, { text: 'العنوان', style: 'tableHeader' }, { text: 'سبب الإرجاع', style: 'tableHeader' }, { text: 'المبلغ', style: 'tableHeader' }],
-        ...slip.orders.map((o: Order, i: number) => [
+        ...slip.orders.map((o, i) => [
             { text: String(i + 1), style: 'tableCell' },
             { text: String(o.id || ''), style: 'tableCell', alignment: 'center' },
             { text: `${String(o.recipient || '')}\n${String(o.phone || '')}`, style: 'tableCell' },
