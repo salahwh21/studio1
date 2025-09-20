@@ -56,12 +56,14 @@ export const DriverSlips = () => {
         setPdfToPrint(slips);
     };
 
-    const handleExcelExport = (slips: DriverSlip[]) => {
-        if (slips.length === 0) return;
+    const handleExcelExport = () => {
+        const slipsToExport = filteredSlips.filter(s => selectedSlips.includes(s.id));
+        if (slipsToExport.length === 0) return;
+        
         startTransition(() => {
             toast({ title: "جاري تجهيز ملف Excel..." });
             const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-            generateDriverSlipExcel(slips, users, reportsLogo).then(() => {
+            generateDriverSlipExcel(slipsToExport, users, reportsLogo).then(() => {
                 toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
             }).catch(e => {
                 console.error("Excel generation error:", e);
@@ -195,7 +197,7 @@ export const DriverSlips = () => {
                                     <Icon name="FileDown" className="ml-2 h-4 w-4" />
                                     تصدير المحدد (CSV)
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleExcelExport(selectedSlipData)} disabled={isPending}>
+                                <DropdownMenuItem onSelect={handleExcelExport} disabled={isPending}>
                                     <Icon name="FileSpreadsheet" className="ml-2 h-4 w-4" />
                                     تصدير المحدد (Excel)
                                 </DropdownMenuItem>
