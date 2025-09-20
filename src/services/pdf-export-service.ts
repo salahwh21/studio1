@@ -77,12 +77,11 @@ const createSlipContent = async (slip: DriverSlip | MerchantSlip, users: User[],
 };
 
 const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], reportsLogo: string | null, isDriver: boolean) => {
-    // Dynamically import pdfmake and fonts only on the client-side
-    const pdfMakeModule = await import('pdfmake/build/pdfmake');
+    const pdfMake = (await import('pdfmake/build/pdfmake')).default;
     const pdfFonts = (await import('pdfmake/build/vfs_fonts')).default;
 
-    // Correctly assign the vfs from the imported module
-    pdfMakeModule.vfs = pdfFonts;
+    // The correct way to assign vfs without extending a frozen module
+    Object.assign(pdfMake, { vfs: pdfFonts.pdfMake.vfs });
     
     const allPagesContent: any[] = [];
 
@@ -109,7 +108,7 @@ const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], 
         pageMargins: [20, 40, 20, 40]
     };
 
-    return pdfMakeModule.createPdf(docDefinition);
+    return pdfMake.createPdf(docDefinition);
 }
 
 
