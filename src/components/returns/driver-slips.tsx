@@ -36,7 +36,6 @@ export const DriverSlips = () => {
     const [filterEndDate, setFilterEndDate] = useState<Date | null>(null);
 
     const [pdfToPrint, setPdfToPrint] = useState<DriverSlip[] | null>(null);
-    const [excelToExport, setExcelToExport] = useState<DriverSlip[] | null>(null);
 
     const uniqueDrivers = useMemo(() => Array.from(new Set(driverSlips.map(s => s.driverName))), [driverSlips]);
 
@@ -59,7 +58,16 @@ export const DriverSlips = () => {
 
     const handleExcelExport = (slips: DriverSlip[]) => {
         if (slips.length === 0) return;
-        setExcelToExport(slips);
+        startTransition(() => {
+            toast({ title: "جاري تجهيز ملف Excel..." });
+            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+            generateDriverSlipExcel(slips, users, reportsLogo).then(() => {
+                toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
+            }).catch(e => {
+                console.error("Excel generation error:", e);
+                toast({ variant: 'destructive', title: 'فشل إنشاء Excel', description: 'حدث خطأ أثناء تجهيز الملف.' });
+            });
+        });
     };
     
     useEffect(() => {
@@ -77,22 +85,6 @@ export const DriverSlips = () => {
             });
         });
     }, [pdfToPrint, settings.login, users, toast]);
-
-    useEffect(() => {
-        if (!excelToExport) return;
-        startTransition(() => {
-            toast({ title: "جاري تجهيز ملف Excel..." });
-            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-            generateDriverSlipExcel(excelToExport, users, reportsLogo).then(() => {
-                toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
-                setExcelToExport(null);
-            }).catch(e => {
-                console.error("Excel generation error:", e);
-                toast({ variant: 'destructive', title: 'فشل إنشاء Excel', description: 'حدث خطأ أثناء تجهيز الملف.' });
-                setExcelToExport(null);
-            });
-        });
-    }, [excelToExport, settings.login, users, toast]);
 
     const handleSendWhatsApp = () => {
         const slipsToSend = filteredSlips.filter(s => selectedSlips.includes(s.id));

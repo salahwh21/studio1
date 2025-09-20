@@ -34,7 +34,6 @@ export const MerchantSlips = () => {
     const [selectedSlips, setSelectedSlips] = useState<string[]>([]);
     
     const [pdfToPrint, setPdfToPrint] = useState<MerchantSlip[] | null>(null);
-    const [excelToExport, setExcelToExport] = useState<MerchantSlip[] | null>(null);
 
     const [filterMerchant, setFilterMerchant] = useState<string | null>(null);
     const [filterStartDate, setFilterStartDate] = useState<Date | null>(null);
@@ -74,7 +73,16 @@ export const MerchantSlips = () => {
     
     const handleExcelExport = (slips: MerchantSlip[]) => {
         if (slips.length === 0) return;
-        setExcelToExport(slips);
+        startTransition(() => {
+            toast({ title: "جاري تجهيز ملف Excel..." });
+            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+            generateMerchantSlipExcel(slips, users, reportsLogo).then(() => {
+                toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
+            }).catch(e => {
+                console.error("Excel generation error:", e);
+                toast({ variant: 'destructive', title: 'فشل إنشاء Excel', description: 'حدث خطأ أثناء تجهيز الملف.' });
+            });
+        });
     }
     
     useEffect(() => {
@@ -92,22 +100,6 @@ export const MerchantSlips = () => {
             });
         });
     }, [pdfToPrint, settings.login, users, toast]);
-
-    useEffect(() => {
-        if (!excelToExport) return;
-        startTransition(() => {
-            toast({ title: "جاري تجهيز ملف Excel..." });
-            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-            generateMerchantSlipExcel(excelToExport, users, reportsLogo).then(() => {
-                toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
-                setExcelToExport(null);
-            }).catch(e => {
-                console.error("Excel generation error:", e);
-                toast({ variant: 'destructive', title: 'فشل إنشاء Excel', description: 'حدث خطأ أثناء تجهيز الملف.' });
-                setExcelToExport(null);
-            });
-        });
-    }, [excelToExport, settings.login, users, toast]);
 
     const handleSendWhatsApp = () => {
         const slipsToSend = filteredSlips.filter(s => selectedSlips.includes(s.id));
@@ -247,7 +239,7 @@ export const MerchantSlips = () => {
                                 <TableCell className="border-l text-center whitespace-nowrap"><Badge variant={slip.status === 'تم التسليم' ? 'default' : 'outline'} className={slip.status === 'تم التسليم' ? 'bg-green-100 text-green-800' : ''}>{slip.status}</Badge></TableCell>
                                 <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
                                     <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
-                                    <Button variant="outline" size="sm" disabled={slip.status === 'تم التسليم'} onClick={() => confirmDelivery(slip.id)}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
+                                    <Button variant="outline" size="sm" disabled={slip.status === 'تم التسليم'} onClick={() => confirmSlipDelivery(slip.id)}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
                                     <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])} disabled={isPending}><Icon name="Printer" className="h-4 w-4" /></Button>
                                 </TableCell>
                             </TableRow>
