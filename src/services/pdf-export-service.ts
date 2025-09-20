@@ -1,3 +1,4 @@
+
 // @ts-nocheck
 import type { Order } from '@/store/orders-store';
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
@@ -75,10 +76,10 @@ const createSlipContent = async (slip: DriverSlip | MerchantSlip, users: User[],
 const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], reportsLogo: string | null, isDriver: boolean) => {
     // Dynamically import pdfmake and vfs_fonts
     const pdfMakeModule = await import('pdfmake/build/pdfmake');
-    const pdfFonts = await import('pdfmake/build/vfs_fonts');
+    const pdfFontsModule = await import('pdfmake/build/vfs_fonts');
 
     // The correct way to assign vfs without extending a frozen module
-    pdfMakeModule.default.vfs = pdfFonts.default;
+    pdfMakeModule.default.vfs = pdfFontsModule.default.pdfMake.vfs;
     
     const allPagesContent: any[] = [];
 
