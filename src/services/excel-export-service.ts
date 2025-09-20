@@ -5,12 +5,18 @@ import type { Order } from '@/store/orders-store';
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
 import type { User } from '@/store/user-store';
 
+// This function now uses dynamic import for bwip-js to ensure it only runs on the client.
 async function generateBarcodeBase64(text: string): Promise<string> {
-    if (typeof window === 'undefined') return '';
+    if (typeof window === 'undefined') {
+        console.error("Barcode generation can only be done on the client-side.");
+        return '';
+    }
     try {
-        const bwipjs = (await import('bwip-js')).default;
+        const bwipjsModule = await import('bwip-js');
+        const bwipjs = bwipjsModule.default;
+        
         const canvas = document.createElement('canvas');
-        await new Promise((resolve, reject) => {
+        await new Promise<void>((resolve, reject) => {
             bwipjs.toCanvas(canvas, {
                 bcid: 'code128',
                 text: text,
@@ -20,7 +26,7 @@ async function generateBarcodeBase64(text: string): Promise<string> {
                 textsize: 10
             }, (err) => {
                 if (err) return reject(err);
-                resolve(canvas);
+                resolve();
             });
         });
         return canvas.toDataURL('image/png');

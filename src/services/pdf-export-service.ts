@@ -5,26 +5,49 @@ import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
 import type { User } from '@/store/user-store';
 import { amiriRegularBase64, amiriBoldBase64 } from '@/components/returns/amiri_base64';
 
+// Use a dynamic import for pdfmake and its VFS fonts
 async function getPdfMake() {
   if (typeof window === 'undefined') {
     throw new Error('pdfmake can only be used on the client side.');
   }
-  const pdfmakeModule = await import('pdfmake/build/pdfmake');
+
+  // Dynamically import both pdfmake and the vfs_fonts.
+  const pdfmakePromise = import('pdfmake/build/pdfmake');
+  const vfsFontsPromise = import('pdfmake/build/vfs_fonts');
+
+  const [pdfmakeModule, vfsFontsModule] = await Promise.all([
+    pdfmakePromise,
+    vfsFontsPromise,
+  ]);
   
-  pdfmakeModule.vfs = {
-    "Amiri-Regular.ttf": amiriRegularBase64,
-    "Amiri-Bold.ttf": amiriBoldBase64,
-  };
+  const pdfMake = pdfmakeModule.default;
+
+  // Correctly assign the VFS. This is how the library is designed to work.
+  // It modifies its own internal state, which is safe.
+  pdfMake.vfs = vfsFontsModule.pdfMake.vfs;
+
+  // Add our custom Arabic font to the VFS
+  pdfMake.vfs['Amiri-Regular.ttf'] = amiriRegularBase64;
+  pdfMake.vfs['Amiri-Bold.ttf'] = amiriBoldBase64;
   
-  pdfmakeModule.fonts = {
+  // Configure the fonts for pdfmake to use
+  pdfMake.fonts = {
     Amiri: {
       normal: 'Amiri-Regular.ttf',
       bold: 'Amiri-Bold.ttf',
       italics: 'Amiri-Regular.ttf',
       bolditalics: 'Amiri-Bold.ttf'
+    },
+    // Keep Roboto as a fallback
+    Roboto: {
+        normal: 'Roboto-Regular.ttf',
+        bold: 'Roboto-Medium.ttf',
+        italics: 'Roboto-Italic.ttf',
+        bolditalics: 'Roboto-MediumItalic.ttf'
     }
   };
-  return pdfmakeModule;
+
+  return pdfMake;
 }
 
 async function generateBarcode(text: string): Promise<string> {
