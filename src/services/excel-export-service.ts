@@ -1,5 +1,5 @@
+
 // @ts-nocheck
-import ExcelJS from 'exceljs';
 import type { Order } from '@/store/orders-store';
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
 import type { User } from '@/store/user-store';
@@ -35,7 +35,8 @@ async function generateBarcodeBase64(text: string): Promise<string> {
 }
 
 
-async function generateSlipWorksheet(workbook: ExcelJS.Workbook, slip: DriverSlip | MerchantSlip, users: User[], reportsLogo: string | null, isDriver: boolean) {
+async function generateSlipWorksheet(workbook, slip: DriverSlip | MerchantSlip, users: User[], reportsLogo: string | null, isDriver: boolean) {
+    const ExcelJS = (await import('exceljs')).default;
     const worksheet = workbook.addWorksheet(`Slip ${slip.id.substring(3, 7)}`, {
         pageSetup: { paperSize: 9, orientation: 'portrait', margins: { left: 0.25, right: 0.25, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 } },
         views: [{ rightToLeft: true }]
@@ -126,6 +127,9 @@ async function generateSlipWorksheet(workbook: ExcelJS.Workbook, slip: DriverSli
 }
 
 async function generateExcel(slips: (DriverSlip | MerchantSlip)[], users: User[], reportsLogo: string | null, isDriver: boolean, filename: string) {
+    if (typeof window === 'undefined') return;
+
+    const ExcelJS = (await import('exceljs')).default;
     const workbook = new ExcelJS.Workbook();
     
     for (const slip of slips) {
@@ -150,3 +154,4 @@ export const generateDriverSlipExcel = (slips: DriverSlip[], users: User[], repo
 export const generateMerchantSlipExcel = (slips: MerchantSlip[], users: User[], reportsLogo: string | null) => {
     return generateExcel(slips, users, reportsLogo, false, `merchant_slips_${new Date().toISOString().slice(0,10)}.xlsx`);
 };
+
