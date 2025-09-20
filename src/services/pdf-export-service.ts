@@ -24,7 +24,7 @@ async function getPdfMake() {
 
   // Correctly assign the VFS. This is how the library is designed to work.
   // It modifies its own internal state, which is safe.
-  pdfMake.vfs = vfsFontsModule.pdfMake.vfs;
+  pdfMake.vfs = vfsFontsModule.default;
 
   // Add our custom Arabic font to the VFS
   pdfMake.vfs['Amiri-Regular.ttf'] = amiriRegularBase64;
@@ -51,7 +51,10 @@ async function getPdfMake() {
 }
 
 async function generateBarcode(text: string): Promise<string> {
-    if (typeof window === 'undefined') return '';
+    if (typeof window === 'undefined') {
+        console.warn("Barcode generation is skipped on the server-side.");
+        return '';
+    }
     try {
         const bwipjs = (await import('bwip-js')).default;
         const canvas = document.createElement('canvas');
