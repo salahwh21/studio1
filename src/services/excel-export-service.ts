@@ -1,4 +1,3 @@
-
 // @ts-nocheck
 import type { Order } from '@/store/orders-store';
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
@@ -154,4 +153,3 @@ export const generateDriverSlipExcel = (slips: DriverSlip[], users: User[], repo
 export const generateMerchantSlipExcel = (slips: MerchantSlip[], users: User[], reportsLogo: string | null) => {
     return generateExcel(slips, users, reportsLogo, false, `merchant_slips_${new Date().toISOString().slice(0,10)}.xlsx`);
 };
-

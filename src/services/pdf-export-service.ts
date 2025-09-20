@@ -1,4 +1,3 @@
-
 // @ts-nocheck
 import type { Order } from '@/store/orders-store';
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
@@ -117,4 +116,3 @@ export const generateDriverSlipPdf = (slips: DriverSlip[], users: User[], report
 export const generateMerchantSlipPdf = (slips: MerchantSlip[], users: User[], reportsLogo: string | null) => {
     return generatePdf(slips, users, reportsLogo, false);
 };
-
