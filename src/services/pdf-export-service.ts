@@ -1,4 +1,3 @@
-
 // @ts-nocheck
 import type { Order } from '@/store/orders-store';
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
@@ -78,13 +77,12 @@ const createSlipContent = async (slip: DriverSlip | MerchantSlip, users: User[],
 };
 
 const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], reportsLogo: string | null, isDriver: boolean) => {
-    // Dynamically import pdfmake only on the client-side
+    // Dynamically import pdfmake and fonts only on the client-side
     const pdfMakeModule = await import('pdfmake/build/pdfmake');
-    const pdfMake = pdfMakeModule.default;
     const pdfFonts = (await import('pdfmake/build/vfs_fonts')).default;
-    
+
     // Correctly assign the vfs from the imported module
-    pdfMake.vfs = pdfFonts;
+    pdfMakeModule.vfs = pdfFonts;
     
     const allPagesContent: any[] = [];
 
@@ -111,7 +109,7 @@ const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], 
         pageMargins: [20, 40, 20, 40]
     };
 
-    return pdfMake.createPdf(docDefinition);
+    return pdfMakeModule.createPdf(docDefinition);
 }
 
 
