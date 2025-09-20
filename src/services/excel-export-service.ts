@@ -54,13 +54,13 @@ async function generateSlipWorksheet(workbook: ExcelJS.Workbook, slip: DriverSli
     ];
 
     // --- Logo & Barcode ---
-    if (reportsLogo) {
+    if (reportsLogo && reportsLogo.startsWith('data:image')) {
         const logoImageId = workbook.addImage({ base64: reportsLogo.split(',')[1], extension: 'png' });
         worksheet.addImage(logoImageId, { tl: { col: 4, row: 1 }, ext: { width: 100, height: 40 } });
     }
     
     const barcodeBase64 = await generateBarcodeBase64(slip.id);
-    if (barcodeBase64) {
+    if (barcodeBase64 && barcodeBase64.startsWith('data:image')) {
         const barcodeImageId = workbook.addImage({ base64: barcodeBase64.split(',')[1], extension: 'png' });
         worksheet.addImage(barcodeImageId, { tl: { col: 0, row: 1 }, ext: { width: 150, height: 50 } });
     } else {

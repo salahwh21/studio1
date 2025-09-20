@@ -53,21 +53,29 @@ export const DriverSlips = () => {
   
     const handlePrintAction = (slips: DriverSlip[]) => {
         if (slips.length === 0) return;
-        startTransition(async () => {
+        startTransition(() => {
             toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${slips.length} كشوفات.` });
             const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-            const pdfDoc = await generateDriverSlipPdf(slips, users, reportsLogo);
-            pdfDoc.open();
+            generateDriverSlipPdf(slips, users, reportsLogo).then(pdfDoc => {
+                pdfDoc.open();
+            }).catch(e => {
+                console.error("PDF generation error:", e);
+                toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: 'حدث خطأ أثناء تجهيز الملف.' });
+            });
         });
     };
 
     const handleExcelExport = (slips: DriverSlip[]) => {
         if (slips.length === 0) return;
-        startTransition(async () => {
+        startTransition(() => {
              toast({ title: "جاري تجهيز ملف Excel..." });
             const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-            await generateDriverSlipExcel(slips, users, reportsLogo);
-             toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
+            generateDriverSlipExcel(slips, users, reportsLogo).then(() => {
+                toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
+            }).catch(e => {
+                console.error("Excel generation error:", e);
+                toast({ variant: 'destructive', title: 'فشل إنشاء Excel', description: 'حدث خطأ أثناء تجهيز الملف.' });
+            });
         });
     }
 
@@ -171,7 +179,7 @@ export const DriverSlips = () => {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                         <DropdownMenuItem onSelect={() => handlePrintAction(selectedSlipData)}>
+                         <DropdownMenuItem onSelect={() => handlePrintAction(selectedSlipData)} disabled={isPending}>
                             <Icon name="Printer" className="ml-2 h-4 w-4" />
                             طباعة المحدد (PDF)
                         </DropdownMenuItem>
@@ -180,7 +188,7 @@ export const DriverSlips = () => {
                             <Icon name="FileDown" className="ml-2 h-4 w-4" />
                             تصدير المحدد (CSV)
                         </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleExcelExport(selectedSlipData)}>
+                        <DropdownMenuItem onSelect={() => handleExcelExport(selectedSlipData)} disabled={isPending}>
                             <Icon name="FileSpreadsheet" className="ml-2 h-4 w-4" />
                             تصدير المحدد (Excel)
                         </DropdownMenuItem>
@@ -218,7 +226,7 @@ export const DriverSlips = () => {
                                   <TableCell className="border-l text-center whitespace-nowrap">{slip.itemCount}</TableCell>
                                   <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
                                         <Button variant="outline" size="sm" onClick={() => setCurrentSlipDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
-                                        <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])}><Icon name="Printer" className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])} disabled={isPending}><Icon name="Printer" className="h-4 w-4" /></Button>
                                   </TableCell>
                               </TableRow>
                           ))
