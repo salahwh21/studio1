@@ -19,10 +19,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useUsersStore } from '@/store/user-store';
-
 import { generateMerchantSlipPdf } from '@/services/pdf-export-service';
 import { generateMerchantSlipExcel } from '@/services/excel-export-service';
-
 
 export const MerchantSlips = () => {
     const { toast } = useToast();
@@ -56,7 +54,7 @@ export const MerchantSlips = () => {
         return matchesMerchant && matchesDate && matchesStatus;
     }), [merchantSlips, filterMerchant, filterStartDate, filterEndDate, filterStatus]);
     
-     const confirmSlipDelivery = (slipId: string) => {
+    const confirmSlipDelivery = (slipId: string) => {
         updateMerchantSlipStatus(slipId, 'تم التسليم');
         toast({
             title: "تم تأكيد التسليم",
@@ -80,39 +78,36 @@ export const MerchantSlips = () => {
     }
     
     useEffect(() => {
-        if (pdfToPrint) {
-            startTransition(() => {
-                toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${pdfToPrint.length} كشوفات.` });
-                const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-                generateMerchantSlipPdf(pdfToPrint, users, reportsLogo).then(pdfDoc => {
-                    pdfDoc.open();
-                    setPdfToPrint(null);
-                }).catch(e => {
-                    console.error("PDF generation error:", e);
-                    toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: 'حدث خطأ أثناء تجهيز الملف.' });
-                    setPdfToPrint(null);
-                });
+        if (!pdfToPrint) return;
+        startTransition(() => {
+            toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${pdfToPrint.length} كشوفات.` });
+            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+            generateMerchantSlipPdf(pdfToPrint, users, reportsLogo).then(pdfDoc => {
+                pdfDoc.open();
+                setPdfToPrint(null);
+            }).catch(e => {
+                console.error("PDF generation error:", e);
+                toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: 'حدث خطأ أثناء تجهيز الملف.' });
+                setPdfToPrint(null);
             });
-        }
+        });
     }, [pdfToPrint, settings.login, users, toast]);
 
     useEffect(() => {
-        if (excelToExport) {
-            startTransition(() => {
-                toast({ title: "جاري تجهيز ملف Excel..." });
-                const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-                generateMerchantSlipExcel(excelToExport, users, reportsLogo).then(() => {
-                    toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
-                    setExcelToExport(null);
-                }).catch(e => {
-                    console.error("Excel generation error:", e);
-                    toast({ variant: 'destructive', title: 'فشل إنشاء Excel', description: 'حدث خطأ أثناء تجهيز الملف.' });
-                    setExcelToExport(null);
-                });
+        if (!excelToExport) return;
+        startTransition(() => {
+            toast({ title: "جاري تجهيز ملف Excel..." });
+            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+            generateMerchantSlipExcel(excelToExport, users, reportsLogo).then(() => {
+                toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
+                setExcelToExport(null);
+            }).catch(e => {
+                console.error("Excel generation error:", e);
+                toast({ variant: 'destructive', title: 'فشل إنشاء Excel', description: 'حدث خطأ أثناء تجهيز الملف.' });
+                setExcelToExport(null);
             });
-        }
+        });
     }, [excelToExport, settings.login, users, toast]);
-
 
     const handleSendWhatsApp = () => {
         const slipsToSend = filteredSlips.filter(s => selectedSlips.includes(s.id));
@@ -242,19 +237,19 @@ export const MerchantSlips = () => {
                         <TableBody>
                         {filteredSlips.map((slip) => (
                             <TableRow key={slip.id} data-state={selectedSlips.includes(slip.id) ? "selected" : "unselected"}>
-                            <TableCell className="border-l text-center"><Checkbox checked={selectedSlips.includes(slip.id)} onCheckedChange={(checked) => setSelectedSlips(p => checked ? [...p, slip.id] : p.filter(id => id !== slip.id))} /></TableCell>
-                            <TableCell className="font-mono border-l text-center whitespace-nowrap">
-                                <Link href={`/dashboard/returns/slips/${slip.id}`} className="text-primary hover:underline">{slip.id}</Link>
-                            </TableCell>
-                            <TableCell className="border-l text-center whitespace-nowrap">{slip.merchant}</TableCell>
-                            <TableCell className="border-l text-center whitespace-nowrap">{slip.date}</TableCell>
-                            <TableCell className="border-l text-center whitespace-nowrap">{slip.items}</TableCell>
-                            <TableCell className="border-l text-center whitespace-nowrap"><Badge variant={slip.status === 'تم التسليم' ? 'default' : 'outline'} className={slip.status === 'تم التسليم' ? 'bg-green-100 text-green-800' : ''}>{slip.status}</Badge></TableCell>
-                            <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
-                                <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
-                                <Button variant="outline" size="sm" disabled={slip.status === 'تم التسليم'} onClick={() => confirmSlipDelivery(slip.id)}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
-                                <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])} disabled={isPending}><Icon name="Printer" className="h-4 w-4" /></Button>
-                            </TableCell>
+                                <TableCell className="border-l text-center"><Checkbox checked={selectedSlips.includes(slip.id)} onCheckedChange={(checked) => setSelectedSlips(p => checked ? [...p, slip.id] : p.filter(id => id !== slip.id))} /></TableCell>
+                                <TableCell className="font-mono border-l text-center whitespace-nowrap">
+                                    <Link href={`/dashboard/returns/slips/${slip.id}`} className="text-primary hover:underline">{slip.id}</Link>
+                                </TableCell>
+                                <TableCell className="border-l text-center whitespace-nowrap">{slip.merchant}</TableCell>
+                                <TableCell className="border-l text-center whitespace-nowrap">{slip.date}</TableCell>
+                                <TableCell className="border-l text-center whitespace-nowrap">{slip.items}</TableCell>
+                                <TableCell className="border-l text-center whitespace-nowrap"><Badge variant={slip.status === 'تم التسليم' ? 'default' : 'outline'} className={slip.status === 'تم التسليم' ? 'bg-green-100 text-green-800' : ''}>{slip.status}</Badge></TableCell>
+                                <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
+                                    <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
+                                    <Button variant="outline" size="sm" disabled={slip.status === 'تم التسليم'} onClick={() => confirmDelivery(slip.id)}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
+                                    <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])} disabled={isPending}><Icon name="Printer" className="h-4 w-4" /></Button>
+                                </TableCell>
                             </TableRow>
                         ))}
                          {filteredSlips.length === 0 && (
@@ -267,11 +262,29 @@ export const MerchantSlips = () => {
 
             <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
                 <DialogContent className="sm:max-w-2xl">
-                <DialogHeader><DialogTitle>تفاصيل كشف {currentSlip?.id}</DialogTitle></DialogHeader>
-                <div className="space-y-4">
-                    <Table><TableHeader><TableRow><TableHead>رقم الطلب</TableHead><TableHead>المستلم</TableHead><TableHead>تاريخ الإرجاع الأصلي</TableHead><TableHead>الحالة الأصلية</TableHead></TableRow></TableHeader>
-                    <TableBody>{currentSlip?.orders.map((order: any) => (<TableRow key={order.id}><TableCell><Link href={`/dashboard/orders/${order.id}`} className="font-mono text-primary hover:underline">{order.id}</Link></TableCell><TableCell>{order.recipient}</TableCell><TableCell>{order.date}</TableCell><TableCell><Badge variant="secondary">{order.status}</Badge></TableCell></TableRow>))}</TableBody></Table>
-                </div>
+                    <DialogHeader><DialogTitle>تفاصيل كشف {currentSlip?.id}</DialogTitle></DialogHeader>
+                    <div className="space-y-4">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>رقم الطلب</TableHead>
+                                    <TableHead>المستلم</TableHead>
+                                    <TableHead>تاريخ الإرجاع الأصلي</TableHead>
+                                    <TableHead>الحالة الأصلية</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {currentSlip?.orders.map((order: any) => (
+                                    <TableRow key={order.id}>
+                                        <TableCell><Link href={`/dashboard/orders/${order.id}`} className="font-mono text-primary hover:underline">{order.id}</Link></TableCell>
+                                        <TableCell>{order.recipient}</TableCell>
+                                        <TableCell>{order.date}</TableCell>
+                                        <TableCell><Badge variant="secondary">{order.status}</Badge></TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>

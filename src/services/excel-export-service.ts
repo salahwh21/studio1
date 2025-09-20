@@ -3,9 +3,7 @@ import type { Order } from '@/store/orders-store';
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
 import type { User } from '@/store/user-store';
 
-// This function now uses dynamic import for bwip-js to ensure it only runs on the client.
 async function generateBarcodeBase64(text: string): Promise<string> {
-    // Barcode generation is a client-side only operation.
     if (typeof window === 'undefined') {
         return '';
     }
