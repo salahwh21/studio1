@@ -26,7 +26,7 @@ export default function ReturnsPage() {
         <TabsList className="grid w-full grid-cols-4">
            <TabsTrigger value="merchant-slips">
             <Icon name="ClipboardList" className="ml-2 h-4 w-4" />
-            كشوفات الإرجاع للتجار
+            كشوفات إرجاع التجار
           </TabsTrigger>
            <TabsTrigger value="prepare-for-merchants">
             <Icon name="Package" className="ml-2 h-4 w-4" />

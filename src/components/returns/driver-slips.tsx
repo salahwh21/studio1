@@ -3,7 +3,7 @@ import React, { useState, useMemo, useTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useReturnsStore, type DriverSlip } from '@/store/returns-store';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { parseISO, isWithinInterval, format } from 'date-fns';
@@ -16,11 +16,7 @@ import Papa from 'papaparse';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import type { Order } from '@/store/orders-store';
 import { useUsersStore } from '@/store/user-store';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Textarea } from '../ui/textarea';
 import Link from 'next/link';
 
 import { generateDriverSlipPdf } from '@/services/pdf-export-service';
@@ -36,8 +32,6 @@ export const DriverSlips = () => {
 
   const [currentSlipDetails, setCurrentSlipDetails] = useState<DriverSlip | null>(null);
   const [selectedSlips, setSelectedSlips] = useState<string[]>([]);
-  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
-  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
 
   const [filterDriver, setFilterDriver] = useState<string | null>(null);
   const [filterStartDate, setFilterStartDate] = useState<Date | null>(null);
@@ -66,19 +60,6 @@ export const DriverSlips = () => {
             pdfDoc.open();
         });
     };
-    
-    const handleEmailAction = (slips: DriverSlip[]) => {
-        if (slips.length === 0) return;
-        startTransition(async () => {
-            toast({ title: "جاري تجهيز المرفق...", description: "قد تستغرق العملية بضع لحظات." });
-            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-            const pdfDoc = await generateDriverSlipPdf(slips, users, reportsLogo);
-            pdfDoc.getBlob((blob) => {
-                setPdfBlob(blob);
-                setIsEmailDialogOpen(true);
-            });
-        });
-    };
 
     const handleExcelExport = (slips: DriverSlip[]) => {
         if (slips.length === 0) return;
@@ -89,20 +70,6 @@ export const DriverSlips = () => {
              toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
         });
     }
-    
-    const handleDownloadAttachment = () => {
-        if(pdfBlob) {
-            const url = URL.createObjectURL(pdfBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'driver-slips.pdf';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-    }
-
 
     const handleSendWhatsApp = () => {
         const slipsToSend = filteredSlips.filter(s => selectedSlips.includes(s.id));
@@ -218,10 +185,6 @@ export const DriverSlips = () => {
                             تصدير المحدد (Excel)
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => handleEmailAction(selectedSlipData)}>
-                            <Icon name="Mail" className="ml-2 h-4 w-4" />
-                            إرسال المحدد (بريد إلكتروني)
-                        </DropdownMenuItem>
                         <DropdownMenuItem onSelect={handleSendWhatsApp}>
                             <Icon name="MessageSquare" className="ml-2 h-4 w-4" />
                             إرسال المحدد (واتساب)
@@ -284,44 +247,6 @@ export const DriverSlips = () => {
                </div>
           </DialogContent>
       </Dialog>
-
-        <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>إرسال الكشوفات عبر البريد الإلكتروني</DialogTitle>
-                    <DialogDescription>
-                        سيتم إرسال {selectedSlipData.length} كشوفات إلى السائقين المعنيين.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="email-recipients">المستلمون</Label>
-                        <Input id="email-recipients" readOnly value={selectedSlipData.map(s => `${s.driverName} <${users.find(u => u.name === s.driverName)?.email || 'N/A'}>`).join(', ')} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="email-subject">الموضوع</Label>
-                        <Input id="email-subject" defaultValue={`كشوفات مرتجعات بتاريخ ${new Date().toLocaleDateString('ar-EG')}`} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="email-body">نص الرسالة</Label>
-                        <Textarea id="email-body" defaultValue="مرحباً، مرفق طيه كشوفات المرتجعات الخاصة بكم. يرجى المراجعة." />
-                    </div>
-                    {pdfBlob && (
-                         <Button variant="link" className="p-0 h-auto" onClick={handleDownloadAttachment}>
-                            <Icon name="Paperclip" className="inline h-4 w-4 ml-1" />
-                            driver-slips.pdf ({Math.round(pdfBlob.size / 1024)} KB)
-                        </Button>
-                    )}
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>إلغاء</Button>
-                    <Button onClick={() => toast({title: "تم الإرسال (محاكاة)", description: "في التطبيق الفعلي، سيتم إرسال البريد الآن."})} disabled={isPending}>
-                        {isPending ? <Icon name="Loader2" className="ml-2 h-4 w-4 animate-spin"/> : <Icon name="Send" className="ml-2 h-4 w-4" />}
-                         إرسال
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
     </div>
   );
 };

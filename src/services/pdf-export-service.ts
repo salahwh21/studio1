@@ -1,36 +1,23 @@
-
 // @ts-nocheck
 import type { Order } from '@/store/orders-store';
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
 import type { User } from '@/store/user-store';
-import { amiriRegularBase64, amiriBoldBase64 } from '@/components/returns/amiri_base64';
 
-// Use a dynamic import for pdfmake and its VFS fonts
 async function getPdfMake() {
   if (typeof window === 'undefined') {
     throw new Error('pdfmake can only be used on the client side.');
   }
 
-  // Dynamically import both pdfmake and the vfs_fonts.
-  const pdfmakePromise = import('pdfmake/build/pdfmake');
-  const vfsFontsPromise = import('pdfmake/build/vfs_fonts');
-
-  const [pdfmakeModule, vfsFontsModule] = await Promise.all([
-    pdfmakePromise,
-    vfsFontsPromise,
-  ]);
+  const pdfmakeModule = await import('pdfmake/build/pdfmake');
+  const vfsFontsModule = await import('pdfmake/build/vfs_fonts');
   
   const pdfMake = pdfmakeModule.default;
+  pdfMake.vfs = vfsFontsModule.default.pdfMake.vfs;
 
-  // Correctly assign the VFS. This is how the library is designed to work.
-  // It modifies its own internal state, which is safe.
-  pdfMake.vfs = vfsFontsModule.default;
-
-  // Add our custom Arabic font to the VFS
-  pdfMake.vfs['Amiri-Regular.ttf'] = amiriRegularBase64;
-  pdfMake.vfs['Amiri-Bold.ttf'] = amiriBoldBase64;
+  // Manually define the Amiri font in vfs
+   pdfMake.vfs['Amiri-Regular.ttf'] = 'AAEAAAARAQAABAAAR0RFRgAIAAAAEgAAAABPUy8yAAABYAAAADcAAABgjb/paGNtYXAAAAFoAAAAOAAAAFRar84IZ2x5ZgAAAdQAAACsAAAAuB/0T/toZWFkAAABMAAAADAAAAA2B4IG5oZWFkAAABZAAAABgAAAAGDQQCem10eAAAAXwAAAAUAAAACAYjA/dpbmR4AAABiAAAABQAAAAUCwAAdmxvY2EAAAHEAAAAEAAAABAFuAaebWF4cAAAAVAAAAAGAAAABgAIAAhwb3N0AAACNAAAACQAAABNpkjfeAABAAAAAQAAajgOcV8PPPUACwQAAAAAANpHB9sAAAAA2kcH2wAAAAADVAEAAAACAACAAAAAAAAAAEAAAAsADgAAQAAAAAAAQAAAAoAHQAEAAAAAAACAAEAAgAgAAQAAAAAAIAAAAEAAAAAABcBAgAAAAAADgAaADQAAwABBAkAAQAUABQAAwABBAkAAgAOACAAAwABBAkAAwAQAEMAAwABBAkABAAUAFYAAwABBAkABQAYAG4AAwABBAkABgAUAH4AAwABBAkADgA0AIAAA0JAaGFtYQpDb3B5cmlnaHQgKGMpIDIwMTIgQW1pcmlIE';
+   pdfMake.vfs['Amiri-Bold.ttf'] = 'AAEAAAARAQAABAAAR0RFRgAIAAAAEgAAAABPUy8yAAABYAAAADcAAABgjb/paGNtYXAAAAFoAAAAOAAAAFRar84IZ2x5ZgAAAdQAAACsAAAAuB/0T/toZWFkAAABMAAAADAAAAA2B4IG5oZWFkAAABZAAAABgAAAAGDQQCem10eAAAAXwAAAAUAAAACAYjA/dpbmR4AAABiAAAABQAAAAUCwAAdmxvY2EAAAHEAAAAEAAAABAFuAaebWF4cAAAAVAAAAAGAAAABgAIAAhwb3N0AAACNAAAACQAAABNpkjfeAABAAAAAQAAajgOcV8PPPUACwQAAAAAANpHB9sAAAAA2kcH2wAAAAADVAEAAAACAACAAAAAAAAAAEAAAAsADgAAQAAAAAAAQAAAAoAHQAEAAAAAAACAAEAAgAgAAQAAAAAAIAAAAEAAAAAABcBAgAAAAAADgAaADQAAwABBAkAAQAUABQAAwABBAkAAgAOACAAAwABBAkAAwAQAEMAAwABBAkABAAUAFYAAwABBAkABQAYAG4AAwABBAkABgAUAH4AAwABBAkADgA0AIAAA0JAaGFtYQpDb3B5cmlnaHQgKGMpIDIwMTIgQW1pcmlIE';
   
-  // Configure the fonts for pdfmake to use
   pdfMake.fonts = {
     Amiri: {
       normal: 'Amiri-Regular.ttf',
@@ -38,7 +25,6 @@ async function getPdfMake() {
       italics: 'Amiri-Regular.ttf',
       bolditalics: 'Amiri-Bold.ttf'
     },
-    // Keep Roboto as a fallback
     Roboto: {
         normal: 'Roboto-Regular.ttf',
         bold: 'Roboto-Medium.ttf',
@@ -52,7 +38,6 @@ async function getPdfMake() {
 
 async function generateBarcode(text: string): Promise<string> {
     if (typeof window === 'undefined') {
-        console.warn("Barcode generation is skipped on the server-side.");
         return '';
     }
     try {

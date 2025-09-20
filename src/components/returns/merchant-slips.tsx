@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/icon';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { parseISO, isWithinInterval, format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -18,11 +18,7 @@ import Papa from 'papaparse';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import type { Order } from '@/store/orders-store';
 import { useUsersStore } from '@/store/user-store';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Textarea } from '../ui/textarea';
 
 import { generateMerchantSlipPdf } from '@/services/pdf-export-service';
 import { generateMerchantSlipExcel } from '@/services/excel-export-service';
@@ -38,8 +34,6 @@ export const MerchantSlips = () => {
     const [showDetailsDialog, setShowDetailsDialog] = useState(false);
     const [currentSlip, setCurrentSlip] = useState<MerchantSlip | null>(null);
     const [selectedSlips, setSelectedSlips] = useState<string[]>([]);
-    const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
-    const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
 
     const [filterMerchant, setFilterMerchant] = useState<string | null>(null);
     const [filterStartDate, setFilterStartDate] = useState<Date | null>(null);
@@ -82,19 +76,6 @@ export const MerchantSlips = () => {
         });
     };
     
-    const handleEmailAction = (slips: MerchantSlip[]) => {
-        if (slips.length === 0) return;
-        startTransition(async () => {
-            toast({ title: "جاري تجهيز المرفق...", description: "قد تستغرق العملية بضع لحظات." });
-            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-            const pdfDoc = await generateMerchantSlipPdf(slips, users, reportsLogo);
-            pdfDoc.getBlob((blob) => {
-                setPdfBlob(blob);
-                setIsEmailDialogOpen(true);
-            });
-        });
-    };
-
     const handleExcelExport = (slips: MerchantSlip[]) => {
         if (slips.length === 0) return;
         startTransition(async () => {
@@ -103,19 +84,6 @@ export const MerchantSlips = () => {
             await generateMerchantSlipExcel(slips, users, reportsLogo);
             toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
         });
-    }
-    
-    const handleDownloadAttachment = () => {
-        if(pdfBlob) {
-            const url = URL.createObjectURL(pdfBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'merchant-slips.pdf';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
     }
 
     const handleSendWhatsApp = () => {
@@ -224,10 +192,6 @@ export const MerchantSlips = () => {
                                     تصدير المحدد (Excel)
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => handleEmailAction(selectedSlipData)}>
-                                    <Icon name="Mail" className="ml-2 h-4 w-4" />
-                                    إرسال المحدد (بريد إلكتروني)
-                                </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={handleSendWhatsApp}>
                                     <Icon name="MessageSquare" className="ml-2 h-4 w-4" />
                                     إرسال المحدد (واتساب)
@@ -280,44 +244,6 @@ export const MerchantSlips = () => {
                     <Table><TableHeader><TableRow><TableHead>رقم الطلب</TableHead><TableHead>المستلم</TableHead><TableHead>تاريخ الإرجاع الأصلي</TableHead><TableHead>الحالة الأصلية</TableHead></TableRow></TableHeader>
                     <TableBody>{currentSlip?.orders.map((order: any) => (<TableRow key={order.id}><TableCell><Link href={`/dashboard/orders/${order.id}`} className="font-mono text-primary hover:underline">{order.id}</Link></TableCell><TableCell>{order.recipient}</TableCell><TableCell>{order.date}</TableCell><TableCell><Badge variant="secondary">{order.status}</Badge></TableCell></TableRow>))}</TableBody></Table>
                 </div>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>إرسال الكشوفات عبر البريد الإلكتروني</DialogTitle>
-                        <DialogDescription>
-                            سيتم إرسال {selectedSlipData.length} كشوفات إلى التجار المعنيين.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="email-recipients">المستلمون</Label>
-                            <Input id="email-recipients" readOnly value={selectedSlipData.map(s => `${s.merchant} <${users.find(u => u.storeName === s.merchant)?.email || 'N/A'}>`).join(', ')} />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="email-subject">الموضوع</Label>
-                            <Input id="email-subject" defaultValue={`كشوفات مرتجعات بتاريخ ${new Date().toLocaleDateString('ar-EG')}`} />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="email-body">نص الرسالة</Label>
-                            <Textarea id="email-body" defaultValue="مرحباً، مرفق طيه كشوفات المرتجعات الخاصة بكم. يرجى المراجعة." />
-                        </div>
-                        {pdfBlob && (
-                            <Button variant="link" className="p-0 h-auto" onClick={handleDownloadAttachment}>
-                                <Icon name="Paperclip" className="inline h-4 w-4 ml-1" />
-                                merchant-slips.pdf ({Math.round(pdfBlob.size / 1024)} KB)
-                            </Button>
-                        )}
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>إلغاء</Button>
-                        <Button onClick={() => toast({title: "تم الإرسال (محاكاة)", description: "في التطبيق الفعلي، سيتم إرسال البريد الآن."})} disabled={isPending}>
-                            {isPending ? <Icon name="Loader2" className="ml-2 h-4 w-4 animate-spin"/> : <Icon name="Send" className="ml-2 h-4 w-4" />}
-                            إرسال
-                        </Button>
-                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

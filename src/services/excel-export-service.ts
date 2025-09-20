@@ -1,4 +1,3 @@
-
 // @ts-nocheck
 import ExcelJS from 'exceljs';
 import type { Order } from '@/store/orders-store';
@@ -8,33 +7,35 @@ import type { User } from '@/store/user-store';
 // This function now uses dynamic import for bwip-js to ensure it only runs on the client.
 async function generateBarcodeBase64(text: string): Promise<string> {
     if (typeof window === 'undefined') {
-        console.error("Barcode generation can only be done on the client-side.");
+        // On the server, we can't generate a barcode, so we return an empty string.
+        // The calling function should handle this gracefully.
+        console.warn("Barcode generation is skipped on the server-side.");
         return '';
     }
     try {
-        const bwipjsModule = await import('bwip-js');
-        const bwipjs = bwipjsModule.default;
+        const bwipjs = (await import('bwip-js')).default;
         
         const canvas = document.createElement('canvas');
-        await new Promise<void>((resolve, reject) => {
+        return new Promise<string>((resolve, reject) => {
             bwipjs.toCanvas(canvas, {
                 bcid: 'code128',
                 text: text,
                 scale: 3,
                 height: 10,
                 includetext: true,
-                textsize: 10
+                textsize: 10,
+                backgroundcolor: 'FFFFFF',
             }, (err) => {
                 if (err) return reject(err);
-                resolve();
+                resolve(canvas.toDataURL('image/png'));
             });
         });
-        return canvas.toDataURL('image/png');
     } catch (e) {
         console.error("Barcode generation error:", e);
         return '';
     }
 }
+
 
 async function generateSlipWorksheet(workbook: ExcelJS.Workbook, slip: DriverSlip | MerchantSlip, users: User[], reportsLogo: string | null, isDriver: boolean) {
     const worksheet = workbook.addWorksheet(`Slip ${slip.id.substring(3, 7)}`, {
