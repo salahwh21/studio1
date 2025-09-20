@@ -8,13 +8,6 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  webpack: (config, { isServer }) => {
-    // This is to prevent server-side errors from canvas dependency in bwip-js
-    if (isServer) {
-        config.externals.push('canvas');
-    }
-    return config;
-  },
   images: {
     remotePatterns: [
       {
