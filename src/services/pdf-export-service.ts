@@ -72,14 +72,11 @@ const createSlipContent = async (slip: DriverSlip | MerchantSlip, users: User[],
 };
 
 const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], reportsLogo: string | null, isDriver: boolean) => {
-    // Dynamically import pdfmake and vfs_fonts
     const pdfMakeModule = await import('pdfmake/build/pdfmake');
     const pdfFonts = await import('pdfmake/build/vfs_fonts');
-    
-    // The correct way to assign vfs without extending a frozen module
+
     pdfMakeModule.default.vfs = pdfFonts.pdfMake.vfs;
     
-    // Define fonts for Arabic support
     pdfMakeModule.default.fonts = {
         Roboto: {
             normal: 'Roboto-Regular.ttf',
