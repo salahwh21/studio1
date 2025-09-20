@@ -1,3 +1,4 @@
+
 // @ts-nocheck
 import type { Order } from '@/store/orders-store';
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
@@ -80,19 +81,10 @@ const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], 
     // Dynamically import pdfmake only on the client-side
     const pdfMakeModule = await import('pdfmake/build/pdfmake');
     const pdfMake = pdfMakeModule.default;
-    // The vfs_fonts is not a default export, it's a module with pdfMake on it
-    const pdfFonts = await import('pdfmake/build/vfs_fonts');
+    const pdfFonts = (await import('pdfmake/build/vfs_fonts')).default;
     
     // Correctly assign the vfs from the imported module
-    pdfMake.vfs = pdfFonts.pdfMake.vfs;
-    pdfMake.fonts = {
-        Roboto: {
-          normal: 'Roboto-Regular.ttf',
-          bold: 'Roboto-Medium.ttf',
-          italics: 'Roboto-Italic.ttf',
-          bolditalics: 'Roboto-MediumItalic.ttf'
-        }
-    };
+    pdfMake.vfs = pdfFonts;
     
     const allPagesContent: any[] = [];
 
