@@ -34,16 +34,16 @@ async function generateBarcodeBase64(text: string): Promise<string> {
 
 
 const createSlipContent = async (slip: DriverSlip | MerchantSlip, users: User[], reportsLogo: string | null, isDriver: boolean) => {
+    const partyName = isDriver ? (slip as DriverSlip).driverName : (slip as MerchantSlip).merchant;
     const user = isDriver
-        ? users.find(u => u.name === (slip as DriverSlip).driverName)
-        : users.find(u => u.storeName === (slip as MerchantSlip).merchant);
+        ? users.find(u => u.name === partyName)
+        : users.find(u => u.storeName === partyName);
     
     const barcodeBase64 = await generateBarcodeBase64(slip.id);
 
     const title = isDriver ? 'كشف استلام مرتجعات من السائق' : 'كشف المرتجع';
     const partyLabel = isDriver ? 'اسم السائق' : 'اسم التاجر';
-    const partyName = isDriver ? (slip as DriverSlip).driverName : (slip as MerchantSlip).merchant;
-
+    
     const tableBody = [
         [{ text: '#', style: 'tableHeader' }, { text: 'رقم الطلب', style: 'tableHeader' }, { text: 'المستلم', style: 'tableHeader' }, { text: 'العنوان', style: 'tableHeader' }, { text: 'سبب الإرجاع', style: 'tableHeader' }, { text: 'المبلغ', style: 'tableHeader' }],
         ...slip.orders.map((o: Order, i: number) => [
@@ -77,8 +77,8 @@ const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], 
     // Dynamically import pdfmake and vfs_fonts
     const pdfMakeModule = await import('pdfmake/build/pdfmake');
     const pdfFontsModule = await import('pdfmake/build/vfs_fonts');
-
-    // The correct way to assign vfs without extending a frozen module
+    
+    // Correctly assign the vfs from the imported module
     pdfMakeModule.default.vfs = pdfFontsModule.default.pdfMake.vfs;
     
     const allPagesContent: any[] = [];
