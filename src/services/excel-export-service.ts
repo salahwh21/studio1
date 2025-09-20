@@ -6,10 +6,8 @@ import type { User } from '@/store/user-store';
 
 // This function now uses dynamic import for bwip-js to ensure it only runs on the client.
 async function generateBarcodeBase64(text: string): Promise<string> {
+    // Barcode generation is a client-side only operation.
     if (typeof window === 'undefined') {
-        // On the server, we can't generate a barcode, so we return an empty string.
-        // The calling function should handle this gracefully.
-        console.warn("Barcode generation is skipped on the server-side.");
         return '';
     }
     try {

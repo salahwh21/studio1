@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo, useTransition } from 'react';
+import React, { useState, useMemo, useTransition, useEffect } from 'react';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -34,6 +34,9 @@ export const MerchantSlips = () => {
     const [showDetailsDialog, setShowDetailsDialog] = useState(false);
     const [currentSlip, setCurrentSlip] = useState<MerchantSlip | null>(null);
     const [selectedSlips, setSelectedSlips] = useState<string[]>([]);
+    
+    const [pdfToPrint, setPdfToPrint] = useState<MerchantSlip[] | null>(null);
+    const [excelToExport, setExcelToExport] = useState<MerchantSlip[] | null>(null);
 
     const [filterMerchant, setFilterMerchant] = useState<string | null>(null);
     const [filterStartDate, setFilterStartDate] = useState<Date | null>(null);
@@ -68,31 +71,48 @@ export const MerchantSlips = () => {
     
     const handlePrintAction = (slips: MerchantSlip[]) => {
         if (slips.length === 0) return;
-        startTransition(() => {
-            toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${slips.length} كشوفات.` });
-            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-            generateMerchantSlipPdf(slips, users, reportsLogo).then(pdfDoc => {
-                pdfDoc.open();
-            }).catch(e => {
-                console.error("PDF generation error:", e);
-                toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: 'حدث خطأ أثناء تجهيز الملف.' });
-            });
-        });
+        setPdfToPrint(slips);
     };
     
     const handleExcelExport = (slips: MerchantSlip[]) => {
         if (slips.length === 0) return;
-        startTransition(() => {
-            toast({ title: "جاري تجهيز ملف Excel..." });
-            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-            generateMerchantSlipExcel(slips, users, reportsLogo).then(() => {
-                toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
-            }).catch(e => {
-                console.error("Excel generation error:", e);
-                toast({ variant: 'destructive', title: 'فشل إنشاء Excel', description: 'حدث خطأ أثناء تجهيز الملف.' });
-            });
-        });
+        setExcelToExport(slips);
     }
+    
+    useEffect(() => {
+        if (pdfToPrint) {
+            startTransition(() => {
+                toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${pdfToPrint.length} كشوفات.` });
+                const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+                generateMerchantSlipPdf(pdfToPrint, users, reportsLogo).then(pdfDoc => {
+                    pdfDoc.open();
+                    setPdfToPrint(null);
+                }).catch(e => {
+                    console.error("PDF generation error:", e);
+                    toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: 'حدث خطأ أثناء تجهيز الملف.' });
+                    setPdfToPrint(null);
+                });
+            });
+        }
+    }, [pdfToPrint, settings.login, users, toast]);
+
+    useEffect(() => {
+        if (excelToExport) {
+            startTransition(() => {
+                toast({ title: "جاري تجهيز ملف Excel..." });
+                const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+                generateMerchantSlipExcel(excelToExport, users, reportsLogo).then(() => {
+                    toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
+                    setExcelToExport(null);
+                }).catch(e => {
+                    console.error("Excel generation error:", e);
+                    toast({ variant: 'destructive', title: 'فشل إنشاء Excel', description: 'حدث خطأ أثناء تجهيز الملف.' });
+                    setExcelToExport(null);
+                });
+            });
+        }
+    }, [excelToExport, settings.login, users, toast]);
+
 
     const handleSendWhatsApp = () => {
         const slipsToSend = filteredSlips.filter(s => selectedSlips.includes(s.id));

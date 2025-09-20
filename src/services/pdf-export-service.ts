@@ -1,15 +1,10 @@
-
 // @ts-nocheck
 import type { Order } from '@/store/orders-store';
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
 import type { User } from '@/store/user-store';
 
-// This function now uses dynamic import for bwip-js to ensure it only runs on the client.
 async function generateBarcodeBase64(text: string): Promise<string> {
     if (typeof window === 'undefined') {
-        // On the server, we can't generate a barcode, so we return an empty string.
-        // The calling function should handle this gracefully.
-        console.warn("Barcode generation is skipped on the server-side.");
         return '';
     }
     try {
@@ -83,7 +78,7 @@ const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], 
     const pdfFonts = await import('pdfmake/build/vfs_fonts');
 
     // The correct way to assign vfs without extending a frozen module
-    pdfMakeModule.vfs = pdfFonts.pdfMake.vfs;
+    pdfMakeModule.default.vfs = pdfFonts.default;
     
     const allPagesContent: any[] = [];
 
@@ -110,7 +105,7 @@ const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], 
         pageMargins: [20, 40, 20, 40]
     };
 
-    return pdfMakeModule.createPdf(docDefinition);
+    return pdfMakeModule.default.createPdf(docDefinition);
 }
 
 
