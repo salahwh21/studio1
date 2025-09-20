@@ -1,4 +1,3 @@
-
 // @ts-nocheck
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
 import type { User } from '@/store/user-store';
@@ -79,6 +78,16 @@ const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], 
     
     // The correct way to assign vfs without extending a frozen module
     pdfMakeModule.default.vfs = pdfFonts.pdfMake.vfs;
+
+    // Define fonts for Arabic support
+    pdfMakeModule.default.fonts = {
+        Roboto: {
+            normal: 'Roboto-Regular.ttf',
+            bold: 'Roboto-Medium.ttf',
+            italics: 'Roboto-Italic.ttf',
+            bolditalics: 'Roboto-MediumItalic.ttf'
+        }
+    };
     
     const allPagesContent: any[] = [];
 
