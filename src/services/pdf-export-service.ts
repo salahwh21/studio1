@@ -3,54 +3,27 @@ import type { Order } from '@/store/orders-store';
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
 import type { User } from '@/store/user-store';
 
-async function getPdfMake() {
-  if (typeof window === 'undefined') {
-    throw new Error('pdfmake can only be used on the client side.');
-  }
-
-  const pdfmakeModule = await import('pdfmake/build/pdfmake');
-  const vfsFontsModule = await import('pdfmake/build/vfs_fonts');
-  
-  const pdfMake = pdfmakeModule.default;
-  pdfMake.vfs = vfsFontsModule.default.pdfMake.vfs;
-
-  // Manually define the Amiri font in vfs
-   pdfMake.vfs['Amiri-Regular.ttf'] = 'AAEAAAARAQAABAAAR0RFRgAIAAAAEgAAAABPUy8yAAABYAAAADcAAABgjb/paGNtYXAAAAFoAAAAOAAAAFRar84IZ2x5ZgAAAdQAAACsAAAAuB/0T/toZWFkAAABMAAAADAAAAA2B4IG5oZWFkAAABZAAAABgAAAAGDQQCem10eAAAAXwAAAAUAAAACAYjA/dpbmR4AAABiAAAABQAAAAUCwAAdmxvY2EAAAHEAAAAEAAAABAFuAaebWF4cAAAAVAAAAAGAAAABgAIAAhwb3N0AAACNAAAACQAAABNpkjfeAABAAAAAQAAajgOcV8PPPUACwQAAAAAANpHB9sAAAAA2kcH2wAAAAADVAEAAAACAACAAAAAAAAAAEAAAAsADgAAQAAAAAAAQAAAAoAHQAEAAAAAAACAAEAAgAgAAQAAAAAAIAAAAEAAAAAABcBAgAAAAAADgAaADQAAwABBAkAAQAUABQAAwABBAkAAgAOACAAAwABBAkAAwAQAEMAAwABBAkABAAUAFYAAwABBAkABQAYAG4AAwABBAkABgAUAH4AAwABBAkADgA0AIAAA0JAaGFtYQpDb3B5cmlnaHQgKGMpIDIwMTIgQW1pcmlIE';
-   pdfMake.vfs['Amiri-Bold.ttf'] = 'AAEAAAARAQAABAAAR0RFRgAIAAAAEgAAAABPUy8yAAABYAAAADcAAABgjb/paGNtYXAAAAFoAAAAOAAAAFRar84IZ2x5ZgAAAdQAAACsAAAAuB/0T/toZWFkAAABMAAAADAAAAA2B4IG5oZWFkAAABZAAAABgAAAAGDQQCem10eAAAAXwAAAAUAAAACAYjA/dpbmR4AAABiAAAABQAAAAUCwAAdmxvY2EAAAHEAAAAEAAAABAFuAaebWF4cAAAAVAAAAAGAAAABgAIAAhwb3N0AAACNAAAACQAAABNpkjfeAABAAAAAQAAajgOcV8PPPUACwQAAAAAANpHB9sAAAAA2kcH2wAAAAADVAEAAAACAACAAAAAAAAAAEAAAAsADgAAQAAAAAAAQAAAAoAHQAEAAAAAAACAAEAAgAgAAQAAAAAAIAAAAEAAAAAABcBAgAAAAAADgAaADQAAwABBAkAAQAUABQAAwABBAkAAgAOACAAAwABBAkAAwAQAEMAAwABBAkABAAUAFYAAwABBAkABQAYAG4AAwABBAkABgAUAH4AAwABBAkADgA0AIAAA0JAaGFtYQpDb3B5cmlnaHQgKGMpIDIwMTIgQW1pcmlIE';
-  
-  pdfMake.fonts = {
-    Amiri: {
-      normal: 'Amiri-Regular.ttf',
-      bold: 'Amiri-Bold.ttf',
-      italics: 'Amiri-Regular.ttf',
-      bolditalics: 'Amiri-Bold.ttf'
-    },
-    Roboto: {
-        normal: 'Roboto-Regular.ttf',
-        bold: 'Roboto-Medium.ttf',
-        italics: 'Roboto-Italic.ttf',
-        bolditalics: 'Roboto-MediumItalic.ttf'
-    }
-  };
-
-  return pdfMake;
-}
-
-async function generateBarcode(text: string): Promise<string> {
+// This function now uses dynamic import for bwip-js to ensure it only runs on the client.
+async function generateBarcodeBase64(text: string): Promise<string> {
     if (typeof window === 'undefined') {
+        // On the server, we can't generate a barcode, so we return an empty string.
+        // The calling function should handle this gracefully.
+        console.warn("Barcode generation is skipped on the server-side.");
         return '';
     }
     try {
         const bwipjs = (await import('bwip-js')).default;
+        
         const canvas = document.createElement('canvas');
-        return new Promise((resolve, reject) => {
-             bwipjs.toCanvas(canvas, {
+        return new Promise<string>((resolve, reject) => {
+            bwipjs.toCanvas(canvas, {
                 bcid: 'code128',
                 text: text,
                 scale: 3,
-                height: 15,
+                height: 10,
                 includetext: true,
-                textsize: 12
+                textsize: 10,
+                backgroundcolor: 'FFFFFF',
             }, (err) => {
                 if (err) return reject(err);
                 resolve(canvas.toDataURL('image/png'));
@@ -62,12 +35,13 @@ async function generateBarcode(text: string): Promise<string> {
     }
 }
 
+
 const createSlipContent = async (slip: DriverSlip | MerchantSlip, users: User[], reportsLogo: string | null, isDriver: boolean) => {
     const user = isDriver
         ? users.find(u => u.name === (slip as DriverSlip).driverName)
         : users.find(u => u.storeName === (slip as MerchantSlip).merchant);
     
-    const barcodeBase64 = await generateBarcode(slip.id);
+    const barcodeBase64 = await generateBarcodeBase64(slip.id);
 
     const title = isDriver ? 'كشف استلام مرتجعات من السائق' : 'كشف المرتجع';
     const partyLabel = isDriver ? 'اسم السائق' : 'اسم التاجر';
@@ -103,7 +77,11 @@ const createSlipContent = async (slip: DriverSlip | MerchantSlip, users: User[],
 };
 
 const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], reportsLogo: string | null, isDriver: boolean) => {
-    const pdfMake = await getPdfMake();
+    // Dynamically import pdfmake only on the client-side
+    const pdfMake = (await import('pdfmake/build/pdfmake')).default;
+    const pdfFonts = (await import('pdfmake/build/vfs_fonts')).default;
+    pdfMake.vfs = pdfFonts.pdfMake.vfs;
+    
     const allPagesContent: any[] = [];
 
     for (let i = 0; i < slips.length; i++) {
@@ -117,7 +95,7 @@ const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], 
     }
     
     const docDefinition = {
-        defaultStyle: { font: "Amiri", fontSize: 10, alignment: "right" },
+        defaultStyle: { font: "Roboto", fontSize: 10, alignment: "right" },
         content: allPagesContent,
         styles: {
             header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
