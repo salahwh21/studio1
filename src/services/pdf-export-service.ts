@@ -77,12 +77,14 @@ const createSlipContent = async (slip: DriverSlip | MerchantSlip, users: User[],
 };
 
 const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], reportsLogo: string | null, isDriver: boolean) => {
-    const pdfMake = (await import('pdfmake/build/pdfmake')).default;
-    const pdfFonts = (await import('pdfmake/build/vfs_fonts')).default;
+    // Dynamically import pdfmake and vfs_fonts
+    const pdfMakeModule = await import('pdfmake/build/pdfmake');
+    const pdfFonts = await import('pdfmake/build/vfs_fonts');
 
-    // The correct way to assign vfs without extending a frozen module
-    Object.assign(pdfMake, { vfs: pdfFonts.pdfMake.vfs });
-    
+    // Correctly assign the vfs from the imported module
+    // The imported 'pdfFonts' object is the vfs itself.
+    pdfMakeModule.vfs = pdfFonts.pdfMake.vfs;
+
     const allPagesContent: any[] = [];
 
     for (let i = 0; i < slips.length; i++) {
@@ -108,7 +110,7 @@ const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], 
         pageMargins: [20, 40, 20, 40]
     };
 
-    return pdfMake.createPdf(docDefinition);
+    return pdfMakeModule.createPdf(docDefinition);
 }
 
 
