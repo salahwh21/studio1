@@ -73,7 +73,10 @@ export const MerchantSlips = () => {
     
     const handleExcelExport = () => {
         const slipsToExport = filteredSlips.filter(s => selectedSlips.includes(s.id));
-        if (slipsToExport.length === 0) return;
+        if (slipsToExport.length === 0) {
+            toast({ variant: 'destructive', title: 'لم يتم تحديد كشوفات', description: 'الرجاء تحديد كشف واحد على الأقل للتصدير.' });
+            return;
+        }
 
         startTransition(() => {
             toast({ title: "جاري تجهيز ملف Excel..." });
