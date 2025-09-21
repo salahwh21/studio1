@@ -1,19 +1,17 @@
 
+
 // @ts-nocheck
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
 import type { User } from '@/store/user-store';
 import pdfMake from "pdfmake/build/pdfmake";
 import vfs from "@/fonts/vfs_fonts";
 
-pdfMake.vfs = vfs;
+pdfMake.vfs = vfs.default;
 
 pdfMake.fonts = {
   Tajawal: {
     normal: 'Tajawal-Regular.ttf',
-    bold: 'Tajawal-Regular.ttf',
-    italics: 'Tajawal-Regular.ttf',
-    bolditalics: 'Tajawal-Regular.ttf'
-  }
+  },
 };
 
 

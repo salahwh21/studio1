@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo, useTransition, useEffect } from 'react';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
@@ -20,7 +21,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useUsersStore } from '@/store/user-store';
 import { generateMerchantSlipPdf } from '@/services/pdf-export-service';
-import { generateMerchantSlipExcel } from '@/services/excel-export-service';
+
 
 export const MerchantSlips = () => {
     const { toast } = useToast();
@@ -74,24 +75,6 @@ export const MerchantSlips = () => {
         if (slips.length === 0) return;
         setPdfToPrint(slips);
     };
-    
-    const handleExcelExport = () => {
-        if (selectedSlipData.length === 0) {
-            toast({ variant: 'destructive', title: 'لم يتم تحديد كشوفات', description: 'الرجاء تحديد كشف واحد على الأقل للتصدير.' });
-            return;
-        }
-
-        startTransition(() => {
-            toast({ title: "جاري تجهيز ملف Excel..." });
-            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-            generateMerchantSlipExcel(selectedSlipData, users, reportsLogo).then(() => {
-                toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
-            }).catch(e => {
-                console.error("Excel generation error:", e);
-                toast({ variant: 'destructive', title: 'فشل إنشاء Excel', description: 'حدث خطأ أثناء تجهيز الملف.' });
-            });
-        });
-    }
     
     useEffect(() => {
         if (!pdfToPrint) return;
@@ -162,7 +145,7 @@ export const MerchantSlips = () => {
         <div dir="rtl">
             <Card>
                  <CardHeader>
-                    <CardTitle>كشوفات الإرجاع للتجار</CardTitle>
+                    <CardTitle>كشوفات إرجاع الشحنات إلى التجار</CardTitle>
                     <CardDescription>فلترة وبحث في الكشوفات التي تم إنشاؤها.</CardDescription>
                      <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
                         <Select onValueChange={(v) => setFilterMerchant(v === 'all' ? null : v)} value={filterMerchant || 'all'}><SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="اختيار التاجر" /></SelectTrigger><SelectContent><SelectItem value="all">كل التجار</SelectItem>{Array.from(new Set(merchantSlips.map(s=>s.merchant))).map((m) => (<SelectItem key={m} value={m}>{m}</SelectItem>))}</SelectContent></Select>
@@ -206,10 +189,6 @@ export const MerchantSlips = () => {
                                     <Icon name="FileDown" className="ml-2 h-4 w-4" />
                                     تصدير المحدد (CSV)
                                 </DropdownMenuItem>
-                                 <DropdownMenuItem onSelect={handleExcelExport} disabled={isPending}>
-                                    <Icon name="FileSpreadsheet" className="ml-2 h-4 w-4" />
-                                    تصدير المحدد (Excel)
-                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onSelect={handleSendWhatsApp}>
                                     <Icon name="MessageSquare" className="ml-2 h-4 w-4" />
@@ -221,68 +200,63 @@ export const MerchantSlips = () => {
                 </CardHeader>
                 <CardContent>
                     <Table>
-                        <TableHeader><TableRow>
-                            <TableHead className="w-12 border-l text-center"><Checkbox onCheckedChange={handleSelectAll} checked={areAllSelected}/></TableHead>
-                            <TableHead className="border-l text-center whitespace-nowrap">رقم الكشف</TableHead>
-                            <TableHead className="border-l text-center whitespace-nowrap">التاجر</TableHead>
-                            <TableHead className="border-l text-center whitespace-nowrap">تاريخ الإنشاء</TableHead>
-                            <TableHead className="border-l text-center whitespace-nowrap">عدد الطلبات</TableHead>
-                            <TableHead className="border-l text-center whitespace-nowrap">الحالة</TableHead>
-                            <TableHead className="text-center whitespace-nowrap">إجراءات</TableHead>
-                        </TableRow></TableHeader>
-                        <TableBody>
-                        {filteredSlips.map((slip) => (
-                            <TableRow key={slip.id} data-state={selectedSlips.includes(slip.id) ? "selected" : "unselected"}>
-                                <TableCell className="border-l text-center"><Checkbox checked={selectedSlips.includes(slip.id)} onCheckedChange={(checked) => setSelectedSlips(p => checked ? [...p, slip.id] : p.filter(id => id !== slip.id))} /></TableCell>
-                                <TableCell className="font-mono border-l text-center whitespace-nowrap">
-                                    <Link href={`/dashboard/returns/slips/${slip.id}`} className="text-primary hover:underline">{slip.id}</Link>
-                                </TableCell>
-                                <TableCell className="border-l text-center whitespace-nowrap">{slip.merchant}</TableCell>
-                                <TableCell className="border-l text-center whitespace-nowrap">{slip.date}</TableCell>
-                                <TableCell className="border-l text-center whitespace-nowrap">{slip.items}</TableCell>
-                                <TableCell className="border-l text-center whitespace-nowrap"><Badge variant={slip.status === 'تم التسليم' ? 'default' : 'outline'} className={slip.status === 'تم التسليم' ? 'bg-green-100 text-green-800' : ''}>{slip.status}</Badge></TableCell>
-                                <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
-                                    <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
-                                    <Button variant="outline" size="sm" disabled={slip.status === 'تم التسليم'} onClick={() => confirmSlipDelivery(slip.id)}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
-                                    <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])} disabled={isPending}><Icon name="Printer" className="h-4 w-4" /></Button>
-                                </TableCell>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-12 border-l text-center"><Checkbox onCheckedChange={handleSelectAll} checked={areAllSelected}/></TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">رقم الكشف</TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">التاجر</TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">تاريخ الإنشاء</TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">عدد الشحنات</TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">الحالة</TableHead>
+                                <TableHead className="text-center whitespace-nowrap">إجراءات</TableHead>
                             </TableRow>
-                        ))}
-                         {filteredSlips.length === 0 && (
-                             <TableRow><TableCell colSpan={7} className="h-24 text-center">لا توجد كشوفات تطابق الفلترة.</TableCell></TableRow>
-                        )}
+                        </TableHeader>
+                        <TableBody>
+                            {filteredSlips.length === 0 ? (
+                                <TableRow><TableCell colSpan={7} className="h-24 text-center">لا توجد كشوفات تطابق الفلترة.</TableCell></TableRow>
+                            ) : (
+                                filteredSlips.map(slip => (
+                                <TableRow key={slip.id} data-state={selectedSlips.includes(slip.id) ? "selected" : "unselected"}>
+                                     <TableCell className="border-l text-center"><Checkbox checked={selectedSlips.includes(slip.id)} onCheckedChange={(checked) => setSelectedSlips(p => checked ? [...p, slip.id] : p.filter(id => id !== slip.id))} /></TableCell>
+                                    <TableCell className="font-mono border-l text-center whitespace-nowrap"><Link href={`/dashboard/returns/slips/${slip.id}`} className="text-primary hover:underline">{slip.id}</Link></TableCell>
+                                    <TableCell className="border-l text-center whitespace-nowrap">{slip.merchant}</TableCell>
+                                    <TableCell className="border-l text-center whitespace-nowrap">{slip.date}</TableCell>
+                                    <TableCell className="border-l text-center whitespace-nowrap">{slip.items}</TableCell>
+                                    <TableCell className="border-l text-center whitespace-nowrap">
+                                        <Badge variant={slip.status === 'تم التسليم' ? 'default' : 'outline'} className={slip.status === 'تم التسليم' ? 'bg-green-100 text-green-800' : ''}>
+                                            {slip.status}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
+                                        <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
+                                        {slip.status === 'جاهز للتسليم' && (
+                                            <Button size="sm" onClick={() => confirmSlipDelivery(slip.id)}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
+                                        )}
+                                        <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])} disabled={isPending}><Icon name="Printer" className="h-4 w-4" /></Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>
             </Card>
 
             <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-                <DialogContent className="sm:max-w-2xl">
-                    <DialogHeader><DialogTitle>تفاصيل كشف {currentSlip?.id}</DialogTitle></DialogHeader>
-                    <div className="space-y-4">
+                <DialogContent className="sm:max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle>تفاصيل كشف الإرجاع {currentSlip?.id}</DialogTitle>
+                    </DialogHeader>
+                    <div className="max-h-[60vh] overflow-y-auto">
                         <Table>
-                            <TableHeader>
+                             <TableHeader>
                                 <TableRow>
                                     <TableHead>رقم الطلب</TableHead>
-                                    <TableHead>المستلم</TableHead>
-                                    <TableHead>تاريخ الإرجاع الأصلي</TableHead>
-                                    <TableHead>الحالة الأصلية</TableHead>
+                                    <TableHead>سبب الإرجاع</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {currentSlip?.orders.map((order: any) => (
-                                    <TableRow key={order.id}>
-                                        <TableCell><Link href={`/dashboard/orders/${order.id}`} className="font-mono text-primary hover:underline">{order.id}</Link></TableCell>
-                                        <TableCell>{order.recipient}</TableCell>
-                                        <TableCell>{order.date}</TableCell>
-                                        <TableCell><Badge variant="secondary">{order.status}</Badge></TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </DialogContent>
-            </Dialog>
-        </div>
-    );
-};
+                                {currentSlip?.orders.map(o => (
+                                    <TableRow key={o.id}>
+                                        <TableCell>{o.id}</TableCell>
+                                        <TableCell><Badge variant="secondary">{o.previousStatus || o.status}</Badge></
