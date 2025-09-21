@@ -57,25 +57,18 @@ export const DriverSlips = () => {
 
     const handlePrintAction = (slips: DriverSlip[]) => {
         if (slips.length === 0) return;
-        setPdfToPrint(slips);
+        startTransition(async () => {
+            toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${slips.length} كشوفات.` });
+            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+            try {
+                await generateDriverSlipPdf(slips, users, reportsLogo);
+            } catch (e: any) {
+                console.error("PDF generation error:", e);
+                toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: e.message || 'حدث خطأ أثناء تجهيز الملف.' });
+            }
+        });
     };
 
-    
-    useEffect(() => {
-        if (!pdfToPrint) return;
-        startTransition(() => {
-            toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${pdfToPrint.length} كشوفات.` });
-            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-            generateDriverSlipPdf(pdfToPrint, users, reportsLogo).then(pdfDoc => {
-                pdfDoc.open();
-                setPdfToPrint(null);
-            }).catch(e => {
-                console.error("PDF generation error:", e);
-                toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: 'حدث خطأ أثناء تجهيز الملف.' });
-                setPdfToPrint(null);
-            });
-        });
-    }, [pdfToPrint, settings.login, users, toast]);
 
     const handleSendWhatsApp = () => {
         if (selectedSlipData.length === 0) return;

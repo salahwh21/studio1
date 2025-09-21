@@ -33,8 +33,6 @@ export const MerchantSlips = () => {
     const [currentSlip, setCurrentSlip] = useState<MerchantSlip | null>(null);
     const [selectedSlips, setSelectedSlips] = useState<string[]>([]);
     
-    const [pdfToPrint, setPdfToPrint] = useState<MerchantSlip[] | null>(null);
-
     const [filterMerchant, setFilterMerchant] = useState<string | null>(null);
     const [filterStartDate, setFilterStartDate] = useState<Date | null>(null);
     const [filterEndDate, setFilterEndDate] = useState<Date | null>(null);
@@ -72,24 +70,17 @@ export const MerchantSlips = () => {
     
     const handlePrintAction = (slips: MerchantSlip[]) => {
         if (slips.length === 0) return;
-        setPdfToPrint(slips);
-    };
-    
-    useEffect(() => {
-        if (!pdfToPrint) return;
-        startTransition(() => {
-            toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${pdfToPrint.length} كشوفات.` });
+        startTransition(async () => {
+            toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${slips.length} كشوفات.` });
             const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-            generateMerchantSlipPdf(pdfToPrint, users, reportsLogo).then(pdfDoc => {
-                pdfDoc.open();
-                setPdfToPrint(null);
-            }).catch(e => {
+            try {
+                 await generateMerchantSlipPdf(slips, users, reportsLogo);
+            } catch(e: any) {
                 console.error("PDF generation error:", e);
-                toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: 'حدث خطأ أثناء تجهيز الملف.' });
-                setPdfToPrint(null);
-            });
+                toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: e.message || 'حدث خطأ أثناء تجهيز الملف.' });
+            }
         });
-    }, [pdfToPrint, settings.login, users, toast]);
+    };
 
     const handleSendWhatsApp = () => {
         if (selectedSlipData.length === 0) return;
