@@ -57,7 +57,7 @@ export default function ReturnsPage() {
         </TabsContent>
         <TabsContent value="prepare-for-merchants" className="mt-6">
           <PrepareForMerchants />
-        </Tabs-content>
+        </TabsContent>
         <TabsContent value="merchant-slips" className="mt-6">
           <MerchantSlips />
         </TabsContent>
