@@ -23,6 +23,7 @@ import { PrintablePolicy } from '@/components/printable-policy';
 import { type SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import Papa from 'papaparse';
 
 const RETURNABLE_STATUSES = ['راجع', 'ملغي', 'رفض ودفع أجور', 'رفض ولم يدفع أجور', 'تبديل'];
 
@@ -171,6 +172,35 @@ export const ReceiveFromDrivers = () => {
     setIsPrintDialogOpen(true);
   };
 
+  const handleCsvExport = () => {
+    if (selectedOrderIds.length === 0) {
+        toast({ variant: 'destructive', title: 'لم يتم تحديد طلبات', description: 'الرجاء تحديد طلب واحد على الأقل للتصدير.' });
+        return;
+    }
+    
+    const selectedOrdersData = Object.values(returnsByDriver).flat().filter(o => selectedOrderIds.includes(o.id));
+
+    const data = selectedOrdersData.map(order => ({
+        'رقم الطلب': order.id,
+        'التاجر': order.merchant,
+        'المستلم': order.recipient,
+        'الهاتف': order.phone,
+        'العنوان': order.address,
+        'المدينة': order.city,
+        'سبب الارجاع': order.status,
+        'المبلغ': order.cod,
+    }));
+
+    const csv = Papa.unparse(data);
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `returns_export_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
 
   return (
     <>
@@ -221,7 +251,7 @@ export const ReceiveFromDrivers = () => {
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" disabled={selectedOrderIds.length === 0}>
                                         <Icon name="Printer" className="ml-2 h-4 w-4" />
-                                        إجراءات الطباعة
+                                        إجراءات الطباعة ({selectedOrderIds.length})
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
@@ -229,9 +259,9 @@ export const ReceiveFromDrivers = () => {
                                         <Icon name="ReceiptText" className="ml-2 h-4 w-4" />
                                         طباعة بوالص
                                     </DropdownMenuItem>
-                                     <DropdownMenuItem onSelect={() => toast({ title: "قيد التطوير" })}>
+                                    <DropdownMenuItem onSelect={handleCsvExport}>
                                         <Icon name="FileDown" className="ml-2 h-4 w-4" />
-                                        تصدير بيانات
+                                        تصدير المحدد (CSV)
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -355,4 +385,3 @@ export const ReceiveFromDrivers = () => {
   );
 };
 
-    
