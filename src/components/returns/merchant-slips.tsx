@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo, useTransition, useEffect } from 'react';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
@@ -259,4 +258,14 @@ export const MerchantSlips = () => {
                                 {currentSlip?.orders.map(o => (
                                     <TableRow key={o.id}>
                                         <TableCell>{o.id}</TableCell>
-                                        <TableCell><Badge variant="secondary">{o.previousStatus || o.status}</Badge></
+                                        <TableCell><Badge variant="secondary">{o.previousStatus || o.status}</Badge></TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+};
