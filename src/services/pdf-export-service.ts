@@ -1,3 +1,4 @@
+
 // @ts-nocheck
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
 import type { User } from '@/store/user-store';
@@ -11,7 +12,7 @@ pdfMake.fonts = {
     normal: 'Tajawal-Regular.ttf',
     bold: 'Tajawal-Regular.ttf',
     italics: 'Tajawal-Regular.ttf',
-    bolditalics: 'Tajawal-regular.ttf'
+    bolditalics: 'Tajawal-Regular.ttf'
   }
 };
 

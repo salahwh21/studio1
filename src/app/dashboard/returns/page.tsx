@@ -1,13 +1,23 @@
+
 'use client';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import Icon from '@/components/icon';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReceiveFromDrivers } from '@/components/returns/receive-from-drivers';
 import { DriverSlips } from '@/components/returns/driver-slips';
 import { PrepareForMerchants } from '@/components/returns/prepare-for-merchants';
 import { MerchantSlips } from '@/components/returns/merchant-slips';
+import { ExportButtons } from '@/components/returns/export-buttons';
+import { useReturnsStore } from '@/store/returns-store';
+import { useUsersStore } from '@/store/user-store';
+import { useSettings } from '@/contexts/SettingsContext';
 
 export default function ReturnsPage() {
+  const { driverSlips, merchantSlips } = useReturnsStore();
+  const { users } = useUsersStore();
+  const { settings } = useSettings();
+  const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+  
   return (
     <div className="space-y-6">
       <Card>
@@ -21,6 +31,13 @@ export default function ReturnsPage() {
           </CardDescription>
         </CardHeader>
       </Card>
+      
+      <ExportButtons
+        driverSlips={driverSlips}
+        merchantSlips={merchantSlips}
+        users={users}
+        reportsLogo={reportsLogo}
+      />
 
       <Tabs defaultValue="receive-from-drivers" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
