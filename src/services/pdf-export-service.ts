@@ -1,6 +1,20 @@
 // @ts-nocheck
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
 import type { User } from '@/store/user-store';
+import pdfMake from "pdfmake/build/pdfmake";
+import vfs from "@/fonts/vfs_fonts";
+
+pdfMake.vfs = vfs;
+
+pdfMake.fonts = {
+  Tajawal: {
+    normal: 'Tajawal-Regular.ttf',
+    bold: 'Tajawal-Regular.ttf',
+    italics: 'Tajawal-Regular.ttf',
+    bolditalics: 'Tajawal-regular.ttf'
+  }
+};
+
 
 async function generateBarcodeBase64(text: string): Promise<string> {
     if (typeof window === 'undefined') {
@@ -72,19 +86,6 @@ const createSlipContent = async (slip: DriverSlip | MerchantSlip, users: User[],
 };
 
 export const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], reportsLogo: string | null, isDriver: boolean) => {
-    const pdfMakeModule = await import('pdfmake/build/pdfmake');
-    const pdfFonts = await import('@/fonts/vfs_fonts');
-
-    pdfMakeModule.default.vfs = pdfFonts.default.vfs;
-
-    pdfMakeModule.default.fonts = {
-        Tajawal: {
-            normal: 'Tajawal-Regular.ttf',
-            bold: 'Tajawal-Regular.ttf',
-            italics: 'Tajawal-Regular.ttf',
-            bolditalics: 'Tajawal-Regular.ttf'
-        }
-    };
     
     const allPagesContent: any[] = [];
 
@@ -111,7 +112,7 @@ export const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: U
         pageMargins: [20, 40, 20, 40]
     };
 
-    return pdfMakeModule.default.createPdf(docDefinition);
+    return pdfMake.createPdf(docDefinition);
 }
 
 export const generateDriverSlipPdf = (slips: DriverSlip[], users: User[], reportsLogo: string | null) => {
