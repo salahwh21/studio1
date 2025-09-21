@@ -63,24 +63,6 @@ export default function LoginPageClient() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-
-  const handleLogin = () => {
-    // This is a simplified login for demonstration. 
-    // In a real app, you'd use a proper authentication library.
-    const adminUser = users.find(u => u.roleId === 'admin');
-    
-    if (adminUser && username === adminUser.email && password === adminUser.password) {
-        toast({ title: "تم تسجيل الدخول بنجاح", description: `مرحباً بعودتك, ${adminUser.name}` });
-        router.push('/dashboard');
-    } else {
-        toast({
-            variant: 'destructive',
-            title: "فشل تسجيل الدخول",
-            description: "الرجاء التحقق من اسم المستخدم وكلمة المرور.",
-        });
-    }
-  };
-
   if (!context || !context.isHydrated) {
     return <LoginPageSkeleton />;
   }
@@ -95,6 +77,12 @@ export default function LoginPageClient() {
         return <Image src={loginSettings.loginLogo} alt={loginSettings.companyName || "Company Logo"} width={150} height={50} style={{objectFit: 'contain'}} />
     }
     return <Logo />;
+  }
+
+  // Simplified login check for UI purposes
+  const canLogin = () => {
+    const adminUser = users.find(u => u.roleId === 'admin');
+    return adminUser && username === adminUser.email && password === adminUser.password;
   }
 
   return (
@@ -127,8 +115,18 @@ export default function LoginPageClient() {
               <Label htmlFor="password">كلمة المرور</Label>
               <Input id="password" type="password" placeholder="كلمة المرور" value={password} onChange={e => setPassword(e.target.value)} />
             </div>
-            <Button onClick={handleLogin} size="lg" className="w-full">
-              تسجيل الدخول
+            {/* Use Link for navigation */}
+            <Button size="lg" className="w-full" asChild>
+                <Link href={canLogin() ? "/dashboard" : "#"} onClick={(e) => {
+                    if (!canLogin()) {
+                        e.preventDefault();
+                        toast({
+                            variant: 'destructive',
+                            title: "فشل تسجيل الدخول",
+                            description: "الرجاء التحقق من اسم المستخدم وكلمة المرور.",
+                        });
+                    }
+                }}>تسجيل الدخول</Link>
             </Button>
           </div>
           
@@ -139,11 +137,11 @@ export default function LoginPageClient() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Button onClick={() => router.push('/dashboard/merchant')} variant="outline">
-              دخول كتاجر
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/merchant">دخول كتاجر</Link>
             </Button>
-            <Button onClick={() => router.push('/dashboard/driver-app')} variant="outline">
-              دخول كسائق
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/driver-app">دخول كسائق</Link>
             </Button>
           </div>
            {loginSettings.showForgotPassword && (
