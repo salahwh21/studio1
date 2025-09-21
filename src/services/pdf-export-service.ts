@@ -73,24 +73,19 @@ const createSlipContent = async (slip: DriverSlip | MerchantSlip, users: User[],
 
 export const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: User[], reportsLogo: string | null, isDriver: boolean) => {
     const pdfMakeModule = await import('pdfmake/build/pdfmake');
-    const pdfFonts = await import('pdfmake/build/vfs_fonts');
+    const pdfFonts = await import('@/fonts/vfs_fonts');
 
-    // Use safe path for vfs
-    pdfMakeModule.default.vfs = pdfFonts?.default?.vfs ?? {};
+    pdfMakeModule.default.vfs = pdfFonts.default;
 
-    // Arabic-supporting font
     pdfMakeModule.default.fonts = {
-        // NOTE: This assumes you have font files available in your project.
-        // For this to work, you'd need to load them into the vfs.
-        // Using the default Roboto is safer if you haven't set up custom fonts.
-        Roboto: {
-            normal: 'Roboto-Regular.ttf',
-            bold: 'Roboto-Medium.ttf',
-            italics: 'Roboto-Italic.ttf',
-            bolditalics: 'Roboto-MediumItalic.ttf'
+        Tajawal: {
+            normal: 'Tajawal-Regular.ttf',
+            bold: 'Tajawal-Bold.ttf',
+            italics: 'Tajawal-Regular.ttf',
+            bolditalics: 'Tajawal-Bold.ttf'
         }
     };
-
+    
     const allPagesContent: any[] = [];
 
     for (let i = 0; i < slips.length; i++) {
@@ -104,7 +99,7 @@ export const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: U
     }
     
     const docDefinition = {
-        defaultStyle: { font: "Roboto", fontSize: 10, alignment: "right" },
+        defaultStyle: { font: "Tajawal", fontSize: 10, alignment: "right" },
         content: allPagesContent,
         styles: {
             header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },

@@ -63,7 +63,7 @@ async function generateSlipWorksheet(workbook: ExcelJS.Workbook, slip: DriverSli
     worksheet.mergeCells('B2:E2');
     const titleCell = worksheet.getCell('B2');
     titleCell.value = isDriver ? 'كشف استلام مرتجعات من السائق' : 'كشف المرتجع';
-    titleCell.font = { size: 16, bold: true };
+    titleCell.font = { name: 'Tajawal', size: 16, bold: true };
     titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
     worksheet.getRow(2).height = 30;
 
@@ -74,11 +74,17 @@ async function generateSlipWorksheet(workbook: ExcelJS.Workbook, slip: DriverSli
     worksheet.getCell('B5').value = `رقم الهاتف/البريد: ${user?.email || 'N/A'}`;
     worksheet.getCell('E4').value = `التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`;
     worksheet.getCell('E5').value = `الفرع: ${slip.orders[0]?.city || ''}`;
+    
+    worksheet.getCell('B4').font = { name: 'Tajawal', size: 10 };
+    worksheet.getCell('B5').font = { name: 'Tajawal', size: 10 };
+    worksheet.getCell('E4').font = { name: 'Tajawal', size: 10 };
+    worksheet.getCell('E5').font = { name: 'Tajawal', size: 10 };
+
 
     // Table header
     const headerRow = worksheet.getRow(7);
     headerRow.values = ['#', 'رقم الطلب', 'المستلم', 'العنوان', 'سبب الإرجاع', 'المبلغ'];
-    headerRow.font = { bold: true };
+    headerRow.font = { name: 'Tajawal', bold: true };
     headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
     headerRow.eachCell(cell => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEEEEE' } };
@@ -95,6 +101,7 @@ async function generateSlipWorksheet(workbook: ExcelJS.Workbook, slip: DriverSli
             order.previousStatus || order.status,
             order.itemPrice || 0
         ]);
+        row.font = { name: 'Tajawal', size: 9 };
         row.getCell('C').alignment = { wrapText: true, vertical: 'middle' };
         row.getCell('D').alignment = { wrapText: true, vertical: 'middle' };
         row.getCell('F').numFmt = '#,##0.00 "د.أ"';
@@ -104,7 +111,7 @@ async function generateSlipWorksheet(workbook: ExcelJS.Workbook, slip: DriverSli
     // Total row
     const totalRow = worksheet.addRow(['', 'الإجمالي', '', '', '', slip.orders.reduce((sum,o) => sum + (o.itemPrice || 0),0)]);
     worksheet.mergeCells(`B${totalRow.number}:E${totalRow.number}`);
-    totalRow.font = { bold: true };
+    totalRow.font = { name: 'Tajawal', bold: true };
     totalRow.getCell('B').alignment = { horizontal: 'center' };
     totalRow.getCell('F').numFmt = '#,##0.00 "د.أ"';
 
@@ -113,7 +120,7 @@ async function generateSlipWorksheet(workbook: ExcelJS.Workbook, slip: DriverSli
     signatureRow.height = 40;
     worksheet.mergeCells(`B${signatureRow.number}:C${signatureRow.number}`);
     worksheet.getCell(`B${signatureRow.number}`).value = 'توقيع المستلم: .........................';
-    worksheet.getCell(`B${signatureRow.number}`).font = { size: 12 };
+    worksheet.getCell(`B${signatureRow.number}`).font = { name: 'Tajawal', size: 12 };
     worksheet.getCell(`B${signatureRow.number}`).alignment = { vertical: 'bottom' };
 }
 
