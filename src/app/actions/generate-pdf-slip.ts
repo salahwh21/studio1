@@ -116,7 +116,7 @@ export async function generatePdfSlipAction(validatedData: z.infer<typeof PdfAct
         const pdfDoc = pdfMake.createPdf(docDefinition);
         
         const pdfBase64 = await new Promise<string>((resolve, reject) => {
-             pdfDoc.getBase64((data) => {
+             pdfDoc.getBase64((data: string) => {
                 if (data) {
                     resolve(data);
                 } else {
