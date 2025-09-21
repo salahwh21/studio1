@@ -1,22 +1,43 @@
-
-
 // @ts-nocheck
 import type { DriverSlip, MerchantSlip } from '@/store/returns-store';
 import type { User } from '@/store/user-store';
 import pdfMake from "pdfmake/build/pdfmake";
-import vfs from "@/fonts/vfs_fonts";
+import * as fs from 'fs';
+import * as path from 'path';
 
-pdfMake.vfs = vfs.default;
-
+// Define the fonts for pdfmake
 pdfMake.fonts = {
   Tajawal: {
     normal: 'Tajawal-Regular.ttf',
   },
 };
 
+// Function to read the font file and convert it to base64
+// This is necessary because pdfmake on the server-side needs the font file data.
+const readFontAsBase64 = (filename: string) => {
+    const fontPath = path.join(process.cwd(), 'src/assets/fonts', filename);
+    if (fs.existsSync(fontPath)) {
+        return fs.readFileSync(fontPath).toString('base64');
+    }
+    console.error(`Font file not found at: ${fontPath}`);
+    return null;
+}
+
+// Prepare the virtual file system for pdfmake
+const vfsFont = readFontAsBase64('Tajawal-Regular.ttf');
+if (vfsFont) {
+    pdfMake.vfs = {
+        "Tajawal-Regular.ttf": vfsFont
+    };
+}
+
 
 async function generateBarcodeBase64(text: string): Promise<string> {
     if (typeof window === 'undefined') {
+        // This is a server-side environment, we cannot use the canvas element.
+        // For now, we will return an empty string. A more robust solution
+        // would involve a server-side canvas library if barcodes are needed in server-generated PDFs.
+        console.warn("Barcode generation is not supported on the server-side without a canvas library.");
         return '';
     }
     try {
