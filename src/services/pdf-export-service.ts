@@ -75,14 +75,14 @@ export const generatePdf = async (slips: (DriverSlip | MerchantSlip)[], users: U
     const pdfMakeModule = await import('pdfmake/build/pdfmake');
     const pdfFonts = await import('@/fonts/vfs_fonts');
 
-    pdfMakeModule.default.vfs = pdfFonts.default;
+    pdfMakeModule.default.vfs = pdfFonts.default.vfs;
 
     pdfMakeModule.default.fonts = {
         Tajawal: {
             normal: 'Tajawal-Regular.ttf',
-            bold: 'Tajawal-Bold.ttf',
+            bold: 'Tajawal-Regular.ttf',
             italics: 'Tajawal-Regular.ttf',
-            bolditalics: 'Tajawal-Bold.ttf'
+            bolditalics: 'Tajawal-Regular.ttf'
         }
     };
     

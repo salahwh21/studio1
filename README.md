@@ -1,3 +1,4 @@
+
 كيفية حل التحذير
 
 افتح ملف next.config.js (أو next.config.mjs).
