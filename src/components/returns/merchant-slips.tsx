@@ -53,6 +53,10 @@ export const MerchantSlips = () => {
         return matchesMerchant && matchesDate && matchesStatus;
     }), [merchantSlips, filterMerchant, filterStartDate, filterEndDate, filterStatus]);
     
+    const selectedSlipData = useMemo(() => {
+        return filteredSlips.filter(s => selectedSlips.includes(s.id));
+    }, [selectedSlips, filteredSlips]);
+
     const confirmSlipDelivery = (slipId: string) => {
         updateMerchantSlipStatus(slipId, 'تم التسليم');
         toast({
@@ -72,8 +76,7 @@ export const MerchantSlips = () => {
     };
     
     const handleExcelExport = () => {
-        const slipsToExport = filteredSlips.filter(s => selectedSlips.includes(s.id));
-        if (slipsToExport.length === 0) {
+        if (selectedSlipData.length === 0) {
             toast({ variant: 'destructive', title: 'لم يتم تحديد كشوفات', description: 'الرجاء تحديد كشف واحد على الأقل للتصدير.' });
             return;
         }
@@ -81,7 +84,7 @@ export const MerchantSlips = () => {
         startTransition(() => {
             toast({ title: "جاري تجهيز ملف Excel..." });
             const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-            generateMerchantSlipExcel(slipsToExport, users, reportsLogo).then(() => {
+            generateMerchantSlipExcel(selectedSlipData, users, reportsLogo).then(() => {
                 toast({ title: "اكتمل التصدير", description: "تم إنشاء ملف Excel بنجاح." });
             }).catch(e => {
                 console.error("Excel generation error:", e);
@@ -107,8 +110,8 @@ export const MerchantSlips = () => {
     }, [pdfToPrint, settings.login, users, toast]);
 
     const handleSendWhatsApp = () => {
-        const slipsToSend = filteredSlips.filter(s => selectedSlips.includes(s.id));
-        slipsToSend.forEach(slip => {
+        if (selectedSlipData.length === 0) return;
+        selectedSlipData.forEach(slip => {
             const user = users.find(u => u.storeName === slip.merchant);
             if(user?.whatsapp) {
                 const message = `مرحباً ${slip.merchant}, تم تجهيز كشف المرتجعات الخاص بكم رقم ${slip.id}.`;
@@ -121,13 +124,12 @@ export const MerchantSlips = () => {
     }
 
      const handleExport = () => {
-        const slipsToExport = filteredSlips.filter(s => selectedSlips.includes(s.id));
-        if (slipsToExport.length === 0) {
+        if (selectedSlipData.length === 0) {
             toast({ variant: 'destructive', title: 'لم يتم تحديد كشوفات', description: 'الرجاء تحديد كشف واحد على الأقل للتصدير.' });
             return;
         }
 
-        const data = slipsToExport.flatMap(slip => 
+        const data = selectedSlipData.flatMap(slip => 
             slip.orders.map(order => ({
                 'رقم الكشف': slip.id,
                 'اسم التاجر': slip.merchant,
@@ -155,9 +157,6 @@ export const MerchantSlips = () => {
     }
     const areAllSelected = filteredSlips.length > 0 && selectedSlips.length === filteredSlips.length;
 
-    const selectedSlipData = useMemo(() => {
-        return filteredSlips.filter(s => selectedSlips.includes(s.id));
-    }, [selectedSlips, filteredSlips]);
 
     return (
         <div dir="rtl">
