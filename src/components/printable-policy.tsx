@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Barcode from 'react-barcode';
+import { fetchWrapper } from '@/lib/fetchWrapper';
 
 // --- Helper Functions ---
 const mmToPt = (mm: number) => mm * 2.83465;
@@ -170,7 +171,7 @@ export const PrintablePolicy = forwardRef(({ orders, template }: PrintablePolicy
                 if (i > 0) {
                     pdf.addPage([paperDimensions.width, paperDimensions.height], paperDimensions.width > paperDimensions.height ? 'landscape' : 'portrait');
                 }
-                pdf.addImage(imgData, 0, 0, paperDimensions.width, paperDimensions.height);
+                pdf.addImage(imgData, 'JPEG', 0, 0, paperDimensions.width, paperDimensions.height);
             } catch (e) {
                 console.error("Error generating PDF page:", e);
                 toast({ variant: 'destructive', title: 'خطأ في الطباعة', description: `حدث خطأ أثناء توليد الصفحة ${i+1}.` });
@@ -203,17 +204,12 @@ export const PrintablePolicy = forwardRef(({ orders, template }: PrintablePolicy
         toast({ title: 'جاري إرسال الطلب للطابعة...' });
 
         try {
-            const response = await fetch('/api/print', {
+            await fetchWrapper('/api/print', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type, data: printData }),
             });
-            const result = await response.json();
-            if (result.success) {
-                toast({ title: 'تم الإرسال بنجاح!', description: 'تم إرسال أمر الطباعة إلى الطابعة.' });
-            } else {
-                throw new Error(result.error);
-            }
+            toast({ title: 'تم الإرسال بنجاح!', description: 'تم إرسال أمر الطباعة إلى الطابعة.' });
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'فشل الطباعة', description: error.message });
         }
