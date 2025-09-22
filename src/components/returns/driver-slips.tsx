@@ -18,7 +18,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useUsersStore } from '@/store/user-store';
 import Link from 'next/link';
-import { generatePdfSlipAction, PdfActionInputSchema } from '@/app/actions/generate-pdf-slip';
+import { generatePdfSlipAction } from '@/app/actions/generate-pdf-slip';
 import { jsPDF } from 'jspdf';
 
 
@@ -86,9 +86,9 @@ export const DriverSlips = () => {
 
                     if (result.success && result.data) {
                         if (i > 0) pdf.addPage();
-                        const imgData = 'data:image/jpeg;base64,' + result.data;
+                        const imgData = 'data:application/pdf;base64,' + result.data;
                         const { width, height } = pdf.internal.pageSize;
-                        pdf.addImage(imgData, 'JPEG', 0, 0, width, height);
+                        pdf.addImage(imgData, 'PDF', 0, 0, width, height);
                     } else {
                         throw new Error(result.error || `فشل إنشاء PDF للكشف ${slip.id}`);
                     }
