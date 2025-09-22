@@ -4,6 +4,9 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   experimental: {
     appDir: true,
+    serverActions: {
+      bodySizeLimit: '4mb',
+    },
   },
   // Your Next.js configuration options go here.
   // For example:
