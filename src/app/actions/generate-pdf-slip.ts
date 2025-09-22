@@ -2,7 +2,7 @@
 'use server';
 
 import pdfMake from 'pdfmake/build/pdfmake';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 import { z } from 'zod';
 
@@ -38,8 +38,20 @@ type State = {
   success: boolean;
 };
 
+// Helper function to process the logo
+const processLogo = async (logo: string | null): Promise<any | null> => {
+    if (!logo) return null;
+    // Check if it's a data URI
+    if (logo.startsWith('data:image')) {
+        return logo;
+    }
+    // Assume it's a file path for now, but this part might need adjustment
+    // depending on where logos are stored. For now, we'll return as is.
+    return logo;
+};
 
-const createSlipContent = (slip: z.infer<typeof SlipDataSchema>, reportsLogo: string | null) => {
+
+const createSlipContent = (slip: z.infer<typeof SlipDataSchema>, reportsLogo: any | null) => {
     const title = slip.partyLabel === 'اسم السائق' ? 'كشف استلام مرتجعات من السائق' : 'كشف المرتجع';
     
     const tableBody = [
@@ -55,46 +67,51 @@ const createSlipContent = (slip: z.infer<typeof SlipDataSchema>, reportsLogo: st
         [{ text: 'الإجمالي', colSpan: 5, bold: true, style: 'tableCell', alignment: 'left' }, {}, {}, {}, {}, { text: slip.total.toFixed(2), bold: true, style: 'tableCell', alignment: 'center' }]
     ];
 
-    return [
-        {
-            columns: [
-                { width: '*', stack: [{ text: `${slip.partyLabel}: ${slip.partyName}`, fontSize: 9 }, { text: `التاريخ: ${new Date(slip.date).toLocaleString('ar-EG')}`, fontSize: 9 }, { text: `الفرع: ${slip.branch}`, fontSize: 9 },], alignment: 'right' },
-                { width: 'auto', stack: [ reportsLogo ? { image: reportsLogo, width: 70, alignment: 'center', margin: [0, 0, 0, 5] } : {}, { text: title, style: 'header' }] },
-                { text: slip.id, alignment: 'left', style: 'header', margin: [0, 5, 0, 0] }
-            ],
-            columnGap: 10
-        },
-        { table: { headerRows: 1, widths: ['auto', 'auto', '*', '*', '*', 'auto'], body: tableBody, }, layout: 'lightHorizontalLines', margin: [0, 20, 0, 10] },
-        { columns: [{ text: `توقيع المستلم: .........................`, margin: [0, 50, 0, 0] }] }
+    const content: any[] = [];
+
+    // Header section
+    let headerColumns: any[] = [
+        { width: '*', stack: [{ text: `${slip.partyLabel}: ${slip.partyName}`, fontSize: 9 }, { text: `التاريخ: ${new Date(slip.date).toLocaleString('ar-EG')}`, fontSize: 9 }, { text: `الفرع: ${slip.branch}`, fontSize: 9 },], alignment: 'right' },
+        { width: 'auto', stack: [{ text: title, style: 'header' }] },
+        { text: slip.id, alignment: 'left', style: 'header', margin: [0, 5, 0, 0] }
     ];
+
+    if (reportsLogo) {
+        headerColumns.splice(1, 0, { image: reportsLogo, width: 70, alignment: 'center', margin: [0, 0, 0, 5] });
+    }
+    
+    content.push({ columns: headerColumns, columnGap: 10 });
+    content.push({ table: { headerRows: 1, widths: ['auto', 'auto', '*', '*', '*', 'auto'], body: tableBody, }, layout: 'lightHorizontalLines', margin: [0, 20, 0, 10] });
+    content.push({ columns: [{ text: `توقيع المستلم: .........................`, margin: [0, 50, 0, 0] }] });
+
+    return content;
 };
 
 
 export async function generatePdfSlipAction(validatedData: z.infer<typeof PdfActionInputSchema>): Promise<State> {
     try {
         const fontPath = path.join(process.cwd(), 'src', 'assets', 'fonts', 'Tajawal-Regular.ttf');
-        if (fs.existsSync(fontPath)) {
-            pdfMake.fonts = {
-                Tajawal: {
-                    normal: 'Tajawal-Regular.ttf',
-                },
-            };
-             pdfMake.vfs = {
-                "Tajawal-Regular.ttf": fs.readFileSync(fontPath).toString('base64')
-            };
-        } else {
-            console.error(`Font file not found at: ${fontPath}`);
-            // Fallback to default font if custom font is not found
-            pdfMake.fonts = {};
-            pdfMake.vfs = {};
-        }
+        const fontBuffer = await fs.readFile(fontPath);
+
+        const vfs = {
+            "Tajawal-Regular.ttf": fontBuffer.toString('base64')
+        };
+        
+        pdfMake.vfs = vfs;
+        pdfMake.fonts = {
+            Tajawal: {
+                normal: 'Tajawal-Regular.ttf'
+            }
+        };
 
         const { slipsData, reportsLogo } = validatedData;
         const allPagesContent: any[] = [];
+        
+        const processedLogo = await processLogo(reportsLogo);
 
         for (let i = 0; i < slipsData.length; i++) {
             const slip = slipsData[i];
-            const pageContent = createSlipContent(slip, reportsLogo);
+            const pageContent = createSlipContent(slip, processedLogo);
             allPagesContent.push(...pageContent);
 
             if (i < slipsData.length - 1) {
