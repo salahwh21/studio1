@@ -84,7 +84,7 @@ export default function SlipDetailPage() {
                 </CardHeader>
                 <CardContent>
                     <Button asChild>
-                        <Link href="/dashboard/returns">العودة إلى صفحة المرتجعات</Link>
+                        <Link href="/dashboard/returns/merchant-slips">العودة إلى كشوفات التجار</Link>
                     </Button>
                 </CardContent>
             </Card>
@@ -107,7 +107,7 @@ export default function SlipDetailPage() {
                         <CardDescription className="mt-2 font-mono text-base">{slip.id}</CardDescription>
                     </div>
                      <Button variant="outline" size="icon" asChild>
-                        <Link href="/dashboard/returns">
+                        <Link href={slipType === 'driver' ? "/dashboard/returns/driver-slips" : "/dashboard/returns/merchant-slips"}>
                             <Icon name="ArrowLeft" className="h-4 w-4" />
                         </Link>
                     </Button>
