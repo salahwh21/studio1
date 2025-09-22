@@ -5,8 +5,6 @@ import pdfMake from 'pdfmake/build/pdfmake';
 import { z } from 'zod';
 import fs from 'fs/promises';
 import path from 'path';
-import 'jspdf-autotable';
-
 
 const SlipOrderSchema = z.object({
     id: z.string(),
@@ -35,17 +33,16 @@ const PdfActionInputSchema = z.object({
 });
 
 type State = {
-  data: string | null; // Base64 encoded PDF page as JPEG
+  data: string | null; // Base64 encoded PDF
   error: string | null;
   success: boolean;
 };
 
 // Helper function to process the logo
-const processLogo = async (logo: string | null): Promise<any | null> => {
+const processLogo = (logo: string | null): any | null => {
     if (!logo || !logo.startsWith('data:image')) return null;
     return logo;
 };
-
 
 const createSlipContent = (slip: z.infer<typeof SlipDataSchema>, reportsLogo: any | null) => {
     const title = slip.partyLabel === 'اسم السائق' ? 'كشف استلام مرتجعات من السائق' : 'كشف المرتجع';
@@ -65,7 +62,6 @@ const createSlipContent = (slip: z.infer<typeof SlipDataSchema>, reportsLogo: an
 
     const content: any[] = [];
 
-    // Header section
     let headerColumns: any[] = [
         { width: '*', stack: [{ text: `${slip.partyLabel}: ${slip.partyName}`, fontSize: 9 }, { text: `التاريخ: ${new Date(slip.date).toLocaleString('ar-EG')}`, fontSize: 9 }, { text: `الفرع: ${slip.branch}`, fontSize: 9 },], alignment: 'right' },
         { width: 'auto', stack: [{ text: title, style: 'header' }] },
@@ -86,26 +82,25 @@ const createSlipContent = (slip: z.infer<typeof SlipDataSchema>, reportsLogo: an
 
 export async function generatePdfSlipAction(validatedData: z.infer<typeof PdfActionInputSchema>): Promise<State> {
     try {
-        const fontPath = path.join(process.cwd(), 'src', 'assets', 'fonts', 'Tajawal-Regular.ttf');
-        const fontBuffer = await fs.readFile(fontPath);
-
-        const vfs = {
-            "Tajawal-Regular.ttf": fontBuffer.toString('base64')
-        };
+        // Since we are having trouble with custom fonts on the server,
+        // we'll rely on the default built-in Roboto font for now.
+        // This removes the dependency on `fs` and `path`.
         
-        pdfMake.vfs = vfs;
         pdfMake.fonts = {
-            Tajawal: {
-                normal: 'Tajawal-Regular.ttf'
+            Roboto: {
+                normal: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf',
+                bold: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Medium.ttf',
+                italics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Italic.ttf',
+                bolditalics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-MediumItalic.ttf'
             }
         };
 
-        const { slipData, reportsLogo, isDriver } = validatedData;
-        const processedLogo = await processLogo(reportsLogo);
+        const { slipData, reportsLogo } = validatedData;
+        const processedLogo = processLogo(reportsLogo);
         const pageContent = createSlipContent(slipData, processedLogo);
         
-        const docDefinition = {
-            defaultStyle: { font: "Tajawal", fontSize: 10, alignment: "right" },
+        const docDefinition: any = {
+            defaultStyle: { font: "Roboto", fontSize: 10, alignment: "right" },
             content: pageContent,
             styles: {
                 header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
