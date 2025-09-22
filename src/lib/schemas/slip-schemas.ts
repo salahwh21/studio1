@@ -24,5 +24,6 @@ export const SlipDataSchema = z.object({
 export const PdfActionInputSchema = z.object({
   slipData: SlipDataSchema,
   reportsLogo: z.string().nullable(),
-  isDriver: z.boolean(),
 });
+
+    

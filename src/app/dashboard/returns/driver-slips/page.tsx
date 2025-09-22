@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { parseISO, isWithinInterval, format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
-import { PDFDocument } from 'pdf-lib';
 import Link from 'next/link';
 import { generateSlipPdfAction } from '@/app/actions/generate-slip-pdf';
 
@@ -65,7 +64,7 @@ export default function DriverSlipsPage() {
                     total: slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0),
                 };
 
-                const result = await generateSlipPdfAction({ slipData, reportsLogo, isDriver: true });
+                const result = await generateSlipPdfAction({ slipData, reportsLogo });
                 
                 if (result.success && result.data) {
                     if (typeof window !== 'undefined') {
@@ -125,3 +124,5 @@ export default function DriverSlipsPage() {
         </div>
     );
 };
+
+    
