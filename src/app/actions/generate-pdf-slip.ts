@@ -83,9 +83,7 @@ const createSlipContent = (slip: z.infer<typeof SlipDataSchema>, reportsLogo: an
 export async function generatePdfSlipAction(validatedData: z.infer<typeof PdfActionInputSchema>): Promise<State> {
     try {
         // Since we are having trouble with custom fonts on the server,
-        // we'll rely on the default built-in Roboto font for now.
-        // This removes the dependency on `fs` and `path`.
-        
+        // we'll rely on the default built-in Roboto font for now by fetching from a CDN.
         pdfMake.fonts = {
             Roboto: {
                 normal: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf',
