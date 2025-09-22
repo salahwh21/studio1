@@ -19,7 +19,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useUsersStore } from '@/store/user-store';
-import { generateMerchantSlipPdf } from '@/services/pdf-export-service';
+import { generatePdfSlipAction } from '@/app/actions/generate-pdf-slip';
+import { jsPDF } from 'jspdf';
 
 
 export const MerchantSlips = () => {
@@ -68,14 +69,48 @@ export const MerchantSlips = () => {
         setShowDetailsDialog(true);
     };
     
-    const handlePrintAction = (slips: MerchantSlip[]) => {
-        if (slips.length === 0) return;
+    const handlePrintAction = (slipsToPrint: MerchantSlip[]) => {
+        if (slipsToPrint.length === 0) return;
         startTransition(async () => {
-            toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${slips.length} كشوفات.` });
-            const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+            toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${slipsToPrint.length} كشوفات.` });
+
             try {
-                 await generateMerchantSlipPdf(slips, users, reportsLogo);
-            } catch(e: any) {
+                const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+                const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+
+                for (let i = 0; i < slipsToPrint.length; i++) {
+                    const slip = slipsToPrint[i];
+                    const slipData = {
+                        id: slip.id,
+                        partyName: slip.merchant,
+                        partyLabel: 'اسم التاجر',
+                        date: slip.date,
+                        branch: slip.orders[0]?.city || 'غير متوفر',
+                        orders: slip.orders.map(o => ({
+                            id: o.id || '', recipient: o.recipient || '', phone: o.phone || '', city: o.city || '',
+                            address: o.address || '', previousStatus: o.previousStatus || o.status || 'غير محدد',
+                            itemPrice: o.itemPrice || 0,
+                        })),
+                        total: slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0),
+                    };
+
+                    const result = await generatePdfSlipAction({ slipData, reportsLogo, isDriver: false });
+
+                    if (result.success && result.data) {
+                        if (i > 0) pdf.addPage();
+                        const imgData = 'data:image/jpeg;base64,' + result.data;
+                        const { width, height } = pdf.internal.pageSize;
+                        pdf.addImage(imgData, 'JPEG', 0, 0, width, height);
+                    } else {
+                        throw new Error(result.error || `فشل إنشاء PDF للكشف ${slip.id}`);
+                    }
+                }
+                
+                if (typeof window !== 'undefined') {
+                    pdf.output('dataurlnewwindow');
+                }
+
+            } catch (e: any) {
                 console.error("PDF generation error:", e);
                 toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: e.message || 'حدث خطأ أثناء تجهيز الملف.' });
             }

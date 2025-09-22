@@ -1,10 +1,7 @@
-
 'use server';
 
 import pdfMake from 'pdfmake/build/pdfmake';
 import { z } from 'zod';
-import fs from 'fs/promises';
-import path from 'path';
 
 const SlipOrderSchema = z.object({
     id: z.string(),
@@ -26,7 +23,7 @@ const SlipDataSchema = z.object({
     total: z.number(),
 });
 
-const PdfActionInputSchema = z.object({
+export const PdfActionInputSchema = z.object({
     slipData: SlipDataSchema,
     reportsLogo: z.string().nullable(),
     isDriver: z.boolean(),
@@ -82,17 +79,6 @@ const createSlipContent = (slip: z.infer<typeof SlipDataSchema>, reportsLogo: an
 
 export async function generatePdfSlipAction(validatedData: z.infer<typeof PdfActionInputSchema>): Promise<State> {
     try {
-        // Since we are having trouble with custom fonts on the server,
-        // we'll rely on the default built-in Roboto font for now by fetching from a CDN.
-        pdfMake.fonts = {
-            Roboto: {
-                normal: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf',
-                bold: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Medium.ttf',
-                italics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Italic.ttf',
-                bolditalics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-MediumItalic.ttf'
-            }
-        };
-
         const { slipData, reportsLogo } = validatedData;
         const processedLogo = processLogo(reportsLogo);
         const pageContent = createSlipContent(slipData, processedLogo);
