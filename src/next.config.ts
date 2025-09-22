@@ -8,17 +8,6 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '4mb',
     },
   },
-  webpack: (config, { isServer }) => {
-    config.module.rules.push({
-      test: /\.ttf$/,
-      type: 'asset/resource',
-      generator: {
-        filename: 'static/fonts/[hash][ext]',
-      },
-    });
-
-    return config;
-  },
   // Your Next.js configuration options go here.
   // For example:
   // images: {
