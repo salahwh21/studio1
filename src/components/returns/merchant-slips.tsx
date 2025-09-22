@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo, useTransition, useEffect } from 'react';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
@@ -19,9 +20,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useUsersStore } from '@/store/user-store';
-import { generatePdfSlipAction } from '@/app/actions/generate-pdf-slip';
-import { jsPDF } from 'jspdf';
-
+import { generateSlipPdfAction } from '@/app/actions/generate-slip-pdf';
+import { PDFDocument } from 'pdf-lib';
 
 export const MerchantSlips = () => {
     const { toast } = useToast();
@@ -75,11 +75,10 @@ export const MerchantSlips = () => {
             toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${slipsToPrint.length} كشوفات.` });
 
             try {
-                const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+                const mergedPdf = await PDFDocument.create();
                 const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
 
-                for (let i = 0; i < slipsToPrint.length; i++) {
-                    const slip = slipsToPrint[i];
+                for (const slip of slipsToPrint) {
                     const slipData = {
                         id: slip.id,
                         partyName: slip.merchant,
@@ -94,20 +93,23 @@ export const MerchantSlips = () => {
                         total: slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0),
                     };
 
-                    const result = await generatePdfSlipAction({ slipData, reportsLogo, isDriver: false });
-
+                    const result = await generateSlipPdfAction({ slipData, reportsLogo });
+                    
                     if (result.success && result.data) {
-                        if (i > 0) pdf.addPage();
-                        const imgData = 'data:application/pdf;base64,' + result.data;
-                        const { width, height } = pdf.internal.pageSize;
-                        pdf.addImage(imgData, 'PDF', 0, 0, width, height);
+                        const pdfBytes = Buffer.from(result.data, 'base64');
+                        const singlePdf = await PDFDocument.load(pdfBytes);
+                        const copiedPages = await mergedPdf.copyPages(singlePdf, singlePdf.getPageIndices());
+                        copiedPages.forEach(page => mergedPdf.addPage(page));
                     } else {
                         throw new Error(result.error || `فشل إنشاء PDF للكشف ${slip.id}`);
                     }
                 }
                 
                 if (typeof window !== 'undefined') {
-                    pdf.output('dataurlnewwindow');
+                    const mergedPdfBytes = await mergedPdf.save();
+                    const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
                 }
 
             } catch (e: any) {
@@ -164,7 +166,6 @@ export const MerchantSlips = () => {
         setSelectedSlips(checked ? filteredSlips.map(s => s.id) : []);
     }
     const areAllSelected = filteredSlips.length > 0 && selectedSlips.length === filteredSlips.length;
-
 
     return (
         <div dir="rtl">

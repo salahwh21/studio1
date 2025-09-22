@@ -1,0 +1,132 @@
+
+'use server';
+
+import { PDFDocument, rgb, StandardFonts, PDFFont } from 'pdf-lib';
+import { z } from 'zod';
+import fs from 'fs/promises';
+import path from 'path';
+import { SlipDataSchema } from '@/lib/schemas/slip-schemas';
+
+const PdfActionInputSchema = z.object({
+  slipData: SlipDataSchema,
+  reportsLogo: z.string().nullable(),
+});
+
+type State = {
+  data: string | null; // Base64 PDF
+  error: string | null;
+  success: boolean;
+};
+
+async function loadFont(): Promise<Buffer> {
+    const fontPath = path.join(process.cwd(), 'src/assets/fonts/Tajawal-Regular.ttf');
+    return fs.readFile(fontPath);
+}
+
+// Helper to draw text and handle wrapping
+const drawText = (
+    page: any,
+    text: string,
+    x: number,
+    y: number,
+    font: PDFFont,
+    size: number,
+    maxWidth?: number
+) => {
+    let lines: string[] = [text];
+    if (maxWidth) {
+        const words = text.split(' ');
+        lines = [];
+        let currentLine = '';
+        for (const word of words) {
+            const width = font.widthOfTextAtSize(currentLine + word, size);
+            if (width > maxWidth && currentLine.length > 0) {
+                lines.push(currentLine);
+                currentLine = word;
+            } else {
+                currentLine += (currentLine.length > 0 ? ' ' : '') + word;
+            }
+        }
+        lines.push(currentLine);
+    }
+    
+    let currentY = y;
+    for (const line of lines) {
+        page.drawText(line, { x, y: currentY, font, size, color: rgb(0, 0, 0) });
+        currentY -= size + 4;
+    }
+    return currentY;
+};
+
+export async function generateSlipPdfAction(
+  validatedData: z.infer<typeof PdfActionInputSchema>
+): Promise<State> {
+  try {
+    const { slipData, reportsLogo } = validatedData;
+    const { width, height } = { width: 595.28, height: 841.89 }; // A4 dimensions in points
+
+    const pdfDoc = await PDFDocument.create();
+    const fontBytes = await loadFont();
+    const customFont = await pdfDoc.embedFont(fontBytes);
+    
+    const page = pdfDoc.addPage();
+    const margin = 50;
+
+    // Title
+    const title = slipData.partyLabel === 'اسم السائق' ? 'كشف استلام مرتجعات من السائق' : 'كشف المرتجع';
+    drawText(page, title, margin, height - margin, customFont, 18);
+
+    // Header Info
+    drawText(page, `${slipData.partyLabel}: ${slipData.partyName}`, margin, height - margin - 40, customFont, 12);
+    drawText(page, `التاريخ: ${new Date(slipData.date).toLocaleDateString('ar-EG')}`, width - margin - 150, height - margin - 40, customFont, 12);
+    drawText(page, `الكشف: ${slipData.id}`, width - margin - 150, height - margin - 60, customFont, 12);
+
+    // Table
+    let y = height - margin - 100;
+    const tableTop = y;
+    const rowHeight = 30;
+    const colWidths = [30, 100, 150, 150, 100];
+    
+    // Table Header
+    const headers = ['#', 'رقم الطلب', 'المستلم', 'سبب الإرجاع', 'المبلغ'];
+    let x = margin;
+    headers.forEach((header, i) => {
+        page.drawRectangle({ x, y: y - rowHeight, width: colWidths[i], height: rowHeight, color: rgb(0.9, 0.9, 0.9), borderColor: rgb(0.5,0.5,0.5), borderWidth: 0.5 });
+        drawText(page, header, x + 5, y - 20, customFont, 10);
+        x += colWidths[i];
+    });
+    y -= rowHeight;
+    
+    // Table Rows
+    slipData.orders.forEach((order, index) => {
+        x = margin;
+        const rowData = [
+            String(index + 1),
+            order.id,
+            order.recipient,
+            order.previousStatus,
+            order.itemPrice.toFixed(2),
+        ];
+        rowData.forEach((cell, i) => {
+            page.drawRectangle({ x, y: y - rowHeight, width: colWidths[i], height: rowHeight, color: rgb(1,1,1), borderColor: rgb(0.5,0.5,0.5), borderWidth: 0.5 });
+            drawText(page, cell, x + 5, y - 20, customFont, 10, colWidths[i] - 10);
+            x += colWidths[i];
+        });
+        y -= rowHeight;
+    });
+
+    // Total
+    drawText(page, `الإجمالي: ${slipData.total.toFixed(2)}`, margin, y - 40, customFont, 14);
+
+    // Signature
+    drawText(page, `توقيع المستلم: .........................`, margin, margin + 50, customFont, 12);
+    
+    const pdfBytes = await pdfDoc.save();
+    const pdfBase64 = Buffer.from(pdfBytes).toString('base64');
+
+    return { data: pdfBase64, error: null, success: true };
+  } catch (error: any) {
+    console.error('Error generating PDF:', error);
+    return { data: null, error: error.message || 'Failed to generate PDF.', success: false };
+  }
+}
