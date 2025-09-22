@@ -1,10 +1,11 @@
 
 'use client';
 
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState, useCallback } from 'react';
 import { fetchWrapper } from '@/lib/fetchWrapper';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, RefreshCcw } from 'lucide-react';
 
 type UniversalDataFetcherProps<T> = {
   url?: string;                     // URL لجلب البيانات على العميل
@@ -23,15 +24,20 @@ export function UniversalDataFetcherUI<T>({
   const [loading, setLoading] = useState(!serverData && !!url);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!url || serverData) return;
-
+  const fetchData = useCallback(() => {
+    if (!url) return;
     setLoading(true);
+    setError(null);
+
     fetchWrapper<T>(url)
       .then(setData)
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
-  }, [url, serverData, responseType]);
+  }, [url, responseType]);
+
+  useEffect(() => {
+    if (!serverData) fetchData();
+  }, [serverData, fetchData]);
 
   if (loading)
     return (
@@ -46,7 +52,14 @@ export function UniversalDataFetcherUI<T>({
   if (error)
     return (
       <Card className="p-4 border-red-400 bg-red-50 text-red-700">
-        <CardContent className="text-center font-medium">{`حدث خطأ: ${error}`}</CardContent>
+        <CardContent className="text-center font-medium flex flex-col items-center gap-2">
+          <span>حدث خطأ: {error}</span>
+          {url && (
+            <Button onClick={fetchData} variant="outline" size="sm" className="flex items-center gap-2 mt-2">
+              <RefreshCcw className="w-4 h-4" /> إعادة المحاولة
+            </Button>
+          )}
+        </CardContent>
       </Card>
     );
 
