@@ -23,7 +23,7 @@ const SlipDataSchema = z.object({
     total: z.number(),
 });
 
-export const PdfActionInputSchema = z.object({
+const PdfActionInputSchema = z.object({
     slipData: SlipDataSchema,
     reportsLogo: z.string().nullable(),
     isDriver: z.boolean(),
