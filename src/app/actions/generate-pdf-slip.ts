@@ -6,21 +6,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { z } from 'zod';
 
-const fontPath = path.join(process.cwd(), 'src', 'assets', 'fonts', 'Tajawal-Regular.ttf');
-if (fs.existsSync(fontPath)) {
-    pdfMake.fonts = {
-        Tajawal: {
-            normal: 'Tajawal-Regular.ttf',
-        },
-    };
-     pdfMake.vfs = {
-        "Tajawal-Regular.ttf": fs.readFileSync(fontPath).toString('base64')
-    };
-} else {
-    console.error(`Font file not found at: ${fontPath}`);
-}
-
-
 const SlipOrderSchema = z.object({
     id: z.string(),
     recipient: z.string(),
@@ -87,6 +72,23 @@ const createSlipContent = (slip: z.infer<typeof SlipDataSchema>, reportsLogo: st
 
 export async function generatePdfSlipAction(validatedData: z.infer<typeof PdfActionInputSchema>): Promise<State> {
     try {
+        const fontPath = path.join(process.cwd(), 'src', 'assets', 'fonts', 'Tajawal-Regular.ttf');
+        if (fs.existsSync(fontPath)) {
+            pdfMake.fonts = {
+                Tajawal: {
+                    normal: 'Tajawal-Regular.ttf',
+                },
+            };
+             pdfMake.vfs = {
+                "Tajawal-Regular.ttf": fs.readFileSync(fontPath).toString('base64')
+            };
+        } else {
+            console.error(`Font file not found at: ${fontPath}`);
+            // Fallback to default font if custom font is not found
+            pdfMake.fonts = {};
+            pdfMake.vfs = {};
+        }
+
         const { slipsData, reportsLogo } = validatedData;
         const allPagesContent: any[] = [];
 
