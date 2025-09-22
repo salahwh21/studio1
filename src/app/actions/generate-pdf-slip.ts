@@ -5,6 +5,7 @@ import pdfMake from 'pdfmake/build/pdfmake';
 import { z } from 'zod';
 import fs from 'fs/promises';
 import path from 'path';
+import 'jspdf-autotable';
 
 
 const SlipOrderSchema = z.object({
@@ -28,26 +29,21 @@ const SlipDataSchema = z.object({
 });
 
 const PdfActionInputSchema = z.object({
-    slipsData: z.array(SlipDataSchema),
+    slipData: SlipDataSchema,
     reportsLogo: z.string().nullable(),
     isDriver: z.boolean(),
 });
 
 type State = {
-  data: string | null; // Base64 encoded PDF
+  data: string | null; // Base64 encoded PDF page as JPEG
   error: string | null;
   success: boolean;
 };
 
 // Helper function to process the logo
 const processLogo = async (logo: string | null): Promise<any | null> => {
-    if (!logo) return null;
-    // We only need to handle data URIs as that's what the settings context provides.
-    if (logo.startsWith('data:image')) {
-        return logo;
-    }
-    // Return null if it's not a data URI for simplicity.
-    return null;
+    if (!logo || !logo.startsWith('data:image')) return null;
+    return logo;
 };
 
 
@@ -104,30 +100,19 @@ export async function generatePdfSlipAction(validatedData: z.infer<typeof PdfAct
             }
         };
 
-        const { slipsData, reportsLogo } = validatedData;
-        const allPagesContent: any[] = [];
-        
+        const { slipData, reportsLogo, isDriver } = validatedData;
         const processedLogo = await processLogo(reportsLogo);
-
-        for (let i = 0; i < slipsData.length; i++) {
-            const slip = slipsData[i];
-            const pageContent = createSlipContent(slip, processedLogo);
-            allPagesContent.push(...pageContent);
-
-            if (i < slipsData.length - 1) {
-                allPagesContent.push({ text: '', pageBreak: 'after' });
-            }
-        }
-
+        const pageContent = createSlipContent(slipData, processedLogo);
+        
         const docDefinition = {
             defaultStyle: { font: "Tajawal", fontSize: 10, alignment: "right" },
-            content: allPagesContent,
+            content: pageContent,
             styles: {
                 header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 10] },
                 tableHeader: { bold: true, fontSize: 11, fillColor: '#eeeeee', alignment: 'center' },
                 tableCell: { margin: [5, 5, 5, 5] },
             },
-            footer: (currentPage: number, pageCount: number) => ({ text: `صفحة ${currentPage} من ${pageCount}`, alignment: 'center', fontSize: 8, margin: [0, 10, 0, 0] }),
+            footer: { text: `صفحة 1 من 1`, alignment: 'center', fontSize: 8, margin: [0, 10, 0, 0] },
             pageSize: 'A4',
             pageMargins: [20, 40, 20, 40]
         };
