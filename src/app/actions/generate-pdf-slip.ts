@@ -42,11 +42,11 @@ type State = {
 // Helper function to process the logo
 const processLogo = async (logo: string | null): Promise<any | null> => {
     if (!logo) return null;
-    // Check if it's a data URI
+    // We only need to handle data URIs as that's what the settings context provides.
     if (logo.startsWith('data:image')) {
         return logo;
     }
-    // For now, we only support data URI logos on the server.
+    // Return null if it's not a data URI for simplicity.
     return null;
 };
 
