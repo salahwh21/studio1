@@ -10,6 +10,7 @@ import { SlipDataSchema } from '@/lib/schemas/slip-schemas';
 const PdfActionInputSchema = z.object({
   slipData: SlipDataSchema,
   reportsLogo: z.string().nullable(),
+  isDriver: z.boolean(),
 });
 
 type State = {

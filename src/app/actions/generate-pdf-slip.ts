@@ -92,7 +92,7 @@ export const MerchantSlips = () => {
                         total: slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0),
                     };
 
-                    const result = await generateSlipPdfAction({ slipData, reportsLogo });
+                    const result = await generateSlipPdfAction({ slipData, reportsLogo, isDriver: false });
                     
                     if (result.success && result.data) {
                         const pdfBytes = Buffer.from(result.data, 'base64');
