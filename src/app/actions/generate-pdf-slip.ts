@@ -2,9 +2,11 @@
 'use server';
 
 import pdfMake from 'pdfmake/build/pdfmake';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 import { z } from 'zod';
+
+// Import font data directly to avoid filesystem access issues on the server
+import fontBuffer from '@/assets/fonts/Tajawal-Regular.ttf';
+
 
 const SlipOrderSchema = z.object({
     id: z.string(),
@@ -45,9 +47,8 @@ const processLogo = async (logo: string | null): Promise<any | null> => {
     if (logo.startsWith('data:image')) {
         return logo;
     }
-    // Assume it's a file path for now, but this part might need adjustment
-    // depending on where logos are stored. For now, we'll return as is.
-    return logo;
+    // For now, we only support data URI logos on the server.
+    return null;
 };
 
 
@@ -90,9 +91,7 @@ const createSlipContent = (slip: z.infer<typeof SlipDataSchema>, reportsLogo: an
 
 export async function generatePdfSlipAction(validatedData: z.infer<typeof PdfActionInputSchema>): Promise<State> {
     try {
-        const fontPath = path.join(process.cwd(), 'src', 'assets', 'fonts', 'Tajawal-Regular.ttf');
-        const fontBuffer = await fs.readFile(fontPath);
-
+        // Use the imported font buffer
         const vfs = {
             "Tajawal-Regular.ttf": fontBuffer.toString('base64')
         };
