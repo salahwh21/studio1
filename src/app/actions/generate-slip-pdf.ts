@@ -6,6 +6,8 @@ import { z } from 'zod';
 import fs from 'fs/promises';
 import path from 'path';
 import { SlipDataSchema } from '@/lib/schemas/slip-schemas';
+import fontkit from '@pdf-lib/fontkit';
+
 
 const PdfActionInputSchema = z.object({
   slipData: SlipDataSchema,
@@ -67,6 +69,10 @@ export async function generateSlipPdfAction(
     const { width, height } = { width: 595.28, height: 841.89 }; // A4 dimensions in points
 
     const pdfDoc = await PDFDocument.create();
+    
+    // Register fontkit
+    pdfDoc.registerFontkit(fontkit);
+
     const fontBytes = await loadFont();
     const customFont = await pdfDoc.embedFont(fontBytes);
     
