@@ -280,12 +280,6 @@ export const PrepareForMerchants = () => {
                              <Button onClick={() => printablePolicyRef.current?.handleExport()} className="w-full">
                                 <Icon name="Save" className="ml-2 h-4 w-4 inline" /> طباعة PDF
                             </Button>
-                            <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(orders.find(o => o.id === selectedReturns[0]), 'zpl')}>
-                                <Icon name="Printer" className="ml-2 h-4 w-4 inline" /> طباعة ZPL (أول طلب)
-                            </Button>
-                             <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(orders.find(o => o.id === selectedReturns[0]), 'escpos')}>
-                                <Icon name="Printer" className="ml-2 h-4 w-4 inline" /> طباعة ESC/POS (أول طلب)
-                            </Button>
                         </CardContent>
                     </Card>
                 </div>
