@@ -72,7 +72,10 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import dynamic from 'next/dynamic';
 import Papa from 'papaparse';
-import ExcelJS from 'exceljs';
+import * as XLSX from 'xlsx';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
+import fs from 'fs/promises';
 
 
 
@@ -359,31 +362,10 @@ const ExportDataDialog = ({
             link.click();
             document.body.removeChild(link);
         } else if (fileFormat === 'excel') {
-            const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet('Orders');
-            worksheet.addRow(headers);
-            worksheet.addRows(dataRows);
-
-            worksheet.columns.forEach(column => {
-                let maxLen = 0;
-                column.eachCell({ includeEmpty: true }, cell => {
-                    const columnLength = cell.value ? cell.value.toString().length : 10;
-                    if (columnLength > maxLen) {
-                        maxLen = columnLength;
-                    }
-                });
-                column.width = maxLen < 10 ? 10 : maxLen + 2;
-            });
-
-            workbook.xlsx.writeBuffer().then((buffer) => {
-                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.setAttribute('download', 'orders_export.xlsx');
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Orders");
+            XLSX.writeFile(wb, "orders_export.xlsx");
         } else {
              toast({ variant: 'destructive', title: 'غير متوفر', description: 'صيغة الملف المحددة غير مدعومة حاليًا.' });
         }
@@ -1192,6 +1174,9 @@ const OrdersTableComponent = () => {
                                         <FileDown className="ml-2 h-4 w-4" />
                                         تصدير البيانات
                                     </DropdownMenuItem>
+                                     <DropdownMenuItem onSelect={() => alert('تصدير Excel')}>
+                                        <FileSpreadsheet className="ml-2 h-4 w-4" /> تصدير Excel
+                                    </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                             <Button variant="outline" size="sm" onClick={toggleAllGroups} disabled={!groupBy}><ChevronsUpDown className="h-4 w-4"/></Button>
@@ -1383,6 +1368,7 @@ export function OrdersTable() {
 
 
     
+
 
 
 
