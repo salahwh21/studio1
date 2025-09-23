@@ -1,8 +1,6 @@
 
       'use client';
 import { useState, useMemo, useTransition } from 'react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { useReturnsStore, type DriverSlip } from '@/store/returns-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,17 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { parseISO, isWithinInterval } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
+import { generatePdf } from '@/lib/pdf-utils';
 import Link from 'next/link';
-
-// @ts-ignore
-import { amiriFont } from '@/lib/amiri-font-base64';
-
-
-declare module 'jspdf' {
-    interface jsPDF {
-        autoTable: (options: any) => jsPDF;
-    }
-}
 
 export const DriverSlips = () => {
     const { toast } = useToast();
@@ -55,65 +44,41 @@ export const DriverSlips = () => {
     };
     
     const handlePrintAction = (slip: DriverSlip) => {
-        startTransition(() => {
+        startTransition(async () => {
             toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة كشف السائق ${slip.driverName}.` });
             try {
-                const doc = new jsPDF();
-                
-                doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
-                doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-                doc.setFont('Amiri');
-
-                doc.setRTL(true);
-
-                const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-                if (reportsLogo) {
-                    doc.addImage(reportsLogo, 'PNG', 15, 10, 30, 10);
-                }
-
-                doc.setFontSize(18);
-                doc.text('كشف استلام مرتجعات من السائق', doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-                
-                doc.setFontSize(10);
-                doc.text(`اسم السائق: ${slip.driverName}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
-                doc.text(`تاريخ الإنشاء: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, 15, 30, { align: 'left' });
-
-                const tableColumn = ["المبلغ", "سبب الإرجاع", "الهاتف", "المستلم", "رقم الطلب", "#"];
-                const tableRows: (string | number)[][] = [];
-
-                slip.orders.forEach((order, index) => {
-                    const orderData = [
-                        (order.itemPrice || 0).toFixed(2),
-                        order.previousStatus || order.status || 'غير محدد',
-                        order.phone || '-',
-                        order.recipient,
-                        order.id,
-                        index + 1
-                    ];
-                    tableRows.push(orderData.reverse());
-                });
-
-                doc.autoTable({
-                    head: [tableColumn.reverse()],
-                    body: tableRows,
-                    startY: 40,
-                    styles: { font: 'Amiri', halign: 'center' },
-                    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-                    columnStyles: {
-                        1: { halign: 'right' },
-                        2: { halign: 'right' },
-                        3: { halign: 'right' },
-                        4: { halign: 'right' },
+                const content = [
+                    { text: `كشف استلام مرتجعات من السائق: ${slip.driverName}`, style: 'header', alignment: 'center' },
+                    { text: `تاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, style: 'subheader', alignment: 'center' },
+                    { text: `رقم الكشف: ${slip.id}`, style: 'subheader', alignment: 'center' },
+                    { text: '\n' },
+                    {
+                        style: 'table',
+                        table: {
+                            headerRows: 1,
+                            widths: ['*', 'auto', 'auto', 'auto'],
+                            body: [
+                                ['سبب الإرجاع', 'الهاتف', 'المستلم', 'رقم الطلب'].reverse(),
+                                ...slip.orders.map(order => [
+                                    order.previousStatus || order.status,
+                                    order.phone,
+                                    order.recipient,
+                                    order.id,
+                                ].reverse()),
+                            ]
+                        }
                     },
-                    didDrawPage: (data) => {
-                        // Footer
-                        doc.setFontSize(10);
-                        doc.text('توقيع السائق/المندوب: .........................', data.settings.margin.left, doc.internal.pageSize.height - 15);
-                        doc.text('توقيع المستلم: .........................', doc.internal.pageSize.width - data.settings.margin.right, doc.internal.pageSize.height - 15, { align: 'right' });
+                    { text: `\n\n\n` },
+                    {
+                        columns: [
+                            { text: 'توقيع المستلم: .........................', style: 'signature' },
+                            { text: 'توقيع السائق: .........................', style: 'signature' }
+                        ]
                     }
-                });
+                ];
 
-                doc.save(`${slip.id}.pdf`);
+                const logo = settings.login.reportsLogo || settings.login.headerLogo;
+                await generatePdf(content, logo);
 
             } catch (e: any) {
                 console.error("PDF generation error:", e);

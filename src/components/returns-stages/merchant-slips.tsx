@@ -1,8 +1,6 @@
 
       'use client';
 import React, { useState, useMemo, useTransition } from 'react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,26 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useUsersStore } from '@/store/user-store';
-
-declare module 'jspdf' {
-    interface jsPDF {
-        autoTable: (options: any) => jsPDF;
-    }
-}
-
-// Function to convert blob to base64
-const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const dataUrl = reader.result as string;
-            const base64 = dataUrl.split(',')[1];
-            resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
-};
+import { generatePdf } from '@/lib/pdf-utils';
 
 export const MerchantSlips = () => {
     const { toast } = useToast();
@@ -91,75 +70,43 @@ export const MerchantSlips = () => {
         startTransition(async () => {
             if (slipsToPrint.length === 0) return;
             toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${slipsToPrint.length} كشف.` });
-            try {
-                const fontResponse = await fetch('/fonts/Amiri-Regular.ttf');
-                if (!fontResponse.ok) {
-                    throw new Error('Failed to fetch font file.');
-                }
-                const fontBlob = await fontResponse.blob();
-                const amiriFont = await blobToBase64(fontBlob);
-
-                const doc = new jsPDF();
-                
-                doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
-                doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-                doc.setFont('Amiri');
-                doc.setRTL(true);
-
-                const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-                
-                slipsToPrint.forEach((slip, slipIndex) => {
-                    if (slipIndex > 0) {
-                        doc.addPage();
-                    }
-
-                    if (reportsLogo) {
-                        doc.addImage(reportsLogo, 'PNG', 15, 10, 30, 10);
-                    }
-
-                    doc.setFontSize(18);
-                    doc.text('كشف إرجاع بضاعة', doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-                    
-                    doc.setFontSize(10);
-                    doc.text(`اسم التاجر: ${slip.merchant}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
-                    doc.text(`تاريخ الإنشاء: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, 15, 30, { align: 'left' });
-                    doc.text(`رقم الكشف: ${slip.id}`, doc.internal.pageSize.getWidth() - 15, 36, { align: 'right' });
-
-                    const tableColumn = ["المبلغ", "سبب الإرجاع", "الهاتف", "المستلم", "رقم الطلب", "#"];
-                    const tableRows: (string | number)[][] = [];
-
-                    slip.orders.forEach((order, index) => {
-                        const orderData = [
-                            (order.itemPrice || order.cod || 0).toFixed(2),
-                            order.previousStatus || order.status || 'غير محدد',
-                            order.phone || '-',
-                            order.recipient,
-                            order.id,
-                            index + 1
-                        ];
-                        tableRows.push(orderData.reverse());
-                    });
-
-                    doc.autoTable({
-                        head: [tableColumn.reverse()],
-                        body: tableRows,
-                        startY: 45,
-                        styles: { font: 'Amiri', halign: 'center' },
-                        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-                        columnStyles: {
-                             1: { halign: 'right' },
-                             2: { halign: 'right' },
-                             3: { halign: 'right' },
-                             4: { halign: 'right' },
-                        },
-                        didDrawPage: (data) => {
-                            doc.setFontSize(10);
-                            doc.text('توقيع المستلم: .........................', doc.internal.pageSize.getWidth() - data.settings.margin.right, doc.internal.pageSize.height - 15, { align: 'right' });
+            
+            const content = slipsToPrint.map((slip, index) => {
+                const slipContent = [
+                    { text: `كشف إرجاع بضاعة: ${slip.merchant}`, style: 'header', alignment: 'center' },
+                    { text: `تاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, style: 'subheader', alignment: 'center' },
+                    { text: `رقم الكشف: ${slip.id}`, style: 'subheader', alignment: 'center' },
+                    { text: '\n' },
+                    {
+                        style: 'table',
+                        table: {
+                            headerRows: 1,
+                            widths: ['*', 'auto', 'auto', 'auto'],
+                            body: [
+                                ['سبب الإرجاع', 'الهاتف', 'المستلم', 'رقم الطلب'].reverse(),
+                                ...slip.orders.map(order => [
+                                    order.previousStatus || order.status,
+                                    order.phone,
+                                    order.recipient,
+                                    order.id,
+                                ].reverse()),
+                            ]
                         }
-                    });
-                });
+                    },
+                    { text: `\n\n\n` },
+                    { text: 'توقيع المستلم: .........................', style: 'signature' }
+                ];
+                if (index < slipsToPrint.length - 1) {
+                    // @ts-ignore
+                    slipContent.push({ text: '', pageBreak: 'after' });
+                }
+                return slipContent;
+            }).flat();
 
-                doc.save('merchant_return_slips.pdf');
+            const logo = settings.login.reportsLogo || settings.login.headerLogo;
+
+            try {
+                await generatePdf(content, logo);
             } catch (e: any) {
                 console.error("PDF generation error:", e);
                 toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: e.message || 'حدث خطأ أثناء تجهيز الملف.' });
@@ -214,7 +161,7 @@ export const MerchantSlips = () => {
         setSelectedSlips(checked ? filteredSlips.map(s => s.id) : []);
     }
     const areAllSelected = filteredSlips.length > 0 && selectedSlips.length === filteredSlips.length;
-
+    
     const handleShowDetails = (slip: MerchantSlip) => {
         setCurrentSlip(slip);
         setShowDetailsDialog(true);
@@ -255,17 +202,7 @@ export const MerchantSlips = () => {
                 </CardHeader>
                 <CardContent>
                      <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-12 border-l text-center"><Checkbox onCheckedChange={handleSelectAll} checked={areAllSelected}/></TableHead>
-                                <TableHead className="border-l text-center whitespace-nowrap">رقم الكشف</TableHead>
-                                <TableHead className="border-l text-center whitespace-nowrap">التاجر</TableHead>
-                                <TableHead className="border-l text-center whitespace-nowrap">تاريخ الإنشاء</TableHead>
-                                <TableHead className="border-l text-center whitespace-nowrap">عدد الشحنات</TableHead>
-                                <TableHead className="border-l text-center whitespace-nowrap">الحالة</TableHead>
-                                <TableHead className="text-center whitespace-nowrap">إجراءات</TableHead>
-                            </TableRow>
-                        </TableHeader>
+                        <TableHeader><TableRow><TableHead className="w-12 border-l text-center"><Checkbox onCheckedChange={handleSelectAll} checked={areAllSelected}/></TableHead><TableHead className="border-l text-center whitespace-nowrap">رقم الكشف</TableHead><TableHead className="border-l text-center whitespace-nowrap">التاجر</TableHead><TableHead className="border-l text-center whitespace-nowrap">تاريخ الإنشاء</TableHead><TableHead className="border-l text-center whitespace-nowrap">عدد الشحنات</TableHead><TableHead className="border-l text-center whitespace-nowrap">الحالة</TableHead><TableHead className="text-center whitespace-nowrap">إجراءات</TableHead></TableRow></TableHeader>
                         <TableBody>
                             {filteredSlips.length === 0 ? (
                                 <TableRow><TableCell colSpan={7} className="h-24 text-center">لا توجد كشوفات.</TableCell></TableRow>
@@ -289,7 +226,7 @@ export const MerchantSlips = () => {
                                         {slip.status === 'جاهز للتسليم' && (
                                             <Button size="sm" onClick={() => confirmSlipDelivery(slip.id)}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
                                         )}
-                                        <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])} disabled={isPending}><Icon name="Printer" className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])} disabled={isPending}><Icon name={isPending ? "Loader2" : "Printer"} className={cn("h-4 w-4", {"animate-spin": isPending})} /></Button>
                                     </TableCell>
                                 </TableRow>
                             ))

@@ -1,29 +1,22 @@
-'use client';
 
-import { useState, useEffect } from 'react';
+      'use client';
+
 import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 
 import { useReturnsStore, type DriverSlip, type MerchantSlip } from '@/store/returns-store';
 import { useSettings } from '@/contexts/SettingsContext';
+import { generatePdf } from '@/lib/pdf-utils'; // Import the new PDF generation utility
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import Icon from '@/components/icon';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-
-// @ts-ignore
-import { amiriFont } from '@/lib/amiri-font-base64';
-
-declare module 'jspdf' {
-    interface jsPDF {
-        autoTable: (options: any) => jsPDF;
-    }
-}
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 const SlipDetailPageSkeleton = () => (
     <div className="space-y-6">
@@ -55,7 +48,9 @@ export default function SlipDetailPage() {
     const { slipId } = params;
     
     const { driverSlips, merchantSlips } = useReturnsStore();
-    const { formatCurrency } = useSettings();
+    const { formatCurrency, settings } = useSettings();
+    const { toast } = useToast();
+    const [isPending, startTransition] = useTransition();
 
     const [slip, setSlip] = useState<DriverSlip | MerchantSlip | null>(null);
     const [slipType, setSlipType] = useState<'driver' | 'merchant' | null>(null);
@@ -81,60 +76,60 @@ export default function SlipDetailPage() {
 
     }, [slipId, driverSlips, merchantSlips]);
 
-    const handlePrint = () => {
+    const handlePrint = async () => {
         if (!slip) return;
-        
-        const doc = new jsPDF();
+        startTransition(async () => {
+            toast({ title: 'جاري تحضير الكشف للطباعة...' });
 
-        doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
-        doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-        doc.setFont('Amiri');
-        doc.setRTL(true);
-
-        const title = slipType === 'driver' ? `كشف استلام من السائق` : `كشف إرجاع للتاجر`;
-        const partyName = slipType === 'driver' ? (slip as DriverSlip).driverName : (slip as MerchantSlip).merchant;
-        const partyType = slipType === 'driver' ? 'السائق' : 'التاجر';
-
-        doc.setFontSize(18);
-        doc.text(title, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-        doc.setFontSize(12);
-        doc.text(`${partyType}: ${partyName}`, doc.internal.pageSize.getWidth() - 15, 35, { align: 'right' });
-        doc.text(`التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, doc.internal.pageSize.getWidth() - 15, 45, { align: 'right' });
-        doc.text(`رقم الكشف: ${slip.id}`, 15, 35, { align: 'left' });
-
-        const tableColumn = ["سبب الإرجاع", "قيمة التحصيل", "الهاتف", "المستلم", "رقم الطلب"];
-        const tableRows: (string | number)[][] = [];
-
-        slip.orders.forEach(order => {
-            const orderData = [
-                order.previousStatus || order.status,
-                formatCurrency(order.cod),
-                order.phone,
-                order.recipient,
-                order.id,
+            const title = slipType === 'driver' ? `كشف استلام من السائق` : `كشف إرجاع للتاجر`;
+            const partyName = slipType === 'driver' ? (slip as DriverSlip).driverName : (slip as MerchantSlip).merchant;
+            const partyType = slipType === 'driver' ? 'السائق' : 'التاجر';
+            
+            const content = [
+                { text: title, style: 'header', alignment: 'center' },
+                { text: `رقم الكشف: ${slip.id}`, style: 'subheader' },
+                { text: `التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, style: 'subheader' },
+                { text: `${partyType}: ${partyName}`, style: 'subheader' },
+                { text: '\n' },
+                {
+                    style: 'table',
+                    table: {
+                        headerRows: 1,
+                        widths: ['*', 'auto', 'auto', 'auto', 'auto'],
+                        body: [
+                            ['سبب الإرجاع', 'قيمة التحصيل', 'الهاتف', 'المستلم', 'رقم الطلب'].reverse(),
+                            ...slip.orders.map(order => [
+                                order.previousStatus || order.status,
+                                formatCurrency(order.cod),
+                                order.phone,
+                                order.recipient,
+                                order.id,
+                            ].reverse()),
+                        ]
+                    }
+                },
+                { text: `\n\n\n` },
+                {
+                    columns: [
+                        { text: 'توقيع المستلم: .........................', style: 'signature' },
+                        { text: 'توقيع السائق/المندوب: .........................', style: 'signature' }
+                    ]
+                }
             ];
-            tableRows.push(orderData);
+            
+            const logo = settings.login.reportsLogo || settings.login.headerLogo;
+            
+            try {
+                await generatePdf(content, logo);
+            } catch (error) {
+                console.error('Failed to generate PDF:', error);
+                toast({
+                    variant: 'destructive',
+                    title: 'فشل في إنشاء PDF',
+                    description: 'حدث خطأ غير متوقع أثناء إنشاء الملف.'
+                });
+            }
         });
-
-        doc.autoTable({
-            head: [tableColumn],
-            body: tableRows,
-            startY: 55,
-            theme: 'grid',
-            styles: {
-                font: 'Amiri',
-                halign: 'right',
-                cellPadding: 2,
-                fontSize: 10,
-            },
-            headStyles: {
-                fillColor: [41, 128, 185],
-                textColor: 255,
-                fontStyle: 'bold',
-            },
-        });
-
-        doc.save(`${slip.id}.pdf`);
     };
 
     if (isLoading) {
@@ -174,8 +169,8 @@ export default function SlipDetailPage() {
                         <CardDescription className="mt-2 font-mono text-base">{slip.id}</CardDescription>
                     </div>
                      <div className="flex items-center gap-2">
-                        <Button variant="outline" onClick={handlePrint}>
-                            <Icon name="Printer" className="ml-2 h-4 w-4" />
+                        <Button variant="outline" onClick={handlePrint} disabled={isPending}>
+                            <Icon name={isPending ? "Loader2" : "Printer"} className={cn("ml-2 h-4 w-4", { "animate-spin": isPending })} />
                             طباعة
                         </Button>
                         <Button variant="outline" size="icon" asChild>

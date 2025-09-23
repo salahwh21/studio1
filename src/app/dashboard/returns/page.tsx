@@ -1,4 +1,5 @@
-'use client';
+
+      'use client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import Icon from '@/components/icon';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -77,8 +78,8 @@ export default function ReturnsPage() {
         </CardHeader>
       </Card>
       
-       <Tabs defaultValue={returnSections[0].value} className="w-full">
-        <TabsList className="h-auto p-2 flex flex-col md:flex-row gap-2 bg-transparent">
+       <Tabs defaultValue={returnSections[0].value} className="w-full" dir="rtl">
+        <TabsList className="h-auto p-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 bg-transparent">
             {returnSections.map(section => (
                 <TabsTrigger 
                     key={section.value} 
@@ -104,3 +105,5 @@ export default function ReturnsPage() {
     </div>
   );
 }
+
+    
