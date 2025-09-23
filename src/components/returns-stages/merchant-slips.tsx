@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo, useTransition, useEffect } from 'react';
+import React, { useState, useMemo, useTransition } from 'react';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/icon';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { parseISO, isWithinInterval, format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -19,8 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useUsersStore } from '@/store/user-store';
-import { generateSlipPdfAction } from '@/app/actions/generate-slip-pdf';
-import { PDFDocument } from 'pdf-lib';
+import { generatePdf } from '@/lib/pdf-generator';
 
 export const MerchantSlips = () => {
     const { toast } = useToast();
@@ -72,45 +70,24 @@ export const MerchantSlips = () => {
         if (slipsToPrint.length === 0) return;
         startTransition(async () => {
             toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${slipsToPrint.length} كشوفات.` });
-
             try {
-                const mergedPdf = await PDFDocument.create();
                 const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-
                 for (const slip of slipsToPrint) {
                     const slipData = {
                         id: slip.id,
                         partyName: slip.merchant,
                         partyLabel: 'التاجر',
                         date: slip.date,
-                        branch: slip.orders[0]?.city || 'غير متوفر',
                         orders: slip.orders.map(o => ({
                             id: o.id || '', recipient: o.recipient || '', phone: o.phone || '', city: o.city || '',
                             address: o.address || '', previousStatus: o.previousStatus || o.status || 'غير محدد',
                             itemPrice: o.itemPrice || 0,
                         })),
-                        total: slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0),
                     };
-
-                    const result = await generateSlipPdfAction({ slipData, reportsLogo });
-                    
-                    if (result.success && result.data) {
-                        const pdfBytes = Buffer.from(result.data, 'base64');
-                        const singlePdf = await PDFDocument.load(pdfBytes);
-                        const copiedPages = await mergedPdf.copyPages(singlePdf, singlePdf.getPageIndices());
-                        copiedPages.forEach(page => mergedPdf.addPage(page));
-                    } else {
-                        throw new Error(result.error || `فشل إنشاء PDF للكشف ${slip.id}`);
-                    }
+                    await generatePdf(slipData, reportsLogo);
+                    // Add a small delay between each PDF generation to prevent browser hanging
+                    await new Promise(resolve => setTimeout(resolve, 500));
                 }
-                
-                if (typeof window !== 'undefined') {
-                    const mergedPdfBytes = await mergedPdf.save();
-                    const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-                    const url = URL.createObjectURL(blob);
-                    window.open(url, '_blank');
-                }
-
             } catch (e: any) {
                 console.error("PDF generation error:", e);
                 toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: e.message || 'حدث خطأ أثناء تجهيز الملف.' });
@@ -172,33 +149,9 @@ export const MerchantSlips = () => {
                 <CardTitle>كشوفات إرجاع الشحنات إلى التجار</CardTitle>
                 <CardDescription>فلترة وبحث في الكشوفات التي تم إنشاؤها.</CardDescription>
                  <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
-                    <Select onValueChange={(v) => setFilterMerchant(v === 'all' ? null : v)} value={filterMerchant || 'all'}><SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="اختيار التاجر" /></SelectTrigger><SelectContent><SelectItem value="all">كل التجار</SelectItem>{Array.from(new Set(merchantSlips.map(s=>s.merchant))).map((m) => (<SelectItem key={m} value={m}>{m}</SelectItem>))}</SelectContent></Select>
-                    <Select onValueChange={(v) => setFilterStatus(v === 'all' ? null : v)} value={filterStatus || 'all'}><SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="حالة الكشف" /></SelectTrigger><SelectContent><SelectItem value="all">الكل</SelectItem><SelectItem value="جاهز للتسليم">جاهز للتسليم</SelectItem><SelectItem value="تم التسليم">تم التسليم</SelectItem></SelectContent></Select>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant={"outline"} className={cn("w-full sm:w-auto justify-start text-left font-normal", !filterStartDate && "text-muted-foreground")}>
-                                <Icon name="Calendar" className="ml-2 h-4 w-4" />
-                                {filterStartDate ? format(filterStartDate, "yyyy/MM/dd") : <span>من تاريخ</span>}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                            <Calendar mode="single" selected={filterStartDate || undefined} onSelect={(d) => setFilterStartDate(d || null)} initialFocus />
-                        </PopoverContent>
-                    </Popover>
-                     <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant={"outline"} className={cn("w-full sm:w-auto justify-start text-left font-normal", !filterEndDate && "text-muted-foreground")}>
-                                <Icon name="Calendar" className="ml-2 h-4 w-4" />
-                                {filterEndDate ? format(filterEndDate, "yyyy/MM/dd") : <span>إلى تاريخ</span>}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                            <Calendar mode="single" selected={filterEndDate || undefined} onSelect={(d) => setFilterEndDate(d || null)} initialFocus />
-                        </PopoverContent>
-                    </Popover>
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="gap-1.5" disabled={selectedSlips.length === 0}>
+                            <Button variant="outline" className="gap-1.5 w-full sm:w-auto" disabled={selectedSlips.length === 0}>
                                 <Icon name="Send" className="h-4 w-4" />
                                 إجراءات ({selectedSlips.length})
                             </Button>

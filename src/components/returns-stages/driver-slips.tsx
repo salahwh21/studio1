@@ -7,12 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/icon';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { parseISO, isWithinInterval, format } from 'date-fns';
+import { parseISO, isWithinInterval } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
 import Link from 'next/link';
-import { generateSlipPdfAction } from '@/app/actions/generate-slip-pdf';
+import { generatePdf } from '@/lib/pdf-generator';
 
 export const DriverSlips = () => {
     const { toast } = useToast();
@@ -47,7 +46,6 @@ export const DriverSlips = () => {
     const handlePrintAction = (slip: DriverSlip) => {
         startTransition(async () => {
             toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة كشف السائق ${slip.driverName}.` });
-
             try {
                 const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
                 const slipData = {
@@ -55,26 +53,14 @@ export const DriverSlips = () => {
                     partyName: slip.driverName,
                     partyLabel: 'اسم السائق',
                     date: slip.date,
-                    branch: 'الفرع الرئيسي',
                     orders: slip.orders.map(o => ({
                         id: o.id, recipient: o.recipient, phone: o.phone, city: o.city, address: o.address,
                         previousStatus: o.previousStatus || o.status || 'غير محدد',
                         itemPrice: o.itemPrice || 0,
                     })),
-                    total: slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0),
                 };
+                await generatePdf(slipData, reportsLogo);
 
-                const result = await generateSlipPdfAction({ slipData, reportsLogo });
-                
-                if (result.success && result.data) {
-                    if (typeof window !== 'undefined') {
-                        const blob = new Blob([Buffer.from(result.data, 'base64')], { type: 'application/pdf' });
-                        const url = URL.createObjectURL(blob);
-                        window.open(url, '_blank');
-                    }
-                } else {
-                    throw new Error(result.error || `فشل إنشاء PDF للكشف ${slip.id}`);
-                }
             } catch (e: any) {
                 console.error("PDF generation error:", e);
                 toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: e.message || 'حدث خطأ أثناء تجهيز الملف.' });
@@ -101,7 +87,10 @@ export const DriverSlips = () => {
                                     <TableCell>{slip.itemCount}</TableCell>
                                     <TableCell className="flex gap-2">
                                         <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}>عرض</Button>
-                                        <Button size="sm" onClick={() => handlePrintAction(slip)} disabled={isPending}>طباعة</Button>
+                                        <Button size="sm" onClick={() => handlePrintAction(slip)} disabled={isPending}>
+                                            {isPending ? <Icon name="Loader2" className="animate-spin ml-2" /> : <Icon name="Printer" className="ml-2" />}
+                                            طباعة
+                                        </Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
