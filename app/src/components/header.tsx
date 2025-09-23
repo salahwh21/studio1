@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -8,7 +7,7 @@ import { useContext } from 'react';
 import Image from 'next/image';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { Button } from './ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -192,3 +191,11 @@ export function AppHeader() {
                         <Icon name="LogOut" className="mr-2 h-4 w-4" />
                         <span>تسجيل الخروج</span>
                     </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+      </header>
+    </TooltipProvider>
+  );
+}

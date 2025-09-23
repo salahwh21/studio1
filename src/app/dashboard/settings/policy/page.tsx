@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import React, { useState, useRef, useMemo, useCallback, useEffect, forwardRef } from 'react';
@@ -516,7 +514,7 @@ export default function PolicyEditorPage() {
       
     const handleRestoreDefaults = () => {
         saveTemplatesToStorage(readyTemplates);
-        toast({ title: "تمت الاستعادة", description: "تم استعادة القوالب الافتراضية بنجاح." });
+        toast({ title: "تمت الاستعادة", description: "تمت استعادة القوالب الافتراضية بنجاح." });
     };
 
   return (
