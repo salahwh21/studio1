@@ -1,5 +1,8 @@
 'use client';
 import React, { useState, useMemo, useTransition } from 'react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { amiriFont } from '@/lib/amiri-vfs.js';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,8 +12,8 @@ import Icon from '@/components/icon';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { parseISO, isWithinInterval, format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import Link from 'next/link';
 import { useSettings } from '@/contexts/SettingsContext';
+import Link from 'next/link';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import Papa from 'papaparse';
@@ -18,10 +21,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useUsersStore } from '@/store/user-store';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import { amiriFont } from '@/lib/amiri-font';
 
+declare module 'jspdf' {
+    interface jsPDF {
+        autoTable: (options: any) => jsPDF;
+    }
+}
 
 export const MerchantSlips = () => {
     const { toast } = useToast();
@@ -71,63 +76,69 @@ export const MerchantSlips = () => {
     
     const handlePrintAction = (slipsToPrint: MerchantSlip[]) => {
         if (slipsToPrint.length === 0) return;
-        startTransition(async () => {
+        startTransition(() => {
             toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${slipsToPrint.length} كشوفات.` });
             try {
                 const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-                for (const slip of slipsToPrint) {
-                    const doc = new jsPDF();
-
-                    doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
+                
+                const doc = new jsPDF();
+                // @ts-ignore
+                if(pdfMake.vfs) { // check if vfs is available
+                    // @ts-ignore
+                    pdfMake.addVirtualFileSystem(amiriFont);
                     doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
                     doc.setFont('Amiri');
-                    doc.setRtl(true);
+                } else {
+                    console.warn("pdfMake.vfs is not available. Arabic characters may not render correctly.");
+                }
+                
+                doc.setRtl(true);
 
-                    if (reportsLogo) {
-                        try {
-                            doc.addImage(reportsLogo, 'PNG', 15, 15, 40, 20);
-                        } catch(e) { console.error("Error adding logo:", e); }
+                slipsToPrint.forEach((slip, slipIndex) => {
+                    if (slipIndex > 0) {
+                        doc.addPage();
                     }
-                    
-                    doc.setFontSize(20);
-                    doc.text('كشف المرتجع', doc.internal.pageSize.getWidth() / 2, 25, { align: 'center' });
+                    if (reportsLogo) {
+                        doc.addImage(reportsLogo, 'PNG', 15, 10, 30, 10);
+                    }
+                    doc.setFontSize(18);
+                    doc.text('كشف المرتجع', 105, 20, { align: 'center' });
+                    doc.setFontSize(10);
+                    doc.text(`التاجر: ${slip.merchant}`, 200, 30, { align: 'right' });
+                    doc.text(`تاريخ الإنشاء: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, 20, 30, { align: 'left' });
 
-                    doc.setFontSize(12);
-                    doc.text(`الكشف: ${slip.id}`, 200, 45, { align: 'right' });
-                    doc.text(`التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, 200, 52, { align: 'right' });
-                    doc.text(`التاجر: ${slip.merchant}`, 200, 59, { align: 'right' });
-                    
-                    const tableColumn = ["المبلغ", "سبب الإرجاع", "الهاتف", "المستلم", "رقم الطلب", "#"];
-                    const tableRows = slip.orders.map((order, index) => [
-                        (order.itemPrice || 0).toFixed(2),
-                        order.previousStatus || order.status || 'غير محدد',
-                        order.phone,
-                        order.recipient,
-                        order.id,
+                    const head = [['#', 'رقم الطلب', 'المستلم', 'الهاتف', 'سبب الإرجاع', 'المبلغ']];
+                    const body = slip.orders.map((order, index) => [
                         index + 1,
+                        order.id,
+                        order.recipient,
+                        order.phone || '-',
+                        order.previousStatus || order.status || 'غير محدد',
+                        (order.itemPrice || 0).toFixed(2),
                     ]);
 
-                    (doc as any).autoTable({
-                        head: [tableColumn],
-                        body: tableRows,
-                        startY: 70,
-                        theme: 'grid',
-                        headStyles: { font: 'Amiri', halign: 'center', fillColor: [230, 230, 230], textColor: 20 },
-                        styles: { font: 'Amiri', halign: 'right' },
-                        columnStyles: { 0: { halign: 'center' }, 5: { halign: 'center' } }
+                    doc.autoTable({
+                        head,
+                        body,
+                        startY: 40,
+                        styles: { font: 'Amiri', halign: 'center' },
+                        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+                        columnStyles: {
+                             1: { halign: 'right' },
+                             2: { halign: 'right' },
+                             3: { halign: 'right' },
+                             4: { halign: 'right' },
+                        },
+                        didDrawPage: (data) => {
+                            // Footer
+                            doc.setFontSize(10);
+                            doc.text('توقيع المستلم: .........................', doc.internal.pageSize.getWidth() - data.settings.margin.right, doc.internal.pageSize.getHeight() - 15, { align: 'right' });
+                        }
                     });
+                });
+                
+                doc.save('merchant_slips.pdf');
 
-                    let finalY = (doc as any).lastAutoTable.finalY;
-
-                    doc.setFontSize(14);
-                    const total = slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
-                    doc.text(`الإجمالي: ${total.toFixed(2)}`, 200, finalY + 15, { align: 'right' });
-                    doc.text(`توقيع المستلم: .........................`, 200, finalY + 30, { align: 'right' });
-                    
-                    doc.save(`${slip.id}.pdf`);
-                    
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                }
             } catch (e: any) {
                 console.error("PDF generation error:", e);
                 toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: e.message || 'حدث خطأ أثناء تجهيز الملف.' });
@@ -187,8 +198,8 @@ export const MerchantSlips = () => {
         <Card>
              <CardHeader>
                 <CardTitle>كشوفات إرجاع الشحنات إلى التجار</CardTitle>
-                <CardDescription>فلترة وبحث في الكشوفات التي تم إنشاؤها.</CardDescription>
-                 <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
+                <CardDescription>عرض وتأكيد تسليم الكشوفات النهائية للتجار.</CardDescription>
+                <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="gap-1.5 w-full sm:w-auto" disabled={selectedSlips.length === 0}>
@@ -257,6 +268,17 @@ export const MerchantSlips = () => {
                     </TableBody>
                 </Table>
             </CardContent>
+            <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+                <DialogContent>
+                    <DialogHeader><DialogTitle>تفاصيل كشف {currentSlip?.id}</DialogTitle></DialogHeader>
+                    <div className="max-h-[60vh] overflow-y-auto">
+                        <Table>
+                             <TableHeader><TableRow><TableHead>رقم الطلب</TableHead><TableHead>سبب الإرجاع</TableHead></TableRow></TableHeader>
+                            <TableBody>{currentSlip?.orders.map(o => (<TableRow key={o.id}><TableCell>{o.id}</TableCell><TableCell><Badge variant="secondary">{o.previousStatus || o.status}</Badge></TableCell></TableRow>))}</TableBody>
+                        </Table>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Card>
     );
 };
