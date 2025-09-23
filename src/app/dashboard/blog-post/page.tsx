@@ -1,4 +1,3 @@
-
 import { UniversalDataFetcherUI } from '@/components/ui/universal-data-fetcher';
 
 type Post = {

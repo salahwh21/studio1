@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -191,11 +192,4 @@ export function AppHeader() {
                         <Icon name="LogOut" className="mr-2 h-4 w-4" />
                         <span>تسجيل الخروج</span>
                     </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-        </div>
-      </header>
-    </TooltipProvider>
-  );
-}
+                </DropdownMenuItem
