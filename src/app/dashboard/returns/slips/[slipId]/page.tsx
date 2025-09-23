@@ -1,14 +1,10 @@
-
       'use client';
 
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
-
 import { useReturnsStore, type DriverSlip, type MerchantSlip } from '@/store/returns-store';
 import { useSettings } from '@/contexts/SettingsContext';
-import { generatePdf } from '@/lib/pdf-utils'; // Import the new PDF generation utility
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,6 +13,16 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { amiriFont } from '@/lib/amiri-font';
+
+declare module 'jspdf' {
+    interface jsPDF {
+        autoTable: (options: any) => jsPDF;
+    }
+}
+
 
 const SlipDetailPageSkeleton = () => (
     <div className="space-y-6">
@@ -78,55 +84,71 @@ export default function SlipDetailPage() {
 
     const handlePrint = async () => {
         if (!slip) return;
-        startTransition(async () => {
+        startTransition(() => {
             toast({ title: 'جاري تحضير الكشف للطباعة...' });
 
-            const title = slipType === 'driver' ? `كشف استلام من السائق` : `كشف إرجاع للتاجر`;
-            const partyName = slipType === 'driver' ? (slip as DriverSlip).driverName : (slip as MerchantSlip).merchant;
-            const partyType = slipType === 'driver' ? 'السائق' : 'التاجر';
-            
-            const content = [
-                { text: title, style: 'header', alignment: 'center' },
-                { text: `رقم الكشف: ${slip.id}`, style: 'subheader' },
-                { text: `التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, style: 'subheader' },
-                { text: `${partyType}: ${partyName}`, style: 'subheader' },
-                { text: '\n' },
-                {
-                    style: 'table',
-                    table: {
-                        headerRows: 1,
-                        widths: ['*', 'auto', 'auto', 'auto', 'auto'],
-                        body: [
-                            ['سبب الإرجاع', 'قيمة التحصيل', 'الهاتف', 'المستلم', 'رقم الطلب'].reverse(),
-                            ...slip.orders.map(order => [
-                                order.previousStatus || order.status,
-                                formatCurrency(order.cod),
-                                order.phone,
-                                order.recipient,
-                                order.id,
-                            ].reverse()),
-                        ]
-                    }
-                },
-                { text: `\n\n\n` },
-                {
-                    columns: [
-                        { text: 'توقيع المستلم: .........................', style: 'signature' },
-                        { text: 'توقيع السائق/المندوب: .........................', style: 'signature' }
-                    ]
-                }
-            ];
-            
-            const logo = settings.login.reportsLogo || settings.login.headerLogo;
-            
             try {
-                await generatePdf(content, logo);
-            } catch (error) {
-                console.error('Failed to generate PDF:', error);
+                const doc = new jsPDF();
+            
+                doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
+                doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+                doc.setFont('Amiri');
+                
+                doc.setRTL(true);
+
+                const title = slipType === 'driver' ? `كشف استلام من السائق` : `كشف إرجاع للتاجر`;
+                const partyName = slipType === 'driver' ? (slip as DriverSlip).driverName : (slip as MerchantSlip).merchant;
+                const partyType = slipType === 'driver' ? 'السائق' : 'التاجر';
+                
+                const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+                if (reportsLogo) {
+                    try {
+                        doc.addImage(reportsLogo, 'PNG', 15, 10, 30, 10);
+                    } catch (e) {
+                        console.error("Error adding logo to PDF:", e);
+                    }
+                }
+
+                doc.setFontSize(18);
+                doc.text(title, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+                
+                doc.setFontSize(12);
+                doc.text(`${partyType}: ${partyName}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
+                doc.text(`التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, doc.internal.pageSize.getWidth() - 15, 40, { align: 'right' });
+                doc.text(`رقم الكشف: ${slip.id}`, 15, 30, { align: 'left' });
+            
+                const tableColumn = ["#", "رقم الطلب", "المستلم", "الهاتف", "سبب الإرجاع", "المبلغ"].reverse();
+                const tableRows = slip.orders.map((order, index) => [
+                    index + 1,
+                    order.id,
+                    order.recipient,
+                    order.phone,
+                    order.previousStatus || order.status,
+                    formatCurrency(order.cod),
+                ].reverse());
+
+                (doc as any).autoTable({
+                    head: [tableColumn],
+                    body: tableRows,
+                    startY: 50,
+                    theme: 'grid',
+                    styles: { font: 'Amiri', halign: 'right' },
+                    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+                });
+
+                const finalY = (doc as any).autoTable.previous.finalY;
+                doc.setFontSize(10);
+                doc.text('توقيع المستلم: .........................', doc.internal.pageSize.getWidth() - 15, finalY + 20, { align: 'right' });
+                doc.text('توقيع مندوب الوميض: .........................', 15, finalY + 20, { align: 'left' });
+
+                doc.save(`${slip.id}.pdf`);
+                 toast({ title: 'تم تجهيز الملف', description: 'بدأ تحميل ملف الـ PDF.' });
+            } catch (error: any) {
+                console.error("PDF generation error:", error);
                 toast({
                     variant: 'destructive',
                     title: 'فشل في إنشاء PDF',
-                    description: 'حدث خطأ غير متوقع أثناء إنشاء الملف.'
+                    description: error.message || 'حدث خطأ غير متوقع أثناء إنشاء الملف.'
                 });
             }
         });
@@ -160,7 +182,7 @@ export default function SlipDetailPage() {
     return (
         <div className="space-y-6">
             <Card>
-                <CardHeader className="flex flex-row justify-between items-start">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
                         <CardTitle className="text-2xl font-bold flex items-center gap-3">
                             <Icon name="FileText" />
@@ -249,5 +271,3 @@ export default function SlipDetailPage() {
     )
 
 }
-
-    

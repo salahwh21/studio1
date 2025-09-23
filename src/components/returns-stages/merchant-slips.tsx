@@ -1,6 +1,7 @@
-
-      'use client';
+'use client';
 import React, { useState, useMemo, useTransition } from 'react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,11 +20,17 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useUsersStore } from '@/store/user-store';
-import { generatePdf } from '@/lib/pdf-utils';
+import { amiriFont } from '@/lib/amiri-font';
+
+declare module 'jspdf' {
+    interface jsPDF {
+        autoTable: (options: any) => jsPDF;
+    }
+}
 
 export const MerchantSlips = () => {
     const { toast } = useToast();
-    const { settings } = useSettings();
+    const { settings, formatCurrency } = useSettings();
     const { users } = useUsersStore();
     const { merchantSlips, updateMerchantSlipStatus } = useReturnsStore();
     const [isPending, startTransition] = useTransition();
@@ -70,50 +77,75 @@ export const MerchantSlips = () => {
         startTransition(async () => {
             if (slipsToPrint.length === 0) return;
             toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${slipsToPrint.length} كشف.` });
-            
-            const content = slipsToPrint.map((slip, index) => {
-                const slipContent = [
-                    { text: `كشف إرجاع بضاعة: ${slip.merchant}`, style: 'header', alignment: 'center' },
-                    { text: `تاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, style: 'subheader', alignment: 'center' },
-                    { text: `رقم الكشف: ${slip.id}`, style: 'subheader', alignment: 'center' },
-                    { text: '\n' },
-                    {
-                        style: 'table',
-                        table: {
-                            headerRows: 1,
-                            widths: ['*', 'auto', 'auto', 'auto'],
-                            body: [
-                                ['سبب الإرجاع', 'الهاتف', 'المستلم', 'رقم الطلب'].reverse(),
-                                ...slip.orders.map(order => [
-                                    order.previousStatus || order.status,
-                                    order.phone,
-                                    order.recipient,
-                                    order.id,
-                                ].reverse()),
-                            ]
-                        }
-                    },
-                    { text: `\n\n\n` },
-                    { text: 'توقيع المستلم: .........................', style: 'signature' }
-                ];
-                if (index < slipsToPrint.length - 1) {
-                    // @ts-ignore
-                    slipContent.push({ text: '', pageBreak: 'after' });
-                }
-                return slipContent;
-            }).flat();
-
-            const logo = settings.login.reportsLogo || settings.login.headerLogo;
-
             try {
-                await generatePdf(content, logo);
+                const doc = new jsPDF();
+                
+                doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
+                doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+                doc.setFont('Amiri');
+
+                const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+
+                slipsToPrint.forEach((slip, slipIndex) => {
+                    if (slipIndex > 0) doc.addPage();
+                    doc.setRTL(true);
+
+                    if (reportsLogo) {
+                        try {
+                            doc.addImage(reportsLogo, 'PNG', 15, 10, 30, 10);
+                        } catch (e) {
+                            console.error("Error adding logo to PDF:", e);
+                        }
+                    }
+
+                    doc.setFontSize(18);
+                    doc.text(`كشف إرجاع بضاعة: ${slip.merchant}`, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+                    
+                    doc.setFontSize(10);
+                    doc.text(`تاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
+                    doc.text(`رقم الكشف: ${slip.id}`, 15, 30, { align: 'left' });
+
+                    const tableColumn = ["#", "رقم الطلب", "المستلم", "الهاتف", "سبب الإرجاع", "المبلغ"];
+                    const tableRows = slip.orders.map((order, index) => [
+                        index + 1,
+                        order.id,
+                        order.recipient,
+                        order.phone,
+                        order.previousStatus || order.status,
+                        formatCurrency(order.cod),
+                    ]);
+
+                    (doc as any).autoTable({
+                        head: [tableColumn],
+                        body: tableRows,
+                        startY: 45,
+                        theme: 'grid',
+                        styles: { font: 'Amiri', halign: 'center' },
+                        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+                        columnStyles: {
+                             1: { halign: 'right' },
+                             2: { halign: 'right' },
+                             3: { halign: 'center' },
+                             4: { halign: 'right' },
+                             5: { halign: 'right' },
+                        },
+                        didDrawPage: (data: any) => {
+                            // Footer
+                            doc.setFontSize(10);
+                            doc.text('توقيع المستلم: .........................', doc.internal.pageSize.getWidth() - data.settings.margin.right, doc.internal.pageSize.height - 15, { align: 'right' });
+                            doc.text('توقيع مندوب الوميض: .........................', data.settings.margin.left, doc.internal.pageSize.height - 15, { align: 'left' });
+                        }
+                    });
+                });
+                
+                doc.save('merchant_return_slips.pdf');
             } catch (e: any) {
                 console.error("PDF generation error:", e);
                 toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: e.message || 'حدث خطأ أثناء تجهيز الملف.' });
             }
         });
     };
-
+    
     const handleSendWhatsApp = () => {
         if (selectedSlipData.length === 0) return;
         selectedSlipData.forEach(slip => {
@@ -148,7 +180,7 @@ export const MerchantSlips = () => {
         );
 
         const csv = Papa.unparse(data);
-        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.setAttribute('download', 'merchant_slips_export.csv');
@@ -156,12 +188,12 @@ export const MerchantSlips = () => {
         link.click();
         document.body.removeChild(link);
     };
-    
+
     const handleSelectAll = (checked: boolean) => {
         setSelectedSlips(checked ? filteredSlips.map(s => s.id) : []);
     }
     const areAllSelected = filteredSlips.length > 0 && selectedSlips.length === filteredSlips.length;
-    
+
     const handleShowDetails = (slip: MerchantSlip) => {
         setCurrentSlip(slip);
         setShowDetailsDialog(true);
@@ -170,10 +202,10 @@ export const MerchantSlips = () => {
     return (
         <div className="space-y-6">
             <Card>
-                 <CardHeader>
+                <CardHeader>
                     <CardTitle>كشوفات إرجاع الشحنات للتجار</CardTitle>
                     <CardDescription>عرض وتأكيد تسليم الكشوفات النهائية للتجار.</CardDescription>
-                    <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
+                     <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
                          <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="gap-1.5 w-full sm:w-auto" disabled={selectedSlips.length === 0}>
@@ -183,7 +215,7 @@ export const MerchantSlips = () => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                  <DropdownMenuItem onSelect={() => handlePrintAction(selectedSlipData)} disabled={isPending}>
-                                    <Icon name="Printer" className="ml-2 h-4 w-4" />
+                                    {isPending ? <Icon name="Loader2" className="animate-spin ml-2" /> : <Icon name="Printer" className="ml-2 h-4 w-4" />}
                                     طباعة المحدد (PDF)
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
@@ -202,7 +234,17 @@ export const MerchantSlips = () => {
                 </CardHeader>
                 <CardContent>
                      <Table>
-                        <TableHeader><TableRow><TableHead className="w-12 border-l text-center"><Checkbox onCheckedChange={handleSelectAll} checked={areAllSelected}/></TableHead><TableHead className="border-l text-center whitespace-nowrap">رقم الكشف</TableHead><TableHead className="border-l text-center whitespace-nowrap">التاجر</TableHead><TableHead className="border-l text-center whitespace-nowrap">تاريخ الإنشاء</TableHead><TableHead className="border-l text-center whitespace-nowrap">عدد الشحنات</TableHead><TableHead className="border-l text-center whitespace-nowrap">الحالة</TableHead><TableHead className="text-center whitespace-nowrap">إجراءات</TableHead></TableRow></TableHeader>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-12 border-l text-center"><Checkbox onCheckedChange={handleSelectAll} checked={areAllSelected}/></TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">رقم الكشف</TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">التاجر</TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">تاريخ الإنشاء</TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">عدد الشحنات</TableHead>
+                                <TableHead className="border-l text-center whitespace-nowrap">الحالة</TableHead>
+                                <TableHead className="text-center whitespace-nowrap">إجراءات</TableHead>
+                            </TableRow>
+                        </TableHeader>
                         <TableBody>
                             {filteredSlips.length === 0 ? (
                                 <TableRow><TableCell colSpan={7} className="h-24 text-center">لا توجد كشوفات.</TableCell></TableRow>
@@ -250,5 +292,3 @@ export const MerchantSlips = () => {
         </div>
     );
 };
-
-    
