@@ -26,7 +26,7 @@ const PrepareForMerchants = dynamic(() => import('@/components/returns-stages/pr
   loading: () => <LoadingSkeleton />,
   ssr: false,
 });
-const MerchantSlips = dynamic(() => import('@/services/pdf-export-service').then(mod => mod.MerchantSlips), {
+const MerchantSlips = dynamic(() => import('@/components/returns-stages/merchant-slips').then(mod => mod.MerchantSlips), {
   loading: () => <LoadingSkeleton />,
   ssr: false,
 });

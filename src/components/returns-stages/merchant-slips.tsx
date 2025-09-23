@@ -81,7 +81,7 @@ export const MerchantSlips = () => {
                     const slipData = {
                         id: slip.id,
                         partyName: slip.merchant,
-                        partyLabel: 'اسم التاجر',
+                        partyLabel: 'التاجر',
                         date: slip.date,
                         branch: slip.orders[0]?.city || 'غير متوفر',
                         orders: slip.orders.map(o => ({
@@ -295,5 +295,3 @@ export const MerchantSlips = () => {
         </div>
     );
 };
-
-    
