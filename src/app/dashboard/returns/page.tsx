@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useRef, useCallback } from 'react';
@@ -189,11 +190,7 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
 
     onManifestCreated(newManifest);
     toast({ title: 'تم إنشاء كشف الاستلام', description: `تم إنشاء كشف استلام للسائق ${driver.name} بـ ${receivedItems.length} شحنات.` });
-
-    setTimeout(() => {
-        print(printableRef.current, 'كشف استلام مرتجعات', `كشف استلام من السائق ${driver.name}`, 'تم الاستلام بواسطة قسم المرتجعات', '/logo.png');
-    }, 100);
-
+    
     setReceivedItems([]);
     setSelectedOrderIds([]);
     setSelectedDriverId(null);
@@ -314,7 +311,7 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
         <CardFooter>
             <Button onClick={createReceivingManifest} className="w-full" size="lg" disabled={receivedItems.length === 0}>
                 <Icon name="FileCheck" className="ml-2" />
-                إنشاء وطباعة كشف الاستلام
+                إنشاء كشف الاستلام
             </Button>
         </CardFooter>
       </Card>
@@ -662,3 +659,4 @@ export default function ReturnsManagementPage() {
         </div>
     );
 }
+
