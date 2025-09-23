@@ -18,7 +18,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useUsersStore } from '@/store/user-store';
-import { generatePdf } from '@/lib/pdf-generator';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { amiriFont } from '@/lib/amiri-font';
+
 
 export const MerchantSlips = () => {
     const { toast } = useToast();
@@ -73,20 +76,57 @@ export const MerchantSlips = () => {
             try {
                 const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
                 for (const slip of slipsToPrint) {
-                    const slipData = {
-                        id: slip.id,
-                        partyName: slip.merchant,
-                        partyLabel: 'التاجر',
-                        date: slip.date,
-                        orders: slip.orders.map(o => ({
-                            id: o.id || '', recipient: o.recipient || '', phone: o.phone || '', city: o.city || '',
-                            address: o.address || '', previousStatus: o.previousStatus || o.status || 'غير محدد',
-                            itemPrice: o.itemPrice || 0,
-                        })),
-                    };
-                    await generatePdf(slipData, reportsLogo);
-                    // Add a small delay between each PDF generation to prevent browser hanging
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    const doc = new jsPDF();
+
+                    doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
+                    doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+                    doc.setFont('Amiri');
+                    doc.setRtl(true);
+
+                    if (reportsLogo) {
+                        try {
+                            doc.addImage(reportsLogo, 'PNG', 15, 15, 40, 20);
+                        } catch(e) { console.error("Error adding logo:", e); }
+                    }
+                    
+                    doc.setFontSize(20);
+                    doc.text('كشف المرتجع', doc.internal.pageSize.getWidth() / 2, 25, { align: 'center' });
+
+                    doc.setFontSize(12);
+                    doc.text(`الكشف: ${slip.id}`, 200, 45, { align: 'right' });
+                    doc.text(`التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, 200, 52, { align: 'right' });
+                    doc.text(`التاجر: ${slip.merchant}`, 200, 59, { align: 'right' });
+                    
+                    const tableColumn = ["المبلغ", "سبب الإرجاع", "الهاتف", "المستلم", "رقم الطلب", "#"];
+                    const tableRows = slip.orders.map((order, index) => [
+                        (order.itemPrice || 0).toFixed(2),
+                        order.previousStatus || order.status || 'غير محدد',
+                        order.phone,
+                        order.recipient,
+                        order.id,
+                        index + 1,
+                    ]);
+
+                    (doc as any).autoTable({
+                        head: [tableColumn],
+                        body: tableRows,
+                        startY: 70,
+                        theme: 'grid',
+                        headStyles: { font: 'Amiri', halign: 'center', fillColor: [230, 230, 230], textColor: 20 },
+                        styles: { font: 'Amiri', halign: 'right' },
+                        columnStyles: { 0: { halign: 'center' }, 5: { halign: 'center' } }
+                    });
+
+                    let finalY = (doc as any).lastAutoTable.finalY;
+
+                    doc.setFontSize(14);
+                    const total = slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
+                    doc.text(`الإجمالي: ${total.toFixed(2)}`, 200, finalY + 15, { align: 'right' });
+                    doc.text(`توقيع المستلم: .........................`, 200, finalY + 30, { align: 'right' });
+                    
+                    doc.save(`${slip.id}.pdf`);
+                    
+                    await new Promise(resolve => setTimeout(resolve, 300));
                 }
             } catch (e: any) {
                 console.error("PDF generation error:", e);
@@ -197,7 +237,7 @@ export const MerchantSlips = () => {
                                  <TableCell className="border-l text-center"><Checkbox checked={selectedSlips.includes(slip.id)} onCheckedChange={(checked) => setSelectedSlips(p => checked ? [...p, slip.id] : p.filter(id => id !== slip.id))} /></TableCell>
                                 <TableCell className="font-mono border-l text-center whitespace-nowrap"><Link href={`/dashboard/returns/slips/${slip.id}`} className="text-primary hover:underline">{slip.id}</Link></TableCell>
                                 <TableCell className="border-l text-center whitespace-nowrap">{slip.merchant}</TableCell>
-                                <TableCell className="border-l text-center whitespace-nowrap">{slip.date}</TableCell>
+                                <TableCell className="border-l text-center whitespace-nowrap">{new Date(slip.date).toLocaleDateString('ar-EG')}</TableCell>
                                 <TableCell className="border-l text-center whitespace-nowrap">{slip.items}</TableCell>
                                 <TableCell className="border-l text-center whitespace-nowrap">
                                     <Badge variant={slip.status === 'تم التسليم' ? 'default' : 'outline'} className={slip.status === 'تم التسليم' ? 'bg-green-100 text-green-800' : ''}>
