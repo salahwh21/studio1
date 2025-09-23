@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 import { useReturnsStore, type DriverSlip, type MerchantSlip } from '@/store/returns-store';
-import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useSettings } from '@/contexts/SettingsContext';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +15,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Icon from '@/components/icon';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+
+// @ts-ignore
+import { amiriFont } from '@/lib/amiri-font-base64';
+
+declare module 'jspdf' {
+    interface jsPDF {
+        autoTable: (options: any) => jsPDF;
+    }
+}
 
 const SlipDetailPageSkeleton = () => (
     <div className="space-y-6">
@@ -71,6 +81,62 @@ export default function SlipDetailPage() {
 
     }, [slipId, driverSlips, merchantSlips]);
 
+    const handlePrint = () => {
+        if (!slip) return;
+        
+        const doc = new jsPDF();
+
+        doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
+        doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+        doc.setFont('Amiri');
+        doc.setRTL(true);
+
+        const title = slipType === 'driver' ? `كشف استلام من السائق` : `كشف إرجاع للتاجر`;
+        const partyName = slipType === 'driver' ? (slip as DriverSlip).driverName : (slip as MerchantSlip).merchant;
+        const partyType = slipType === 'driver' ? 'السائق' : 'التاجر';
+
+        doc.setFontSize(18);
+        doc.text(title, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text(`${partyType}: ${partyName}`, doc.internal.pageSize.getWidth() - 15, 35, { align: 'right' });
+        doc.text(`التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, doc.internal.pageSize.getWidth() - 15, 45, { align: 'right' });
+        doc.text(`رقم الكشف: ${slip.id}`, 15, 35, { align: 'left' });
+
+        const tableColumn = ["سبب الإرجاع", "قيمة التحصيل", "الهاتف", "المستلم", "رقم الطلب"];
+        const tableRows: (string | number)[][] = [];
+
+        slip.orders.forEach(order => {
+            const orderData = [
+                order.previousStatus || order.status,
+                formatCurrency(order.cod),
+                order.phone,
+                order.recipient,
+                order.id,
+            ];
+            tableRows.push(orderData);
+        });
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 55,
+            theme: 'grid',
+            styles: {
+                font: 'Amiri',
+                halign: 'right',
+                cellPadding: 2,
+                fontSize: 10,
+            },
+            headStyles: {
+                fillColor: [41, 128, 185],
+                textColor: 255,
+                fontStyle: 'bold',
+            },
+        });
+
+        doc.save(`${slip.id}.pdf`);
+    };
+
     if (isLoading) {
         return <SlipDetailPageSkeleton />;
     }
@@ -84,7 +150,7 @@ export default function SlipDetailPage() {
                 </CardHeader>
                 <CardContent>
                     <Button asChild>
-                        <Link href="/dashboard/returns/merchant-slips">العودة إلى كشوفات التجار</Link>
+                        <Link href="/dashboard/returns">العودة للمرتجعات</Link>
                     </Button>
                 </CardContent>
             </Card>
@@ -94,6 +160,7 @@ export default function SlipDetailPage() {
     const title = slipType === 'driver' ? `تفاصيل كشف استلام من السائق` : `تفاصيل كشف إرجاع للتاجر`;
     const partyName = slipType === 'driver' ? (slip as DriverSlip).driverName : (slip as MerchantSlip).merchant;
     const partyType = slipType === 'driver' ? 'السائق' : 'التاجر';
+    const totalCOD = slip.orders.reduce((acc, order) => acc + (order.cod || 0), 0);
 
     return (
         <div className="space-y-6">
@@ -106,11 +173,17 @@ export default function SlipDetailPage() {
                         </CardTitle>
                         <CardDescription className="mt-2 font-mono text-base">{slip.id}</CardDescription>
                     </div>
-                     <Button variant="outline" size="icon" asChild>
-                        <Link href={slipType === 'driver' ? "/dashboard/returns/driver-slips" : "/dashboard/returns/merchant-slips"}>
-                            <Icon name="ArrowLeft" className="h-4 w-4" />
-                        </Link>
-                    </Button>
+                     <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={handlePrint}>
+                            <Icon name="Printer" className="ml-2 h-4 w-4" />
+                            طباعة
+                        </Button>
+                        <Button variant="outline" size="icon" asChild>
+                            <Link href="/dashboard/returns">
+                                <Icon name="ArrowLeft" className="h-4 w-4" />
+                            </Link>
+                        </Button>
+                     </div>
                 </CardHeader>
                 <CardContent>
                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -125,6 +198,10 @@ export default function SlipDetailPage() {
                         <div className="p-3 bg-muted rounded-md space-y-1">
                             <p className="text-muted-foreground">عدد الطلبات</p>
                             <p className="font-semibold">{slip.orders.length}</p>
+                        </div>
+                        <div className="p-3 bg-muted rounded-md space-y-1">
+                            <p className="text-muted-foreground">إجمالي قيمة المرتجعات</p>
+                            <p className="font-semibold">{formatCurrency(totalCOD)}</p>
                         </div>
                          {slipType === 'merchant' && (
                              <div className="p-3 bg-muted rounded-md space-y-1">
@@ -177,3 +254,5 @@ export default function SlipDetailPage() {
     )
 
 }
+
+    
