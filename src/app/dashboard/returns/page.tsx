@@ -80,11 +80,11 @@ export default function ReturnsPage() {
        <Tabs defaultValue={returnSections[0].value} className="w-full">
         <TabsList className="grid w-full grid-cols-1 md:grid-cols-4 h-auto">
             {returnSections.map(section => (
-                <TabsTrigger key={section.value} value={section.value} className="h-auto p-4 flex flex-col md:flex-row items-start md:items-center gap-4 text-right md:text-center">
-                     <div className="bg-primary/10 text-primary p-3 rounded-lg group-hover:scale-110 transition-transform">
+                <TabsTrigger key={section.value} value={section.value} className="h-auto p-4 flex flex-col items-center gap-4 text-center md:flex-row md:text-right">
+                     <div className="bg-primary/10 text-primary p-3 rounded-lg group-data-[state=active]:scale-110 transition-transform">
                         <Icon name={section.icon as any} className="h-6 w-6" />
                      </div>
-                     <div>
+                     <div className="text-right">
                         <p className="font-bold">{section.title}</p>
                         <p className="text-xs text-muted-foreground hidden md:block">{section.description}</p>
                      </div>

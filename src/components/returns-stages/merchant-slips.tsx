@@ -167,131 +167,103 @@ export const MerchantSlips = () => {
     const areAllSelected = filteredSlips.length > 0 && selectedSlips.length === filteredSlips.length;
 
     return (
-        <div dir="rtl">
-            <Card>
-                 <CardHeader>
-                    <CardTitle>كشوفات إرجاع الشحنات إلى التجار</CardTitle>
-                    <CardDescription>فلترة وبحث في الكشوفات التي تم إنشاؤها.</CardDescription>
-                     <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
-                        <Select onValueChange={(v) => setFilterMerchant(v === 'all' ? null : v)} value={filterMerchant || 'all'}><SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="اختيار التاجر" /></SelectTrigger><SelectContent><SelectItem value="all">كل التجار</SelectItem>{Array.from(new Set(merchantSlips.map(s=>s.merchant))).map((m) => (<SelectItem key={m} value={m}>{m}</SelectItem>))}</SelectContent></Select>
-                        <Select onValueChange={(v) => setFilterStatus(v === 'all' ? null : v)} value={filterStatus || 'all'}><SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="حالة الكشف" /></SelectTrigger><SelectContent><SelectItem value="all">الكل</SelectItem><SelectItem value="جاهز للتسليم">جاهز للتسليم</SelectItem><SelectItem value="تم التسليم">تم التسليم</SelectItem></SelectContent></Select>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant={"outline"} className={cn("w-full sm:w-auto justify-start text-left font-normal", !filterStartDate && "text-muted-foreground")}>
-                                    <Icon name="Calendar" className="ml-2 h-4 w-4" />
-                                    {filterStartDate ? format(filterStartDate, "yyyy/MM/dd") : <span>من تاريخ</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar mode="single" selected={filterStartDate || undefined} onSelect={(d) => setFilterStartDate(d || null)} initialFocus />
-                            </PopoverContent>
-                        </Popover>
-                         <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant={"outline"} className={cn("w-full sm:w-auto justify-start text-left font-normal", !filterEndDate && "text-muted-foreground")}>
-                                    <Icon name="Calendar" className="ml-2 h-4 w-4" />
-                                    {filterEndDate ? format(filterEndDate, "yyyy/MM/dd") : <span>إلى تاريخ</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar mode="single" selected={filterEndDate || undefined} onSelect={(d) => setFilterEndDate(d || null)} initialFocus />
-                            </PopoverContent>
-                        </Popover>
-                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className="gap-1.5" disabled={selectedSlips.length === 0}>
-                                    <Icon name="Send" className="h-4 w-4" />
-                                    إجراءات ({selectedSlips.length})
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                 <DropdownMenuItem onSelect={() => handlePrintAction(selectedSlipData)} disabled={isPending}>
-                                    <Icon name="Printer" className="ml-2 h-4 w-4" />
-                                    طباعة المحدد (PDF)
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={handleExport}>
-                                    <Icon name="FileDown" className="ml-2 h-4 w-4" />
-                                    تصدير المحدد (CSV)
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={handleSendWhatsApp}>
-                                    <Icon name="MessageSquare" className="ml-2 h-4 w-4" />
-                                    إرسال المحدد (واتساب)
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-12 border-l text-center"><Checkbox onCheckedChange={handleSelectAll} checked={areAllSelected}/></TableHead>
-                                <TableHead className="border-l text-center whitespace-nowrap">رقم الكشف</TableHead>
-                                <TableHead className="border-l text-center whitespace-nowrap">التاجر</TableHead>
-                                <TableHead className="border-l text-center whitespace-nowrap">تاريخ الإنشاء</TableHead>
-                                <TableHead className="border-l text-center whitespace-nowrap">عدد الشحنات</TableHead>
-                                <TableHead className="border-l text-center whitespace-nowrap">الحالة</TableHead>
-                                <TableHead className="text-center whitespace-nowrap">إجراءات</TableHead>
+        <Card>
+             <CardHeader>
+                <CardTitle>كشوفات إرجاع الشحنات إلى التجار</CardTitle>
+                <CardDescription>فلترة وبحث في الكشوفات التي تم إنشاؤها.</CardDescription>
+                 <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
+                    <Select onValueChange={(v) => setFilterMerchant(v === 'all' ? null : v)} value={filterMerchant || 'all'}><SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="اختيار التاجر" /></SelectTrigger><SelectContent><SelectItem value="all">كل التجار</SelectItem>{Array.from(new Set(merchantSlips.map(s=>s.merchant))).map((m) => (<SelectItem key={m} value={m}>{m}</SelectItem>))}</SelectContent></Select>
+                    <Select onValueChange={(v) => setFilterStatus(v === 'all' ? null : v)} value={filterStatus || 'all'}><SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="حالة الكشف" /></SelectTrigger><SelectContent><SelectItem value="all">الكل</SelectItem><SelectItem value="جاهز للتسليم">جاهز للتسليم</SelectItem><SelectItem value="تم التسليم">تم التسليم</SelectItem></SelectContent></Select>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant={"outline"} className={cn("w-full sm:w-auto justify-start text-left font-normal", !filterStartDate && "text-muted-foreground")}>
+                                <Icon name="Calendar" className="ml-2 h-4 w-4" />
+                                {filterStartDate ? format(filterStartDate, "yyyy/MM/dd") : <span>من تاريخ</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar mode="single" selected={filterStartDate || undefined} onSelect={(d) => setFilterStartDate(d || null)} initialFocus />
+                        </PopoverContent>
+                    </Popover>
+                     <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant={"outline"} className={cn("w-full sm:w-auto justify-start text-left font-normal", !filterEndDate && "text-muted-foreground")}>
+                                <Icon name="Calendar" className="ml-2 h-4 w-4" />
+                                {filterEndDate ? format(filterEndDate, "yyyy/MM/dd") : <span>إلى تاريخ</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar mode="single" selected={filterEndDate || undefined} onSelect={(d) => setFilterEndDate(d || null)} initialFocus />
+                        </PopoverContent>
+                    </Popover>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="gap-1.5" disabled={selectedSlips.length === 0}>
+                                <Icon name="Send" className="h-4 w-4" />
+                                إجراءات ({selectedSlips.length})
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                             <DropdownMenuItem onSelect={() => handlePrintAction(selectedSlipData)} disabled={isPending}>
+                                <Icon name="Printer" className="ml-2 h-4 w-4" />
+                                طباعة المحدد (PDF)
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={handleExport}>
+                                <Icon name="FileDown" className="ml-2 h-4 w-4" />
+                                تصدير المحدد (CSV)
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={handleSendWhatsApp}>
+                                <Icon name="MessageSquare" className="ml-2 h-4 w-4" />
+                                إرسال المحدد (واتساب)
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-12 border-l text-center"><Checkbox onCheckedChange={handleSelectAll} checked={areAllSelected}/></TableHead>
+                            <TableHead className="border-l text-center whitespace-nowrap">رقم الكشف</TableHead>
+                            <TableHead className="border-l text-center whitespace-nowrap">التاجر</TableHead>
+                            <TableHead className="border-l text-center whitespace-nowrap">تاريخ الإنشاء</TableHead>
+                            <TableHead className="border-l text-center whitespace-nowrap">عدد الشحنات</TableHead>
+                            <TableHead className="border-l text-center whitespace-nowrap">الحالة</TableHead>
+                            <TableHead className="text-center whitespace-nowrap">إجراءات</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredSlips.length === 0 ? (
+                            <TableRow><TableCell colSpan={7} className="h-24 text-center">لا توجد كشوفات تطابق الفلترة.</TableCell></TableRow>
+                        ) : (
+                            filteredSlips.map(slip => (
+                            <TableRow key={slip.id} data-state={selectedSlips.includes(slip.id) ? "selected" : "unselected"}>
+                                 <TableCell className="border-l text-center"><Checkbox checked={selectedSlips.includes(slip.id)} onCheckedChange={(checked) => setSelectedSlips(p => checked ? [...p, slip.id] : p.filter(id => id !== slip.id))} /></TableCell>
+                                <TableCell className="font-mono border-l text-center whitespace-nowrap"><Link href={`/dashboard/returns/slips/${slip.id}`} className="text-primary hover:underline">{slip.id}</Link></TableCell>
+                                <TableCell className="border-l text-center whitespace-nowrap">{slip.merchant}</TableCell>
+                                <TableCell className="border-l text-center whitespace-nowrap">{slip.date}</TableCell>
+                                <TableCell className="border-l text-center whitespace-nowrap">{slip.items}</TableCell>
+                                <TableCell className="border-l text-center whitespace-nowrap">
+                                    <Badge variant={slip.status === 'تم التسليم' ? 'default' : 'outline'} className={slip.status === 'تم التسليم' ? 'bg-green-100 text-green-800' : ''}>
+                                        {slip.status}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
+                                    <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
+                                    {slip.status === 'جاهز للتسليم' && (
+                                        <Button size="sm" onClick={() => confirmSlipDelivery(slip.id)}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
+                                    )}
+                                    <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])} disabled={isPending}><Icon name="Printer" className="h-4 w-4" /></Button>
+                                </TableCell>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredSlips.length === 0 ? (
-                                <TableRow><TableCell colSpan={7} className="h-24 text-center">لا توجد كشوفات تطابق الفلترة.</TableCell></TableRow>
-                            ) : (
-                                filteredSlips.map(slip => (
-                                <TableRow key={slip.id} data-state={selectedSlips.includes(slip.id) ? "selected" : "unselected"}>
-                                     <TableCell className="border-l text-center"><Checkbox checked={selectedSlips.includes(slip.id)} onCheckedChange={(checked) => setSelectedSlips(p => checked ? [...p, slip.id] : p.filter(id => id !== slip.id))} /></TableCell>
-                                    <TableCell className="font-mono border-l text-center whitespace-nowrap"><Link href={`/dashboard/returns/slips/${slip.id}`} className="text-primary hover:underline">{slip.id}</Link></TableCell>
-                                    <TableCell className="border-l text-center whitespace-nowrap">{slip.merchant}</TableCell>
-                                    <TableCell className="border-l text-center whitespace-nowrap">{slip.date}</TableCell>
-                                    <TableCell className="border-l text-center whitespace-nowrap">{slip.items}</TableCell>
-                                    <TableCell className="border-l text-center whitespace-nowrap">
-                                        <Badge variant={slip.status === 'تم التسليم' ? 'default' : 'outline'} className={slip.status === 'تم التسليم' ? 'bg-green-100 text-green-800' : ''}>
-                                            {slip.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-left flex gap-2 justify-center whitespace-nowrap">
-                                        <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4" /> عرض</Button>
-                                        {slip.status === 'جاهز للتسليم' && (
-                                            <Button size="sm" onClick={() => confirmSlipDelivery(slip.id)}><Icon name="Check" className="ml-2 h-4 w-4" /> تأكيد التسليم</Button>
-                                        )}
-                                        <Button variant="ghost" size="icon" onClick={() => handlePrintAction([slip])} disabled={isPending}><Icon name="Printer" className="h-4 w-4" /></Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-
-            <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-                <DialogContent className="sm:max-w-xl">
-                    <DialogHeader>
-                        <DialogTitle>تفاصيل كشف الإرجاع {currentSlip?.id}</DialogTitle>
-                    </DialogHeader>
-                    <div className="max-h-[60vh] overflow-y-auto">
-                        <Table>
-                             <TableHeader>
-                                <TableRow>
-                                    <TableHead>رقم الطلب</TableHead>
-                                    <TableHead>سبب الإرجاع</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {currentSlip?.orders.map(o => (
-                                    <TableRow key={o.id}>
-                                        <TableCell>{o.id}</TableCell>
-                                        <TableCell><Badge variant="secondary">{o.previousStatus || o.status}</Badge></TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </DialogContent>
-            </Dialog>
-        </div>
+                        ))
+                        )}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
     );
 };
