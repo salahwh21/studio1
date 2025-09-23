@@ -52,6 +52,7 @@ type OrdersState = {
   nextOrderNumber: number;
   setOrders: (orders: Order[]) => void;
   updateOrderStatus: (orderId: string, newStatus: Order['status']) => void;
+  bulkUpdateOrderStatus: (orderIds: string[], newStatus: Order['status']) => void;
   updateOrderField: (orderId: string, field: keyof Order, value: any) => void;
   deleteOrders: (orderIds: string[]) => void;
   addOrder: (order: Omit<Order, 'id' | 'orderNumber' | 'previousStatus'>) => Order;
@@ -97,6 +98,16 @@ export const ordersStore = create<OrdersState>()(immer((set, get) => {
                 order.previousStatus = order.status;
                 order.status = newStatus;
             }
+            }),
+
+        bulkUpdateOrderStatus: (orderIds, newStatus) =>
+            set((state) => {
+                state.orders.forEach(order => {
+                    if (orderIds.includes(order.id)) {
+                        order.previousStatus = order.status;
+                        order.status = newStatus;
+                    }
+                });
             }),
 
         updateOrderField: (orderId, field, value) => 
@@ -157,5 +168,3 @@ export const ordersStore = create<OrdersState>()(immer((set, get) => {
 
 // Correctly define the hook for React components
 export const useOrdersStore: UseBoundStore<StoreApi<OrdersState>> = ordersStore;
-
-    
