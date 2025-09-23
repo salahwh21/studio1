@@ -14,7 +14,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import Link from 'next/link';
 import { generateSlipPdfAction } from '@/app/actions/generate-slip-pdf';
 
-export default function DriverSlipsPage() {
+export const DriverSlips = () => {
     const { toast } = useToast();
     const { settings } = useSettings();
     const { driverSlips } = useReturnsStore();
@@ -124,5 +124,3 @@ export default function DriverSlipsPage() {
         </div>
     );
 };
-
-    

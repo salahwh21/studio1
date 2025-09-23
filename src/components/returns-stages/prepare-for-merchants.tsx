@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/icon';
 
-export default function PrepareForMerchantsPage() {
+export const PrepareForMerchants = () => {
     const { toast } = useToast();
     const { orders, updateOrderStatus } = useOrdersStore();
     const { addMerchantSlip } = useReturnsStore();
@@ -143,4 +143,3 @@ export default function PrepareForMerchantsPage() {
         </div>
     );
 }
-

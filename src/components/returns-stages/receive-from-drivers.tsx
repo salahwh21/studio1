@@ -13,7 +13,7 @@ import Icon from '@/components/icon';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 
-export default function ReceiveFromDriversPage() {
+export const ReceiveFromDrivers = () => {
   const { toast } = useToast();
   const { orders, updateOrderStatus } = useOrdersStore();
   const { users } = useUsersStore();
