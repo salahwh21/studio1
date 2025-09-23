@@ -78,13 +78,17 @@ export default function ReturnsPage() {
       </Card>
       
        <Tabs defaultValue={returnSections[0].value} className="w-full">
-        <TabsList className="grid w-full grid-cols-1 md:grid-cols-4 h-auto">
+        <TabsList className="h-auto p-2 flex flex-col md:flex-row gap-2 bg-transparent">
             {returnSections.map(section => (
-                <TabsTrigger key={section.value} value={section.value} className="h-auto p-4 flex flex-col items-center gap-4 text-center md:flex-row md:text-right">
-                     <div className="bg-primary/10 text-primary p-3 rounded-lg group-data-[state=active]:scale-110 transition-transform">
+                <TabsTrigger 
+                    key={section.value} 
+                    value={section.value} 
+                    className="w-full h-auto p-4 flex flex-col items-center gap-2 text-center md:flex-row md:text-right md:items-start data-[state=active]:bg-card data-[state=active]:shadow-md data-[state=active]:border-primary/20 data-[state=active]:border-b-2"
+                >
+                     <div className="bg-primary/10 text-primary p-3 rounded-lg">
                         <Icon name={section.icon as any} className="h-6 w-6" />
                      </div>
-                     <div className="text-right">
+                     <div className="flex-1">
                         <p className="font-bold">{section.title}</p>
                         <p className="text-xs text-muted-foreground hidden md:block">{section.description}</p>
                      </div>
