@@ -13,7 +13,6 @@ import { parseISO, isWithinInterval } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
 import Link from 'next/link';
-import { amiriFont } from '@/lib/amiri-font';
 import { cn } from '@/lib/utils';
 
 declare module 'jspdf' {
@@ -58,9 +57,9 @@ export const DriverSlips = () => {
             try {
                 const doc = new jsPDF();
                 
-                doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
-                doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-                doc.setFont('Amiri');
+                // doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
+                // doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+                // doc.setFont('Amiri');
 
                 const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
 

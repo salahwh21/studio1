@@ -20,7 +20,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useUsersStore } from '@/store/user-store';
-import { amiriFont } from '@/lib/amiri-font';
 
 declare module 'jspdf' {
     interface jsPDF {
@@ -80,9 +79,9 @@ export const MerchantSlips = () => {
             try {
                 const doc = new jsPDF();
                 
-                doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
-                doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-                doc.setFont('Amiri');
+                // doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
+                // doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+                // doc.setFont('Amiri');
 
                 const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
 

@@ -15,7 +15,6 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { amiriFont } from '@/lib/amiri-font';
 
 declare module 'jspdf' {
     interface jsPDF {
@@ -90,9 +89,9 @@ export default function SlipDetailPage() {
             try {
                 const doc = new jsPDF();
             
-                doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
-                doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-                doc.setFont('Amiri');
+                // doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
+                // doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+                // doc.setFont('Amiri');
                 
                 doc.setRTL(true);
 
