@@ -1,13 +1,16 @@
 
-      import type { Metadata, Viewport } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from 'next-themes';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 
-import { Tajawal } from 'next/font/google';
+import { Tajawal, Inter, Cairo, IBM_Plex_Sans_Arabic } from 'next/font/google';
 
 const tajawal = Tajawal({ subsets: ['latin', 'arabic'], weight: ['400', '700'], variable: '--font-tajawal' });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const cairo = Cairo({ subsets: ['latin', 'arabic'], weight: ['400', '700'], variable: '--font-cairo' });
+const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({ subsets: ['arabic', 'latin'], weight: ['400', '700'], variable: '--font-ibm-plex-sans-arabic' });
 
 export const metadata: Metadata = {
   title: 'إدارة تسجيل الطلبات - الوميض',
@@ -26,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="ar" 
       dir="rtl" 
       suppressHydrationWarning 
-      className={tajawal.variable}
+      className={`${tajawal.variable} ${inter.variable} ${cairo.variable} ${ibmPlexSansArabic.variable}`}
     >
       <body>
         <SettingsProvider>
@@ -44,5 +47,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-
-    
