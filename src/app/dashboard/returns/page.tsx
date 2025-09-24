@@ -628,7 +628,7 @@ export default function ReturnsManagementPage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                        <Icon name="Undo2" /> دورة المرتجعات الكاملة
+                        <Icon name="Undo2" /> ادارة المرتجعات
                     </CardTitle>
                     <CardDescription>
                         إدارة عملية استلام المرتجعات من السائقين وإعادتها إلى التجار في أربع مراحل منظمة.
@@ -659,4 +659,3 @@ export default function ReturnsManagementPage() {
         </div>
     );
 }
-
