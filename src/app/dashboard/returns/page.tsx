@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useRef, useCallback } from 'react';
@@ -312,38 +313,37 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
 
       <Card className="flex flex-col">
         <CardHeader>
-          <CardTitle>2. إنشاء كشف استلام</CardTitle>
-          <CardDescription>هذه هي قائمة الشحنات التي تم استلامها وجاهزة للتوثيق.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex-grow flex flex-col gap-4">
-        <div className="flex items-center justify-between mb-2">
-            <CardTitle className="text-base">شحنات تم استلامها ({receivedItems.length})</CardTitle>
-            <Button onClick={createReceivingManifest} disabled={receivedItems.length === 0} size="sm">
+          <div className="flex justify-between items-center">
+            <CardTitle>2. إنشاء كشف استلام</CardTitle>
+            <Button onClick={createReceivingManifest} disabled={receivedItems.length === 0}>
                 <Icon name="FileCheck" className="ml-2" />
                 إنشاء كشف الاستلام
             </Button>
-        </div>
-          <div ref={printableRef} className="flex-grow">
+          </div>
+          <CardDescription>هذه هي قائمة الشحنات التي تم استلامها وجاهزة للتوثيق. ({receivedItems.length} شحنات)</CardDescription>
+        </CardHeader>
+        <CardContent className="flex-grow flex flex-col gap-4">
+        <div ref={printableRef} className="flex-grow">
             <ScrollArea className="h-80 border rounded-md">
               <div dir="rtl">
-                <Table className="w-full border">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-16 text-center border-r">#</TableHead>
-                      <TableHead className="text-center border-r">رقم الطلب</TableHead>
-                      <TableHead className="text-center border-r">العميل</TableHead>
+              <Table className="w-full border">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-16 text-center border-r">#</TableHead>
+                    <TableHead className="text-center border-r">رقم الطلب</TableHead>
+                    <TableHead className="text-center border-r">العميل</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {receivedItems.map((item, index) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="text-center border-r">{index + 1}</TableCell>
+                      <TableCell className="text-center border-r">{item.id}</TableCell>
+                      <TableCell className="text-center border-r">{item.recipient}</TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {receivedItems.map((item, index) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="text-center border-r">{index + 1}</TableCell>
-                        <TableCell className="text-center border-r">{item.id}</TableCell>
-                        <TableCell className="text-center border-r">{item.recipient}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                  ))}
+                </TableBody>
+              </Table>
               </div>
             </ScrollArea>
           </div>
@@ -373,28 +373,30 @@ const ReceivingLog = ({ manifests }: { manifests: ReceivingManifest[] }) => {
                 </CardHeader>
                 <CardContent>
                     <ScrollArea className="h-96">
+                        <div dir="rtl">
                         <Table>
                              <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-16 text-right border-l">#</TableHead>
-                                    <TableHead className="text-right border-l">رقم الكشف</TableHead>
-                                    <TableHead className="text-right border-l">السائق</TableHead>
-                                    <TableHead className="text-right border-l">العدد</TableHead>
-                                    <TableHead className="text-right border-l">التاريخ</TableHead>
+                                    <TableHead className="w-16 text-center border-r">#</TableHead>
+                                    <TableHead className="text-center border-r">رقم الكشف</TableHead>
+                                    <TableHead className="text-center border-r">السائق</TableHead>
+                                    <TableHead className="text-center border-r">العدد</TableHead>
+                                    <TableHead className="text-center border-r">التاريخ</TableHead>
                                 </TableRow>
                              </TableHeader>
                              <TableBody>
                                 {manifests.map((m, index) => (
                                     <TableRow key={m.id} onClick={() => setSelectedManifest(m)} className={cn("cursor-pointer", selectedManifest?.id === m.id && "bg-muted")}>
-                                        <TableCell className="text-right border-l">{index + 1}</TableCell>
-                                        <TableCell className="text-right border-l">{m.id}</TableCell>
-                                        <TableCell className="text-right border-l">{m.driverName}</TableCell>
-                                        <TableCell className="text-right border-l">{m.itemCount}</TableCell>
-                                        <TableCell className="text-right border-l">{new Date(m.createdAt).toLocaleDateString()}</TableCell>
+                                        <TableCell className="text-center border-r">{index + 1}</TableCell>
+                                        <TableCell className="text-center border-r">{m.id}</TableCell>
+                                        <TableCell className="text-center border-r">{m.driverName}</TableCell>
+                                        <TableCell className="text-center border-r">{m.itemCount}</TableCell>
+                                        <TableCell className="text-center border-r">{new Date(m.createdAt).toLocaleDateString()}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
                         </Table>
+                        </div>
                     </ScrollArea>
                 </CardContent>
             </Card>
@@ -420,26 +422,28 @@ const ReceivingLog = ({ manifests }: { manifests: ReceivingManifest[] }) => {
                                     <p><strong>إجمالي الشحنات:</strong> {selectedManifest.itemCount}</p>
                                 </div>
                                 <ScrollArea className="h-80 border rounded-md">
+                                    <div dir="rtl">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead className="w-16 text-right border-l">#</TableHead>
-                                                <TableHead className="text-right border-l">الحالة</TableHead>
-                                                <TableHead className="text-right border-l">العميل</TableHead>
-                                                <TableHead className="text-right border-l">رقم الطلب</TableHead>
+                                                <TableHead className="w-16 text-center border-r">#</TableHead>
+                                                <TableHead className="text-center border-r">الحالة</TableHead>
+                                                <TableHead className="text-center border-r">رقم الطلب</TableHead>
+                                                <TableHead className="text-center border-r">العميل</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {selectedManifest.items.map((item, index) => (
                                                 <TableRow key={item.id}>
-                                                    <TableCell className="text-right border-l">{index + 1}</TableCell>
-                                                    <TableCell className="text-right border-l"><Badge>مرجع للفرع</Badge></TableCell>
-                                                    <TableCell className="text-right border-l">{item.recipient}</TableCell>
-                                                    <TableCell className="text-right border-l">{item.id}</TableCell>
+                                                    <TableCell className="text-center border-r">{index + 1}</TableCell>
+                                                    <TableCell className="text-center border-r"><Badge>مرجع للفرع</Badge></TableCell>
+                                                    <TableCell className="text-center border-r">{item.id}</TableCell>
+                                                    <TableCell className="text-center border-r">{item.recipient}</TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
                                     </Table>
+                                    </div>
                                 </ScrollArea>
                             </div>
                         </>
@@ -714,5 +718,7 @@ export default function ReturnsManagementPage() {
         </div>
     );
 }
+
+    
 
     
