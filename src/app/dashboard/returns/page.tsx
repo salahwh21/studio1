@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useRef, useCallback } from 'react';
@@ -326,24 +325,26 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
         </div>
           <div ref={printableRef} className="flex-grow">
             <ScrollArea className="h-80 border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16 text-right border-l">#</TableHead>
-                    <TableHead className="text-right border-l">رقم الطلب</TableHead>
-                    <TableHead className="text-right border-l">العميل</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {receivedItems.map((item, index) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="text-right border-l">{index + 1}</TableCell>
-                      <TableCell className="text-right border-l">{item.id}</TableCell>
-                      <TableCell className="text-right border-l">{item.recipient}</TableCell>
+              <div dir="rtl">
+                <Table className="w-full border">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-16 text-center border-r">#</TableHead>
+                      <TableHead className="text-center border-r">رقم الطلب</TableHead>
+                      <TableHead className="text-center border-r">العميل</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {receivedItems.map((item, index) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="text-center border-r">{index + 1}</TableCell>
+                        <TableCell className="text-center border-r">{item.id}</TableCell>
+                        <TableCell className="text-center border-r">{item.recipient}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </ScrollArea>
           </div>
         </CardContent>
@@ -714,3 +715,4 @@ export default function ReturnsManagementPage() {
     );
 }
 
+    
