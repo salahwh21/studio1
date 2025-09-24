@@ -262,31 +262,51 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
             </Button>
           </div>
           <ScrollArea className="h-64 border rounded-md">
-            <Table>
+          <div dir="rtl">
+            <Table className="w-full border">
               <TableHeader>
                 <TableRow>
-                   <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAllDriverOrders} checked={driverOrders.length > 0 && selectedOrderIds.length === driverOrders.length} /></TableHead>
-                  <TableHead className="w-16 text-right border-l">#</TableHead>
-                  <TableHead className="text-right border-l">رقم الطلب</TableHead>
-                  <TableHead className="text-right border-l">العميل</TableHead>
+                  <TableHead className="w-12 text-center border-r">
+                    <Checkbox
+                      checked={selectedOrderIds.length === driverOrders.length}
+                      indeterminate={selectedOrderIds.length > 0 && selectedOrderIds.length < driverOrders.length}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedOrderIds(driverOrders.map(order => order.id))
+                        } else {
+                          setSelectedOrderIds([])
+                        }
+                      }}
+                    />
+                  </TableHead>
+                  <TableHead className="w-16 text-center border-r">#</TableHead>
+                  <TableHead className="text-center border-r">رقم الطلب</TableHead>
+                  <TableHead className="text-center border-r">العميل</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {driverOrders.map((order, index) => (
                   <TableRow key={order.id}>
-                    <TableCell className="text-center border-l">
+                    <TableCell className="text-center border-r">
                       <Checkbox
                         checked={selectedOrderIds.includes(order.id)}
-                        onCheckedChange={(checked) => setSelectedOrderIds(p => checked ? [...p, order.id] : p.filter(id => id !== order.id))}
+                        onCheckedChange={(checked) => {
+                          setSelectedOrderIds(prev =>
+                            checked
+                              ? [...prev, order.id]
+                              : prev.filter(id => id !== order.id)
+                          )
+                        }}
                       />
                     </TableCell>
-                     <TableCell className="text-right border-l">{index + 1}</TableCell>
-                     <TableCell className="text-right border-l">{order.id}</TableCell>
-                     <TableCell className="text-right border-l">{order.recipient}</TableCell>
+                    <TableCell className="text-center border-r">{index + 1}</TableCell>
+                    <TableCell className="text-center border-r">{order.id}</TableCell>
+                    <TableCell className="text-center border-r">{order.recipient}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+          </div>
           </ScrollArea>
         </CardContent>
       </Card>
@@ -297,10 +317,14 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
           <CardDescription>هذه هي قائمة الشحنات التي تم استلامها وجاهزة للتوثيق.</CardDescription>
         </CardHeader>
         <CardContent className="flex-grow flex flex-col gap-4">
+        <div className="flex items-center justify-between mb-2">
+            <CardTitle className="text-base">شحنات تم استلامها ({receivedItems.length})</CardTitle>
+            <Button onClick={createReceivingManifest} disabled={receivedItems.length === 0} size="sm">
+                <Icon name="FileCheck" className="ml-2" />
+                إنشاء كشف الاستلام
+            </Button>
+        </div>
           <div ref={printableRef} className="flex-grow">
-            <div className="flex items-center justify-between mb-2">
-                <CardTitle className="text-base">شحنات تم استلامها ({receivedItems.length})</CardTitle>
-            </div>
             <ScrollArea className="h-80 border rounded-md">
               <Table>
                 <TableHeader>
@@ -323,12 +347,6 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
             </ScrollArea>
           </div>
         </CardContent>
-        <CardFooter>
-            <Button onClick={createReceivingManifest} disabled={receivedItems.length === 0} className="w-full">
-                <Icon name="FileCheck" className="ml-2" />
-                إنشاء كشف الاستلام
-            </Button>
-        </CardFooter>
       </Card>
     </div>
   );
@@ -695,3 +713,4 @@ export default function ReturnsManagementPage() {
         </div>
     );
 }
+
