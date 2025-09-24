@@ -297,36 +297,36 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
           <CardDescription>هذه هي قائمة الشحنات التي تم استلامها وجاهزة للتوثيق.</CardDescription>
         </CardHeader>
         <CardContent className="flex-grow flex flex-col gap-4">
-            <div ref={printableRef} className="flex-grow">
-                <CardTitle className="text-base mb-2">شحنات تم استلامها ({receivedItems.length})</CardTitle>
-                <ScrollArea className="h-80 border rounded-md">
-                    <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-16 text-right border-l">#</TableHead>
-                            <TableHead className="text-right border-l">العميل</TableHead>
-                            <TableHead className="text-right border-l">رقم الطلب</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {receivedItems.map((item, index) => (
-                        <TableRow key={item.id}>
-                            <TableCell className="text-right border-l">{index + 1}</TableCell>
-                            <TableCell className="text-right border-l">{item.recipient}</TableCell>
-                            <TableCell className="text-right border-l">{item.id}</TableCell>
-                        </TableRow>
-                        ))}
-                    </TableBody>
-                    </Table>
-                </ScrollArea>
-           </div>
+          <div ref={printableRef} className="flex-grow">
+            <div className="flex items-center justify-between mb-2">
+                <CardTitle className="text-base">شحنات تم استلامها ({receivedItems.length})</CardTitle>
+                <Button onClick={createReceivingManifest} disabled={receivedItems.length === 0}>
+                    <Icon name="FileCheck" className="ml-2" />
+                    إنشاء كشف الاستلام
+                </Button>
+            </div>
+            <ScrollArea className="h-80 border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-16 text-right border-l">#</TableHead>
+                    <TableHead className="text-right border-l">العميل</TableHead>
+                    <TableHead className="text-right border-l">رقم الطلب</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {receivedItems.map((item, index) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="text-right border-l">{index + 1}</TableCell>
+                      <TableCell className="text-right border-l">{item.recipient}</TableCell>
+                      <TableCell className="text-right border-l">{item.id}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </div>
         </CardContent>
-        <CardFooter>
-            <Button onClick={createReceivingManifest} className="w-full" size="lg" disabled={receivedItems.length === 0}>
-                <Icon name="FileCheck" className="ml-2" />
-                إنشاء كشف الاستلام
-            </Button>
-        </CardFooter>
       </Card>
     </div>
   );
