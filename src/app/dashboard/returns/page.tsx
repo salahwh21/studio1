@@ -310,16 +310,16 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-16 text-right border-l">#</TableHead>
-                    <TableHead className="text-right border-l">العميل</TableHead>
                     <TableHead className="text-right border-l">رقم الطلب</TableHead>
+                    <TableHead className="text-right border-l">العميل</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {receivedItems.map((item, index) => (
                     <TableRow key={item.id}>
                       <TableCell className="text-right border-l">{index + 1}</TableCell>
-                      <TableCell className="text-right border-l">{item.recipient}</TableCell>
                       <TableCell className="text-right border-l">{item.id}</TableCell>
+                      <TableCell className="text-right border-l">{item.recipient}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -658,7 +658,7 @@ export default function ReturnsManagementPage() {
     const [merchantManifests, setMerchantManifests] = useState<MerchantReturnManifest[]>([]);
 
     return (
-        <div className="space-y-6" dir="rtl">
+        <div className="space-y-6">
             <Card>
                 <CardHeader>
                     <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
@@ -670,7 +670,7 @@ export default function ReturnsManagementPage() {
                 </CardHeader>
             </Card>
 
-            <Tabs defaultValue="receive-from-driver" className="w-full" dir="rtl">
+            <Tabs defaultValue="receive-from-driver" className="w-full">
                 <TabsList className="grid w-full grid-cols-4" dir="rtl">
                     <TabsTrigger value="receive-from-driver">1. استلام من السائق</TabsTrigger>
                     <TabsTrigger value="receiving-log">2. سجل الاستلام</TabsTrigger>
