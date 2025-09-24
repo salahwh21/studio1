@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useRef, useCallback } from 'react';
@@ -195,6 +196,14 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
     setSelectedOrderIds([]);
     setSelectedDriverId(null);
   };
+  
+    const handleSelectAllDriverOrders = (checked: boolean) => {
+        if(checked) {
+            setSelectedOrderIds(driverOrders.map(o => o.id));
+        } else {
+            setSelectedOrderIds([]);
+        }
+    }
 
   const selectedDriver = drivers.find(d => d.id === selectedDriverId);
 
@@ -256,22 +265,24 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
             <Table>
               <TableHeader>
                 <TableRow>
+                   <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAllDriverOrders} checked={driverOrders.length > 0 && selectedOrderIds.length === driverOrders.length} /></TableHead>
+                  <TableHead className="w-16 text-right border-l">#</TableHead>
                   <TableHead className="text-right border-l">العميل</TableHead>
                   <TableHead className="text-right border-l">رقم الطلب</TableHead>
-                  <TableHead className="text-right border-l">تحديد</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {driverOrders.map(order => (
+                {driverOrders.map((order, index) => (
                   <TableRow key={order.id}>
-                     <TableCell className="text-right border-l">{order.recipient}</TableCell>
-                     <TableCell className="text-right border-l">{order.id}</TableCell>
-                    <TableCell className="text-right border-l">
+                    <TableCell className="text-center border-l">
                       <Checkbox
                         checked={selectedOrderIds.includes(order.id)}
                         onCheckedChange={(checked) => setSelectedOrderIds(p => checked ? [...p, order.id] : p.filter(id => id !== order.id))}
                       />
                     </TableCell>
+                     <TableCell className="text-right border-l">{index + 1}</TableCell>
+                     <TableCell className="text-right border-l">{order.recipient}</TableCell>
+                     <TableCell className="text-right border-l">{order.id}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -292,13 +303,15 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
                     <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead className="w-16 text-right border-l">#</TableHead>
                             <TableHead className="text-right border-l">العميل</TableHead>
                             <TableHead className="text-right border-l">رقم الطلب</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {receivedItems.map(item => (
+                        {receivedItems.map((item, index) => (
                         <TableRow key={item.id}>
+                            <TableCell className="text-right border-l">{index + 1}</TableCell>
                             <TableCell className="text-right border-l">{item.recipient}</TableCell>
                             <TableCell className="text-right border-l">{item.id}</TableCell>
                         </TableRow>
@@ -342,6 +355,7 @@ const ReceivingLog = ({ manifests }: { manifests: ReceivingManifest[] }) => {
                         <Table>
                              <TableHeader>
                                 <TableRow>
+                                    <TableHead className="w-16 text-right border-l">#</TableHead>
                                     <TableHead className="text-right border-l">رقم الكشف</TableHead>
                                     <TableHead className="text-right border-l">السائق</TableHead>
                                     <TableHead className="text-right border-l">العدد</TableHead>
@@ -349,8 +363,9 @@ const ReceivingLog = ({ manifests }: { manifests: ReceivingManifest[] }) => {
                                 </TableRow>
                              </TableHeader>
                              <TableBody>
-                                {manifests.map(m => (
+                                {manifests.map((m, index) => (
                                     <TableRow key={m.id} onClick={() => setSelectedManifest(m)} className={cn("cursor-pointer", selectedManifest?.id === m.id && "bg-muted")}>
+                                        <TableCell className="text-right border-l">{index + 1}</TableCell>
                                         <TableCell className="text-right border-l">{m.id}</TableCell>
                                         <TableCell className="text-right border-l">{m.driverName}</TableCell>
                                         <TableCell className="text-right border-l">{m.itemCount}</TableCell>
@@ -387,14 +402,16 @@ const ReceivingLog = ({ manifests }: { manifests: ReceivingManifest[] }) => {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
+                                                <TableHead className="w-16 text-right border-l">#</TableHead>
                                                 <TableHead className="text-right border-l">الحالة</TableHead>
                                                 <TableHead className="text-right border-l">العميل</TableHead>
                                                 <TableHead className="text-right border-l">رقم الطلب</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {selectedManifest.items.map(item => (
+                                            {selectedManifest.items.map((item, index) => (
                                                 <TableRow key={item.id}>
+                                                    <TableCell className="text-right border-l">{index + 1}</TableCell>
                                                     <TableCell className="text-right border-l"><Badge>مرجع للفرع</Badge></TableCell>
                                                     <TableCell className="text-right border-l">{item.recipient}</TableCell>
                                                     <TableCell className="text-right border-l">{item.id}</TableCell>
@@ -433,6 +450,8 @@ const GroupMerchantReturns = ({ onManifestCreated }: { onManifestCreated: (manif
     
     const [selectedMerchant, setSelectedMerchant] = useState<string | null>(null);
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+    
+    const ordersForSelectedMerchant = useMemo(() => selectedMerchant ? merchantReturns[selectedMerchant] || [] : [], [selectedMerchant, merchantReturns]);
 
     const handleCreateManifest = () => {
         if (!selectedMerchant || selectedOrderIds.length === 0) {
@@ -457,6 +476,15 @@ const GroupMerchantReturns = ({ onManifestCreated }: { onManifestCreated: (manif
         setSelectedOrderIds([]);
         setSelectedMerchant(null);
     };
+    
+    const handleSelectAllMerchantOrders = (checked: boolean) => {
+        if(checked) {
+            setSelectedOrderIds(ordersForSelectedMerchant.map(o => o.id));
+        } else {
+            setSelectedOrderIds([]);
+        }
+    }
+
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" dir="rtl">
@@ -469,13 +497,15 @@ const GroupMerchantReturns = ({ onManifestCreated }: { onManifestCreated: (manif
                         <Table>
                             <TableHeader>
                                 <TableRow>
+                                    <TableHead className="w-16 text-right border-l">#</TableHead>
                                     <TableHead className="text-right border-l">التاجر</TableHead>
                                     <TableHead className="text-right border-l">عدد الشحنات</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {Object.entries(merchantReturns).map(([merchant, items]) => (
+                                {Object.entries(merchantReturns).map(([merchant, items], index) => (
                                     <TableRow key={merchant} onClick={() => setSelectedMerchant(merchant)} className={cn("cursor-pointer", selectedMerchant === merchant && "bg-muted")}>
+                                        <TableCell className="text-right border-l">{index + 1}</TableCell>
                                         <TableCell className="text-right border-l">{merchant}</TableCell>
                                         <TableCell className="text-right border-l">{items.length}</TableCell>
                                     </TableRow>
@@ -503,19 +533,21 @@ const GroupMerchantReturns = ({ onManifestCreated }: { onManifestCreated: (manif
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
+                                            <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAllMerchantOrders} checked={ordersForSelectedMerchant.length > 0 && selectedOrderIds.length === ordersForSelectedMerchant.length} /></TableHead>
+                                            <TableHead className="w-16 text-right border-l">#</TableHead>
                                             <TableHead className="text-right border-l">العميل</TableHead>
                                             <TableHead className="text-right border-l">رقم الطلب</TableHead>
-                                            <TableHead className="text-right border-l">تحديد</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {(merchantReturns[selectedMerchant] || []).map(order => (
+                                        {(merchantReturns[selectedMerchant] || []).map((order, index) => (
                                             <TableRow key={order.id}>
-                                                <TableCell className="text-right border-l">{order.recipient}</TableCell>
-                                                <TableCell className="text-right border-l">{order.id}</TableCell>
-                                                <TableCell className="text-right border-l">
+                                                <TableCell className="text-center border-l">
                                                     <Checkbox checked={selectedOrderIds.includes(order.id)} onCheckedChange={(checked) => setSelectedOrderIds(p => checked ? [...p, order.id] : p.filter(id => id !== order.id))} />
                                                 </TableCell>
+                                                <TableCell className="text-right border-l">{index + 1}</TableCell>
+                                                <TableCell className="text-right border-l">{order.recipient}</TableCell>
+                                                <TableCell className="text-right border-l">{order.id}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -561,6 +593,7 @@ const MerchantDeliveryLog = ({ manifests, onUpdateManifests }: { manifests: Merc
                 <Table>
                     <TableHeader>
                         <TableRow>
+                             <TableHead className="w-16 text-right border-l">#</TableHead>
                             <TableHead className="text-right border-l">إجراءات</TableHead>
                             <TableHead className="text-right border-l">الحالة</TableHead>
                             <TableHead className="text-right border-l">عدد الشحنات</TableHead>
@@ -570,8 +603,9 @@ const MerchantDeliveryLog = ({ manifests, onUpdateManifests }: { manifests: Merc
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {manifests.map(m => (
+                        {manifests.map((m, index) => (
                              <TableRow key={m.id}>
+                                <TableCell className="text-right border-l">{index + 1}</TableCell>
                                 <TableCell className="flex gap-2 text-right border-l">
                                     <Button variant="outline" size="sm" onClick={() => handlePrint(m)}><Printer className="h-4 w-4 ml-1"/>طباعة</Button>
                                     {m.status === 'ready' && (
