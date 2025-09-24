@@ -263,50 +263,50 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
           </div>
           <ScrollArea className="h-64 border rounded-md">
           <div dir="rtl">
-            <Table className="w-full border">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12 text-center border-r">
-                    <Checkbox
-                      checked={selectedOrderIds.length === driverOrders.length && driverOrders.length > 0}
-                      indeterminate={selectedOrderIds.length > 0 && selectedOrderIds.length < driverOrders.length}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedOrderIds(driverOrders.map(order => order.id))
-                        } else {
-                          setSelectedOrderIds([])
-                        }
-                      }}
-                    />
-                  </TableHead>
-                  <TableHead className="w-16 text-center border-r">#</TableHead>
-                  <TableHead className="text-center border-r">رقم الطلب</TableHead>
-                  <TableHead className="text-center border-r">العميل</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {driverOrders.map((order, index) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="text-center border-r">
+              <Table className="w-full border">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12 text-center border-r">
                       <Checkbox
-                        checked={selectedOrderIds.includes(order.id)}
+                        checked={selectedOrderIds.length === driverOrders.length}
+                        indeterminate={selectedOrderIds.length > 0 && selectedOrderIds.length < driverOrders.length}
                         onCheckedChange={(checked) => {
-                          setSelectedOrderIds(prev =>
-                            checked
-                              ? [...prev, order.id]
-                              : prev.filter(id => id !== order.id)
-                          )
+                          if (checked) {
+                            setSelectedOrderIds(driverOrders.map(order => order.id))
+                          } else {
+                            setSelectedOrderIds([])
+                          }
                         }}
                       />
-                    </TableCell>
-                    <TableCell className="text-center border-r">{index + 1}</TableCell>
-                    <TableCell className="text-center border-r">{order.id}</TableCell>
-                    <TableCell className="text-center border-r">{order.recipient}</TableCell>
+                    </TableHead>
+                    <TableHead className="w-16 text-center border-r">#</TableHead>
+                    <TableHead className="text-center border-r">رقم الطلب</TableHead>
+                    <TableHead className="text-center border-r">العميل</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {driverOrders.map((order, index) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="text-center border-r">
+                        <Checkbox
+                          checked={selectedOrderIds.includes(order.id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedOrderIds(prev =>
+                              checked
+                                ? [...prev, order.id]
+                                : prev.filter(id => id !== order.id)
+                            )
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell className="text-center border-r">{index + 1}</TableCell>
+                      <TableCell className="text-center border-r">{order.id}</TableCell>
+                      <TableCell className="text-center border-r">{order.recipient}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </ScrollArea>
         </CardContent>
       </Card>
@@ -374,7 +374,7 @@ const ReceivingLog = ({ manifests }: { manifests: ReceivingManifest[] }) => {
                 <CardContent>
                     <ScrollArea className="h-96">
                         <div dir="rtl">
-                        <Table>
+                        <Table className="w-full border">
                              <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-16 text-center border-r">#</TableHead>
@@ -423,7 +423,7 @@ const ReceivingLog = ({ manifests }: { manifests: ReceivingManifest[] }) => {
                                 </div>
                                 <ScrollArea className="h-80 border rounded-md">
                                     <div dir="rtl">
-                                    <Table>
+                                    <Table className="w-full border">
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead className="w-16 text-center border-r">#</TableHead>
@@ -519,24 +519,33 @@ const GroupMerchantReturns = ({ onManifestCreated }: { onManifestCreated: (manif
                 </CardHeader>
                 <CardContent>
                     <ScrollArea className="h-96">
-                        <Table>
+                        <div dir="rtl">
+                          <Table className="w-full border">
                             <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-16 text-right border-l">#</TableHead>
-                                    <TableHead className="text-right border-l">التاجر</TableHead>
-                                    <TableHead className="text-right border-l">عدد الشحنات</TableHead>
-                                </TableRow>
+                              <TableRow>
+                                <TableHead className="w-16 text-center border-r">#</TableHead>
+                                <TableHead className="text-center border-r">التاجر</TableHead>
+                                <TableHead className="text-center border-r">عدد الشحنات</TableHead>
+                              </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {Object.entries(merchantReturns).map(([merchant, items], index) => (
-                                    <TableRow key={merchant} onClick={() => setSelectedMerchant(merchant)} className={cn("cursor-pointer", selectedMerchant === merchant && "bg-muted")}>
-                                        <TableCell className="text-right border-l">{index + 1}</TableCell>
-                                        <TableCell className="text-right border-l">{merchant}</TableCell>
-                                        <TableCell className="text-right border-l">{items.length}</TableCell>
-                                    </TableRow>
-                                ))}
+                              {Object.entries(merchantReturns).map(([merchant, items], index) => (
+                                <TableRow
+                                  key={merchant}
+                                  onClick={() => setSelectedMerchant(merchant)}
+                                  className={cn(
+                                    "cursor-pointer",
+                                    selectedMerchant === merchant && "bg-muted"
+                                  )}
+                                >
+                                  <TableCell className="text-center border-r">{index + 1}</TableCell>
+                                  <TableCell className="text-center border-r">{merchant}</TableCell>
+                                  <TableCell className="text-center border-r">{items.length}</TableCell>
+                                </TableRow>
+                              ))}
                             </TableBody>
-                        </Table>
+                          </Table>
+                        </div>
                     </ScrollArea>
                 </CardContent>
             </Card>
@@ -556,56 +565,56 @@ const GroupMerchantReturns = ({ onManifestCreated }: { onManifestCreated: (manif
                             </div>
                             <ScrollArea className="h-80 border rounded-md">
                                 <div dir="rtl">
-  <Table className="w-full border">
-    <TableHeader>
-      <TableRow>
-        <TableHead className="w-12 text-center border-r">
-          <Checkbox
-            checked={
-              ordersForSelectedMerchant.length > 0 &&
-              selectedOrderIds.length === ordersForSelectedMerchant.length
-            }
-            indeterminate={
-              selectedOrderIds.length > 0 &&
-              selectedOrderIds.length < ordersForSelectedMerchant.length
-            }
-            onCheckedChange={(checked) => {
-              if (checked) {
-                setSelectedOrderIds(ordersForSelectedMerchant.map(order => order.id))
-              } else {
-                setSelectedOrderIds([])
-              }
-            }}
-          />
-        </TableHead>
-        <TableHead className="w-16 text-center border-r">#</TableHead>
-        <TableHead className="text-center border-r">العميل</TableHead>
-        <TableHead className="text-center border-r">رقم الطلب</TableHead>
-      </TableRow>
-    </TableHeader>
-    <TableBody>
-      {(merchantReturns[selectedMerchant] || []).map((order, index) => (
-        <TableRow key={order.id}>
-          <TableCell className="text-center border-r">
-            <Checkbox
-              checked={selectedOrderIds.includes(order.id)}
-              onCheckedChange={(checked) => {
-                setSelectedOrderIds(prev =>
-                  checked
-                    ? [...prev, order.id]
-                    : prev.filter(id => id !== order.id)
-                )
-              }}
-            />
-          </TableCell>
-          <TableCell className="text-center border-r">{index + 1}</TableCell>
-          <TableCell className="text-center border-r">{order.recipient}</TableCell>
-          <TableCell className="text-center border-r">{order.id}</TableCell>
-        </TableRow>
-      ))}
-    </TableBody>
-  </Table>
-</div>
+                                  <Table className="w-full border">
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead className="w-12 text-center border-r">
+                                          <Checkbox
+                                            checked={
+                                              ordersForSelectedMerchant.length > 0 &&
+                                              selectedOrderIds.length === ordersForSelectedMerchant.length
+                                            }
+                                            indeterminate={
+                                              selectedOrderIds.length > 0 &&
+                                              selectedOrderIds.length < ordersForSelectedMerchant.length
+                                            }
+                                            onCheckedChange={(checked) => {
+                                              if (checked) {
+                                                setSelectedOrderIds(ordersForSelectedMerchant.map(order => order.id))
+                                              } else {
+                                                setSelectedOrderIds([])
+                                              }
+                                            }}
+                                          />
+                                        </TableHead>
+                                        <TableHead className="w-16 text-center border-r">#</TableHead>
+                                        <TableHead className="text-center border-r">العميل</TableHead>
+                                        <TableHead className="text-center border-r">رقم الطلب</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {(merchantReturns[selectedMerchant] || []).map((order, index) => (
+                                        <TableRow key={order.id}>
+                                          <TableCell className="text-center border-r">
+                                            <Checkbox
+                                              checked={selectedOrderIds.includes(order.id)}
+                                              onCheckedChange={(checked) => {
+                                                setSelectedOrderIds(prev =>
+                                                  checked
+                                                    ? [...prev, order.id]
+                                                    : prev.filter(id => id !== order.id)
+                                                )
+                                              }}
+                                            />
+                                          </TableCell>
+                                          <TableCell className="text-center border-r">{index + 1}</TableCell>
+                                          <TableCell className="text-center border-r">{order.recipient}</TableCell>
+                                          <TableCell className="text-center border-r">{order.id}</TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
                             </ScrollArea>
                         </>
                     ) : (
@@ -751,3 +760,4 @@ export default function ReturnsManagementPage() {
     
 
     
+
