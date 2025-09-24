@@ -267,8 +267,8 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
                 <TableRow>
                    <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAllDriverOrders} checked={driverOrders.length > 0 && selectedOrderIds.length === driverOrders.length} /></TableHead>
                   <TableHead className="w-16 text-right border-l">#</TableHead>
-                  <TableHead className="text-right border-l">العميل</TableHead>
                   <TableHead className="text-right border-l">رقم الطلب</TableHead>
+                  <TableHead className="text-right border-l">العميل</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -281,8 +281,8 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
                       />
                     </TableCell>
                      <TableCell className="text-right border-l">{index + 1}</TableCell>
-                     <TableCell className="text-right border-l">{order.recipient}</TableCell>
                      <TableCell className="text-right border-l">{order.id}</TableCell>
+                     <TableCell className="text-right border-l">{order.recipient}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
