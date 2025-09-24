@@ -300,10 +300,6 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
           <div ref={printableRef} className="flex-grow">
             <div className="flex items-center justify-between mb-2">
                 <CardTitle className="text-base">شحنات تم استلامها ({receivedItems.length})</CardTitle>
-                <Button onClick={createReceivingManifest} disabled={receivedItems.length === 0}>
-                    <Icon name="FileCheck" className="ml-2" />
-                    إنشاء كشف الاستلام
-                </Button>
             </div>
             <ScrollArea className="h-80 border rounded-md">
               <Table>
@@ -327,6 +323,12 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
             </ScrollArea>
           </div>
         </CardContent>
+        <CardFooter>
+            <Button onClick={createReceivingManifest} disabled={receivedItems.length === 0} className="w-full">
+                <Icon name="FileCheck" className="ml-2" />
+                إنشاء كشف الاستلام
+            </Button>
+        </CardFooter>
       </Card>
     </div>
   );
