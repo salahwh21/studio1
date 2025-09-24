@@ -268,7 +268,7 @@ const ReceiveFromDriver = ({ onManifestCreated }: { onManifestCreated: (manifest
                 <TableRow>
                   <TableHead className="w-12 text-center border-r">
                     <Checkbox
-                      checked={selectedOrderIds.length === driverOrders.length}
+                      checked={selectedOrderIds.length === driverOrders.length && driverOrders.length > 0}
                       indeterminate={selectedOrderIds.length > 0 && selectedOrderIds.length < driverOrders.length}
                       onCheckedChange={(checked) => {
                         if (checked) {
@@ -555,28 +555,57 @@ const GroupMerchantReturns = ({ onManifestCreated }: { onManifestCreated: (manif
                                 </Button>
                             </div>
                             <ScrollArea className="h-80 border rounded-md">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAllMerchantOrders} checked={ordersForSelectedMerchant.length > 0 && selectedOrderIds.length === ordersForSelectedMerchant.length} /></TableHead>
-                                            <TableHead className="w-16 text-right border-l">#</TableHead>
-                                            <TableHead className="text-right border-l">العميل</TableHead>
-                                            <TableHead className="text-right border-l">رقم الطلب</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {(merchantReturns[selectedMerchant] || []).map((order, index) => (
-                                            <TableRow key={order.id}>
-                                                <TableCell className="text-center border-l">
-                                                    <Checkbox checked={selectedOrderIds.includes(order.id)} onCheckedChange={(checked) => setSelectedOrderIds(p => checked ? [...p, order.id] : p.filter(id => id !== order.id))} />
-                                                </TableCell>
-                                                <TableCell className="text-right border-l">{index + 1}</TableCell>
-                                                <TableCell className="text-right border-l">{order.recipient}</TableCell>
-                                                <TableCell className="text-right border-l">{order.id}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                <div dir="rtl">
+  <Table className="w-full border">
+    <TableHeader>
+      <TableRow>
+        <TableHead className="w-12 text-center border-r">
+          <Checkbox
+            checked={
+              ordersForSelectedMerchant.length > 0 &&
+              selectedOrderIds.length === ordersForSelectedMerchant.length
+            }
+            indeterminate={
+              selectedOrderIds.length > 0 &&
+              selectedOrderIds.length < ordersForSelectedMerchant.length
+            }
+            onCheckedChange={(checked) => {
+              if (checked) {
+                setSelectedOrderIds(ordersForSelectedMerchant.map(order => order.id))
+              } else {
+                setSelectedOrderIds([])
+              }
+            }}
+          />
+        </TableHead>
+        <TableHead className="w-16 text-center border-r">#</TableHead>
+        <TableHead className="text-center border-r">العميل</TableHead>
+        <TableHead className="text-center border-r">رقم الطلب</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {(merchantReturns[selectedMerchant] || []).map((order, index) => (
+        <TableRow key={order.id}>
+          <TableCell className="text-center border-r">
+            <Checkbox
+              checked={selectedOrderIds.includes(order.id)}
+              onCheckedChange={(checked) => {
+                setSelectedOrderIds(prev =>
+                  checked
+                    ? [...prev, order.id]
+                    : prev.filter(id => id !== order.id)
+                )
+              }}
+            />
+          </TableCell>
+          <TableCell className="text-center border-r">{index + 1}</TableCell>
+          <TableCell className="text-center border-r">{order.recipient}</TableCell>
+          <TableCell className="text-center border-r">{order.id}</TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+</div>
                             </ScrollArea>
                         </>
                     ) : (
