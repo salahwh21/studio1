@@ -14,6 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 
 type DateRangePickerProps = React.HTMLAttributes<HTMLDivElement> & {
   initialDateRange?: DateRange;
