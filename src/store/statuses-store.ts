@@ -316,6 +316,24 @@ const initialStatuses: Status[] = [
     flow: { isEntry: false, isFinal: false, nextCodes: ["OUT_FOR_DELIVERY", "POSTPONED"], blockedFrom: [] },
     triggers: { requiresReason: true, createsReturnTask: false, sendsCustomerMessage: true, updatesDriverAccount: false },
   },
+   {
+    id: "STS_016",
+    code: "ARRIVAL_NO_ANSWER",
+    name: "وصول وعدم رد",
+    icon: "UserX",
+    color: "#e11d48",
+    isActive: true,
+    reasonCodes: [],
+    setByRoles: ["driver"],
+    visibleTo: { admin: true, driver: true, merchant: true },
+    permissions: {
+      driver: { canSet: true, requireProof: true, allowCODCollection: false },
+      merchant: { showInPortal: true, showInReports: true },
+      admin: { lockPriceEdit: true, lockAddressEdit: true },
+    },
+    flow: { isEntry: false, isFinal: true, nextCodes: ["BRANCH_RETURNED"], blockedFrom: [] },
+    triggers: { requiresReason: false, createsReturnTask: true, sendsCustomerMessage: true, updatesDriverAccount: false },
+  },
 ];
 
 

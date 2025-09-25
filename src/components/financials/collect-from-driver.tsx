@@ -18,12 +18,15 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { useStatusesStore } from '@/store/statuses-store';
 
 export const CollectFromDriver = () => {
     const { toast } = useToast();
     const { users } = useUsersStore();
     const { orders, updateOrderField } = useOrdersStore();
     const { formatCurrency } = useSettings();
+    const { statuses } = useStatusesStore();
     
     const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
@@ -33,13 +36,17 @@ export const CollectFromDriver = () => {
     const merchants = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
     const selectedDriver = drivers.find(m => m.id === selectedDriverId);
 
+    const statusesForCollection = [
+        'تم التوصيل', 'تبديل', 'رفض ودفع أجور', 'رفض ولم يدفع أجور', 'وصول وعدم رد'
+    ];
+
     const ordersForCollection = useMemo(() => {
         if (!selectedDriver) return [];
         return orders.filter(o => 
             o.driver === selectedDriver.name && 
-            o.status === 'تم التوصيل'
+            statusesForCollection.includes(o.status)
         );
-    }, [orders, selectedDriver]);
+    }, [orders, selectedDriver, statusesForCollection]);
     
     const totals = useMemo(() => {
         const selectedOrders = ordersForCollection.filter(o => selectedOrderIds.includes(o.id));
@@ -85,6 +92,13 @@ export const CollectFromDriver = () => {
         setPopoverStates(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
+    const getStatusBadge = (statusName: string) => {
+        const status = statuses.find(s => s.name === statusName);
+        if (!status) return <Badge variant="outline">{statusName}</Badge>;
+        return <Badge style={{ backgroundColor: `${status.color}20`, color: status.color }}>{statusName}</Badge>;
+    }
+
+
     return (
         <Card>
             <CardHeader>
@@ -128,6 +142,7 @@ export const CollectFromDriver = () => {
                                  <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
                                 <TableHead className="text-center border-l">رقم الطلب</TableHead>
                                 <TableHead className="w-48 text-center border-l">التاجر</TableHead>
+                                <TableHead className="text-center border-l">الحالة</TableHead>
                                 <TableHead className="text-center border-l">الزبون</TableHead>
                                 <TableHead className="text-center border-l">الهاتف</TableHead>
                                 <TableHead className="text-center border-l">المنطقة</TableHead>
@@ -138,9 +153,9 @@ export const CollectFromDriver = () => {
                         </TableHeader>
                         <TableBody>
                             {!selectedDriver ? (
-                                <TableRow><TableCell colSpan={9} className="h-24 text-center">الرجاء اختيار سائق لعرض الطلبات.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={10} className="h-24 text-center">الرجاء اختيار سائق لعرض الطلبات.</TableCell></TableRow>
                             ) : ordersForCollection.length === 0 ? (
-                                 <TableRow><TableCell colSpan={9} className="h-24 text-center">لا توجد طلبات مكتملة لهذا السائق.</TableCell></TableRow>
+                                 <TableRow><TableCell colSpan={10} className="h-24 text-center">لا توجد طلبات مكتملة لهذا السائق.</TableCell></TableRow>
                             ) : (
                                 ordersForCollection.map(order => {
                                     const netAmount = (order.cod || 0) - (order.driverFee || 0);
@@ -183,6 +198,7 @@ export const CollectFromDriver = () => {
                                                     </PopoverContent>
                                                 </Popover>
                                             </TableCell>
+                                            <TableCell className="text-center border-l">{getStatusBadge(order.status)}</TableCell>
                                             <TableCell className="text-center border-l">{order.recipient}</TableCell>
                                             <TableCell className="text-center border-l">{order.phone}</TableCell>
                                             <TableCell className="text-center border-l">{order.region}</TableCell>
