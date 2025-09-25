@@ -4,6 +4,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import Icon from '../icon';
 
 const mockDriverPayments = [
     { id: 'DP-001', driverName: 'ابو العبد', date: '2023-10-01', amount: '150.00 د.أ', status: 'مدفوع' },
@@ -15,10 +17,18 @@ export const DriverPaymentsLog = () => {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>سجل دفعات أجور السائقين</CardTitle>
-                 <CardDescription>
-                    عرض وتأكيد دفع أجور السائقين المستحقة.
-                </CardDescription>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <CardTitle>سجل دفعات أجور السائقين</CardTitle>
+                        <CardDescription>
+                            عرض وتأكيد دفع أجور السائقين المستحقة.
+                        </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm"><Icon name="FileDown" className="ml-2 h-4 w-4"/>تصدير PDF</Button>
+                        <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
+                    </div>
+                </div>
             </CardHeader>
             <CardContent>
                  <Table>

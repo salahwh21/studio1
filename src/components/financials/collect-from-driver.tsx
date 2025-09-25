@@ -20,6 +20,7 @@ import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useStatusesStore } from '@/store/statuses-store';
+import { DateRangePicker } from '@/components/date-range-picker';
 
 export const CollectFromDriver = () => {
     const { toast } = useToast();
@@ -31,6 +32,9 @@ export const CollectFromDriver = () => {
     const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
     const [popoverStates, setPopoverStates] = useState<Record<string, boolean>>({});
+    const [searchQuery, setSearchQuery] = useState('');
+    const [dateRange, setDateRange] = useState<{ from: Date | undefined, to: Date | undefined }>({ from: undefined, to: undefined });
+
 
     const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
     const merchants = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
@@ -42,11 +46,21 @@ export const CollectFromDriver = () => {
 
     const ordersForCollection = useMemo(() => {
         if (!selectedDriver) return [];
+        
+        const lowercasedQuery = searchQuery.toLowerCase();
+
         return orders.filter(o => 
             o.driver === selectedDriver.name && 
-            statusesForCollection.includes(o.status)
+            statusesForCollection.includes(o.status) &&
+            (searchQuery === '' || 
+             o.id.toLowerCase().includes(lowercasedQuery) ||
+             o.recipient.toLowerCase().includes(lowercasedQuery) ||
+             o.phone.toLowerCase().includes(lowercasedQuery)
+            ) &&
+            (!dateRange.from || new Date(o.date) >= dateRange.from) &&
+            (!dateRange.to || new Date(o.date) <= dateRange.to)
         );
-    }, [orders, selectedDriver, statusesForCollection]);
+    }, [orders, selectedDriver, statusesForCollection, searchQuery, dateRange]);
     
     const totals = useMemo(() => {
         const selectedOrders = ordersForCollection.filter(o => selectedOrderIds.includes(o.id));
@@ -69,7 +83,6 @@ export const CollectFromDriver = () => {
             title: 'تم تأكيد الاستلام (محاكاة)',
             description: `تم تسجيل استلام مبلغ ${formatCurrency(netPayable)} من السائق ${selectedDriver.name}.`
         });
-        // Here you would update statuses or create financial transaction
         setSelectedOrderIds([]);
     }
 
@@ -109,7 +122,7 @@ export const CollectFromDriver = () => {
             </CardHeader>
             <CardContent className="space-y-4">
                  <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border rounded-lg bg-muted/50">
-                    <div className="w-full sm:w-auto sm:min-w-[300px]">
+                    <div className="w-full sm:w-auto sm:min-w-[250px]">
                         <Select onValueChange={setSelectedDriverId} value={selectedDriverId || ''}>
                             <SelectTrigger>
                                 <SelectValue placeholder="اختر سائقًا..." />
@@ -121,111 +134,132 @@ export const CollectFromDriver = () => {
                             </SelectContent>
                         </Select>
                     </div>
-                    <Separator orientation='vertical' className="h-8 hidden sm:block"/>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                        <span><span className="font-semibold text-muted-foreground">إجمالي التحصيل المحدد:</span> {formatCurrency(totals.totalCOD)}</span>
-                        <span><span className="font-semibold text-muted-foreground">إجمالي أجرة السائق:</span> {formatCurrency(totals.totalDriverFare)}</span>
-                        <span className="font-bold text-lg text-primary"><span className="font-semibold text-muted-foreground">الصافي للدفع:</span> {formatCurrency(totals.totalCOD - totals.totalDriverFare)}</span>
+                     <div className="relative w-full sm:w-auto sm:min-w-[250px]">
+                        <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input 
+                            placeholder="بحث بالرقم، العميل، الهاتف..." 
+                            className="pr-10"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                     </div>
-                    <div className="w-full sm:w-auto sm:mr-auto">
-                        <Button onClick={handleConfirmCollection} disabled={selectedOrderIds.length === 0} className="w-full">
-                            <Icon name="Check" className="ml-2 h-4 w-4" />
-                            تأكيد استلام المبلغ ({selectedOrderIds.length})
-                        </Button>
+                    <DateRangePicker onUpdate={(range) => setDateRange(range.range)} />
+                     <div className="flex items-center gap-2 sm:mr-auto">
+                        <Button variant="outline" size="sm"><Icon name="FileDown" className="ml-2 h-4 w-4"/>تصدير PDF</Button>
+                        <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                 <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
-                                <TableHead className="text-center border-l">رقم الطلب</TableHead>
-                                <TableHead className="w-48 text-center border-l">التاجر</TableHead>
-                                <TableHead className="text-center border-l">الحالة</TableHead>
-                                <TableHead className="text-center border-l">الزبون</TableHead>
-                                <TableHead className="text-center border-l">الهاتف</TableHead>
-                                <TableHead className="text-center border-l">المنطقة</TableHead>
-                                <TableHead className="w-[120px] text-center border-l">قيمة التحصيل</TableHead>
-                                <TableHead className="w-[120px] text-center border-l">أجرة السائق</TableHead>
-                                <TableHead className="text-center">الصافي</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {!selectedDriver ? (
-                                <TableRow><TableCell colSpan={10} className="h-24 text-center">الرجاء اختيار سائق لعرض الطلبات.</TableCell></TableRow>
-                            ) : ordersForCollection.length === 0 ? (
-                                 <TableRow><TableCell colSpan={10} className="h-24 text-center">لا توجد طلبات مكتملة لهذا السائق.</TableCell></TableRow>
-                            ) : (
-                                ordersForCollection.map(order => {
-                                    const netAmount = (order.cod || 0) - (order.driverFee || 0);
-                                    return (
-                                        <TableRow key={order.id} data-state={selectedOrderIds.includes(order.id) ? "selected" : ""}>
-                                            <TableCell className="text-center border-l">
-                                                <Checkbox checked={selectedOrderIds.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} />
-                                            </TableCell>
-                                            <TableCell className="text-center border-l font-mono">{order.id}</TableCell>
-                                            <TableCell className="text-center border-l">
-                                                <Popover open={popoverStates[`merchant-${order.id}`]} onOpenChange={() => togglePopover(`merchant-${order.id}`)}>
-                                                    <PopoverTrigger asChild>
-                                                        <Button variant="ghost" className="w-full h-8 justify-between hover:bg-muted font-normal border">
-                                                        {order.merchant}
-                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-[200px] p-0">
-                                                        <Command>
-                                                        <CommandInput placeholder="بحث..." />
-                                                        <CommandList>
-                                                            <CommandEmpty>لم يوجد.</CommandEmpty>
-                                                            <CommandGroup>
-                                                            {merchants.map(m => (
-                                                                <CommandItem
-                                                                key={m.id}
-                                                                value={m.storeName || m.name}
-                                                                onSelect={() => {
-                                                                    updateOrderField(order.id, 'merchant', m.storeName || m.name);
-                                                                    togglePopover(`merchant-${order.id}`);
-                                                                }}
-                                                                >
-                                                                <Check className={cn("mr-2 h-4 w-4", order.merchant === (m.storeName || m.name) ? "opacity-100" : "opacity-0")} />
-                                                                {m.storeName || m.name}
-                                                                </CommandItem>
-                                                            ))}
-                                                            </CommandGroup>
-                                                        </CommandList>
-                                                        </Command>
-                                                    </PopoverContent>
-                                                </Popover>
-                                            </TableCell>
-                                            <TableCell className="text-center border-l">{getStatusBadge(order.status)}</TableCell>
-                                            <TableCell className="text-center border-l">{order.recipient}</TableCell>
-                                            <TableCell className="text-center border-l">{order.phone}</TableCell>
-                                            <TableCell className="text-center border-l">{order.region}</TableCell>
-                                            <TableCell className="text-center border-l">
-                                                <Input 
-                                                    type="number" 
-                                                    defaultValue={order.cod}
-                                                    onBlur={(e) => handleFieldChange(order.id, 'cod', e.target.value)}
-                                                    className="h-8 text-center"
-                                                />
-                                            </TableCell>
-                                            <TableCell className="text-center border-l">
-                                                <Input
-                                                    type="number"
-                                                    defaultValue={order.driverFee}
-                                                    onBlur={(e) => handleFieldChange(order.id, 'driverFee', e.target.value)}
-                                                    className="h-8 text-center"
-                                                />
-                                            </TableCell>
-                                            <TableCell className="text-center font-bold text-primary">{formatCurrency(netAmount)}</TableCell>
-                                        </TableRow>
-                                    )
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                <Card>
+                    <CardHeader className="p-4 bg-slate-50 dark:bg-slate-800/50">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                            <span><span className="font-semibold text-muted-foreground">إجمالي التحصيل المحدد:</span> {formatCurrency(totals.totalCOD)}</span>
+                            <Separator orientation='vertical' className="h-4"/>
+                            <span><span className="font-semibold text-muted-foreground">إجمالي أجرة السائق:</span> {formatCurrency(totals.totalDriverFare)}</span>
+                             <Separator orientation='vertical' className="h-4"/>
+                            <span className="font-bold text-lg text-primary"><span className="font-semibold text-muted-foreground">الصافي للدفع:</span> {formatCurrency(totals.totalCOD - totals.totalDriverFare)}</span>
+                            <div className="w-full sm:w-auto sm:mr-auto">
+                                <Button onClick={handleConfirmCollection} disabled={selectedOrderIds.length === 0} className="w-full">
+                                    <Icon name="Check" className="ml-2 h-4 w-4" />
+                                    تأكيد استلام المبلغ ({selectedOrderIds.length})
+                                </Button>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                         <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
+                                        <TableHead className="text-center border-l">رقم الطلب</TableHead>
+                                        <TableHead className="w-48 text-center border-l">التاجر</TableHead>
+                                        <TableHead className="text-center border-l">الحالة</TableHead>
+                                        <TableHead className="text-center border-l">الزبون</TableHead>
+                                        <TableHead className="text-center border-l">الهاتف</TableHead>
+                                        <TableHead className="text-center border-l">المنطقة</TableHead>
+                                        <TableHead className="w-[120px] text-center border-l">قيمة التحصيل</TableHead>
+                                        <TableHead className="w-[120px] text-center border-l">أجرة السائق</TableHead>
+                                        <TableHead className="text-center">الصافي</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {!selectedDriver ? (
+                                        <TableRow><TableCell colSpan={10} className="h-24 text-center">الرجاء اختيار سائق لعرض الطلبات.</TableCell></TableRow>
+                                    ) : ordersForCollection.length === 0 ? (
+                                        <TableRow><TableCell colSpan={10} className="h-24 text-center">لا توجد طلبات تطابق معايير البحث.</TableCell></TableRow>
+                                    ) : (
+                                        ordersForCollection.map(order => {
+                                            const netAmount = (order.cod || 0) - (order.driverFee || 0);
+                                            return (
+                                                <TableRow key={order.id} data-state={selectedOrderIds.includes(order.id) ? "selected" : ""}>
+                                                    <TableCell className="text-center border-l">
+                                                        <Checkbox checked={selectedOrderIds.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} />
+                                                    </TableCell>
+                                                    <TableCell className="text-center border-l font-mono">{order.id}</TableCell>
+                                                    <TableCell className="text-center border-l">
+                                                        <Popover open={popoverStates[`merchant-${order.id}`]} onOpenChange={() => togglePopover(`merchant-${order.id}`)}>
+                                                            <PopoverTrigger asChild>
+                                                                <Button variant="ghost" className="w-full h-8 justify-between hover:bg-muted font-normal border">
+                                                                {order.merchant}
+                                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                                </Button>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-[200px] p-0">
+                                                                <Command>
+                                                                <CommandInput placeholder="بحث..." />
+                                                                <CommandList>
+                                                                    <CommandEmpty>لم يوجد.</CommandEmpty>
+                                                                    <CommandGroup>
+                                                                    {merchants.map(m => (
+                                                                        <CommandItem
+                                                                        key={m.id}
+                                                                        value={m.storeName || m.name}
+                                                                        onSelect={() => {
+                                                                            updateOrderField(order.id, 'merchant', m.storeName || m.name);
+                                                                            togglePopover(`merchant-${order.id}`);
+                                                                        }}
+                                                                        >
+                                                                        <Check className={cn("mr-2 h-4 w-4", order.merchant === (m.storeName || m.name) ? "opacity-100" : "opacity-0")} />
+                                                                        {m.storeName || m.name}
+                                                                        </CommandItem>
+                                                                    ))}
+                                                                    </CommandGroup>
+                                                                </CommandList>
+                                                                </Command>
+                                                            </PopoverContent>
+                                                        </Popover>
+                                                    </TableCell>
+                                                    <TableCell className="text-center border-l">{getStatusBadge(order.status)}</TableCell>
+                                                    <TableCell className="text-center border-l">{order.recipient}</TableCell>
+                                                    <TableCell className="text-center border-l">{order.phone}</TableCell>
+                                                    <TableCell className="text-center border-l">{order.region}</TableCell>
+                                                    <TableCell className="text-center border-l">
+                                                        <Input 
+                                                            type="number" 
+                                                            defaultValue={order.cod}
+                                                            onBlur={(e) => handleFieldChange(order.id, 'cod', e.target.value)}
+                                                            className="h-8 text-center"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell className="text-center border-l">
+                                                        <Input
+                                                            type="number"
+                                                            defaultValue={order.driverFee}
+                                                            onBlur={(e) => handleFieldChange(order.id, 'driverFee', e.target.value)}
+                                                            className="h-8 text-center"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell className="text-center font-bold text-primary">{formatCurrency(netAmount)}</TableCell>
+                                                </TableRow>
+                                            )
+                                        })
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card>
             </CardContent>
         </Card>
     );

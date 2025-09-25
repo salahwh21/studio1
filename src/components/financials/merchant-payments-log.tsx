@@ -17,10 +17,18 @@ export const MerchantPaymentsLog = () => {
      return (
         <Card>
             <CardHeader>
-                <CardTitle>سجل دفعات التجار</CardTitle>
-                 <CardDescription>
-                    عرض وطباعة وتأكيد كشوفات الدفع التي تم إنشاؤها للتجار.
-                </CardDescription>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <CardTitle>سجل دفعات التجار</CardTitle>
+                        <CardDescription>
+                            عرض وطباعة وتأكيد كشوفات الدفع التي تم إنشاؤها للتجار.
+                        </CardDescription>
+                    </div>
+                     <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm"><Icon name="FileDown" className="ml-2 h-4 w-4"/>تصدير PDF</Button>
+                        <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
+                    </div>
+                </div>
             </CardHeader>
             <CardContent>
                 <Table>

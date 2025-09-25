@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { DateRangePicker } from '@/components/date-range-picker';
 
 export const PrepareMerchantPayments = () => {
     const { toast } = useToast();
@@ -24,17 +25,28 @@ export const PrepareMerchantPayments = () => {
     const [selectedMerchantId, setSelectedMerchantId] = useState<string | null>(null);
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
     const [adjustments, setAdjustments] = useState<Record<string, number>>({});
+    const [searchQuery, setSearchQuery] = useState('');
+    const [dateRange, setDateRange] = useState<{ from: Date | undefined, to: Date | undefined }>({ from: undefined, to: undefined });
 
     const merchants = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
     const selectedMerchant = merchants.find(m => m.id === selectedMerchantId);
 
     const ordersForPayment = useMemo(() => {
         if (!selectedMerchant) return [];
+
+        const lowercasedQuery = searchQuery.toLowerCase();
+
         return orders.filter(o => 
             o.merchant === selectedMerchant.storeName && 
-            o.status === 'تم التوصيل'
+            o.status === 'تم التوصيل' &&
+            (searchQuery === '' || 
+             o.id.toLowerCase().includes(lowercasedQuery) ||
+             o.recipient.toLowerCase().includes(lowercasedQuery)
+            ) &&
+            (!dateRange.from || new Date(o.date) >= dateRange.from) &&
+            (!dateRange.to || new Date(o.date) <= dateRange.to)
         );
-    }, [orders, selectedMerchant]);
+    }, [orders, selectedMerchant, searchQuery, dateRange]);
     
     const totals = useMemo(() => {
         const selectedOrders = ordersForPayment.filter(o => selectedOrderIds.includes(o.id));
@@ -86,8 +98,8 @@ export const PrepareMerchantPayments = () => {
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                 <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border rounded-lg bg-muted/50">
-                    <div className="w-full sm:w-auto sm:min-w-[300px]">
+                <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border rounded-lg bg-muted/50">
+                    <div className="w-full sm:w-auto sm:min-w-[250px]">
                         <Select onValueChange={setSelectedMerchantId} value={selectedMerchantId || ''}>
                             <SelectTrigger>
                                 <SelectValue placeholder="اختر تاجرًا..." />
@@ -99,71 +111,92 @@ export const PrepareMerchantPayments = () => {
                             </SelectContent>
                         </Select>
                     </div>
-                    <Separator orientation='vertical' className="h-8 hidden sm:block"/>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                        <span><span className="font-semibold text-muted-foreground">المستحق:</span> {formatCurrency(totals.totalItemPrice)}</span>
-                        <span><span className="font-semibold text-muted-foreground">التعديلات:</span> {formatCurrency(totals.totalAdjustments)}</span>
-                        <span className="font-bold text-lg text-primary"><span className="font-semibold text-muted-foreground">الصافي:</span> {formatCurrency(totals.totalNet)}</span>
+                     <div className="relative w-full sm:w-auto sm:min-w-[250px]">
+                        <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input 
+                            placeholder="بحث بالرقم، المستلم..." 
+                            className="pr-10"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                     </div>
-                    <div className="w-full sm:w-auto sm:mr-auto">
-                        <Button onClick={handleCreatePaymentSlip} disabled={selectedOrderIds.length === 0} className="w-full">
-                            <Icon name="FilePlus" className="ml-2 h-4 w-4" />
-                            إنشاء كشف دفع ({selectedOrderIds.length})
-                        </Button>
+                    <DateRangePicker onUpdate={(range) => setDateRange(range.range)} />
+                     <div className="flex items-center gap-2 sm:mr-auto">
+                        <Button variant="outline" size="sm"><Icon name="FileDown" className="ml-2 h-4 w-4"/>تصدير PDF</Button>
+                        <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                 <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForPayment.length > 0 && selectedOrderIds.length === ordersForPayment.length} /></TableHead>
-                                <TableHead className="text-center border-l">رقم الطلب</TableHead>
-                                <TableHead className="text-center border-l">المستلم</TableHead>
-                                <TableHead className="text-center border-l">تاريخ التوصيل</TableHead>
-                                <TableHead className="text-center border-l">قيمة التحصيل</TableHead>
-                                <TableHead className="text-center border-l">أجور التوصيل</TableHead>
-                                <TableHead className="text-center border-l">المستحق للتاجر</TableHead>
-                                <TableHead className="w-[120px] text-center border-l">تعديلات (+/-)</TableHead>
-                                <TableHead className="text-center">الصافي المستحق</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {!selectedMerchant ? (
-                                <TableRow><TableCell colSpan={9} className="h-24 text-center">الرجاء اختيار تاجر لعرض الطلبات.</TableCell></TableRow>
-                            ) : ordersForPayment.length === 0 ? (
-                                 <TableRow><TableCell colSpan={9} className="h-24 text-center">لا توجد طلبات مكتملة لهذا التاجر.</TableCell></TableRow>
-                            ) : (
-                                ordersForPayment.map(order => {
-                                    const adjustment = adjustments[order.id] || 0;
-                                    const netAmount = (order.itemPrice || 0) + adjustment;
-                                    return (
-                                        <TableRow key={order.id} data-state={selectedOrderIds.includes(order.id) ? "selected" : ""}>
-                                            <TableCell className="text-center border-l">
-                                                <Checkbox checked={selectedOrderIds.includes(order.id)} onCheckedChange={(checked) => setSelectedOrderIds(p => checked ? [...p, order.id] : p.filter(id => id !== order.id))} />
-                                            </TableCell>
-                                            <TableCell className="text-center border-l font-mono">{order.id}</TableCell>
-                                            <TableCell className="text-center border-l">{order.recipient}</TableCell>
-                                            <TableCell className="text-center border-l">{order.date}</TableCell>
-                                            <TableCell className="text-center border-l">{formatCurrency(order.cod)}</TableCell>
-                                            <TableCell className="text-center border-l">{formatCurrency(order.deliveryFee)}</TableCell>
-                                            <TableCell className="text-center border-l font-semibold">{formatCurrency(order.itemPrice)}</TableCell>
-                                            <TableCell className="text-center border-l">
-                                                <Input 
-                                                    type="number" 
-                                                    className="h-8 text-center" 
-                                                    value={adjustment}
-                                                    onChange={(e) => handleAdjustmentChange(order.id, e.target.value)}
-                                                />
-                                            </TableCell>
-                                            <TableCell className="text-center font-bold text-primary">{formatCurrency(netAmount)}</TableCell>
-                                        </TableRow>
-                                    )
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                <Card>
+                    <CardHeader className="p-4 bg-slate-50 dark:bg-slate-800/50">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                            <span><span className="font-semibold text-muted-foreground">المستحق:</span> {formatCurrency(totals.totalItemPrice)}</span>
+                             <Separator orientation='vertical' className="h-4"/>
+                            <span><span className="font-semibold text-muted-foreground">التعديلات:</span> {formatCurrency(totals.totalAdjustments)}</span>
+                            <Separator orientation='vertical' className="h-4"/>
+                            <span className="font-bold text-lg text-primary"><span className="font-semibold text-muted-foreground">الصافي:</span> {formatCurrency(totals.totalNet)}</span>
+                            <div className="w-full sm:w-auto sm:mr-auto">
+                                <Button onClick={handleCreatePaymentSlip} disabled={selectedOrderIds.length === 0} className="w-full">
+                                    <Icon name="FilePlus" className="ml-2 h-4 w-4" />
+                                    إنشاء كشف دفع ({selectedOrderIds.length})
+                                </Button>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForPayment.length > 0 && selectedOrderIds.length === ordersForPayment.length} /></TableHead>
+                                        <TableHead className="text-center border-l">رقم الطلب</TableHead>
+                                        <TableHead className="text-center border-l">المستلم</TableHead>
+                                        <TableHead className="text-center border-l">تاريخ التوصيل</TableHead>
+                                        <TableHead className="text-center border-l">قيمة التحصيل</TableHead>
+                                        <TableHead className="text-center border-l">أجور التوصيل</TableHead>
+                                        <TableHead className="text-center border-l">المستحق للتاجر</TableHead>
+                                        <TableHead className="w-[120px] text-center border-l">تعديلات (+/-)</TableHead>
+                                        <TableHead className="text-center">الصافي المستحق</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {!selectedMerchant ? (
+                                        <TableRow><TableCell colSpan={9} className="h-24 text-center">الرجاء اختيار تاجر لعرض الطلبات.</TableCell></TableRow>
+                                    ) : ordersForPayment.length === 0 ? (
+                                        <TableRow><TableCell colSpan={9} className="h-24 text-center">لا توجد طلبات مكتملة لهذا التاجر.</TableCell></TableRow>
+                                    ) : (
+                                        ordersForPayment.map(order => {
+                                            const adjustment = adjustments[order.id] || 0;
+                                            const netAmount = (order.itemPrice || 0) + adjustment;
+                                            return (
+                                                <TableRow key={order.id} data-state={selectedOrderIds.includes(order.id) ? "selected" : ""}>
+                                                    <TableCell className="text-center border-l">
+                                                        <Checkbox checked={selectedOrderIds.includes(order.id)} onCheckedChange={(checked) => setSelectedOrderIds(p => checked ? [...p, order.id] : p.filter(id => id !== order.id))} />
+                                                    </TableCell>
+                                                    <TableCell className="text-center border-l font-mono">{order.id}</TableCell>
+                                                    <TableCell className="text-center border-l">{order.recipient}</TableCell>
+                                                    <TableCell className="text-center border-l">{order.date}</TableCell>
+                                                    <TableCell className="text-center border-l">{formatCurrency(order.cod)}</TableCell>
+                                                    <TableCell className="text-center border-l">{formatCurrency(order.deliveryFee)}</TableCell>
+                                                    <TableCell className="text-center border-l font-semibold">{formatCurrency(order.itemPrice)}</TableCell>
+                                                    <TableCell className="text-center border-l">
+                                                        <Input 
+                                                            type="number" 
+                                                            className="h-8 text-center" 
+                                                            value={adjustment}
+                                                            onChange={(e) => handleAdjustmentChange(order.id, e.target.value)}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell className="text-center font-bold text-primary">{formatCurrency(netAmount)}</TableCell>
+                                                </TableRow>
+                                            )
+                                        })
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card>
             </CardContent>
         </Card>
     );
