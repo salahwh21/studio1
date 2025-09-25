@@ -14,6 +14,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export const CollectFromDriver = () => {
     const { toast } = useToast();
@@ -23,8 +27,10 @@ export const CollectFromDriver = () => {
     
     const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+    const [popoverStates, setPopoverStates] = useState<Record<string, boolean>>({});
 
     const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
+    const merchants = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
     const selectedDriver = drivers.find(m => m.id === selectedDriverId);
 
     const ordersForCollection = useMemo(() => {
@@ -75,6 +81,10 @@ export const CollectFromDriver = () => {
         updateOrderField(orderId, field, numericValue);
     };
 
+    const togglePopover = (id: string) => {
+        setPopoverStates(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
     return (
         <Card>
             <CardHeader>
@@ -117,7 +127,7 @@ export const CollectFromDriver = () => {
                             <TableRow>
                                  <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
                                 <TableHead className="text-center border-l">رقم الطلب</TableHead>
-                                <TableHead className="text-center border-l">التاجر</TableHead>
+                                <TableHead className="w-48 text-center border-l">التاجر</TableHead>
                                 <TableHead className="text-center border-l">الزبون</TableHead>
                                 <TableHead className="text-center border-l">الهاتف</TableHead>
                                 <TableHead className="text-center border-l">المنطقة</TableHead>
@@ -140,7 +150,39 @@ export const CollectFromDriver = () => {
                                                 <Checkbox checked={selectedOrderIds.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} />
                                             </TableCell>
                                             <TableCell className="text-center border-l font-mono">{order.id}</TableCell>
-                                            <TableCell className="text-center border-l">{order.merchant}</TableCell>
+                                            <TableCell className="text-center border-l">
+                                                <Popover open={popoverStates[`merchant-${order.id}`]} onOpenChange={() => togglePopover(`merchant-${order.id}`)}>
+                                                    <PopoverTrigger asChild>
+                                                        <Button variant="ghost" className="w-full h-8 justify-between hover:bg-muted font-normal border">
+                                                        {order.merchant}
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-[200px] p-0">
+                                                        <Command>
+                                                        <CommandInput placeholder="بحث..." />
+                                                        <CommandList>
+                                                            <CommandEmpty>لم يوجد.</CommandEmpty>
+                                                            <CommandGroup>
+                                                            {merchants.map(m => (
+                                                                <CommandItem
+                                                                key={m.id}
+                                                                value={m.storeName || m.name}
+                                                                onSelect={() => {
+                                                                    updateOrderField(order.id, 'merchant', m.storeName || m.name);
+                                                                    togglePopover(`merchant-${order.id}`);
+                                                                }}
+                                                                >
+                                                                <Check className={cn("mr-2 h-4 w-4", order.merchant === (m.storeName || m.name) ? "opacity-100" : "opacity-0")} />
+                                                                {m.storeName || m.name}
+                                                                </CommandItem>
+                                                            ))}
+                                                            </CommandGroup>
+                                                        </CommandList>
+                                                        </Command>
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </TableCell>
                                             <TableCell className="text-center border-l">{order.recipient}</TableCell>
                                             <TableCell className="text-center border-l">{order.phone}</TableCell>
                                             <TableCell className="text-center border-l">{order.region}</TableCell>
