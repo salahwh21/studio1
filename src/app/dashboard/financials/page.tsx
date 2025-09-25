@@ -25,6 +25,11 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/icon';
 import { useSettings } from '@/contexts/SettingsContext';
+import { DriverSlips } from '@/components/returns-stages/driver-slips';
+import { PrepareForMerchants } from '@/components/returns-stages/prepare-for-merchants';
+import { MerchantSlips } from '@/components/returns-stages/merchant-slips';
+import { ReceiveFromDrivers } from '@/components/returns-stages/receive-from-drivers';
+
 
 // ---------------- Section 1: Collect from Driver ----------------
 const CollectFromDriver = () => {
@@ -112,8 +117,8 @@ export default function FinancialsPage() {
             </CardHeader>
         </Card>
 
-        <Tabs defaultValue="collect-from-driver" className="w-full">
-            <TabsList className="grid w-full grid-cols-4" dir="rtl">
+        <Tabs defaultValue="collect-from-driver" className="w-full" dir="rtl">
+            <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="collect-from-driver">1. تحصيل من السائق</TabsTrigger>
                 <TabsTrigger value="driver-payments-log">2. دفعات السائقين</TabsTrigger>
                 <TabsTrigger value="prepare-merchant-payments">3. تجهيز دفعات التجار</TabsTrigger>
