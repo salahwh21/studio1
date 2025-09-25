@@ -5,88 +5,169 @@ import { useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useOrdersStore } from '@/store/orders-store';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useUsersStore } from '@/store/user-store';
 import { useSettings } from '@/contexts/SettingsContext';
 import Icon from '@/components/icon';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 
 export const CollectFromDriver = () => {
     const { toast } = useToast();
     const { users } = useUsersStore();
-    const { orders } = useOrdersStore();
+    const { orders, updateOrderField } = useOrdersStore();
     const { formatCurrency } = useSettings();
+    
+    const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+    const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
 
     const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
+    const selectedDriver = drivers.find(m => m.id === selectedDriverId);
 
-    const driverCollections = useMemo(() => {
-        const collections: Record<string, { orderCount: number; amount: number; }> = {};
+    const ordersForCollection = useMemo(() => {
+        if (!selectedDriver) return [];
+        return orders.filter(o => 
+            o.driver === selectedDriver.name && 
+            o.status === 'تم التوصيل'
+        );
+    }, [orders, selectedDriver]);
+    
+    const totals = useMemo(() => {
+        const selectedOrders = ordersForCollection.filter(o => selectedOrderIds.includes(o.id));
         
-        orders.forEach(order => {
-            if (order.status === 'تم التوصيل' && order.driver) {
-                if (!collections[order.driver]) {
-                    collections[order.driver] = { orderCount: 0, amount: 0 };
-                }
-                collections[order.driver].orderCount++;
-                collections[order.driver].amount += order.cod;
-            }
-        });
-        
-        return Object.entries(collections).map(([driverName, data]) => ({
-            driverName,
-            ...data
-        }));
-    }, [orders]);
+        return selectedOrders.reduce((acc, order) => {
+            acc.totalCOD += order.cod || 0;
+            acc.totalDriverFare += order.driverFee || 0;
+            return acc;
+        }, { totalCOD: 0, totalDriverFare: 0, netPayable: 0 });
 
-    const handleConfirmCollection = (driverName: string, amount: number) => {
+    }, [ordersForCollection, selectedOrderIds]);
+
+    const handleConfirmCollection = () => {
+        if (!selectedDriver || selectedOrderIds.length === 0) {
+            toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء اختيار سائق وطلب واحد على الأقل.'});
+            return;
+        }
+        const netPayable = totals.totalCOD - totals.totalDriverFare;
         toast({
-            title: "تم تأكيد الاستلام (محاكاة)",
-            description: `تم تسجيل استلام مبلغ ${formatCurrency(amount)} من السائق ${driverName}.`,
+            title: 'تم تأكيد الاستلام (محاكاة)',
+            description: `تم تسجيل استلام مبلغ ${formatCurrency(netPayable)} من السائق ${selectedDriver.name}.`
         });
-        // In a real app, you would update the order statuses or create a financial transaction record here.
+        // Here you would update statuses or create financial transaction
+        setSelectedOrderIds([]);
     }
+
+    const handleSelectAll = (checked: boolean) => {
+        setSelectedOrderIds(checked ? ordersForCollection.map(o => o.id) : []);
+    };
+    
+    const handleSelectRow = (orderId: string, isChecked: boolean) => {
+        setSelectedOrderIds(prev => 
+            isChecked ? [...prev, orderId] : prev.filter(id => id !== orderId)
+        );
+    };
+
+    const handleFieldChange = (orderId: string, field: keyof Order, value: any) => {
+        const numericValue = parseFloat(value) || 0;
+        updateOrderField(orderId, field, numericValue);
+    };
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>المرحلة الأولى: تحصيل المبالغ من السائقين</CardTitle>
                 <CardDescription>
-                    عرض المبالغ المستحقة على السائقين من الشحنات التي تم توصيلها وتأكيد استلامها.
+                    اختر سائقًا لعرض الشحنات التي تم توصيلها، ثم حدد الشحنات وقم بتأكيد استلام المبلغ الصافي.
                 </CardDescription>
             </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="text-center border-l">اسم السائق</TableHead>
-                            <TableHead className="text-center border-l">عدد الشحنات</TableHead>
-                            <TableHead className="text-center border-l">المبلغ المستحق</TableHead>
-                            <TableHead className="text-center">إجراء</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {driverCollections.length > 0 ? driverCollections.map(collection => (
-                            <TableRow key={collection.driverName}>
-                                <TableCell className="text-center border-l font-medium">{collection.driverName}</TableCell>
-                                <TableCell className="text-center border-l">
-                                    <Badge variant="secondary">{collection.orderCount}</Badge>
-                                </TableCell>
-                                <TableCell className="text-center border-l font-bold text-primary">{formatCurrency(collection.amount)}</TableCell>
-                                <TableCell className="text-center">
-                                    <Button size="sm" onClick={() => handleConfirmCollection(collection.driverName, collection.amount)}>
-                                        <Icon name="Check" className="ml-2 h-4 w-4" />
-                                        تأكيد استلام المبلغ
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        )) : (
+            <CardContent className="space-y-4">
+                 <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border rounded-lg bg-muted/50">
+                    <div className="w-full sm:w-auto sm:min-w-[300px]">
+                        <Select onValueChange={setSelectedDriverId} value={selectedDriverId || ''}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="اختر سائقًا..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {drivers.map(d => (
+                                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <Separator orientation='vertical' className="h-8 hidden sm:block"/>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                        <span><span className="font-semibold text-muted-foreground">إجمالي التحصيل المحدد:</span> {formatCurrency(totals.totalCOD)}</span>
+                        <span><span className="font-semibold text-muted-foreground">إجمالي أجرة السائق:</span> {formatCurrency(totals.totalDriverFare)}</span>
+                        <span className="font-bold text-lg text-primary"><span className="font-semibold text-muted-foreground">الصافي للدفع:</span> {formatCurrency(totals.totalCOD - totals.totalDriverFare)}</span>
+                    </div>
+                    <div className="w-full sm:w-auto sm:mr-auto">
+                        <Button onClick={handleConfirmCollection} disabled={selectedOrderIds.length === 0} className="w-full">
+                            <Icon name="Check" className="ml-2 h-4 w-4" />
+                            تأكيد استلام المبلغ ({selectedOrderIds.length})
+                        </Button>
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
                             <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center">لا توجد مبالغ مستحقة للتحصيل حاليًا.</TableCell>
+                                 <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
+                                <TableHead className="text-center border-l">رقم الطلب</TableHead>
+                                <TableHead className="text-center border-l">التاجر</TableHead>
+                                <TableHead className="text-center border-l">الزبون</TableHead>
+                                <TableHead className="text-center border-l">الهاتف</TableHead>
+                                <TableHead className="text-center border-l">المنطقة</TableHead>
+                                <TableHead className="w-[120px] text-center border-l">قيمة التحصيل</TableHead>
+                                <TableHead className="w-[120px] text-center border-l">أجرة السائق</TableHead>
+                                <TableHead className="text-center">الصافي</TableHead>
                             </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {!selectedDriver ? (
+                                <TableRow><TableCell colSpan={9} className="h-24 text-center">الرجاء اختيار سائق لعرض الطلبات.</TableCell></TableRow>
+                            ) : ordersForCollection.length === 0 ? (
+                                 <TableRow><TableCell colSpan={9} className="h-24 text-center">لا توجد طلبات مكتملة لهذا السائق.</TableCell></TableRow>
+                            ) : (
+                                ordersForCollection.map(order => {
+                                    const netAmount = (order.cod || 0) - (order.driverFee || 0);
+                                    return (
+                                        <TableRow key={order.id} data-state={selectedOrderIds.includes(order.id) ? "selected" : ""}>
+                                            <TableCell className="text-center border-l">
+                                                <Checkbox checked={selectedOrderIds.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} />
+                                            </TableCell>
+                                            <TableCell className="text-center border-l font-mono">{order.id}</TableCell>
+                                            <TableCell className="text-center border-l">{order.merchant}</TableCell>
+                                            <TableCell className="text-center border-l">{order.recipient}</TableCell>
+                                            <TableCell className="text-center border-l">{order.phone}</TableCell>
+                                            <TableCell className="text-center border-l">{order.region}</TableCell>
+                                            <TableCell className="text-center border-l">
+                                                <Input 
+                                                    type="number" 
+                                                    defaultValue={order.cod}
+                                                    onBlur={(e) => handleFieldChange(order.id, 'cod', e.target.value)}
+                                                    className="h-8 text-center"
+                                                />
+                                            </TableCell>
+                                            <TableCell className="text-center border-l">
+                                                <Input
+                                                    type="number"
+                                                    defaultValue={order.driverFee}
+                                                    onBlur={(e) => handleFieldChange(order.id, 'driverFee', e.target.value)}
+                                                    className="h-8 text-center"
+                                                />
+                                            </TableCell>
+                                            <TableCell className="text-center font-bold text-primary">{formatCurrency(netAmount)}</TableCell>
+                                        </TableRow>
+                                    )
+                                })
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
             </CardContent>
         </Card>
     );
