@@ -1,106 +1,20 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useOrdersStore, type Order } from '@/store/orders-store';
-import { useUsersStore, type User } from '@/store/user-store';
-
+import { useState } from 'react';
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/icon';
-import { useSettings } from '@/contexts/SettingsContext';
-import { DriverSlips } from '@/components/returns-stages/driver-slips';
-import { PrepareForMerchants } from '@/components/returns-stages/prepare-for-merchants';
-import { MerchantSlips } from '@/components/returns-stages/merchant-slips';
-import { ReceiveFromDrivers } from '@/components/returns-stages/receive-from-drivers';
 
-
-// ---------------- Section 1: Collect from Driver ----------------
-const CollectFromDriver = () => {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>المرحلة الأولى: تحصيل المبالغ من السائقين</CardTitle>
-        <CardDescription>
-          عرض المبالغ المستحقة على السائقين من الشحنات التي تم توصيلها وتأكيد استلامها.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground">سيتم بناء هذه الواجهة هنا لإدارة عملية التحصيل اليومي من السائقين.</p>
-      </CardContent>
-    </Card>
-  );
-};
-
-
-// ---------------- Section 2: Driver Payments Log ----------------
-const DriverPaymentsLog = () => {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>سجل الدفعات للسائقين</CardTitle>
-                 <CardDescription>
-                    عرض وتأكيد دفع أجور السائقين المستحقة.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground">سيتم بناء هذه الواجهة هنا لعرض سجل دفع أجور السائقين.</p>
-            </CardContent>
-        </Card>
-    );
-};
-
-
-// ---------------- Section 3: Prepare Merchant Payments ----------------
-const PrepareMerchantPayments = () => {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>تجهيز مستحقات التجار</CardTitle>
-                 <CardDescription>
-                    تجميع المبالغ المستحقة للتجار من الطلبات المكتملة وإنشاء كشوفات دفع.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground">سيتم بناء هذه الواجهة هنا لتجميع وتجهيز كشوفات دفع التجار.</p>
-            </CardContent>
-        </Card>
-    );
-};
-
-
-// ---------------- Section 4: Merchant Payments Log ----------------
-const MerchantPaymentsLog = () => {
-     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>سجل دفعات التجار</CardTitle>
-                 <CardDescription>
-                    عرض وطباعة وتأكيد كشوفات الدفع التي تم إنشاؤها للتجار.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground">سيتم بناء هذه الواجهة هنا لعرض سجل دفعات التجار وتأكيدها.</p>
-            </CardContent>
-        </Card>
-    );
-}
+import { CollectFromDriver } from '@/components/financials/collect-from-driver';
+import { DriverPaymentsLog } from '@/components/financials/driver-payments-log';
+import { PrepareMerchantPayments } from '@/components/financials/prepare-merchant-payments';
+import { MerchantPaymentsLog } from '@/components/financials/merchant-payments-log';
 
 // ---------------- Main Component ----------------
 export default function FinancialsPage() {
