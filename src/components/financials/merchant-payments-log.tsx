@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -54,14 +54,16 @@ export const MerchantPaymentsLog = () => {
 
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        if (!slipPrintRef.current) {
+        const slipContainer = slipPrintRef.current?.querySelector('.slip-container');
+
+        if (!slipContainer) {
             toast({ variant: 'destructive', title: 'فشل التنزيل', description: 'لم يتم العثور على محتوى للتصدير.' });
             setIsExporting(null);
             return;
         }
 
         try {
-            const canvas = await html2canvas(slipPrintRef.current.querySelector('.slip-container') as HTMLElement, { scale: 2 });
+            const canvas = await html2canvas(slipContainer as HTMLElement, { scale: 2 });
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF({
                 orientation: 'portrait',
@@ -111,11 +113,11 @@ export const MerchantPaymentsLog = () => {
                     tfoot { background-color: #f9f9f9; font-weight: bold; }
                 `}</style>
                 <div className="header">
-                    ${logoUrl ? `<img src="${logoUrl}" alt="Logo" />` : `<h1>${settings.login.companyName || 'الشركة'}</h1>`}
+                    {logoUrl ? <img src={logoUrl} alt="Logo" /> : <h1>{settings.login.companyName || 'الشركة'}</h1>}
                     <div>
-                        <h2>كشف دفع للتاجر: ${slip.merchantName}</h2>
-                        <p>التاريخ: ${slipDate}</p>
-                        <p>رقم الكشف: ${slip.id}</p>
+                        <h2>كشف دفع للتاجر: {slip.merchantName}</h2>
+                        <p>التاريخ: {slipDate}</p>
+                        <p>رقم الكشف: {slip.id}</p>
                     </div>
                 </div>
                 <table>
@@ -130,23 +132,23 @@ export const MerchantPaymentsLog = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        ${slip.orders.map((o, i) => `
-                            <tr>
-                                <td>${i + 1}</td>
-                                <td>${o.id}</td>
-                                <td>${o.recipient}</td>
-                                <td>${formatCurrency(o.cod)}</td>
-                                <td>${formatCurrency(o.deliveryFee)}</td>
-                                <td style="font-weight: bold;">${formatCurrency(o.itemPrice)}</td>
+                        {slip.orders.map((o, i) => (
+                            <tr key={o.id}>
+                                <td>{i + 1}</td>
+                                <td>{o.id}</td>
+                                <td>{o.recipient}</td>
+                                <td>{formatCurrency(o.cod)}</td>
+                                <td>{formatCurrency(o.deliveryFee)}</td>
+                                <td style={{fontWeight: 'bold'}}>{formatCurrency(o.itemPrice)}</td>
                             </tr>
-                        `).join('')}
+                        ))}
                     </tbody>
                     <tfoot>
                         <tr>
-                            <th colspan="3">الإجمالي</th>
-                            <th>${formatCurrency(totalCod)}</th>
-                            <th>${formatCurrency(totalDelivery)}</th>
-                            <th>${formatCurrency(totalNet)}</th>
+                            <th colSpan={3}>الإجمالي</th>
+                            <th>{formatCurrency(totalCod)}</th>
+                            <th>{formatCurrency(totalDelivery)}</th>
+                            <th>{formatCurrency(totalNet)}</th>
                         </tr>
                     </tfoot>
                 </table>
