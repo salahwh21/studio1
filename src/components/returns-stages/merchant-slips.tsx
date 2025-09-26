@@ -73,76 +73,89 @@ export const MerchantSlips = () => {
     }
 
     const handlePrintAction = (slipsToPrint: MerchantSlip[]) => {
-        startTransition(async () => {
-            if (slipsToPrint.length === 0) return;
-            toast({ title: "جاري تجهيز ملف PDF...", description: `سيتم طباعة ${slipsToPrint.length} كشف.` });
-            try {
-                const doc = new jsPDF();
-                
-                // doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
-                // doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-                // doc.setFont('Amiri');
+        if (slipsToPrint.length === 0) {
+            toast({ variant: 'destructive', title: 'خطأ', description: 'لم يتم تحديد كشوفات للطباعة.' });
+            return;
+        }
 
-                const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            toast({ variant: "destructive", title: "فشل الطباعة", description: "يرجى السماح بفتح النوافذ المنبثقة." });
+            return;
+        }
 
-                slipsToPrint.forEach((slip, slipIndex) => {
-                    if (slipIndex > 0) doc.addPage();
-                    doc.setRTL(true);
+        const slipDate = new Date().toLocaleDateString('ar-EG');
+        const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
+        
+        let slipsContent = '';
+        slipsToPrint.forEach(slip => {
+            const tableHeader = `
+                <thead>
+                    <tr>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم الأصلي</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">سبب الإرجاع</th>
+                    </tr>
+                </thead>
+            `;
+            const tableRows = slip.orders.map((o, i) => `
+                <tr>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${i + 1}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${o.id}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${o.recipient}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${o.previousStatus || o.status}</td>
+                </tr>
+            `).join('');
 
-                    if (reportsLogo) {
-                        try {
-                            doc.addImage(reportsLogo, 'PNG', 15, 10, 30, 10);
-                        } catch (e) {
-                            console.error("Error adding logo to PDF:", e);
-                        }
-                    }
-
-                    doc.setFontSize(18);
-                    doc.text(`كشف إرجاع بضاعة: ${slip.merchant}`, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-                    
-                    doc.setFontSize(10);
-                    doc.text(`تاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
-                    doc.text(`رقم الكشف: ${slip.id}`, 15, 30, { align: 'left' });
-
-                    const tableColumn = ["#", "رقم الطلب", "المستلم", "الهاتف", "سبب الإرجاع", "المبلغ"];
-                    const tableRows = slip.orders.map((order, index) => [
-                        index + 1,
-                        order.id,
-                        order.recipient,
-                        order.phone,
-                        order.previousStatus || order.status,
-                        formatCurrency(order.cod),
-                    ]);
-
-                    (doc as any).autoTable({
-                        head: [tableColumn],
-                        body: tableRows,
-                        startY: 45,
-                        theme: 'grid',
-                        styles: { font: 'Amiri', halign: 'center' },
-                        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-                        columnStyles: {
-                             1: { halign: 'right' },
-                             2: { halign: 'right' },
-                             3: { halign: 'center' },
-                             4: { halign: 'right' },
-                             5: { halign: 'right' },
-                        },
-                        didDrawPage: (data: any) => {
-                            // Footer
-                            doc.setFontSize(10);
-                            doc.text('توقيع المستلم: .........................', doc.internal.pageSize.getWidth() - data.settings.margin.right, doc.internal.pageSize.height - 15, { align: 'right' });
-                            doc.text('توقيع مندوب الوميض: .........................', data.settings.margin.left, doc.internal.pageSize.height - 15, { align: 'left' });
-                        }
-                    });
-                });
-                
-                doc.save('merchant_return_slips.pdf');
-            } catch (e: any) {
-                console.error("PDF generation error:", e);
-                toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: e.message || 'حدث خطأ أثناء تجهيز الملف.' });
-            }
+            slipsContent += `
+                <div class="slip-container">
+                    <div class="header">
+                        ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="height: 50px;">` : `<h1>${settings.login.companyName || 'الشركة'}</h1>`}
+                        <div>
+                            <h2>كشف إرجاع بضاعة: ${slip.merchant}</h2>
+                            <p>التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}</p>
+                            <p>رقم الكشف: ${slip.id}</p>
+                        </div>
+                    </div>
+                    <table>
+                        ${tableHeader}
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                    <div class="signatures">
+                        <div class="signature">توقيع المستلم (التاجر)</div>
+                        <div class="signature">توقيع مندوب الوميض</div>
+                    </div>
+                </div>
+            `;
         });
+        
+        const fullContent = `
+            <html>
+                <head>
+                    <title>كشوفات إرجاع للتجار</title>
+                    <style>
+                        body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                        .slip-container { page-break-after: always; margin-bottom: 40px; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th, td { padding: 8px; border: 1px solid #ddd; text-align: right; }
+                        th { background-color: #f2f2f2; }
+                        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+                        .signatures { margin-top: 40px; display: flex; justify-content: space-between; }
+                        .signature { border-top: 1px solid #000; padding-top: 5px; width: 200px; text-align: center; }
+                        @media print { .slip-container:last-child { page-break-after: auto; } }
+                    </style>
+                </head>
+                <body>
+                    ${slipsContent}
+                </body>
+            </html>
+        `;
+
+        printWindow.document.write(fullContent);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
     };
     
     const handleSendWhatsApp = () => {
@@ -215,7 +228,7 @@ export const MerchantSlips = () => {
                             <DropdownMenuContent align="end">
                                  <DropdownMenuItem onSelect={() => handlePrintAction(selectedSlipData)} disabled={isPending}>
                                     {isPending ? <Icon name="Loader2" className="animate-spin ml-2" /> : <Icon name="Printer" className="ml-2 h-4 w-4" />}
-                                    طباعة المحدد (PDF)
+                                    طباعة المحدد (HTML)
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onSelect={handleExport}>
