@@ -20,7 +20,7 @@ import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useStatusesStore } from '@/store/statuses-store';
-import { DateRangePicker } from '@/components/date-range-picker';
+// import { DateRangePicker } from '@/components/date-range-picker';
 
 export const CollectFromDriver = () => {
     const { toast } = useToast();
@@ -33,7 +33,7 @@ export const CollectFromDriver = () => {
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
     const [popoverStates, setPopoverStates] = useState<Record<string, boolean>>({});
     const [searchQuery, setSearchQuery] = useState('');
-    const [dateRange, setDateRange] = useState<{ from: Date | undefined, to: Date | undefined }>({ from: undefined, to: undefined });
+    // const [dateRange, setDateRange] = useState<{ from: Date | undefined, to: Date | undefined }>({ from: undefined, to: undefined });
 
 
     const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
@@ -56,11 +56,12 @@ export const CollectFromDriver = () => {
              o.id.toLowerCase().includes(lowercasedQuery) ||
              o.recipient.toLowerCase().includes(lowercasedQuery) ||
              o.phone.toLowerCase().includes(lowercasedQuery)
-            ) &&
-            (!dateRange.from || new Date(o.date) >= dateRange.from) &&
-            (!dateRange.to || new Date(o.date) <= dateRange.to)
+            ) 
+            // &&
+            // (!dateRange.from || new Date(o.date) >= dateRange.from) &&
+            // (!dateRange.to || new Date(o.date) <= dateRange.to)
         );
-    }, [orders, selectedDriver, statusesForCollection, searchQuery, dateRange]);
+    }, [orders, selectedDriver, statusesForCollection, searchQuery]);
     
     const totals = useMemo(() => {
         const selectedOrders = ordersForCollection.filter(o => selectedOrderIds.includes(o.id));
@@ -171,15 +172,15 @@ export const CollectFromDriver = () => {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
-                                        <TableHead className="text-center border-l">رقم الطلب</TableHead>
-                                        <TableHead className="w-48 text-center border-l">التاجر</TableHead>
-                                        <TableHead className="text-center border-l">الحالة</TableHead>
-                                        <TableHead className="text-center border-l">الزبون</TableHead>
-                                        <TableHead className="text-center border-l">الهاتف</TableHead>
-                                        <TableHead className="text-center border-l">المنطقة</TableHead>
-                                        <TableHead className="w-[120px] text-center border-l">قيمة التحصيل</TableHead>
-                                        <TableHead className="w-[120px] text-center border-l">أجرة السائق</TableHead>
-                                        <TableHead className="text-center">الصافي</TableHead>
+                                        <TableHead className="text-center border-l whitespace-nowrap">رقم الطلب</TableHead>
+                                        <TableHead className="w-48 text-center border-l whitespace-nowrap">التاجر</TableHead>
+                                        <TableHead className="text-center border-l whitespace-nowrap">الحالة</TableHead>
+                                        <TableHead className="text-center border-l whitespace-nowrap">الزبون</TableHead>
+                                        <TableHead className="text-center border-l whitespace-nowrap">الهاتف</TableHead>
+                                        <TableHead className="text-center border-l whitespace-nowrap">المنطقة</TableHead>
+                                        <TableHead className="w-[150px] text-center border-l whitespace-nowrap">قيمة التحصيل</TableHead>
+                                        <TableHead className="w-[150px] text-center border-l whitespace-nowrap">أجرة السائق</TableHead>
+                                        <TableHead className="text-center whitespace-nowrap">الصافي</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -192,11 +193,11 @@ export const CollectFromDriver = () => {
                                             const netAmount = (order.cod || 0) - (order.driverFee || 0);
                                             return (
                                                 <TableRow key={order.id} data-state={selectedOrderIds.includes(order.id) ? "selected" : ""}>
-                                                    <TableCell className="text-center border-l">
+                                                    <TableCell className="text-center border-l whitespace-nowrap">
                                                         <Checkbox checked={selectedOrderIds.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} />
                                                     </TableCell>
-                                                    <TableCell className="text-center border-l font-mono">{order.id}</TableCell>
-                                                    <TableCell className="text-center border-l">
+                                                    <TableCell className="text-center border-l font-mono whitespace-nowrap">{order.id}</TableCell>
+                                                    <TableCell className="text-center border-l whitespace-nowrap">
                                                         <Popover open={popoverStates[`merchant-${order.id}`]} onOpenChange={() => togglePopover(`merchant-${order.id}`)}>
                                                             <PopoverTrigger asChild>
                                                                 <Button variant="ghost" className="w-full h-8 justify-between hover:bg-muted font-normal border">
@@ -229,11 +230,11 @@ export const CollectFromDriver = () => {
                                                             </PopoverContent>
                                                         </Popover>
                                                     </TableCell>
-                                                    <TableCell className="text-center border-l">{getStatusBadge(order.status)}</TableCell>
-                                                    <TableCell className="text-center border-l">{order.recipient}</TableCell>
-                                                    <TableCell className="text-center border-l">{order.phone}</TableCell>
-                                                    <TableCell className="text-center border-l">{order.region}</TableCell>
-                                                    <TableCell className="text-center border-l">
+                                                    <TableCell className="text-center border-l whitespace-nowrap">{getStatusBadge(order.status)}</TableCell>
+                                                    <TableCell className="text-center border-l whitespace-nowrap">{order.recipient}</TableCell>
+                                                    <TableCell className="text-center border-l whitespace-nowrap">{order.phone}</TableCell>
+                                                    <TableCell className="text-center border-l whitespace-nowrap">{order.region}</TableCell>
+                                                    <TableCell className="text-center border-l whitespace-nowrap">
                                                         <Input 
                                                             type="number" 
                                                             defaultValue={order.cod}
@@ -241,7 +242,7 @@ export const CollectFromDriver = () => {
                                                             className="h-8 text-center"
                                                         />
                                                     </TableCell>
-                                                    <TableCell className="text-center border-l">
+                                                    <TableCell className="text-center border-l whitespace-nowrap">
                                                         <Input
                                                             type="number"
                                                             defaultValue={order.driverFee}
@@ -249,7 +250,7 @@ export const CollectFromDriver = () => {
                                                             className="h-8 text-center"
                                                         />
                                                     </TableCell>
-                                                    <TableCell className="text-center font-bold text-primary">{formatCurrency(netAmount)}</TableCell>
+                                                    <TableCell className="text-center font-bold text-primary whitespace-nowrap">{formatCurrency(netAmount)}</TableCell>
                                                 </TableRow>
                                             )
                                         })
