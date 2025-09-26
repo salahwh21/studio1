@@ -11,8 +11,6 @@ import { useFinancialsStore, type MerchantPaymentSlip } from '@/store/financials
 import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 
 export const MerchantPaymentsLog = () => {
     const { merchantPaymentSlips } = useFinancialsStore();
@@ -50,6 +48,9 @@ export const MerchantPaymentsLog = () => {
         if (!slip) return;
         setIsExporting(slip.id);
         setSlipToPrint(slip);
+
+        const { default: jsPDF } = await import('jspdf');
+        const { default: html2canvas } = await import('html2canvas');
 
         await new Promise(resolve => setTimeout(resolve, 100));
 
