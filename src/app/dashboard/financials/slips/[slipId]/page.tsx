@@ -222,26 +222,26 @@ export default function FinancialSlipDetailPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>#</TableHead>
-                                <TableHead>رقم الطلب</TableHead>
-                                <TableHead>المستلم</TableHead>
-                                <TableHead>قيمة التحصيل</TableHead>
-                                <TableHead>أجرة السائق</TableHead>
-                                <TableHead>الحالة</TableHead>
+                                <TableHead className="border-l">#</TableHead>
+                                <TableHead className="border-l">رقم الطلب</TableHead>
+                                <TableHead className="border-l">المستلم</TableHead>
+                                <TableHead className="border-l">قيمة التحصيل</TableHead>
+                                <TableHead className="border-l">أجرة السائق</TableHead>
+                                <TableHead className="border-l">الحالة</TableHead>
                                 <TableHead className="text-center">إجراء</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {slip.orders.map((order, index) => (
                                 <TableRow key={order.id}>
-                                    <TableCell>{index + 1}</TableCell>
-                                    <TableCell>
+                                    <TableCell className="border-l">{index + 1}</TableCell>
+                                    <TableCell className="border-l">
                                         <Link href={`/dashboard/orders/${order.id}`} className="font-mono text-primary hover:underline">{order.id}</Link>
                                     </TableCell>
-                                    <TableCell>{order.recipient}</TableCell>
-                                    <TableCell>{formatCurrency(order.cod)}</TableCell>
-                                    <TableCell>{formatCurrency(order.driverFee)}</TableCell>
-                                    <TableCell><Badge variant="secondary">{order.status}</Badge></TableCell>
+                                    <TableCell className="border-l">{order.recipient}</TableCell>
+                                    <TableCell className="border-l">{formatCurrency(order.cod)}</TableCell>
+                                    <TableCell className="border-l">{formatCurrency(order.driverFee)}</TableCell>
+                                    <TableCell className="border-l"><Badge variant="secondary">{order.status}</Badge></TableCell>
                                     <TableCell className="text-center">
                                         <Button variant="ghost" size="icon" onClick={() => handleRemoveOrder(order.id)}>
                                             <Icon name="Trash2" className="h-4 w-4 text-destructive" />
@@ -252,9 +252,9 @@ export default function FinancialSlipDetailPage() {
                         </TableBody>
                         <TableFooter>
                             <TableRow className="bg-muted/50 font-bold">
-                                <TableCell colSpan={3}>الإجمالي</TableCell>
-                                <TableCell>{formatCurrency(totalCOD)}</TableCell>
-                                <TableCell>{formatCurrency(totalDriverFare)}</TableCell>
+                                <TableCell colSpan={3} className="border-l">الإجمالي</TableCell>
+                                <TableCell className="border-l">{formatCurrency(totalCOD)}</TableCell>
+                                <TableCell className="border-l">{formatCurrency(totalDriverFare)}</TableCell>
                                 <TableCell colSpan={2} className="text-lg text-primary">{formatCurrency(netTotal)}</TableCell>
                             </TableRow>
                         </TableFooter>
