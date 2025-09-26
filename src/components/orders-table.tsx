@@ -788,7 +788,7 @@ const OrdersTableComponent = () => {
     
       return (
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-          <div className="flex items-center gap-2 flex-wrap border rounded-lg p-1.5 min-h-[40px] w-full max-w-xl bg-background">
+          <div className="flex items-center gap-2 flex-wrap border rounded-lg p-1.5 min-h-[40px] w-full max-w-lg bg-background">
             <Search className="h-4 w-4 text-muted-foreground mx-1" />
             {filters.map((filter, index) => (
               <Badge key={index} variant="secondary" className="gap-1.5">
@@ -1145,18 +1145,6 @@ const OrdersTableComponent = () => {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>الإجراءات المجمعة</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem disabled={selectedRows.length === 0} onSelect={() => setModalState({ type: 'assignDriver' })}>
-                                        <UserCheck className="ml-2 h-4 w-4" /> تعيين سائق
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem disabled={selectedRows.length === 0} onSelect={() => setModalState({ type: 'changeStatus' })}>
-                                        <RefreshCw className="ml-2 h-4 w-4" /> تغيير الحالة
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem disabled={selectedRows.length === 0} className="text-destructive" onSelect={() => setModalState({ type: 'delete' })}>
-                                        <Trash2 className="ml-2 h-4 w-4" /> حذف المحدد
-                                    </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                              <DropdownMenu>
@@ -1368,6 +1356,7 @@ export function OrdersTable() {
 
 
     
+
 
 
 
