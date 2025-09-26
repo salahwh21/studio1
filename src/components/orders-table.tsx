@@ -788,7 +788,7 @@ const OrdersTableComponent = () => {
     
       return (
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-          <div className="flex items-center gap-2 flex-wrap border rounded-lg p-1.5 min-h-[40px] w-full max-w-2xl bg-background">
+          <div className="flex items-center gap-2 flex-wrap border rounded-lg p-1.5 min-h-[40px] w-full max-w-xl bg-background">
             <Search className="h-4 w-4 text-muted-foreground mx-1" />
             {filters.map((filter, index) => (
               <Badge key={index} variant="secondary" className="gap-1.5">
@@ -1368,6 +1368,7 @@ export function OrdersTable() {
 
 
     
+
 
 
 
