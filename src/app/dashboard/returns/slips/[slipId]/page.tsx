@@ -46,7 +46,7 @@ export default function SlipDetailPage() {
     const params = useParams();
     const { slipId } = params;
     
-    const { driverReturnSlips, merchantSlips, removeOrderFromDriverReturnSlip } = useReturnsStore();
+    const { driverReturnSlips, merchantSlips, removeOrderFromDriverReturnSlip, removeOrderFromMerchantSlip } = useReturnsStore();
     const { updateOrderField } = useOrdersStore();
     const { formatCurrency, settings } = useSettings();
     const { toast } = useToast();
@@ -151,16 +151,22 @@ export default function SlipDetailPage() {
     };
 
     const handleRemoveOrder = (orderId: string) => {
-        if (!slip || slipType !== 'driver') return;
+        if (!slip) return;
         
-        removeOrderFromDriverReturnSlip(slip.id, orderId);
-        updateOrderField(orderId, 'status', 'راجع');
-        
-        // This is a trick to force re-render with updated data from the store
-        const updatedSlip = useReturnsStore.getState().driverReturnSlips.find(s => s.id === slipId);
-        setSlip(updatedSlip || null);
-
-        toast({ title: "تم", description: "تمت إعادة الطلب إلى قائمة مرتجعات السائق."});
+        if (slipType === 'driver') {
+            removeOrderFromDriverReturnSlip(slip.id, orderId);
+            updateOrderField(orderId, 'status', 'راجع');
+            // This is a trick to force re-render with updated data from the store
+            const updatedSlip = useReturnsStore.getState().driverReturnSlips.find(s => s.id === slipId);
+            setSlip(updatedSlip || null);
+            toast({ title: "تم", description: "تمت إعادة الطلب إلى قائمة مرتجعات السائق."});
+        } else if (slipType === 'merchant') {
+            removeOrderFromMerchantSlip(slip.id, orderId);
+            updateOrderField(orderId, 'status', 'مرجع للفرع');
+            const updatedSlip = useReturnsStore.getState().merchantSlips.find(s => s.id === slipId);
+            setSlip(updatedSlip || null);
+            toast({ title: "تم", description: "تمت إعادة الطلب إلى قائمة المرتجعات بالفرع."});
+        }
     };
 
     if (isLoading) {
@@ -257,7 +263,7 @@ export default function SlipDetailPage() {
                                 <TableHead>الهاتف</TableHead>
                                 <TableHead>قيمة التحصيل</TableHead>
                                 <TableHead>سبب الإرجاع</TableHead>
-                                {slipType === 'driver' && <TableHead className="text-center">إجراء</TableHead>}
+                                <TableHead className="text-center">إجراء</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -271,13 +277,11 @@ export default function SlipDetailPage() {
                                     <TableCell>{order.phone}</TableCell>
                                     <TableCell>{formatCurrency(order.cod)}</TableCell>
                                     <TableCell><Badge variant="secondary">{order.previousStatus || order.status}</Badge></TableCell>
-                                    {slipType === 'driver' && (
-                                        <TableCell className="text-center">
-                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveOrder(order.id)}>
-                                                <Icon name="Trash2" className="h-4 w-4 text-destructive" />
-                                            </Button>
-                                        </TableCell>
-                                    )}
+                                    <TableCell className="text-center">
+                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveOrder(order.id)}>
+                                            <Icon name="Trash2" className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
