@@ -45,6 +45,16 @@ export const CollectFromDriver = () => {
         'تم التوصيل', 'تبديل', 'رفض ودفع أجور', 'رفض ولم يدفع أجور', 'وصول وعدم رد'
     ];
 
+    const driversWithCounts = useMemo(() => {
+        return drivers.map(driver => {
+            const count = orders.filter(o => 
+                o.driver === driver.name && 
+                statusesForCollection.includes(o.status)
+            ).length;
+            return { ...driver, collectibleOrdersCount: count };
+        });
+    }, [drivers, orders]);
+
     const ordersForCollection = useMemo(() => {
         if (!selectedDriver) return [];
         
@@ -235,8 +245,10 @@ export const CollectFromDriver = () => {
                                     <SelectValue placeholder="اختر سائقًا..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {drivers.map(d => (
-                                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                                    {driversWithCounts.map(d => (
+                                        <SelectItem key={d.id} value={d.id}>
+                                            {d.name} {d.collectibleOrdersCount > 0 && `(${d.collectibleOrdersCount})`}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>

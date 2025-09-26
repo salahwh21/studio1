@@ -29,6 +29,17 @@ export const PrepareMerchantPayments = () => {
     const [dateRange, setDateRange] = useState<{ from: Date | undefined, to: Date | undefined }>({ from: undefined, to: undefined });
 
     const merchants = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
+    
+    const merchantsWithCounts = useMemo(() => {
+        return merchants.map(merchant => {
+            const count = orders.filter(o => 
+                o.merchant === merchant.storeName && 
+                o.status === 'تم التوصيل'
+            ).length;
+            return { ...merchant, payableOrdersCount: count };
+        });
+    }, [merchants, orders]);
+
     const selectedMerchant = merchants.find(m => m.id === selectedMerchantId);
 
     const ordersForPayment = useMemo(() => {
@@ -208,8 +219,10 @@ export const PrepareMerchantPayments = () => {
                                     <SelectValue placeholder="اختر تاجرًا..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {merchants.map(m => (
-                                        <SelectItem key={m.id} value={m.id}>{m.storeName || m.name}</SelectItem>
+                                    {merchantsWithCounts.map(m => (
+                                        <SelectItem key={m.id} value={m.id}>
+                                            {m.storeName || m.name} {m.payableOrdersCount > 0 && `(${m.payableOrdersCount})`}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
