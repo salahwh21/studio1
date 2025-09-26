@@ -20,6 +20,7 @@ import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useStatusesStore } from '@/store/statuses-store';
+import { useReturnsStore } from '@/store/returns-store';
 
 
 export const CollectFromDriver = () => {
@@ -28,6 +29,7 @@ export const CollectFromDriver = () => {
     const { orders, updateOrderField, bulkUpdateOrderStatus } = useOrdersStore();
     const { formatCurrency } = useSettings();
     const { statuses } = useStatusesStore();
+    const { addDriverSlip } = useReturnsStore();
     
     const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
@@ -76,17 +78,27 @@ export const CollectFromDriver = () => {
             return;
         }
 
-        // 1. Update status for selected orders
+        const ordersToProcess = orders.filter(o => selectedOrderIds.includes(o.id));
+        
+        // 1. Create a new financial slip
+        addDriverSlip({
+            driverName: selectedDriver.name,
+            date: new Date().toISOString(),
+            itemCount: ordersToProcess.length,
+            orders: ordersToProcess,
+        });
+
+        // 2. Update status for selected orders
         bulkUpdateOrderStatus(selectedOrderIds, 'تم استلام المال في الفرع');
 
-        // 2. Display success toast
+        // 3. Display success toast
         const netPayable = totals.totalCOD - totals.totalDriverFare;
         toast({
-            title: 'تم تأكيد الاستلام',
-            description: `تم تسجيل استلام مبلغ ${formatCurrency(netPayable)} من السائق ${selectedDriver.name}.`
+            title: 'تم تأكيد الاستلام وإنشاء كشف',
+            description: `تم تسجيل استلام مبلغ ${formatCurrency(netPayable)} من السائق ${selectedDriver.name} وإضافته للسجل.`
         });
         
-        // 3. Clear selection
+        // 4. Clear selection
         setSelectedOrderIds([]);
     }
 
@@ -117,7 +129,7 @@ export const CollectFromDriver = () => {
 
     return (
         <div className="space-y-4 h-full flex flex-col">
-             <Card>
+            <Card>
                 <CardContent className="pt-6">
                      <div className="flex items-center justify-start gap-4">
                         <div className="w-full max-w-xs">
