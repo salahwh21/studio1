@@ -171,7 +171,7 @@ export const CollectFromDriver = () => {
                             <Table className="relative">
                                 <TableHeader className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-800/50">
                                     <TableRow>
-                                        <TableHead className="w-12 text-center border-l sticky right-0 z-10 bg-slate-100 dark:bg-slate-800/50"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
+                                        <TableHead className="w-12 text-center border-l sticky right-0 z-30 bg-slate-100 dark:bg-slate-800/50"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
                                         <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">رقم الطلب</TableHead>
                                         <TableHead className="text-center border-l whitespace-nowrap min-w-[200px]">التاجر</TableHead>
                                         <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الحالة</TableHead>
