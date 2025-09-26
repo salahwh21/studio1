@@ -195,7 +195,9 @@ export const DriverPaymentsLog = () => {
                                         <Badge className="bg-blue-100 text-blue-800">مستلم بالفرع</Badge>
                                     </TableCell>
                                      <TableCell className="flex gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => handleQuickPrint(slip)}><Icon name="Printer" className="ml-2 h-4 w-4"/>طباعة سريعة</Button>
+                                        <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}>
+                                            <Icon name="Eye" className="ml-2 h-4 w-4" /> عرض
+                                        </Button>
                                         <Button size="sm" onClick={() => handlePrintAction(slip)} disabled={isPending}>
                                             {isPending ? <Icon name="Loader2" className="animate-spin ml-2" /> : <Icon name="FileText" className="ml-2" />}
                                             PDF رسمي
