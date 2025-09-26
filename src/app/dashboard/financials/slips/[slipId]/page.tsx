@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import Icon from '@/components/icon';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useOrdersStore } from '@/store/orders-store';
@@ -167,6 +167,7 @@ export default function FinancialSlipDetailPage() {
 
     const totalCOD = slip.orders.reduce((acc, order) => acc + (order.cod || 0), 0);
     const totalDriverFare = slip.orders.reduce((acc, order) => acc + (order.driverFee || 0), 0);
+    const netTotal = totalCOD - totalDriverFare;
 
     return (
         <div className="space-y-6">
@@ -249,6 +250,14 @@ export default function FinancialSlipDetailPage() {
                                 </TableRow>
                             ))}
                         </TableBody>
+                        <TableFooter>
+                            <TableRow className="bg-muted/50 font-bold">
+                                <TableCell colSpan={3}>الإجمالي</TableCell>
+                                <TableCell>{formatCurrency(totalCOD)}</TableCell>
+                                <TableCell>{formatCurrency(totalDriverFare)}</TableCell>
+                                <TableCell colSpan={2} className="text-lg text-primary">{formatCurrency(netTotal)}</TableCell>
+                            </TableRow>
+                        </TableFooter>
                     </Table>
                 </CardContent>
             </Card>
