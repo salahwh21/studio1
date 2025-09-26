@@ -33,7 +33,7 @@ export const DriverPaymentsLog = () => {
     const { toast } = useToast();
     const { settings, formatCurrency } = useSettings();
     const { driverSlips, removeOrderFromDriverSlip } = useReturnsStore();
-    const { updateOrderStatus } = useOrdersStore();
+    const { updateOrderField } = useOrdersStore();
     const [isPending, startTransition] = useTransition();
 
     const [showDetailsDialog, setShowDetailsDialog] = useState(false);
@@ -65,7 +65,7 @@ export const DriverPaymentsLog = () => {
 
     const handleRemoveOrder = (slipId: string, orderId: string) => {
         removeOrderFromDriverSlip(slipId, orderId);
-        updateOrderStatus(orderId, 'راجع');
+        updateOrderField(orderId, 'status', 'راجع');
         // Refresh current slip view if it's the one being edited
         if (currentSlip && currentSlip.id === slipId) {
             const updatedSlip = useReturnsStore.getState().driverSlips.find(s => s.id === slipId);
@@ -76,7 +76,7 @@ export const DriverPaymentsLog = () => {
     
     const handlePrintAction = (slip: DriverSlip) => {
         startTransition(async () => {
-            toast({ title: "جاري تحضير ملف PDF...", description: `سيتم طباعة كشف السائق ${slip.driverName}.` });
+            toast({ title: "جاري تحضير ملف PDF...", description: `سيتم طباعة كشف السائق ${'slip.driverName'}.` });
             try {
                 const doc = new jsPDF();
                 
