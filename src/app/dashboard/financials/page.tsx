@@ -34,7 +34,7 @@ export default function FinancialsPage() {
         <Tabs defaultValue="collect-from-driver" className="w-full" dir="rtl">
             <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="collect-from-driver">1. تحصيل من السائق</TabsTrigger>
-                <TabsTrigger value="driver-payments-log">2. دفعات السائقين</TabsTrigger>
+                <TabsTrigger value="driver-payments-log">2. سجل كشوفات الاستلام</TabsTrigger>
                 <TabsTrigger value="prepare-merchant-payments">3. تجهيز دفعات التجار</TabsTrigger>
                 <TabsTrigger value="merchant-payments-log">4. سجل دفعات التجار</TabsTrigger>
             </TabsList>
