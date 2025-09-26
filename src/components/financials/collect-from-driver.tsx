@@ -111,13 +111,7 @@ export const CollectFromDriver = () => {
     return (
         <div className="space-y-4 h-full flex flex-col">
              <Card>
-                <CardHeader>
-                    <CardTitle className="text-xl font-bold tracking-tight">تحصيل المبالغ من السائقين</CardTitle>
-                    <CardDescription>
-                        اختر سائقًا لعرض الشحنات التي تم توصيلها، ثم حدد الشحنات وقم بتأكيد استلام المبلغ الصافي.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                      <div className="flex items-center justify-start gap-4">
                         <div className="w-full max-w-xs">
                             <Select onValueChange={setSelectedDriverId} value={selectedDriverId || ''}>
