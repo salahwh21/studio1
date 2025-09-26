@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,7 +20,7 @@ import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useStatusesStore } from '@/store/statuses-store';
-import { DateRangePicker } from '@/components/date-range-picker';
+
 
 export const CollectFromDriver = () => {
     const { toast } = useToast();
@@ -33,7 +33,6 @@ export const CollectFromDriver = () => {
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
     const [popoverStates, setPopoverStates] = useState<Record<string, boolean>>({});
     const [searchQuery, setSearchQuery] = useState('');
-    const [dateRange, setDateRange] = useState<{ from: Date | undefined, to: Date | undefined }>({ from: undefined, to: undefined });
 
 
     const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
@@ -57,9 +56,6 @@ export const CollectFromDriver = () => {
              o.recipient.toLowerCase().includes(lowercasedQuery) ||
              o.phone.toLowerCase().includes(lowercasedQuery)
             ) 
-            // &&
-            // (!dateRange.from || new Date(o.date) >= dateRange.from) &&
-            // (!dateRange.to || new Date(o.date) <= dateRange.to)
         );
     }, [orders, selectedDriver, statusesForCollection, searchQuery]);
     
@@ -144,7 +140,6 @@ export const CollectFromDriver = () => {
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    {/* <DateRangePicker onUpdate={(range) => setDateRange(range.range)} /> */}
                      <div className="flex items-center gap-2 sm:mr-auto">
                         <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
                     </div>
@@ -152,12 +147,21 @@ export const CollectFromDriver = () => {
 
                 <Card>
                     <CardHeader className="p-4 bg-slate-50 dark:bg-slate-800/50">
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                            <span><span className="font-semibold text-muted-foreground">إجمالي التحصيل المحدد:</span> {formatCurrency(totals.totalCOD)}</span>
-                            <Separator orientation='vertical' className="h-4"/>
-                            <span><span className="font-semibold text-muted-foreground">إجمالي أجرة السائق:</span> {formatCurrency(totals.totalDriverFare)}</span>
-                             <Separator orientation='vertical' className="h-4"/>
-                            <span className="font-bold text-lg text-primary"><span className="font-semibold text-muted-foreground">الصافي للدفع:</span> {formatCurrency(totals.totalCOD - totals.totalDriverFare)}</span>
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                            <div>
+                                <span className="font-semibold text-muted-foreground">إجمالي التحصيل المحدد: </span> 
+                                <span className="font-bold text-lg">{formatCurrency(totals.totalCOD)}</span>
+                            </div>
+                            <Separator orientation='vertical' className="h-6"/>
+                             <div>
+                                <span className="font-semibold text-muted-foreground">إجمالي أجرة السائق: </span> 
+                                <span className="font-bold text-lg">{formatCurrency(totals.totalDriverFare)}</span>
+                            </div>
+                             <Separator orientation='vertical' className="h-6"/>
+                            <div className="text-primary font-bold text-lg">
+                                <span className="font-semibold text-muted-foreground">الصافي للدفع: </span> 
+                                <span className="font-bold text-xl">{formatCurrency(totals.totalCOD - totals.totalDriverFare)}</span>
+                            </div>
                             <div className="w-full sm:w-auto sm:mr-auto">
                                 <Button onClick={handleConfirmCollection} disabled={selectedOrderIds.length === 0} className="w-full">
                                     <Icon name="Check" className="ml-2 h-4 w-4" />
@@ -166,12 +170,15 @@ export const CollectFromDriver = () => {
                             </div>
                         </div>
                     </CardHeader>
+                </Card>
+                
+                <Card>
                     <CardContent className="p-0">
-                        <div className="overflow-auto h-[calc(100vh-32rem)]">
+                        <div className="overflow-auto h-[calc(100vh-40rem)]">
                             <Table className="relative">
-                                <TableHeader className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-800/50">
+                                <TableHeader className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-900/50">
                                     <TableRow>
-                                        <TableHead className="w-12 text-center border-l whitespace-nowrap sticky right-0 z-30 bg-slate-100 dark:bg-slate-800/50"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
+                                        <TableHead className="w-12 text-center border-l whitespace-nowrap sticky right-0 z-30 bg-slate-100 dark:bg-slate-900/50"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
                                         <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">رقم الطلب</TableHead>
                                         <TableHead className="text-center border-l whitespace-nowrap min-w-[200px]">التاجر</TableHead>
                                         <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الحالة</TableHead>
@@ -200,7 +207,7 @@ export const CollectFromDriver = () => {
                                                     <TableCell className="text-center border-l whitespace-nowrap">
                                                         <Popover open={popoverStates[`merchant-${order.id}`]} onOpenChange={() => togglePopover(`merchant-${order.id}`)}>
                                                             <PopoverTrigger asChild>
-                                                                <Button variant="outline" className="w-full h-8 justify-between hover:bg-muted font-normal">
+                                                                <Button variant="outline" className="w-full h-8 justify-between bg-background hover:bg-muted font-normal">
                                                                 {order.merchant}
                                                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                                 </Button>
@@ -263,4 +270,5 @@ export const CollectFromDriver = () => {
             </CardContent>
         </Card>
     );
-};
+
+    
