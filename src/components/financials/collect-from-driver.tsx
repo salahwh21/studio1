@@ -25,7 +25,7 @@ import { useStatusesStore } from '@/store/statuses-store';
 export const CollectFromDriver = () => {
     const { toast } = useToast();
     const { users } = useUsersStore();
-    const { orders, updateOrderField } = useOrdersStore();
+    const { orders, updateOrderField, bulkUpdateOrderStatus } = useOrdersStore();
     const { formatCurrency } = useSettings();
     const { statuses } = useStatusesStore();
     
@@ -57,7 +57,7 @@ export const CollectFromDriver = () => {
              o.phone.toLowerCase().includes(lowercasedQuery)
             ) 
         );
-    }, [orders, selectedDriver, statusesForCollection, searchQuery]);
+    }, [orders, selectedDriver, searchQuery]);
     
     const totals = useMemo(() => {
         const selectedOrders = ordersForCollection.filter(o => selectedOrderIds.includes(o.id));
@@ -75,11 +75,18 @@ export const CollectFromDriver = () => {
             toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء اختيار سائق وطلب واحد على الأقل.'});
             return;
         }
+
+        // 1. Update status for selected orders
+        bulkUpdateOrderStatus(selectedOrderIds, 'تم استلام المال في الفرع');
+
+        // 2. Display success toast
         const netPayable = totals.totalCOD - totals.totalDriverFare;
         toast({
-            title: 'تم تأكيد الاستلام (محاكاة)',
+            title: 'تم تأكيد الاستلام',
             description: `تم تسجيل استلام مبلغ ${formatCurrency(netPayable)} من السائق ${selectedDriver.name}.`
         });
+        
+        // 3. Clear selection
         setSelectedOrderIds([]);
     }
 
