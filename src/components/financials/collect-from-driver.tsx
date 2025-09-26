@@ -174,7 +174,7 @@ export const CollectFromDriver = () => {
                 
                 <Card>
                     <CardContent className="p-0">
-                        <div className="overflow-auto h-[calc(100vh-40rem)]">
+                        <div className="overflow-auto h-[calc(100vh-45rem)]">
                             <Table className="relative">
                                 <TableHeader className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-900/50">
                                     <TableRow>
@@ -270,5 +270,4 @@ export const CollectFromDriver = () => {
             </CardContent>
         </Card>
     );
-
-    
+};
