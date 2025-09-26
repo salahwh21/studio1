@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
@@ -11,6 +12,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { flushSync } from 'react-dom';
+
 
 export const MerchantPaymentsLog = () => {
     const { merchantPaymentSlips } = useFinancialsStore();
@@ -223,8 +225,8 @@ export const MerchantPaymentsLog = () => {
                     </TableBody>
                 </Table>
             </CardContent>
-            {/* Hidden div for printing */}
-            <div className="hidden">
+            {/* Hidden div for printing/exporting, positioned off-screen */}
+            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
                 <div ref={slipPrintRef}>
                     {slipToPrint && <SlipHTML slip={slipToPrint} />}
                 </div>
