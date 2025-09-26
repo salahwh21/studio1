@@ -110,9 +110,17 @@ export const CollectFromDriver = () => {
 
     return (
         <div className="space-y-4">
+             <Card>
+                <CardHeader>
+                    <CardTitle className="text-xl font-bold tracking-tight">تحصيل المبالغ من السائقين</CardTitle>
+                    <CardDescription>
+                        اختر سائقًا لعرض الشحنات التي تم توصيلها، ثم حدد الشحنات وقم بتأكيد استلام المبلغ الصافي.
+                    </CardDescription>
+                </CardHeader>
+            </Card>
             <Card>
-                <CardContent className="p-2">
-                     <div className="flex items-center justify-center gap-4">
+                <CardContent className="p-4">
+                     <div className="flex items-center justify-start gap-4">
                         <div className="w-full max-w-xs">
                             <Select onValueChange={setSelectedDriverId} value={selectedDriverId || ''}>
                                 <SelectTrigger>
@@ -134,7 +142,7 @@ export const CollectFromDriver = () => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
+                        <Button variant="outline" size="sm" className="mr-auto"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
                     </div>
                 </CardContent>
             </Card>
@@ -143,9 +151,9 @@ export const CollectFromDriver = () => {
                 <CardContent className="p-0">
                     <div className="overflow-auto">
                         <Table className="relative">
-                            <TableHeader className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-900/50">
+                            <TableHeader className="sticky top-0 z-20 bg-muted/50">
                                 <TableRow>
-                                    <TableHead className="w-12 text-center border-l whitespace-nowrap sticky right-0 z-30 bg-slate-100 dark:bg-slate-900/50"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
+                                    <TableHead className="w-12 text-center border-l whitespace-nowrap sticky right-0 z-30 bg-muted/50"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
                                     <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">رقم الطلب</TableHead>
                                     <TableHead className="text-center border-l whitespace-nowrap min-w-[200px]">التاجر</TableHead>
                                     <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الحالة</TableHead>
@@ -236,7 +244,7 @@ export const CollectFromDriver = () => {
             </Card>
             
             <Card>
-                <CardHeader className="p-4 bg-slate-50 dark:bg-slate-800/50">
+                <CardHeader className="p-4 bg-muted/50">
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
                         <div>
                             <span className="font-semibold text-muted-foreground">إجمالي التحصيل المحدد: </span> 
@@ -264,6 +272,3 @@ export const CollectFromDriver = () => {
         </div>
     );
 };
-
-
-    
