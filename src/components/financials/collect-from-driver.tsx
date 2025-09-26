@@ -167,13 +167,13 @@ export const CollectFromDriver = () => {
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                         <div className="overflow-x-auto h-[calc(100vh-28rem)]">
+                        <div className="overflow-auto h-[calc(100vh-28rem)]">
                             <Table className="relative">
-                                <TableHeader className="sticky top-0 z-20 bg-slate-50 dark:bg-slate-800/50">
+                                <TableHeader className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-800/50">
                                     <TableRow>
-                                        <TableHead className="w-12 text-center border-l sticky right-0 z-10 bg-inherit"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
+                                        <TableHead className="w-12 text-center border-l sticky right-0 z-10 bg-slate-100 dark:bg-slate-800/50"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
                                         <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">رقم الطلب</TableHead>
-                                        <TableHead className="w-48 text-center border-l whitespace-nowrap min-w-[200px]">التاجر</TableHead>
+                                        <TableHead className="text-center border-l whitespace-nowrap min-w-[200px]">التاجر</TableHead>
                                         <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الحالة</TableHead>
                                         <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الزبون</TableHead>
                                         <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الهاتف</TableHead>
@@ -200,7 +200,7 @@ export const CollectFromDriver = () => {
                                                     <TableCell className="text-center border-l whitespace-nowrap">
                                                         <Popover open={popoverStates[`merchant-${order.id}`]} onOpenChange={() => togglePopover(`merchant-${order.id}`)}>
                                                             <PopoverTrigger asChild>
-                                                                <Button variant="ghost" className="w-full h-8 justify-between hover:bg-muted font-normal border">
+                                                                <Button variant="outline" className="w-full h-8 justify-between hover:bg-muted font-normal">
                                                                 {order.merchant}
                                                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                                 </Button>
