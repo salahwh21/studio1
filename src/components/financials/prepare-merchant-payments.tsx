@@ -16,14 +16,14 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { DateRangePicker } from '@/components/date-range-picker';
 import type { DateRange } from 'react-day-picker';
-import { useReturnsStore } from '@/store/returns-store';
+import { useFinancialsStore } from '@/store/financials-store';
 
 export const PrepareMerchantPayments = () => {
     const { toast } = useToast();
     const { users } = useUsersStore();
     const { orders } = useOrdersStore();
     const { settings, formatCurrency } = useSettings();
-    const { addMerchantSlip } = useReturnsStore();
+    const { addMerchantPaymentSlip } = useFinancialsStore();
     
     const [selectedMerchantId, setSelectedMerchantId] = useState<string | null>(null);
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
@@ -88,10 +88,10 @@ export const PrepareMerchantPayments = () => {
 
         const ordersToProcess = ordersForPayment.filter(o => selectedOrderIds.includes(o.id));
         
-        addMerchantSlip({
-            merchant: selectedMerchant.storeName || selectedMerchant.name,
+        addMerchantPaymentSlip({
+            merchantName: selectedMerchant.storeName || selectedMerchant.name,
             date: new Date().toISOString(),
-            items: ordersToProcess.length,
+            itemCount: ordersToProcess.length,
             status: 'جاهز للتسليم',
             orders: ordersToProcess
         });
@@ -350,5 +350,3 @@ export const PrepareMerchantPayments = () => {
         </div>
     );
 };
-
-    

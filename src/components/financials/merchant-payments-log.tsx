@@ -7,16 +7,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/icon';
-import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
+import { useFinancialsStore, type MerchantPaymentSlip } from '@/store/financials-store';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 export const MerchantPaymentsLog = () => {
-    const { merchantSlips } = useReturnsStore();
+    const { merchantPaymentSlips } = useFinancialsStore();
     const { settings, formatCurrency } = useSettings();
     const { toast } = useToast();
 
-    const handlePrint = (slip: MerchantSlip) => {
+    const handlePrint = (slip: MerchantPaymentSlip) => {
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
             toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'يرجى السماح بفتح النوافذ المنبثقة.' });
@@ -60,7 +61,7 @@ export const MerchantPaymentsLog = () => {
         const content = `
             <html>
                 <head>
-                    <title>كشف دفع لـ: ${slip.merchant}</title>
+                    <title>كشف دفع لـ: ${slip.merchantName}</title>
                     <style>
                         body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
                         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
@@ -76,7 +77,7 @@ export const MerchantPaymentsLog = () => {
                     <div class="header">
                         ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="height: 50px;">` : `<h1>${settings.login.companyName || 'الشركة'}</h1>`}
                         <div>
-                            <h2>كشف دفع للتاجر: ${slip.merchant}</h2>
+                            <h2>كشف دفع للتاجر: ${slip.merchantName}</h2>
                             <p>التاريخ: ${slipDate}</p>
                             <p>رقم الكشف: ${slip.id}</p>
                         </div>
@@ -128,15 +129,19 @@ export const MerchantPaymentsLog = () => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {merchantSlips.length === 0 ? (
+                        {merchantPaymentSlips.length === 0 ? (
                              <TableRow>
                                 <TableCell colSpan={6} className="h-24 text-center">لم يتم إنشاء أي كشوفات دفع للتجار بعد.</TableCell>
                             </TableRow>
                         ) : (
-                            merchantSlips.map(payment => (
+                            merchantPaymentSlips.map(payment => (
                                 <TableRow key={payment.id}>
-                                    <TableCell className="text-center border-l font-mono">{payment.id}</TableCell>
-                                    <TableCell className="text-center border-l">{payment.merchant}</TableCell>
+                                    <TableCell className="text-center border-l font-mono">
+                                        <Link href={`/dashboard/financials/slips/${payment.id}`} className="text-primary hover:underline">
+                                            {payment.id}
+                                        </Link>
+                                    </TableCell>
+                                    <TableCell className="text-center border-l">{payment.merchantName}</TableCell>
                                     <TableCell className="text-center border-l">{new Date(payment.date).toLocaleDateString('ar-EG')}</TableCell>
                                     <TableCell className="text-center border-l font-bold">{formatCurrency(payment.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0))}</TableCell>
                                     <TableCell className="text-center border-l">
