@@ -20,6 +20,7 @@ import { useUsersStore } from '@/store/user-store';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DateRangePicker } from '@/components/date-range-picker';
 import type { DateRange } from 'react-day-picker';
+import { amiriFont } from '@/lib/amiri-font';
 
 
 declare module 'jspdf' {
@@ -67,9 +68,11 @@ export const DriverPaymentsLog = () => {
             try {
                 const doc = new jsPDF();
                 
+                doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
+                doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+                doc.setFont('Amiri');
+                
                 const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-
-                doc.setRTL(true);
 
                 if (reportsLogo) {
                     try {
@@ -86,14 +89,14 @@ export const DriverPaymentsLog = () => {
                 doc.text(`تاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
                 doc.text(`رقم الكشف: ${slip.id}`, 15, 30, { align: 'left' });
 
-                const tableColumn = ["#", "رقم الطلب", "المستلم", "الهاتف", "سبب الإرجاع", "المبلغ"];
+                const tableColumn = ["المبلغ", "سبب الإرجاع", "الهاتف", "المستلم", "رقم الطلب", "#"];
                 const tableRows = slip.orders.map((order, index) => [
-                    index + 1,
-                    order.id,
-                    order.recipient,
-                    order.phone,
-                    order.previousStatus || order.status,
                     formatCurrency(order.cod),
+                    order.previousStatus || order.status,
+                    order.phone,
+                    order.recipient,
+                    order.id,
+                    index + 1,
                 ]);
 
                 (doc as any).autoTable({
@@ -101,15 +104,8 @@ export const DriverPaymentsLog = () => {
                     body: tableRows,
                     startY: 45,
                     theme: 'grid',
-                    styles: { font: 'Amiri', halign: 'center' },
-                    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-                    columnStyles: {
-                         1: { halign: 'right' },
-                         2: { halign: 'right' },
-                         3: { halign: 'center' },
-                         4: { halign: 'right' },
-                         5: { halign: 'right' },
-                    },
+                    styles: { font: 'Amiri', halign: 'right' },
+                    headStyles: { fillColor: [41, 128, 185], textColor: 255, halign: 'center' },
                     didDrawPage: (data: any) => {
                         // Footer
                         doc.setFontSize(10);
