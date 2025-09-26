@@ -20,6 +20,7 @@ import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useStatusesStore } from '@/store/statuses-store';
+import { DateRangePicker } from '@/components/date-range-picker';
 
 
 export const CollectFromDriver = () => {
@@ -110,164 +111,166 @@ export const CollectFromDriver = () => {
 
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>المرحلة الأولى: تحصيل المبالغ من السائقين</CardTitle>
-                <CardDescription>
-                    اختر سائقًا لعرض الشحنات التي تم توصيلها، ثم حدد الشحنات وقم بتأكيد استلام المبلغ الصافي.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                 <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border rounded-lg bg-muted/50">
-                    <div className="w-full sm:w-auto sm:min-w-[250px]">
-                        <Select onValueChange={setSelectedDriverId} value={selectedDriverId || ''}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="اختر سائقًا..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {drivers.map(d => (
-                                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+        <div className="space-y-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle>المرحلة الأولى: تحصيل المبالغ من السائقين</CardTitle>
+                    <CardDescription>
+                        اختر سائقًا لعرض الشحنات التي تم توصيلها، ثم حدد الشحنات وقم بتأكيد استلام المبلغ الصافي.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border rounded-lg bg-muted/50">
+                        <div className="w-full sm:w-auto sm:min-w-[250px]">
+                            <Select onValueChange={setSelectedDriverId} value={selectedDriverId || ''}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="اختر سائقًا..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {drivers.map(d => (
+                                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="relative w-full sm:w-auto sm:min-w-[250px]">
+                            <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input 
+                                placeholder="بحث بالرقم، العميل، الهاتف..." 
+                                className="pr-10"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                         <div className="flex items-center gap-2 sm:mr-auto">
+                            <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
+                        </div>
                     </div>
-                     <div className="relative w-full sm:w-auto sm:min-w-[250px]">
-                        <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input 
-                            placeholder="بحث بالرقم، العميل، الهاتف..." 
-                            className="pr-10"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                     <div className="flex items-center gap-2 sm:mr-auto">
-                        <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
-                    </div>
-                </div>
+                </CardContent>
+            </Card>
 
-                <Card>
-                    <CardContent className="p-0">
-                        <div className="overflow-auto h-[calc(100vh-45rem)]">
-                            <Table className="relative">
-                                <TableHeader className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-900/50">
-                                    <TableRow>
-                                        <TableHead className="w-12 text-center border-l whitespace-nowrap sticky right-0 z-30 bg-slate-100 dark:bg-slate-900/50"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
-                                        <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">رقم الطلب</TableHead>
-                                        <TableHead className="text-center border-l whitespace-nowrap min-w-[200px]">التاجر</TableHead>
-                                        <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الحالة</TableHead>
-                                        <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الزبون</TableHead>
-                                        <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الهاتف</TableHead>
-                                        <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">المنطقة</TableHead>
-                                        <TableHead className="w-[150px] text-center border-l whitespace-nowrap">قيمة التحصيل</TableHead>
-                                        <TableHead className="w-[150px] text-center border-l whitespace-nowrap">أجرة السائق</TableHead>
-                                        <TableHead className="text-center whitespace-nowrap min-w-[120px]">الصافي</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {!selectedDriver ? (
-                                        <TableRow><TableCell colSpan={10} className="h-24 text-center">الرجاء اختيار سائق لعرض الطلبات.</TableCell></TableRow>
-                                    ) : ordersForCollection.length === 0 ? (
-                                        <TableRow><TableCell colSpan={10} className="h-24 text-center">لا توجد طلبات تطابق معايير البحث.</TableCell></TableRow>
-                                    ) : (
-                                        ordersForCollection.map(order => {
-                                            const netAmount = (order.cod || 0) - (order.driverFee || 0);
-                                            return (
-                                                <TableRow key={order.id} data-state={selectedOrderIds.includes(order.id) ? "selected" : ""}>
-                                                    <TableCell className="text-center border-l whitespace-nowrap sticky right-0 z-10 bg-card data-[state=selected]:bg-muted">
-                                                        <Checkbox checked={selectedOrderIds.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} />
-                                                    </TableCell>
-                                                    <TableCell className="text-center border-l font-mono whitespace-nowrap">{order.id}</TableCell>
-                                                    <TableCell className="text-center border-l whitespace-nowrap">
-                                                        <Popover open={popoverStates[`merchant-${order.id}`]} onOpenChange={() => togglePopover(`merchant-${order.id}`)}>
-                                                            <PopoverTrigger asChild>
-                                                                <Button variant="outline" className="w-full h-8 justify-between bg-background hover:bg-muted font-normal">
-                                                                {order.merchant}
-                                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                                </Button>
-                                                            </PopoverTrigger>
-                                                            <PopoverContent className="w-[200px] p-0">
-                                                                <Command>
-                                                                <CommandInput placeholder="بحث..." />
-                                                                <CommandList>
-                                                                    <CommandEmpty>لم يوجد.</CommandEmpty>
-                                                                    <CommandGroup>
-                                                                    {merchants.map(m => (
-                                                                        <CommandItem
-                                                                        key={m.id}
-                                                                        value={m.storeName || m.name}
-                                                                        onSelect={() => {
-                                                                            updateOrderField(order.id, 'merchant', m.storeName || m.name);
-                                                                            togglePopover(`merchant-${order.id}`);
-                                                                        }}
-                                                                        >
-                                                                        <Check className={cn("mr-2 h-4 w-4", order.merchant === (m.storeName || m.name) ? "opacity-100" : "opacity-0")} />
-                                                                        {m.storeName || m.name}
-                                                                        </CommandItem>
-                                                                    ))}
-                                                                    </CommandGroup>
-                                                                </CommandList>
-                                                                </Command>
-                                                            </PopoverContent>
-                                                        </Popover>
-                                                    </TableCell>
-                                                    <TableCell className="text-center border-l whitespace-nowrap">{getStatusBadge(order.status)}</TableCell>
-                                                    <TableCell className="text-center border-l whitespace-nowrap">{order.recipient}</TableCell>
-                                                    <TableCell className="text-center border-l whitespace-nowrap">{order.phone}</TableCell>
-                                                    <TableCell className="text-center border-l whitespace-nowrap">{order.region}</TableCell>
-                                                    <TableCell className="text-center border-l whitespace-nowrap">
-                                                        <Input 
-                                                            type="number" 
-                                                            defaultValue={order.cod}
-                                                            onBlur={(e) => handleFieldChange(order.id, 'cod', e.target.value)}
-                                                            className="h-8 text-center"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="text-center border-l whitespace-nowrap">
-                                                        <Input
-                                                            type="number"
-                                                            defaultValue={order.driverFee}
-                                                            onBlur={(e) => handleFieldChange(order.id, 'driverFee', e.target.value)}
-                                                            className="h-8 text-center"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="text-center font-bold text-primary whitespace-nowrap">{formatCurrency(netAmount)}</TableCell>
-                                                </TableRow>
-                                            )
-                                        })
-                                    )}
-                                </TableBody>
-                            </Table>
+            <Card>
+                <CardContent className="p-0">
+                    <div className="overflow-auto h-[calc(100vh-45rem)]">
+                        <Table className="relative">
+                            <TableHeader className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-900/50">
+                                <TableRow>
+                                    <TableHead className="w-12 text-center border-l whitespace-nowrap sticky right-0 z-30 bg-slate-100 dark:bg-slate-900/50"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
+                                    <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">رقم الطلب</TableHead>
+                                    <TableHead className="text-center border-l whitespace-nowrap min-w-[200px]">التاجر</TableHead>
+                                    <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الحالة</TableHead>
+                                    <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الزبون</TableHead>
+                                    <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الهاتف</TableHead>
+                                    <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">المنطقة</TableHead>
+                                    <TableHead className="w-[150px] text-center border-l whitespace-nowrap">قيمة التحصيل</TableHead>
+                                    <TableHead className="w-[150px] text-center border-l whitespace-nowrap">أجرة السائق</TableHead>
+                                    <TableHead className="text-center whitespace-nowrap min-w-[120px]">الصافي</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {!selectedDriver ? (
+                                    <TableRow><TableCell colSpan={10} className="h-24 text-center">الرجاء اختيار سائق لعرض الطلبات.</TableCell></TableRow>
+                                ) : ordersForCollection.length === 0 ? (
+                                    <TableRow><TableCell colSpan={10} className="h-24 text-center">لا توجد طلبات تطابق معايير البحث.</TableCell></TableRow>
+                                ) : (
+                                    ordersForCollection.map(order => {
+                                        const netAmount = (order.cod || 0) - (order.driverFee || 0);
+                                        return (
+                                            <TableRow key={order.id} data-state={selectedOrderIds.includes(order.id) ? "selected" : ""}>
+                                                <TableCell className="text-center border-l whitespace-nowrap sticky right-0 z-10 bg-card data-[state=selected]:bg-muted">
+                                                    <Checkbox checked={selectedOrderIds.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} />
+                                                </TableCell>
+                                                <TableCell className="text-center border-l font-mono whitespace-nowrap">{order.id}</TableCell>
+                                                <TableCell className="text-center border-l whitespace-nowrap">
+                                                    <Popover open={popoverStates[`merchant-${order.id}`]} onOpenChange={() => togglePopover(`merchant-${order.id}`)}>
+                                                        <PopoverTrigger asChild>
+                                                            <Button variant="outline" className="w-full h-8 justify-between bg-background hover:bg-muted font-normal">
+                                                            {order.merchant}
+                                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-[200px] p-0">
+                                                            <Command>
+                                                            <CommandInput placeholder="بحث..." />
+                                                            <CommandList>
+                                                                <CommandEmpty>لم يوجد.</CommandEmpty>
+                                                                <CommandGroup>
+                                                                {merchants.map(m => (
+                                                                    <CommandItem
+                                                                    key={m.id}
+                                                                    value={m.storeName || m.name}
+                                                                    onSelect={() => {
+                                                                        updateOrderField(order.id, 'merchant', m.storeName || m.name);
+                                                                        togglePopover(`merchant-${order.id}`);
+                                                                    }}
+                                                                    >
+                                                                    <Check className={cn("mr-2 h-4 w-4", order.merchant === (m.storeName || m.name) ? "opacity-100" : "opacity-0")} />
+                                                                    {m.storeName || m.name}
+                                                                    </CommandItem>
+                                                                ))}
+                                                                </CommandGroup>
+                                                            </CommandList>
+                                                            </Command>
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                </TableCell>
+                                                <TableCell className="text-center border-l whitespace-nowrap">{getStatusBadge(order.status)}</TableCell>
+                                                <TableCell className="text-center border-l whitespace-nowrap">{order.recipient}</TableCell>
+                                                <TableCell className="text-center border-l whitespace-nowrap">{order.phone}</TableCell>
+                                                <TableCell className="text-center border-l whitespace-nowrap">{order.region}</TableCell>
+                                                <TableCell className="text-center border-l whitespace-nowrap">
+                                                    <Input 
+                                                        type="number" 
+                                                        defaultValue={order.cod}
+                                                        onBlur={(e) => handleFieldChange(order.id, 'cod', e.target.value)}
+                                                        className="h-8 text-center"
+                                                    />
+                                                </TableCell>
+                                                <TableCell className="text-center border-l whitespace-nowrap">
+                                                    <Input
+                                                        type="number"
+                                                        defaultValue={order.driverFee}
+                                                        onBlur={(e) => handleFieldChange(order.id, 'driverFee', e.target.value)}
+                                                        className="h-8 text-center"
+                                                    />
+                                                </TableCell>
+                                                <TableCell className="text-center font-bold text-primary whitespace-nowrap">{formatCurrency(netAmount)}</TableCell>
+                                            </TableRow>
+                                        )
+                                    })
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+            
+            <Card>
+                <CardHeader className="p-4 bg-slate-50 dark:bg-slate-800/50">
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                        <div>
+                            <span className="font-semibold text-muted-foreground">إجمالي التحصيل المحدد: </span> 
+                            <span className="font-bold text-lg">{formatCurrency(totals.totalCOD)}</span>
                         </div>
-                    </CardContent>
-                </Card>
-                
-                <Card>
-                    <CardHeader className="p-4 bg-slate-50 dark:bg-slate-800/50">
-                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                            <div>
-                                <span className="font-semibold text-muted-foreground">إجمالي التحصيل المحدد: </span> 
-                                <span className="font-bold text-lg">{formatCurrency(totals.totalCOD)}</span>
-                            </div>
-                            <Separator orientation='vertical' className="h-6"/>
-                             <div>
-                                <span className="font-semibold text-muted-foreground">إجمالي أجرة السائق: </span> 
-                                <span className="font-bold text-lg">{formatCurrency(totals.totalDriverFare)}</span>
-                            </div>
-                             <Separator orientation='vertical' className="h-6"/>
-                            <div className="text-primary font-bold text-lg">
-                                <span className="font-semibold text-muted-foreground">الصافي للدفع: </span> 
-                                <span className="font-bold text-xl">{formatCurrency(totals.totalCOD - totals.totalDriverFare)}</span>
-                            </div>
-                            <div className="w-full sm:w-auto sm:mr-auto">
-                                <Button onClick={handleConfirmCollection} disabled={selectedOrderIds.length === 0} className="w-full">
-                                    <Icon name="Check" className="ml-2 h-4 w-4" />
-                                    تأكيد استلام المبلغ ({selectedOrderIds.length})
-                                </Button>
-                            </div>
+                        <Separator orientation='vertical' className="h-6"/>
+                         <div>
+                            <span className="font-semibold text-muted-foreground">إجمالي أجرة السائق: </span> 
+                            <span className="font-bold text-lg">{formatCurrency(totals.totalDriverFare)}</span>
                         </div>
-                    </CardHeader>
-                </Card>
-            </CardContent>
-        </Card>
+                         <Separator orientation='vertical' className="h-6"/>
+                        <div className="text-primary font-bold text-lg">
+                            <span className="font-semibold text-muted-foreground">الصافي للدفع: </span> 
+                            <span className="font-bold text-xl">{formatCurrency(totals.totalCOD - totals.totalDriverFare)}</span>
+                        </div>
+                        <div className="w-full sm:w-auto sm:mr-auto">
+                            <Button onClick={handleConfirmCollection} disabled={selectedOrderIds.length === 0} className="w-full">
+                                <Icon name="Check" className="ml-2 h-4 w-4" />
+                                تأكيد استلام المبلغ ({selectedOrderIds.length})
+                            </Button>
+                        </div>
+                    </div>
+                </CardHeader>
+            </Card>
+        </div>
     );
 };
