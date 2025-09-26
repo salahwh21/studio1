@@ -108,16 +108,12 @@ export const CollectFromDriver = () => {
         return <Badge style={{ backgroundColor: `${status.color}20`, color: status.color }}>{statusName}</Badge>;
     }
 
-
     return (
         <div className="space-y-4">
             <Card>
-                <CardHeader>
-                    
-                </CardHeader>
-                <CardContent>
-                     <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border rounded-lg bg-muted/50">
-                        <div className="w-full sm:w-auto sm:min-w-[250px]">
+                <CardContent className="p-2">
+                     <div className="flex items-center justify-center gap-4">
+                        <div className="w-full max-w-xs">
                             <Select onValueChange={setSelectedDriverId} value={selectedDriverId || ''}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="اختر سائقًا..." />
@@ -129,7 +125,7 @@ export const CollectFromDriver = () => {
                                 </SelectContent>
                             </Select>
                         </div>
-                         <div className="relative w-full sm:w-auto sm:min-w-[250px]">
+                         <div className="relative w-full max-w-xs">
                             <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input 
                                 placeholder="بحث بالرقم، العميل، الهاتف..." 
@@ -138,9 +134,7 @@ export const CollectFromDriver = () => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                         <div className="flex items-center gap-2 sm:mr-auto">
-                            <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
-                        </div>
+                        <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
                     </div>
                 </CardContent>
             </Card>
