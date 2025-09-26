@@ -27,7 +27,7 @@ export const CollectFromDriver = () => {
     const { toast } = useToast();
     const { users } = useUsersStore();
     const { orders, updateOrderField, bulkUpdateOrderStatus } = useOrdersStore();
-    const { formatCurrency } = useSettings();
+    const { settings, formatCurrency } = useSettings();
     const { statuses } = useStatusesStore();
     const { addDriverSlip } = useReturnsStore();
     
@@ -126,6 +126,88 @@ export const CollectFromDriver = () => {
         if (!status) return <Badge variant="outline">{statusName}</Badge>;
         return <Badge style={{ backgroundColor: `${status.color}20`, color: status.color }}>{statusName}</Badge>;
     }
+    
+    const handlePrint = () => {
+        const ordersToPrint = ordersForCollection.filter(o => selectedOrderIds.includes(o.id));
+        if (ordersToPrint.length === 0) {
+            toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء تحديد طلب واحد على الأقل للطباعة.' });
+            return;
+        }
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'يرجى السماح بفتح النوافذ المنبثقة.' });
+            return;
+        }
+
+        const tableHeader = `
+            <tr>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">قيمة التحصيل</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">أجرة السائق</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">الصافي</th>
+            </tr>
+        `;
+
+        const tableRows = ordersToPrint.map((o, i) => `
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;">${i + 1}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${o.id}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${o.recipient}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(o.cod)}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(o.driverFee)}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency((o.cod || 0) - (o.driverFee || 0))}</td>
+            </tr>
+        `).join('');
+
+        const slipDate = new Date().toLocaleDateString('ar-EG');
+        const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
+        const totalNet = totals.totalCOD - totals.totalDriverFare;
+
+        const content = `
+            <html>
+                <head>
+                    <title>كشف تحصيل من: ${selectedDriver?.name || 'سائق'}</title>
+                    <style>
+                        body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th, td { padding: 8px; border: 1px solid #ddd; text-align: right; }
+                        th { background-color: #f2f2f2; }
+                        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+                        .signatures { margin-top: 40px; display: flex; justify-content: space-between; }
+                        .signature { border-top: 1px solid #000; padding-top: 5px; width: 200px; text-align: center; }
+                        .totals { margin-top: 20px; padding: 10px; border: 1px solid #ddd; background: #f9f9f9; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="height: 50px;">` : `<h1>${settings.login.companyName || 'الشركة'}</h1>`}
+                        <div>
+                            <h2>كشف تحصيل من السائق: ${selectedDriver?.name}</h2>
+                            <p>التاريخ: ${slipDate}</p>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>${tableHeader}</thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                    <div class="totals">
+                        <h3>الإجمالي: ${formatCurrency(totalNet)}</h3>
+                    </div>
+                    <div class="signatures">
+                        <div class="signature">توقيع المستلم (المحاسب)</div>
+                        <div class="signature">توقيع السائق</div>
+                    </div>
+                </body>
+            </html>
+        `;
+        printWindow.document.write(content);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+    };
 
     return (
         <div className="space-y-4 h-full flex flex-col">
@@ -153,7 +235,10 @@ export const CollectFromDriver = () => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <Button variant="outline" size="sm" className="mr-auto"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
+                        <div className="mr-auto flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={handlePrint} disabled={selectedOrderIds.length === 0}><Icon name="Printer" className="ml-2 h-4 w-4"/>طباعة المحدد</Button>
+                            <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
