@@ -1,3 +1,4 @@
+
 'use client';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
@@ -14,6 +15,7 @@ export type DriverPaymentSlip = {
 type FinancialsState = {
   driverPaymentSlips: DriverPaymentSlip[];
   addDriverPaymentSlip: (slip: Omit<DriverPaymentSlip, 'id'>) => void;
+  removeOrderFromDriverPaymentSlip: (slipId: string, orderId: string) => void;
 };
 
 export const useFinancialsStore = create<FinancialsState>()(immer((set) => ({
@@ -26,6 +28,16 @@ export const useFinancialsStore = create<FinancialsState>()(immer((set) => ({
         id: `PAY-${Date.now()}`
       };
       state.driverPaymentSlips.unshift(newSlip);
+    });
+  },
+
+  removeOrderFromDriverPaymentSlip: (slipId, orderId) => {
+    set(state => {
+        const slip = state.driverPaymentSlips.find(s => s.id === slipId);
+        if (slip) {
+            slip.orders = slip.orders.filter(o => o.id !== orderId);
+            slip.itemCount = slip.orders.length;
+        }
     });
   },
 })));

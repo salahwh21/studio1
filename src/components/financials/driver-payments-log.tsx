@@ -185,7 +185,9 @@ export const DriverPaymentsLog = () => {
                                 return (
                                 <TableRow key={slip.id}>
                                     <TableCell className="font-mono border-l">
-                                        {slip.id}
+                                         <Link href={`/dashboard/financials/slips/${slip.id}`} className="text-primary hover:underline">
+                                            {slip.id}
+                                        </Link>
                                     </TableCell>
                                     <TableCell className="border-l">{slip.driverName}</TableCell>
                                     <TableCell className="border-l">{new Date(slip.date).toLocaleDateString('ar-EG')}</TableCell>
