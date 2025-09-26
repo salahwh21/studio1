@@ -2,6 +2,8 @@
 'use client';
 
 import { useState, useMemo, useTransition, useRef } from 'react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { useReturnsStore, type DriverSlip } from '@/store/returns-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -18,22 +20,13 @@ import { updateOrderAction } from '@/app/actions/update-order';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DateRangePicker } from '@/components/date-range-picker';
 import type { DateRange } from 'react-day-picker';
-import pdfMake from "pdfmake/build/pdfmake";
-import pdfFonts from "pdfmake/build/vfs_fonts";
-import { amiriFont } from '@/lib/amiri-font';
 
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
-pdfMake.vfs['Amiri-Regular.ttf'] = amiriFont;
-
-pdfMake.fonts = {
-  Amiri: {
-    normal: 'Amiri-Regular.ttf',
-    bold: 'Amiri-Regular.ttf',
-    italics: 'Amiri-Regular.ttf',
-    bolditalics: 'Amiri-Regular.ttf'
-  }
-};
+declare module 'jspdf' {
+    interface jsPDF {
+        autoTable: (options: any) => jsPDF;
+    }
+}
 
 
 export const DriverPaymentsLog = () => {
@@ -78,57 +71,76 @@ export const DriverPaymentsLog = () => {
         });
     }
 
-    const handlePrintAction = (slip: DriverSlip) => {
-        startTransition(() => {
+    const handlePrintAction = async (slip: DriverSlip) => {
+        startTransition(async () => {
             toast({ title: "جاري تحضير ملف PDF...", description: `سيتم طباعة كشف السائق ${slip.driverName}.` });
             try {
+                const doc = new jsPDF();
+                
+                // We will use a standard font that has better support, and handle RTL in autotable
+                doc.setFont("Times-Roman");
+                
                 const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
 
-                const tableBody = [
-                    ['المبلغ', 'سبب الإرجاع', 'الهاتف', 'المستلم', 'رقم الطلب', '#'].map(h => ({text: h, style: 'tableHeader'})),
-                    ...slip.orders.map((order, index) => [
-                        formatCurrency(order.cod),
-                        order.previousStatus || order.status,
-                        order.phone,
-                        order.recipient,
-                        order.id,
-                        index + 1
-                    ].reverse())
-                ];
+                if (reportsLogo) {
+                    try {
+                        doc.addImage(reportsLogo, 'PNG', 15, 10, 30, 10);
+                    } catch (e) {
+                        console.error("Error adding logo to PDF:", e);
+                    }
+                }
 
-                const docDefinition: any = {
-                    content: [
-                        {
-                            columns: [
-                                { text: `رقم الكشف: ${slip.id}`, style: 'headerInfo' },
-                                { text: `تاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, style: 'headerInfo', alignment: 'right' }
-                            ]
-                        },
-                        { text: `كشف استلام مرتجعات من السائق: ${slip.driverName}`, style: 'header', alignment: 'center' },
-                        {
-                            table: {
-                                headerRows: 1,
-                                widths: ['auto', 'auto', 'auto', '*', 'auto', 'auto'],
-                                body: tableBody
-                            },
-                            layout: 'lightHorizontalLines'
-                        }
-                    ],
-                    styles: {
-                        header: { fontSize: 18, bold: true, margin: [0, 20, 0, 10] },
-                        headerInfo: { fontSize: 10, color: 'gray', margin: [0, 0, 0, 20] },
-                        tableHeader: { bold: true, fontSize: 11, color: 'black' }
-                    },
-                    defaultStyle: { font: 'Amiri', alignment: 'right' }
-                };
+                doc.setFontSize(18);
+                doc.text(`كشف استلام مرتجعات من السائق: ${slip.driverName}`, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+                
+                doc.setFontSize(10);
+                doc.text(`تاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
+                doc.text(`رقم الكشف: ${slip.id}`, 15, 30, { align: 'left' });
 
-                pdfMake.createPdf(docDefinition).download(`${slip.id}.pdf`);
+                const tableColumn = ["المبلغ", "سبب الإرجاع", "الهاتف", "المستلم", "رقم الطلب", "#"];
+                const tableRows = slip.orders.map((order, index) => [
+                    formatCurrency(order.cod),
+                    order.previousStatus || order.status,
+                    order.phone,
+                    order.recipient,
+                    order.id,
+                    index + 1
+                ]);
+
+                doc.autoTable({
+                    head: [tableColumn],
+                    body: tableRows,
+                    startY: 45,
+                    theme: 'grid',
+                    styles: { font: "Times-Roman", halign: 'right' },
+                    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+                    didDrawPage: (data: any) => {
+                        doc.setFontSize(10);
+                        doc.text('توقيع المستلم: .........................', doc.internal.pageSize.getWidth() - data.settings.margin.right, doc.internal.pageSize.height - 15, { align: 'right' });
+                        doc.text('توقيع مندوب الوميض: .........................', data.settings.margin.left, doc.internal.pageSize.height - 15, { align: 'left' });
+                    }
+                });
+
+                doc.save(`${slip.id}.pdf`);
                 toast({ title: 'تم تجهيز الملف', description: 'بدأ تحميل ملف الـ PDF.' });
             } catch (e: any) {
                 console.error("PDF generation error:", e);
                 toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: e.message || 'حدث خطأ أثناء تجهيز الملف.' });
             }
         });
+    };
+
+    const handleQuickPrint = (slip: DriverSlip) => {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            const tableRows = slip.orders.map((o, i) => `<tr><td>${i+1}</td><td>${o.id}</td><td>${o.recipient}</td><td>${o.previousStatus || o.status}</td></tr>`).join('');
+            printWindow.document.write('<html><head><title>كشف استلام سريع</title><style>body{direction:rtl; font-family: sans-serif;} table{width:100%; border-collapse: collapse;} th,td{border:1px solid #ddd; padding: 8px; text-align:right;}</style></head><body>');
+            printWindow.document.write(`<h2>كشف استلام من: ${slip.driverName}</h2><p>رقم: ${slip.id}</p>`);
+            printWindow.document.write(`<table><thead><tr><th>#</th><th>رقم الطلب</th><th>المستلم</th><th>السبب</th></tr></thead><tbody>${tableRows}</tbody></table>`);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        }
     };
 
 
@@ -184,9 +196,9 @@ export const DriverPaymentsLog = () => {
                                         <Badge className="bg-blue-100 text-blue-800">مستلم بالفرع</Badge>
                                     </TableCell>
                                      <TableCell className="flex gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}><Icon name="Eye" className="ml-2 h-4 w-4"/>عرض وتعديل</Button>
+                                        <Button variant="outline" size="sm" onClick={() => handleQuickPrint(slip)}><Icon name="Printer" className="ml-2 h-4 w-4"/>طباعة سريعة</Button>
                                         <Button size="sm" onClick={() => handlePrintAction(slip)} disabled={isPending}>
-                                            {isPending ? <Icon name="Loader2" className="animate-spin ml-2" /> : <Icon name="Printer" className="ml-2" />}
+                                            {isPending ? <Icon name="Loader2" className="animate-spin ml-2" /> : <Icon name="FileText" className="ml-2" />}
                                             PDF رسمي
                                         </Button>
                                     </TableCell>
