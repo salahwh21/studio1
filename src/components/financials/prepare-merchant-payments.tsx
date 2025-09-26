@@ -20,7 +20,7 @@ export const PrepareMerchantPayments = () => {
     const { toast } = useToast();
     const { users } = useUsersStore();
     const { orders } = useOrdersStore();
-    const { formatCurrency } = useSettings();
+    const { settings, formatCurrency } = useSettings();
     
     const [selectedMerchantId, setSelectedMerchantId] = useState<string | null>(null);
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
@@ -94,6 +94,106 @@ export const PrepareMerchantPayments = () => {
             [orderId]: numericValue,
         }));
     };
+    
+     const handlePrint = () => {
+        const ordersToPrint = ordersForPayment.filter(o => selectedOrderIds.includes(o.id));
+        if (ordersToPrint.length === 0) {
+            toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء تحديد طلب واحد على الأقل للطباعة.' });
+            return;
+        }
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'يرجى السماح بفتح النوافذ المنبثقة.' });
+            return;
+        }
+
+        const tableHeader = `
+            <thead>
+                <tr>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستحق للتاجر</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">تعديلات</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">الصافي</th>
+                </tr>
+            </thead>
+        `;
+        
+        const tableRows = ordersToPrint.map((o, i) => {
+            const adjustment = adjustments[o.id] || 0;
+            const netAmount = (o.itemPrice || 0) + adjustment;
+            return `
+                <tr>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${i + 1}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${o.id}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${o.recipient}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(o.itemPrice)}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(adjustment)}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(netAmount)}</td>
+                </tr>
+            `
+        }).join('');
+
+        const totalItemPrice = ordersToPrint.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
+        const totalAdjustments = ordersToPrint.reduce((sum, o) => sum + (adjustments[o.id] || 0), 0);
+        const totalNet = totalItemPrice + totalAdjustments;
+
+        const tableFooter = `
+            <tfoot>
+                <tr>
+                    <th colspan="3" style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">الإجمالي</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(totalItemPrice)}</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(totalAdjustments)}</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(totalNet)}</th>
+                </tr>
+            </tfoot>
+        `;
+        
+        const slipDate = new Date().toLocaleDateString('ar-EG');
+        const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
+
+        const content = `
+            <html>
+                <head>
+                    <title>كشف دفع لـ: ${selectedMerchant?.name || 'تاجر'}</title>
+                    <style>
+                        body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th, td { padding: 8px; border: 1px solid #ddd; text-align: right; }
+                        th { background-color: #f2f2f2; }
+                        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+                        .signatures { margin-top: 40px; display: flex; justify-content: space-between; }
+                        .signature { border-top: 1px solid #000; padding-top: 5px; width: 200px; text-align: center; }
+                        tfoot { background-color: #f9f9f9; font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="height: 50px;">` : `<h1>${settings.login.companyName || 'الشركة'}</h1>`}
+                        <div>
+                            <h2>كشف دفع للتاجر: ${selectedMerchant?.name}</h2>
+                            <p>التاريخ: ${slipDate}</p>
+                        </div>
+                    </div>
+                    <table>
+                        ${tableHeader}
+                        <tbody>${tableRows}</tbody>
+                        ${tableFooter}
+                    </table>
+                    <div class="signatures">
+                        <div class="signature">توقيع المستلم (التاجر)</div>
+                        <div class="signature">توقيع الموظف المالي</div>
+                    </div>
+                </body>
+            </html>
+        `;
+        printWindow.document.write(content);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+    };
 
     const isAllSelected = ordersForPayment.length > 0 && selectedOrderIds.length === ordersForPayment.length;
 
@@ -125,7 +225,7 @@ export const PrepareMerchantPayments = () => {
                         </div>
                         {/* <DateRangePicker onUpdate={(range) => setDateRange(range.range)} /> */}
                         <div className="flex items-center gap-2 sm:mr-auto">
-                            <Button variant="outline" size="sm"><Icon name="FileDown" className="ml-2 h-4 w-4"/>تصدير PDF</Button>
+                            <Button variant="outline" size="sm" onClick={handlePrint} disabled={selectedOrderIds.length === 0}><Icon name="Printer" className="ml-2 h-4 w-4"/>طباعة المحدد</Button>
                             <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
                         </div>
                     </div>
