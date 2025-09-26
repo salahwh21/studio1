@@ -12,6 +12,8 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { flushSync } from 'react-dom';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 
 export const MerchantPaymentsLog = () => {
@@ -53,9 +55,6 @@ export const MerchantPaymentsLog = () => {
         flushSync(() => {
             setSlipToPrint(slip);
         });
-
-        const { default: jsPDF } = await import('jspdf');
-        const { default: html2canvas } = await import('html2canvas');
 
         const slipContainer = slipPrintRef.current?.querySelector('.slip-container');
 
@@ -104,7 +103,7 @@ export const MerchantPaymentsLog = () => {
         return (
              <div className="slip-container" style={{ width: '210mm', minHeight: '297mm', padding: '15mm', boxSizing: 'border-box', backgroundColor: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <style>{`
-                    .slip-container { direction: rtl; font-family: 'Segoe UI', Tahoma, sans-serif; color: black; }
+                    .slip-container { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: black; }
                     .slip-table { width: 100%; border-collapse: collapse; margin: 40px 0; font-size: 11px; }
                     .slip-table th, .slip-table td { padding: 8px 10px; border: 1px solid #ddd; text-align: right; }
                     .slip-table th { background-color: #f2f2f2; font-weight: bold; }
@@ -119,12 +118,12 @@ export const MerchantPaymentsLog = () => {
                 <div>
                     <div className="slip-header">
                         <div style={{textAlign: 'right'}}>
-                            <h2>كشف دفع للتاجر: ${slip.merchantName}</h2>
-                            <p>التاريخ: ${slipDate}</p>
-                            <p>رقم الكشف: ${slip.id}</p>
+                            <h2>كشف دفع للتاجر: {slip.merchantName}</h2>
+                            <p>التاريخ: {slipDate}</p>
+                            <p>رقم الكشف: {slip.id}</p>
                         </div>
                         <div className="slip-logo">
-                            ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="max-height: 40px;">` : (settings.login.companyName || 'الوميض')}
+                             {logoUrl ? <img src={logoUrl} alt="Logo" style={{ maxHeight: '40px' }} /> : (settings.login.companyName || 'الوميض')}
                         </div>
                     </div>
                     <table className="slip-table">
@@ -141,21 +140,21 @@ export const MerchantPaymentsLog = () => {
                         <tbody>
                             {slip.orders.map((o, i) => (
                                 <tr key={o.id}>
-                                    <td>${i + 1}</td>
-                                    <td>${o.id}</td>
-                                    <td>${o.recipient}</td>
-                                    <td>${formatCurrency(o.cod)}</td>
-                                    <td>${formatCurrency(o.deliveryFee)}</td>
-                                    <td style={{fontWeight: 'bold'}}>${formatCurrency(o.itemPrice)}</td>
+                                    <td>{i + 1}</td>
+                                    <td>{o.id}</td>
+                                    <td>{o.recipient}</td>
+                                    <td>{formatCurrency(o.cod)}</td>
+                                    <td>{formatCurrency(o.deliveryFee)}</td>
+                                    <td style={{fontWeight: 'bold'}}>{formatCurrency(o.itemPrice)}</td>
                                 </tr>
                             ))}
                         </tbody>
                         <tfoot>
                             <tr>
                                 <th colSpan={3}>الإجمالي</th>
-                                <th>${formatCurrency(totalCod)}</th>
-                                <th>${formatCurrency(totalDelivery)}</th>
-                                <th>${formatCurrency(totalNet)}</th>
+                                <th>{formatCurrency(totalCod)}</th>
+                                <th>{formatCurrency(totalDelivery)}</th>
+                                <th>{formatCurrency(totalNet)}</th>
                             </tr>
                         </tfoot>
                     </table>
@@ -231,7 +230,7 @@ export const MerchantPaymentsLog = () => {
                 </Table>
             </CardContent>
             {/* Hidden div for printing/exporting, positioned off-screen */}
-            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', direction: 'rtl', backgroundColor: 'white' }}>
+             <div style={{ position: 'absolute', right: '-9999px', top: '-9999px' }}>
                 <div ref={slipPrintRef}>
                     {slipToPrint && <SlipHTML slip={slipToPrint} />}
                 </div>
