@@ -18,6 +18,7 @@ export const MerchantPaymentsLog = () => {
     const { toast } = useToast();
 
     const handlePrint = (slip: MerchantPaymentSlip) => {
+        if (!slip) return;
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
             toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'يرجى السماح بفتح النوافذ المنبثقة.' });
@@ -30,7 +31,9 @@ export const MerchantPaymentsLog = () => {
                     <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
                     <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
                     <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المبلغ المستحق</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">قيمة التحصيل</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">أجور التوصيل</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">الصافي المستحق</th>
                 </tr>
             </thead>
         `;
@@ -40,17 +43,24 @@ export const MerchantPaymentsLog = () => {
                 <td style="padding: 8px; border: 1px solid #ddd;">${i + 1}</td>
                 <td style="padding: 8px; border: 1px solid #ddd;">${o.id}</td>
                 <td style="padding: 8px; border: 1px solid #ddd;">${o.recipient}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(o.itemPrice)}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(o.cod)}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(o.deliveryFee)}</td>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">${formatCurrency(o.itemPrice)}</td>
             </tr>
         `).join('');
+        
+        const totalCod = slip.orders.reduce((sum, o) => sum + (o.cod || 0), 0);
+        const totalDelivery = slip.orders.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
+        const totalNet = slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
 
-        const totalAmount = slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
 
         const tableFooter = `
-            <tfoot>
+            <tfoot style="background-color: #f9f9f9; font-weight: bold;">
                 <tr>
-                    <th colspan="3" style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">الإجمالي</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(totalAmount)}</th>
+                    <td colspan="3" style="padding: 8px; border: 1px solid #ddd; text-align: right;">الإجمالي</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalCod)}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalDelivery)}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalNet)}</td>
                 </tr>
             </tfoot>
         `;
