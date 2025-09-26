@@ -77,7 +77,6 @@ export const DriverPaymentsLog = () => {
             try {
                 const doc = new jsPDF();
                 
-                // We will use a standard font that has better support, and handle RTL in autotable
                 doc.setFont("Times-Roman");
                 
                 const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
@@ -97,15 +96,15 @@ export const DriverPaymentsLog = () => {
                 doc.text(`تاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
                 doc.text(`رقم الكشف: ${slip.id}`, 15, 30, { align: 'left' });
 
-                const tableColumn = ["المبلغ", "سبب الإرجاع", "الهاتف", "المستلم", "رقم الطلب", "#"];
+                const tableColumn = ["المبلغ", "سبب الإرجاع", "الهاتف", "المستلم", "رقم الطلب", "#"].reverse();
                 const tableRows = slip.orders.map((order, index) => [
-                    formatCurrency(order.cod),
-                    order.previousStatus || order.status,
-                    order.phone,
-                    order.recipient,
+                    index + 1,
                     order.id,
-                    index + 1
-                ]);
+                    order.recipient,
+                    order.phone,
+                    order.previousStatus || order.status,
+                    formatCurrency(order.cod),
+                ].reverse());
 
                 doc.autoTable({
                     head: [tableColumn],
