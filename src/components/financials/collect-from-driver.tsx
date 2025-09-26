@@ -20,7 +20,6 @@ import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useStatusesStore } from '@/store/statuses-store';
-import { DateRangePicker } from '@/components/date-range-picker';
 
 
 export const CollectFromDriver = () => {
@@ -273,4 +272,5 @@ export const CollectFromDriver = () => {
             </Card>
         </div>
     );
-};
+
+    
