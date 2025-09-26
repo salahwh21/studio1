@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
@@ -89,12 +90,8 @@ export default function SlipDetailPage() {
             try {
                 const doc = new jsPDF();
             
-                // doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
-                // doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-                // doc.setFont('Amiri');
+                doc.setFont("Times-Roman");
                 
-                doc.setRTL(true);
-
                 const title = slipType === 'driver' ? `كشف استلام من السائق` : `كشف إرجاع للتاجر`;
                 const partyName = slipType === 'driver' ? (slip as DriverSlip).driverName : (slip as MerchantSlip).merchant;
                 const partyType = slipType === 'driver' ? 'السائق' : 'التاجر';
@@ -131,7 +128,7 @@ export default function SlipDetailPage() {
                     body: tableRows,
                     startY: 50,
                     theme: 'grid',
-                    styles: { font: 'Amiri', halign: 'right' },
+                    styles: { font: 'Times-Roman', halign: 'right' },
                     headStyles: { fillColor: [41, 128, 185], textColor: 255 },
                 });
 
