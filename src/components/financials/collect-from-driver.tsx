@@ -113,10 +113,7 @@ export const CollectFromDriver = () => {
         <div className="space-y-4">
             <Card>
                 <CardHeader>
-                    <CardTitle>المرحلة الأولى: تحصيل المبالغ من السائقين</CardTitle>
-                    <CardDescription>
-                        اختر سائقًا لعرض الشحنات التي تم توصيلها، ثم حدد الشحنات وقم بتأكيد استلام المبلغ الصافي.
-                    </CardDescription>
+                    
                 </CardHeader>
                 <CardContent>
                      <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border rounded-lg bg-muted/50">
