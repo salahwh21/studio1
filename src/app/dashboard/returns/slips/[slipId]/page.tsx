@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { useOrdersStore } from '@/store/orders-store';
 
 declare module 'jspdf' {
     interface jsPDF {
@@ -53,7 +54,8 @@ export default function SlipDetailPage() {
     const params = useParams();
     const { slipId } = params;
     
-    const { driverSlips, merchantSlips } = useReturnsStore();
+    const { driverSlips, merchantSlips, removeOrderFromDriverSlip } = useReturnsStore();
+    const { updateOrderField } = useOrdersStore();
     const { formatCurrency, settings } = useSettings();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
@@ -63,20 +65,19 @@ export default function SlipDetailPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        let foundSlip: DriverSlip | MerchantSlip | null = null;
+        let foundSlip: DriverSlip | MerchantSlip | undefined = driverSlips.find(s => s.id === slipId);
         let type: 'driver' | 'merchant' | null = null;
-
-        foundSlip = driverSlips.find(s => s.id === slipId) as DriverSlip;
+    
         if (foundSlip) {
             type = 'driver';
         } else {
-            foundSlip = merchantSlips.find(s => s.id === slipId) as MerchantSlip;
+            foundSlip = merchantSlips.find(s => s.id === slipId);
             if (foundSlip) {
                 type = 'merchant';
             }
         }
         
-        setSlip(foundSlip);
+        setSlip(foundSlip || null);
         setSlipType(type);
         setIsLoading(false);
 
@@ -152,6 +153,19 @@ export default function SlipDetailPage() {
         });
     };
 
+    const handleRemoveOrder = (orderId: string) => {
+        if (!slip || slipType !== 'driver') return;
+        
+        removeOrderFromDriverSlip(slip.id, orderId);
+        updateOrderField(orderId, 'status', 'راجع');
+        
+        // This is a trick to force re-render with updated data from the store
+        const updatedSlip = useReturnsStore.getState().driverSlips.find(s => s.id === slipId);
+        setSlip(updatedSlip || null);
+
+        toast({ title: "تم", description: "تمت إعادة الطلب إلى قائمة مرتجعات السائق."});
+    };
+
     if (isLoading) {
         return <SlipDetailPageSkeleton />;
     }
@@ -194,7 +208,7 @@ export default function SlipDetailPage() {
                             طباعة
                         </Button>
                         <Button variant="outline" size="icon" asChild>
-                            <Link href="/dashboard/returns">
+                            <Link href="/dashboard/settings/roles">
                                 <Icon name="ArrowLeft" className="h-4 w-4" />
                             </Link>
                         </Button>
@@ -246,6 +260,7 @@ export default function SlipDetailPage() {
                                 <TableHead>الهاتف</TableHead>
                                 <TableHead>قيمة التحصيل</TableHead>
                                 <TableHead>سبب الإرجاع</TableHead>
+                                {slipType === 'driver' && <TableHead className="text-center">إجراء</TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -259,6 +274,13 @@ export default function SlipDetailPage() {
                                     <TableCell>{order.phone}</TableCell>
                                     <TableCell>{formatCurrency(order.cod)}</TableCell>
                                     <TableCell><Badge variant="secondary">{order.previousStatus || order.status}</Badge></TableCell>
+                                    {slipType === 'driver' && (
+                                        <TableCell className="text-center">
+                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveOrder(order.id)}>
+                                                <Icon name="Trash2" className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </TableCell>
+                                    )}
                                 </TableRow>
                             ))}
                         </TableBody>
