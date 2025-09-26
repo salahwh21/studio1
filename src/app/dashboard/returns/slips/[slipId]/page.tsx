@@ -130,12 +130,14 @@ export default function SlipDetailPage() {
                     theme: 'grid',
                     styles: { font: 'Times-Roman', halign: 'right' },
                     headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+                    didDrawPage: (data: any) => {
+                        // Footer
+                        const finalY = data.cursor.y; // or doc.internal.pageSize.height - 20
+                        doc.setFontSize(10);
+                        doc.text('توقيع المستلم: .........................', doc.internal.pageSize.getWidth() - data.settings.margin.right, doc.internal.pageSize.height - 15, { align: 'right' });
+                        doc.text('توقيع مندوب الوميض: .........................', data.settings.margin.left, doc.internal.pageSize.height - 15, { align: 'left' });
+                    }
                 });
-
-                const finalY = (doc as any).autoTable.previous.finalY;
-                doc.setFontSize(10);
-                doc.text('توقيع المستلم: .........................', doc.internal.pageSize.getWidth() - 15, finalY + 20, { align: 'right' });
-                doc.text('توقيع مندوب الوميض: .........................', 15, finalY + 20, { align: 'left' });
 
                 doc.save(`${slip.id}.pdf`);
                  toast({ title: 'تم تجهيز الملف', description: 'بدأ تحميل ملف الـ PDF.' });
