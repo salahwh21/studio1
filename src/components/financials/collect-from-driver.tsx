@@ -167,20 +167,20 @@ export const CollectFromDriver = () => {
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                         <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader>
+                         <div className="overflow-x-auto h-[calc(100vh-28rem)]">
+                            <Table className="relative">
+                                <TableHeader className="sticky top-0 z-20 bg-slate-50 dark:bg-slate-800/50">
                                     <TableRow>
-                                        <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
-                                        <TableHead className="text-center border-l whitespace-nowrap">رقم الطلب</TableHead>
-                                        <TableHead className="w-48 text-center border-l whitespace-nowrap">التاجر</TableHead>
-                                        <TableHead className="text-center border-l whitespace-nowrap">الحالة</TableHead>
-                                        <TableHead className="text-center border-l whitespace-nowrap">الزبون</TableHead>
-                                        <TableHead className="text-center border-l whitespace-nowrap">الهاتف</TableHead>
-                                        <TableHead className="text-center border-l whitespace-nowrap">المنطقة</TableHead>
+                                        <TableHead className="w-12 text-center border-l sticky right-0 z-10 bg-inherit"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
+                                        <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">رقم الطلب</TableHead>
+                                        <TableHead className="w-48 text-center border-l whitespace-nowrap min-w-[200px]">التاجر</TableHead>
+                                        <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الحالة</TableHead>
+                                        <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الزبون</TableHead>
+                                        <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الهاتف</TableHead>
+                                        <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">المنطقة</TableHead>
                                         <TableHead className="w-[150px] text-center border-l whitespace-nowrap">قيمة التحصيل</TableHead>
                                         <TableHead className="w-[150px] text-center border-l whitespace-nowrap">أجرة السائق</TableHead>
-                                        <TableHead className="text-center whitespace-nowrap">الصافي</TableHead>
+                                        <TableHead className="text-center whitespace-nowrap min-w-[120px]">الصافي</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -193,7 +193,7 @@ export const CollectFromDriver = () => {
                                             const netAmount = (order.cod || 0) - (order.driverFee || 0);
                                             return (
                                                 <TableRow key={order.id} data-state={selectedOrderIds.includes(order.id) ? "selected" : ""}>
-                                                    <TableCell className="text-center border-l whitespace-nowrap">
+                                                    <TableCell className="text-center border-l whitespace-nowrap sticky right-0 z-10 bg-card data-[state=selected]:bg-muted">
                                                         <Checkbox checked={selectedOrderIds.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} />
                                                     </TableCell>
                                                     <TableCell className="text-center border-l font-mono whitespace-nowrap">{order.id}</TableCell>
