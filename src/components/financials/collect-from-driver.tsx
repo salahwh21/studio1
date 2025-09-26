@@ -141,14 +141,16 @@ export const CollectFromDriver = () => {
         }
 
         const tableHeader = `
-            <tr>
-                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
-                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
-                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
-                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">قيمة التحصيل</th>
-                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">أجرة السائق</th>
-                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">الصافي</th>
-            </tr>
+            <thead>
+                <tr>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">قيمة التحصيل</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">أجرة السائق</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">الصافي</th>
+                </tr>
+            </thead>
         `;
 
         const tableRows = ordersToPrint.map((o, i) => `
@@ -162,9 +164,23 @@ export const CollectFromDriver = () => {
             </tr>
         `).join('');
 
+        const totalCOD = ordersToPrint.reduce((sum, o) => sum + (o.cod || 0), 0);
+        const totalDriverFare = ordersToPrint.reduce((sum, o) => sum + (o.driverFee || 0), 0);
+        const totalNet = totalCOD - totalDriverFare;
+
+        const tableFooter = `
+            <tfoot>
+                <tr>
+                    <th colspan="3" style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">الإجمالي</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(totalCOD)}</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(totalDriverFare)}</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(totalNet)}</th>
+                </tr>
+            </tfoot>
+        `;
+
         const slipDate = new Date().toLocaleDateString('ar-EG');
         const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
-        const totalNet = totals.totalCOD - totals.totalDriverFare;
 
         const content = `
             <html>
@@ -178,7 +194,7 @@ export const CollectFromDriver = () => {
                         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
                         .signatures { margin-top: 40px; display: flex; justify-content: space-between; }
                         .signature { border-top: 1px solid #000; padding-top: 5px; width: 200px; text-align: center; }
-                        .totals { margin-top: 20px; padding: 10px; border: 1px solid #ddd; background: #f9f9f9; }
+                        tfoot { background-color: #f9f9f9; font-weight: bold; }
                     </style>
                 </head>
                 <body>
@@ -190,12 +206,10 @@ export const CollectFromDriver = () => {
                         </div>
                     </div>
                     <table>
-                        <thead>${tableHeader}</thead>
+                        ${tableHeader}
                         <tbody>${tableRows}</tbody>
+                        ${tableFooter}
                     </table>
-                    <div class="totals">
-                        <h3>الإجمالي: ${formatCurrency(totalNet)}</h3>
-                    </div>
                     <div class="signatures">
                         <div class="signature">توقيع المستلم (المحاسب)</div>
                         <div class="signature">توقيع السائق</div>
@@ -208,6 +222,7 @@ export const CollectFromDriver = () => {
         printWindow.focus();
         printWindow.print();
     };
+
 
     return (
         <div className="space-y-4 h-full flex flex-col">
