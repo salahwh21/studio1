@@ -272,5 +272,4 @@ export const CollectFromDriver = () => {
             </Card>
         </div>
     );
-
-    
+};
