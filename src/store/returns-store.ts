@@ -51,6 +51,7 @@ type ReturnsState = {
   driverSlips: DriverSlip[];
   merchantSlips: MerchantSlip[];
   addDriverSlip: (slip: Omit<DriverSlip, 'id'>) => void;
+  removeOrderFromDriverSlip: (slipId: string, orderId: string) => void;
   addMerchantSlip: (slip: Omit<MerchantSlip, 'id'>) => void;
   updateMerchantSlipStatus: (slipId: string, status: MerchantSlip['status']) => void;
 };
@@ -66,6 +67,16 @@ export const useReturnsStore = create<ReturnsState>()(immer((set) => ({
         id: `DS-${Date.now()}`
       };
       state.driverSlips.unshift(newSlip);
+    });
+  },
+
+  removeOrderFromDriverSlip: (slipId, orderId) => {
+    set(state => {
+        const slip = state.driverSlips.find(s => s.id === slipId);
+        if (slip) {
+            slip.orders = slip.orders.filter(o => o.id !== orderId);
+            slip.itemCount = slip.orders.length;
+        }
     });
   },
 

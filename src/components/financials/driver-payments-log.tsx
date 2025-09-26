@@ -5,12 +5,13 @@ import { useState, useMemo, useTransition, useRef } from 'react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useReturnsStore, type DriverSlip } from '@/store/returns-store';
+import { useOrdersStore } from '@/store/orders-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '../icon';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { parseISO, isWithinInterval } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -31,8 +32,8 @@ declare module 'jspdf' {
 export const DriverPaymentsLog = () => {
     const { toast } = useToast();
     const { settings, formatCurrency } = useSettings();
-    const { driverSlips } = useReturnsStore();
-    const { users } = useUsersStore();
+    const { driverSlips, removeOrderFromDriverSlip } = useReturnsStore();
+    const { updateOrderStatus } = useOrdersStore();
     const [isPending, startTransition] = useTransition();
 
     const [showDetailsDialog, setShowDetailsDialog] = useState(false);
@@ -60,6 +61,17 @@ export const DriverPaymentsLog = () => {
     const handleShowDetails = (slip: DriverSlip) => {
         setCurrentSlip(slip);
         setShowDetailsDialog(true);
+    };
+
+    const handleRemoveOrder = (slipId: string, orderId: string) => {
+        removeOrderFromDriverSlip(slipId, orderId);
+        updateOrderStatus(orderId, 'راجع');
+        // Refresh current slip view if it's the one being edited
+        if (currentSlip && currentSlip.id === slipId) {
+            const updatedSlip = useReturnsStore.getState().driverSlips.find(s => s.id === slipId);
+            setCurrentSlip(updatedSlip || null);
+        }
+        toast({ title: "تم", description: "تمت إعادة الطلب إلى قائمة مرتجعات السائق."});
     };
     
     const handlePrintAction = (slip: DriverSlip) => {
@@ -202,22 +214,51 @@ export const DriverPaymentsLog = () => {
             </Card>
 
             <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-                <DialogContent>
+                <DialogContent className="max-w-4xl">
                     <DialogHeader>
                         <div className="flex justify-between items-center">
-                            <DialogTitle>تفاصيل كشف {currentSlip?.id}</DialogTitle>
-                            <Button variant="outline" size="sm" onClick={handleQuickPrint}>
-                                <Icon name="Printer" className="ml-2" /> طباعة سريعة
-                            </Button>
+                            <DialogTitle>تفاصيل كشف: {currentSlip?.id}</DialogTitle>
+                             <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground">السائق: {currentSlip?.driverName}</span>
+                                <Button variant="outline" size="sm" onClick={handleQuickPrint}>
+                                    <Icon name="Printer" className="ml-2" /> طباعة سريعة
+                                </Button>
+                            </div>
                         </div>
+                         <DialogDescription>
+                            هذه هي الطلبات المدرجة في الكشف. يمكنك إزالة طلب لإعادته إلى قائمة مرتجعات السائق.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="max-h-[60vh] overflow-y-auto" ref={detailsContentRef}>
-                        <h3>تفاصيل كشف: {currentSlip?.id}</h3>
-                        <p>السائق: {currentSlip?.driverName}</p>
-                        <p>التاريخ: {currentSlip ? new Date(currentSlip.date).toLocaleString('ar-EG') : ''}</p>
                         <Table>
-                             <TableHeader><TableRow><TableHead>رقم الطلب</TableHead><TableHead>سبب الإرجاع</TableHead></TableRow></TableHeader>
-                            <TableBody>{currentSlip?.orders.map(o => (<TableRow key={o.id}><TableCell>{o.id}</TableCell><TableCell><Badge variant="secondary">{o.previousStatus || o.status}</Badge></TableCell></TableRow>))}</TableBody>
+                             <TableHeader><TableRow>
+                                <TableHead className="w-12 text-center">إلغاء</TableHead>
+                                <TableHead>رقم الطلب</TableHead>
+                                <TableHead>المستلم</TableHead>
+                                <TableHead>التاجر</TableHead>
+                                <TableHead>الحالة السابقة</TableHead>
+                                <TableHead className="text-right">المبلغ</TableHead>
+                             </TableRow></TableHeader>
+                            <TableBody>
+                                {currentSlip?.orders.length === 0 ? (
+                                    <TableRow><TableCell colSpan={6} className="text-center h-24">تمت معالجة جميع الطلبات في هذا الكشف.</TableCell></TableRow>
+                                ) : (
+                                    currentSlip?.orders.map(o => (
+                                        <TableRow key={o.id}>
+                                            <TableCell className="text-center">
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveOrder(currentSlip.id, o.id)}>
+                                                    <Icon name="X" className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                            </TableCell>
+                                            <TableCell className="font-mono">{o.id}</TableCell>
+                                            <TableCell>{o.recipient}</TableCell>
+                                            <TableCell>{o.merchant}</TableCell>
+                                            <TableCell><Badge variant="secondary">{o.previousStatus || o.status}</Badge></TableCell>
+                                            <TableCell className="text-right">{formatCurrency(o.cod)}</TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
                         </Table>
                     </div>
                 </DialogContent>
