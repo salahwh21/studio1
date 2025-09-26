@@ -66,8 +66,9 @@ export const MerchantPaymentsLog = () => {
         }
 
         try {
-            const canvas = await html2canvas(slipContainer as HTMLElement, { scale: 2 });
-            const imgData = canvas.toDataURL('image/jpeg', 0.9);
+            const canvas = await html2canvas(slipContainer as HTMLElement, { scale: 3, useCORS: true });
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'mm',
@@ -101,66 +102,67 @@ export const MerchantPaymentsLog = () => {
         const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
 
         return (
-             <div className="slip-container" style={{ width: '210mm', padding: '10mm', boxSizing: 'border-box' }}>
+             <div className="slip-container" style={{ width: '210mm', minHeight: '297mm', padding: '15mm', boxSizing: 'border-box', backgroundColor: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <style>{`
-                    body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-                    .slip-container { font-family: 'Segoe UI', sans-serif; }
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10px; }
-                    th, td { padding: 6px; border: 1px solid #ddd; text-align: right; }
-                    th { background-color: #f2f2f2; }
-                    .header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px; }
-                    .header img { max-height: 40px; }
-                    h2 { font-size: 16px; margin: 0; font-weight: bold; }
-                    p { font-size: 10px; margin: 2px 0;}
-                    .signatures { margin-top: 40px; display: flex; justify-content: space-between; font-size: 10px; }
-                    .signature { border-top: 1px solid #000; padding-top: 5px; width: 150px; text-align: center; }
-                    tfoot { background-color: #f9f9f9; font-weight: bold; }
+                    .slip-container { direction: rtl; font-family: 'Segoe UI', Tahoma, sans-serif; color: black; }
+                    .slip-table { width: 100%; border-collapse: collapse; margin: 40px 0; font-size: 11px; }
+                    .slip-table th, .slip-table td { padding: 8px 10px; border: 1px solid #ddd; text-align: right; }
+                    .slip-table th { background-color: #f2f2f2; font-weight: bold; }
+                    .slip-header { display: flex; justify-content: space-between; align-items: flex-start; }
+                    .slip-header h2 { font-size: 18px; margin: 0; font-weight: bold; }
+                    .slip-header p { font-size: 11px; margin: 4px 0; color: #555; }
+                    .slip-signatures { margin-top: 60px; display: flex; justify-content: space-between; font-size: 12px; }
+                    .slip-signature { border-top: 1px solid #000; padding-top: 8px; width: 220px; text-align: center; }
+                    .slip-table tfoot { background-color: #f9f9f9; font-weight: bold; }
+                    .slip-logo { font-size: 18px; font-weight: bold; }
                 `}</style>
-                <div className="header">
-                     <div>
-                        {logoUrl ? <img src={logoUrl} alt="Logo" /> : <h1>{settings.login.companyName || 'الوميض'}</h1>}
+                <div>
+                    <div className="slip-header">
+                        <div style={{textAlign: 'right'}}>
+                            <h2>كشف دفع للتاجر: ${slip.merchantName}</h2>
+                            <p>التاريخ: ${slipDate}</p>
+                            <p>رقم الكشف: ${slip.id}</p>
+                        </div>
+                        <div className="slip-logo">
+                            ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="max-height: 40px;">` : (settings.login.companyName || 'الوميض')}
+                        </div>
                     </div>
-                    <div style={{textAlign: 'left'}}>
-                        <h2>كشف دفع للتاجر: {slip.merchantName}</h2>
-                        <p>التاريخ: {slipDate}</p>
-                        <p>رقم الكشف: {slip.id}</p>
-                    </div>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>رقم الطلب</th>
-                            <th>المستلم</th>
-                            <th>قيمة التحصيل</th>
-                            <th>أجور التوصيل</th>
-                            <th>الصافي المستحق</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {slip.orders.map((o, i) => (
-                            <tr key={o.id}>
-                                <td>{i + 1}</td>
-                                <td>{o.id}</td>
-                                <td>{o.recipient}</td>
-                                <td>{formatCurrency(o.cod)}</td>
-                                <td>{formatCurrency(o.deliveryFee)}</td>
-                                <td style={{fontWeight: 'bold'}}>{formatCurrency(o.itemPrice)}</td>
+                    <table className="slip-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>رقم الطلب</th>
+                                <th>المستلم</th>
+                                <th>قيمة التحصيل</th>
+                                <th>أجور التوصيل</th>
+                                <th>الصافي المستحق</th>
                             </tr>
-                        ))}
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <th colSpan={3}>الإجمالي</th>
-                            <th>{formatCurrency(totalCod)}</th>
-                            <th>{formatCurrency(totalDelivery)}</th>
-                            <th>{formatCurrency(totalNet)}</th>
-                        </tr>
-                    </tfoot>
-                </table>
-                <div className="signatures">
-                    <div className="signature">توقيع المستلم (التاجر)</div>
-                    <div className="signature">توقيع الموظف المالي</div>
+                        </thead>
+                        <tbody>
+                            {slip.orders.map((o, i) => (
+                                <tr key={o.id}>
+                                    <td>${i + 1}</td>
+                                    <td>${o.id}</td>
+                                    <td>${o.recipient}</td>
+                                    <td>${formatCurrency(o.cod)}</td>
+                                    <td>${formatCurrency(o.deliveryFee)}</td>
+                                    <td style={{fontWeight: 'bold'}}>${formatCurrency(o.itemPrice)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colSpan={3}>الإجمالي</th>
+                                <th>${formatCurrency(totalCod)}</th>
+                                <th>${formatCurrency(totalDelivery)}</th>
+                                <th>${formatCurrency(totalNet)}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <div className="slip-signatures">
+                    <div className="slip-signature">توقيع المستلم (التاجر)</div>
+                    <div className="slip-signature">توقيع الموظف المالي</div>
                 </div>
             </div>
         )
@@ -229,7 +231,7 @@ export const MerchantPaymentsLog = () => {
                 </Table>
             </CardContent>
             {/* Hidden div for printing/exporting, positioned off-screen */}
-            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', direction: 'rtl' }}>
+            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', direction: 'rtl', backgroundColor: 'white' }}>
                 <div ref={slipPrintRef}>
                     {slipToPrint && <SlipHTML slip={slipToPrint} />}
                 </div>
