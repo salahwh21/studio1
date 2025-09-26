@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useTransition } from 'react';
+import { useState, useMemo, useTransition, useRef } from 'react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useReturnsStore, type DriverSlip } from '@/store/returns-store';
@@ -37,6 +37,7 @@ export const DriverPaymentsLog = () => {
 
     const [showDetailsDialog, setShowDetailsDialog] = useState(false);
     const [currentSlip, setCurrentSlip] = useState<DriverSlip | null>(null);
+    const detailsContentRef = useRef<HTMLDivElement>(null);
     
     const [filterDriver, setFilterDriver] = useState<string>('all');
     const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
@@ -86,15 +87,15 @@ export const DriverPaymentsLog = () => {
                 doc.text(`تاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
                 doc.text(`رقم الكشف: ${slip.id}`, 15, 30, { align: 'left' });
 
-                const tableColumn = ["المبلغ", "سبب الإرجاع", "الهاتف", "المستلم", "رقم الطلب", "#"];
+                const tableColumn = ["المبلغ", "سبب الإرجاع", "الهاتف", "المستلم", "رقم الطلب", "#"].reverse();
                 const tableRows = slip.orders.map((order, index) => [
-                    formatCurrency(order.cod),
-                    order.previousStatus || order.status,
-                    order.phone,
-                    order.recipient,
-                    order.id,
                     index + 1,
-                ]);
+                    order.id,
+                    order.recipient,
+                    order.phone,
+                    order.previousStatus || order.status,
+                    formatCurrency(order.cod),
+                ].reverse());
 
                 (doc as any).autoTable({
                     head: [tableColumn],
@@ -102,7 +103,7 @@ export const DriverPaymentsLog = () => {
                     startY: 45,
                     theme: 'grid',
                     styles: { font: "Times-Roman", halign: 'right' },
-                    headStyles: { fillColor: [41, 128, 185], textColor: 255, halign: 'center' },
+                    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
                     didDrawPage: (data: any) => {
                         // Footer
                         doc.setFontSize(10);
@@ -119,6 +120,21 @@ export const DriverPaymentsLog = () => {
             }
         });
     };
+    
+    const handleQuickPrint = () => {
+        if (!detailsContentRef.current) return;
+        const content = detailsContentRef.current.innerHTML;
+        const printWindow = window.open('', '', 'height=600,width=800');
+        printWindow?.document.write('<html dir="rtl"><head><title>طباعة سريعة</title>');
+        printWindow?.document.write('<style> body { font-family: sans-serif; } table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 8px; text-align: right; } th { background-color: #f2f2f2; } </style>');
+        printWindow?.document.write('</head><body>');
+        printWindow?.document.write(content);
+        printWindow?.document.write('</body></html>');
+        printWindow?.document.close();
+        printWindow?.focus();
+        printWindow?.print();
+    };
+
 
     return (
         <div className="space-y-6">
@@ -175,7 +191,7 @@ export const DriverPaymentsLog = () => {
                                         <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}>عرض</Button>
                                         <Button size="sm" onClick={() => handlePrintAction(slip)} disabled={isPending}>
                                             {isPending ? <Icon name="Loader2" className="animate-spin ml-2" /> : <Icon name="Printer" className="ml-2" />}
-                                            طباعة
+                                            PDF رسمي
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -187,8 +203,18 @@ export const DriverPaymentsLog = () => {
 
             <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
                 <DialogContent>
-                    <DialogHeader><DialogTitle>تفاصيل كشف {currentSlip?.id}</DialogTitle></DialogHeader>
-                    <div className="max-h-[60vh] overflow-y-auto">
+                    <DialogHeader>
+                        <div className="flex justify-between items-center">
+                            <DialogTitle>تفاصيل كشف {currentSlip?.id}</DialogTitle>
+                            <Button variant="outline" size="sm" onClick={handleQuickPrint}>
+                                <Icon name="Printer" className="ml-2" /> طباعة سريعة
+                            </Button>
+                        </div>
+                    </DialogHeader>
+                    <div className="max-h-[60vh] overflow-y-auto" ref={detailsContentRef}>
+                        <h3>تفاصيل كشف: {currentSlip?.id}</h3>
+                        <p>السائق: {currentSlip?.driverName}</p>
+                        <p>التاريخ: {currentSlip ? new Date(currentSlip.date).toLocaleString('ar-EG') : ''}</p>
                         <Table>
                              <TableHeader><TableRow><TableHead>رقم الطلب</TableHead><TableHead>سبب الإرجاع</TableHead></TableRow></TableHeader>
                             <TableBody>{currentSlip?.orders.map(o => (<TableRow key={o.id}><TableCell>{o.id}</TableCell><TableCell><Badge variant="secondary">{o.previousStatus || o.status}</Badge></TableCell></TableRow>))}</TableBody>
