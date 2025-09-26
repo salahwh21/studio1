@@ -146,33 +146,6 @@ export const CollectFromDriver = () => {
                 </div>
 
                 <Card>
-                    <CardHeader className="p-4 bg-slate-50 dark:bg-slate-800/50">
-                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                            <div>
-                                <span className="font-semibold text-muted-foreground">إجمالي التحصيل المحدد: </span> 
-                                <span className="font-bold text-lg">{formatCurrency(totals.totalCOD)}</span>
-                            </div>
-                            <Separator orientation='vertical' className="h-6"/>
-                             <div>
-                                <span className="font-semibold text-muted-foreground">إجمالي أجرة السائق: </span> 
-                                <span className="font-bold text-lg">{formatCurrency(totals.totalDriverFare)}</span>
-                            </div>
-                             <Separator orientation='vertical' className="h-6"/>
-                            <div className="text-primary font-bold text-lg">
-                                <span className="font-semibold text-muted-foreground">الصافي للدفع: </span> 
-                                <span className="font-bold text-xl">{formatCurrency(totals.totalCOD - totals.totalDriverFare)}</span>
-                            </div>
-                            <div className="w-full sm:w-auto sm:mr-auto">
-                                <Button onClick={handleConfirmCollection} disabled={selectedOrderIds.length === 0} className="w-full">
-                                    <Icon name="Check" className="ml-2 h-4 w-4" />
-                                    تأكيد استلام المبلغ ({selectedOrderIds.length})
-                                </Button>
-                            </div>
-                        </div>
-                    </CardHeader>
-                </Card>
-                
-                <Card>
                     <CardContent className="p-0">
                         <div className="overflow-auto h-[calc(100vh-45rem)]">
                             <Table className="relative">
@@ -266,6 +239,33 @@ export const CollectFromDriver = () => {
                             </Table>
                         </div>
                     </CardContent>
+                </Card>
+                
+                <Card>
+                    <CardHeader className="p-4 bg-slate-50 dark:bg-slate-800/50">
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                            <div>
+                                <span className="font-semibold text-muted-foreground">إجمالي التحصيل المحدد: </span> 
+                                <span className="font-bold text-lg">{formatCurrency(totals.totalCOD)}</span>
+                            </div>
+                            <Separator orientation='vertical' className="h-6"/>
+                             <div>
+                                <span className="font-semibold text-muted-foreground">إجمالي أجرة السائق: </span> 
+                                <span className="font-bold text-lg">{formatCurrency(totals.totalDriverFare)}</span>
+                            </div>
+                             <Separator orientation='vertical' className="h-6"/>
+                            <div className="text-primary font-bold text-lg">
+                                <span className="font-semibold text-muted-foreground">الصافي للدفع: </span> 
+                                <span className="font-bold text-xl">{formatCurrency(totals.totalCOD - totals.totalDriverFare)}</span>
+                            </div>
+                            <div className="w-full sm:w-auto sm:mr-auto">
+                                <Button onClick={handleConfirmCollection} disabled={selectedOrderIds.length === 0} className="w-full">
+                                    <Icon name="Check" className="ml-2 h-4 w-4" />
+                                    تأكيد استلام المبلغ ({selectedOrderIds.length})
+                                </Button>
+                            </div>
+                        </div>
+                    </CardHeader>
                 </Card>
             </CardContent>
         </Card>
