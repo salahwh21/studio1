@@ -93,6 +93,25 @@ export default function FinancialSlipDetailPage() {
             </tr>
         `).join('');
 
+        const totalCOD = slip.orders.reduce((acc, order) => acc + (order.cod || 0), 0);
+        const totalDriverFare = slip.orders.reduce((acc, order) => acc + (order.driverFee || 0), 0);
+        const netTotal = totalCOD - totalDriverFare;
+
+        const tableFooter = `
+            <tfoot style="background-color: #f9f9f9; font-weight: bold;">
+                <tr>
+                    <td colspan="3" style="padding: 8px; border: 1px solid #ddd; text-align: right;">الإجمالي</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalCOD)}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalDriverFare)}</td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="padding: 8px; border: 1px solid #ddd; text-align: right; font-size: 1.1em;">الصافي المطلوب من السائق</td>
+                    <td colspan="2" style="padding: 8px; border: 1px solid #ddd; font-size: 1.1em;">${formatCurrency(netTotal)}</td>
+                </tr>
+            </tfoot>
+        `;
+
+
         const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
 
         const content = `
@@ -118,7 +137,7 @@ export default function FinancialSlipDetailPage() {
                             <p>رقم الكشف: ${slip.id}</p>
                         </div>
                     </div>
-                    <table>${tableHeader}<tbody>${tableRows}</tbody></table>
+                    <table>${tableHeader}<tbody>${tableRows}</tbody>${tableFooter}</table>
                     <div class="signatures">
                         <div class="signature">توقيع المستلم (المحاسب)</div>
                         <div class="signature">توقيع السائق</div>
