@@ -115,7 +115,6 @@ export default function FinancialSlipDetailPage() {
                         <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
                         <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">قيمة التحصيل</th>
                         <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">أجور التوصيل</th>
-                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستحق للتاجر</th>
                         <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">تعديلات</th>
                         <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">الصافي المستحق</th>
                     </tr>
@@ -144,7 +143,6 @@ export default function FinancialSlipDetailPage() {
                         <td style="padding: 8px; border: 1px solid #ddd;">${order.recipient}</td>
                         <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(order.cod)}</td>
                         <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(order.deliveryFee)}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(order.itemPrice)}</td>
                         <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(adjustment)}</td>
                         <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">${formatCurrency(netAmount)}</td>
                     </tr>
@@ -183,7 +181,6 @@ export default function FinancialSlipDetailPage() {
                         <td colspan="3" style="padding: 8px; border: 1px solid #ddd; text-align: right;">الإجمالي</td>
                         <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalCod)}</td>
                         <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalDelivery)}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalItemPrice)}</td>
                         <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalAdjustments)}</td>
                         <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalNet)}</td>
                     </tr>
