@@ -14,7 +14,8 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { useOrdersStore } from '@/store/orders-store';
+import { useOrdersStore, type Order } from '@/store/orders-store';
+import { Input } from '@/components/ui/input';
 
 
 const SlipDetailPageSkeleton = () => (
@@ -46,7 +47,7 @@ export default function FinancialSlipDetailPage() {
     const params = useParams();
     const { slipId } = params;
     
-    const { driverPaymentSlips, removeOrderFromDriverPaymentSlip } = useFinancialsStore();
+    const { driverPaymentSlips, removeOrderFromDriverPaymentSlip, updateOrderInDriverPaymentSlip } = useFinancialsStore();
     const { updateOrderField } = useOrdersStore();
     const { formatCurrency, settings } = useSettings();
     const { toast } = useToast();
@@ -163,6 +164,31 @@ export default function FinancialSlipDetailPage() {
         setSlip(updatedSlip || null);
         toast({ title: "تم", description: "تمت إعادة الطلب إلى قائمة التحصيلات."});
     };
+    
+    const handleFieldUpdate = (orderId: string, field: keyof Order, value: any) => {
+        if (!slip) return;
+        const updatedOrder = slip.orders.find(o => o.id === orderId);
+        if (!updatedOrder) return;
+        
+        const newOrder = { ...updatedOrder, [field]: value };
+        // Also update calculated fields if needed
+        if (field === 'cod' || field === 'deliveryFee' || field === 'additionalCost') {
+            const cod = field === 'cod' ? parseFloat(value) : (newOrder.cod || 0);
+            const deliveryFee = field === 'deliveryFee' ? parseFloat(value) : (newOrder.deliveryFee || 0);
+            const additionalCost = field === 'additionalCost' ? parseFloat(value) : (newOrder.additionalCost || 0);
+            newOrder.itemPrice = cod - (deliveryFee + additionalCost);
+        }
+
+        updateOrderInDriverPaymentSlip(slip.id, orderId, newOrder);
+        setSlip(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                orders: prev.orders.map(o => o.id === orderId ? newOrder : o)
+            }
+        });
+    };
+
 
     if (isLoading) {
         return <SlipDetailPageSkeleton />;
@@ -257,9 +283,29 @@ export default function FinancialSlipDetailPage() {
                                     <TableCell className="border-l">
                                         <Link href={`/dashboard/orders/${order.id}`} className="font-mono text-primary hover:underline">{order.id}</Link>
                                     </TableCell>
-                                    <TableCell className="border-l">{order.recipient}</TableCell>
-                                    <TableCell className="border-l">{formatCurrency(order.cod)}</TableCell>
-                                    <TableCell className="border-l">{formatCurrency(order.driverFee)}</TableCell>
+                                    <TableCell className="border-l">
+                                        <Input 
+                                            defaultValue={order.recipient} 
+                                            onBlur={(e) => handleFieldUpdate(order.id, 'recipient', e.target.value)}
+                                            className="h-8 border-0 bg-transparent focus-visible:ring-1"
+                                        />
+                                    </TableCell>
+                                    <TableCell className="border-l">
+                                        <Input 
+                                            type="number"
+                                            defaultValue={order.cod}
+                                            onBlur={(e) => handleFieldUpdate(order.id, 'cod', parseFloat(e.target.value))}
+                                            className="h-8 border-0 bg-transparent focus-visible:ring-1"
+                                        />
+                                    </TableCell>
+                                    <TableCell className="border-l">
+                                        <Input 
+                                            type="number"
+                                            defaultValue={order.driverFee}
+                                            onBlur={(e) => handleFieldUpdate(order.id, 'driverFee', parseFloat(e.target.value))}
+                                            className="h-8 border-0 bg-transparent focus-visible:ring-1"
+                                        />
+                                    </TableCell>
                                     <TableCell className="border-l"><Badge variant="secondary">{order.status}</Badge></TableCell>
                                     <TableCell className="text-center">
                                         <Button variant="ghost" size="icon" onClick={() => handleRemoveOrder(order.id)}>
@@ -284,3 +330,4 @@ export default function FinancialSlipDetailPage() {
     )
 
 }
+

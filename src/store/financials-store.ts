@@ -16,6 +16,7 @@ type FinancialsState = {
   driverPaymentSlips: DriverPaymentSlip[];
   addDriverPaymentSlip: (slip: Omit<DriverPaymentSlip, 'id'>) => void;
   removeOrderFromDriverPaymentSlip: (slipId: string, orderId: string) => void;
+  updateOrderInDriverPaymentSlip: (slipId: string, orderId: string, updatedOrder: Order) => void;
 };
 
 export const useFinancialsStore = create<FinancialsState>()(immer((set) => ({
@@ -40,4 +41,16 @@ export const useFinancialsStore = create<FinancialsState>()(immer((set) => ({
         }
     });
   },
+
+  updateOrderInDriverPaymentSlip: (slipId, orderId, updatedOrder) => {
+    set(state => {
+        const slip = state.driverPaymentSlips.find(s => s.id === slipId);
+        if (slip) {
+            const orderIndex = slip.orders.findIndex(o => o.id === orderId);
+            if(orderIndex !== -1) {
+                slip.orders[orderIndex] = updatedOrder;
+            }
+        }
+    });
+  }
 })));
