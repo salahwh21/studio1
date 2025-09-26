@@ -120,7 +120,7 @@ export const PrepareMerchantPayments = () => {
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <DateRangePicker onUpdate={(range) => setDateRange(range.range)} />
+                    {/* <DateRangePicker onUpdate={(range) => setDateRange(range.range)} /> */}
                      <div className="flex items-center gap-2 sm:mr-auto">
                         <Button variant="outline" size="sm"><Icon name="FileDown" className="ml-2 h-4 w-4"/>تصدير PDF</Button>
                         <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
@@ -201,3 +201,5 @@ export const PrepareMerchantPayments = () => {
         </Card>
     );
 };
+
+    
