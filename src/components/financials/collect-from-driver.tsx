@@ -20,7 +20,7 @@ import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useStatusesStore } from '@/store/statuses-store';
-// import { DateRangePicker } from '@/components/date-range-picker';
+import { DateRangePicker } from '@/components/date-range-picker';
 
 export const CollectFromDriver = () => {
     const { toast } = useToast();
@@ -33,7 +33,7 @@ export const CollectFromDriver = () => {
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
     const [popoverStates, setPopoverStates] = useState<Record<string, boolean>>({});
     const [searchQuery, setSearchQuery] = useState('');
-    // const [dateRange, setDateRange] = useState<{ from: Date | undefined, to: Date | undefined }>({ from: undefined, to: undefined });
+    const [dateRange, setDateRange] = useState<{ from: Date | undefined, to: Date | undefined }>({ from: undefined, to: undefined });
 
 
     const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
@@ -167,11 +167,11 @@ export const CollectFromDriver = () => {
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <div className="overflow-auto h-[calc(100vh-28rem)]">
+                        <div className="overflow-auto h-[calc(100vh-32rem)]">
                             <Table className="relative">
                                 <TableHeader className="sticky top-0 z-20 bg-slate-100 dark:bg-slate-800/50">
                                     <TableRow>
-                                        <TableHead className="w-12 text-center border-l sticky right-0 z-30 bg-slate-100 dark:bg-slate-800/50"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
+                                        <TableHead className="w-12 text-center border-l whitespace-nowrap sticky right-0 z-30 bg-slate-100 dark:bg-slate-800/50"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
                                         <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">رقم الطلب</TableHead>
                                         <TableHead className="text-center border-l whitespace-nowrap min-w-[200px]">التاجر</TableHead>
                                         <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الحالة</TableHead>
