@@ -36,7 +36,7 @@ export const MerchantPaymentsLog = () => {
                 toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'يرجى السماح بفتح النوافذ المنبثقة.' });
                 return;
             }
-            printWindow.document.write(slipPrintRef.current.innerHTML);
+            printWindow.document.write('<html><head><title>كشف دفع</title></head><body>' + slipPrintRef.current.innerHTML + '</body></html>');
             printWindow.document.close();
             printWindow.focus();
             printWindow.print();
@@ -64,7 +64,7 @@ export const MerchantPaymentsLog = () => {
 
         try {
             const canvas = await html2canvas(slipContainer as HTMLElement, { scale: 2 });
-            const imgData = canvas.toDataURL('image/png');
+            const imgData = canvas.toDataURL('image/jpeg', 0.9);
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'mm',
@@ -74,7 +74,7 @@ export const MerchantPaymentsLog = () => {
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
 
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
             
             const today = new Date().toISOString().split('T')[0];
             pdf.save(`${slip.merchantName}_${today}.pdf`);
