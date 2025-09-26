@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
@@ -11,6 +10,7 @@ import { useFinancialsStore, type MerchantPaymentSlip } from '@/store/financials
 import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { flushSync } from 'react-dom';
 
 export const MerchantPaymentsLog = () => {
     const { merchantPaymentSlips } = useFinancialsStore();
@@ -23,36 +23,37 @@ export const MerchantPaymentsLog = () => {
 
     const handlePrint = (slip: MerchantPaymentSlip) => {
         if (!slip) return;
-        setSlipToPrint(slip);
+        flushSync(() => {
+            setSlipToPrint(slip);
+        });
 
-        setTimeout(() => {
-            if (!slipPrintRef.current) {
-                toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'لم يتم العثور على محتوى للطباعة.' });
-                return;
-            }
+        if (!slipPrintRef.current) {
+            toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'لم يتم العثور على محتوى للطباعة.' });
+            return;
+        }
 
-            const printWindow = window.open('', '_blank');
-            if (!printWindow) {
-                toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'يرجى السماح بفتح النوافذ المنبثقة.' });
-                return;
-            }
-            printWindow.document.write('<html><head><title>كشف دفع</title></head><body>' + slipPrintRef.current.innerHTML + '</body></html>');
-            printWindow.document.close();
-            printWindow.focus();
-            printWindow.print();
-            setSlipToPrint(null);
-        }, 100);
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'يرجى السماح بفتح النوافذ المنبثقة.' });
+            return;
+        }
+        printWindow.document.write('<html><head><title>كشف دفع</title></head><body>' + slipPrintRef.current.innerHTML + '</body></html>');
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        setSlipToPrint(null);
     };
 
      const handleDownloadPdf = async (slip: MerchantPaymentSlip) => {
         if (!slip) return;
         setIsExporting(slip.id);
-        setSlipToPrint(slip);
+        
+        flushSync(() => {
+            setSlipToPrint(slip);
+        });
 
         const { default: jsPDF } = await import('jspdf');
         const { default: html2canvas } = await import('html2canvas');
-
-        await new Promise(resolve => setTimeout(resolve, 100));
 
         const slipContainer = slipPrintRef.current?.querySelector('.slip-container');
 
