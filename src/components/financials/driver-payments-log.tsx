@@ -136,14 +136,92 @@ export const DriverPaymentsLog = () => {
 
     const handleQuickPrint = (slip: DriverSlip) => {
         const printWindow = window.open('', '_blank');
-        if (printWindow) {
-            const tableRows = slip.orders.map((o, i) => `<tr><td>${i+1}</td><td>${o.id}</td><td>${o.recipient}</td><td>${o.previousStatus || o.status}</td></tr>`).join('');
-            printWindow.document.write('<html><head><title>كشف استلام سريع</title><style>body{direction:rtl; font-family: sans-serif;} table{width:100%; border-collapse: collapse;} th,td{border:1px solid #ddd; padding: 8px; text-align:right;}</style></head><body>');
-            printWindow.document.write(`<h2>كشف استلام من: ${slip.driverName}</h2><p>رقم: ${slip.id}</p>`);
-            printWindow.document.write(`<table><thead><tr><th>#</th><th>رقم الطلب</th><th>المستلم</th><th>السبب</th></tr></thead><tbody>${tableRows}</tbody></table>`);
-            printWindow.document.close();
-            printWindow.print();
+        if (!printWindow) {
+            toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'يرجى السماح بفتح النوافذ المنبثقة.' });
+            return;
         }
+
+        const tableHeader = `
+            <thead>
+                <tr>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">قيمة التحصيل</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">أجرة السائق</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">الصافي</th>
+                </tr>
+            </thead>
+        `;
+
+        const tableRows = slip.orders.map((o, i) => `
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;">${i + 1}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${o.id}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${o.recipient}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(o.cod)}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(o.driverFee)}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency((o.cod || 0) - (o.driverFee || 0))}</td>
+            </tr>
+        `).join('');
+
+        const totalCOD = slip.orders.reduce((sum, o) => sum + (o.cod || 0), 0);
+        const totalDriverFare = slip.orders.reduce((sum, o) => sum + (o.driverFee || 0), 0);
+        const totalNet = totalCOD - totalDriverFare;
+
+        const tableFooter = `
+            <tfoot>
+                <tr>
+                    <th colspan="3" style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">الإجمالي</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(totalCOD)}</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(totalDriverFare)}</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(totalNet)}</th>
+                </tr>
+            </tfoot>
+        `;
+
+        const slipDate = new Date(slip.date).toLocaleDateString('ar-EG');
+        const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
+
+        const content = `
+            <html>
+                <head>
+                    <title>كشف تحصيل من: ${slip.driverName}</title>
+                    <style>
+                        body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th, td { padding: 8px; border: 1px solid #ddd; text-align: right; }
+                        th { background-color: #f2f2f2; }
+                        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+                        .signatures { margin-top: 40px; display: flex; justify-content: space-between; }
+                        .signature { border-top: 1px solid #000; padding-top: 5px; width: 200px; text-align: center; }
+                        tfoot { background-color: #f9f9f9; font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="height: 50px;">` : `<h1>${settings.login.companyName || 'الشركة'}</h1>`}
+                        <div>
+                            <h2>كشف تحصيل من السائق: ${slip.driverName}</h2>
+                            <p>التاريخ: ${slipDate}</p>
+                        </div>
+                    </div>
+                    <table>
+                        ${tableHeader}
+                        <tbody>${tableRows}</tbody>
+                        ${tableFooter}
+                    </table>
+                    <div class="signatures">
+                        <div class="signature">توقيع المستلم (المحاسب)</div>
+                        <div class="signature">توقيع السائق</div>
+                    </div>
+                </body>
+            </html>
+        `;
+        printWindow.document.write(content);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
     };
 
 
