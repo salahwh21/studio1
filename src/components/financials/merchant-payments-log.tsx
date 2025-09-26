@@ -71,7 +71,7 @@ export const MerchantPaymentsLog = () => {
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'mm',
-                format: 'a5'
+                format: 'a4'
             });
 
             const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -101,23 +101,26 @@ export const MerchantPaymentsLog = () => {
         const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
 
         return (
-             <div className="slip-container">
+             <div className="slip-container" style={{ width: '210mm', padding: '10mm', boxSizing: 'border-box' }}>
                 <style>{`
                     body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                    .slip-container { font-family: 'Segoe UI', sans-serif; }
                     table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10px; }
-                    th, td { padding: 4px; border: 1px solid #ddd; text-align: right; }
+                    th, td { padding: 6px; border: 1px solid #ddd; text-align: right; }
                     th { background-color: #f2f2f2; }
-                    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-                    .header img { height: 40px; }
-                    h2 { font-size: 16px; margin: 0;}
+                    .header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px; }
+                    .header img { max-height: 40px; }
+                    h2 { font-size: 16px; margin: 0; font-weight: bold; }
                     p { font-size: 10px; margin: 2px 0;}
-                    .signatures { margin-top: 30px; display: flex; justify-content: space-between; font-size: 10px; }
+                    .signatures { margin-top: 40px; display: flex; justify-content: space-between; font-size: 10px; }
                     .signature { border-top: 1px solid #000; padding-top: 5px; width: 150px; text-align: center; }
                     tfoot { background-color: #f9f9f9; font-weight: bold; }
                 `}</style>
                 <div className="header">
-                    {logoUrl ? <img src={logoUrl} alt="Logo" /> : <h1>{settings.login.companyName || 'الشركة'}</h1>}
-                    <div>
+                     <div>
+                        {logoUrl ? <img src={logoUrl} alt="Logo" /> : <h1>{settings.login.companyName || 'الوميض'}</h1>}
+                    </div>
+                    <div style={{textAlign: 'left'}}>
                         <h2>كشف دفع للتاجر: {slip.merchantName}</h2>
                         <p>التاريخ: {slipDate}</p>
                         <p>رقم الكشف: {slip.id}</p>
@@ -226,7 +229,7 @@ export const MerchantPaymentsLog = () => {
                 </Table>
             </CardContent>
             {/* Hidden div for printing/exporting, positioned off-screen */}
-            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', direction: 'rtl' }}>
                 <div ref={slipPrintRef}>
                     {slipToPrint && <SlipHTML slip={slipToPrint} />}
                 </div>
