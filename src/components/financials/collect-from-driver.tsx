@@ -109,7 +109,7 @@ export const CollectFromDriver = () => {
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 h-full flex flex-col">
              <Card>
                 <CardHeader>
                     <CardTitle className="text-xl font-bold tracking-tight">تحصيل المبالغ من السائقين</CardTitle>
@@ -145,7 +145,7 @@ export const CollectFromDriver = () => {
                 </CardContent>
             </Card>
 
-            <Card className="flex flex-col h-[calc(100vh-26rem)]">
+            <Card className="flex flex-col flex-1 min-h-0">
                 <div className="flex-1 border rounded-lg overflow-auto flex flex-col">
                     <Table>
                         <TableHeader className="sticky top-0 z-20">
