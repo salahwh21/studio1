@@ -21,7 +21,7 @@ export const ReceiveFromDrivers = () => {
   const { toast } = useToast();
   const { orders, updateOrderStatus } = useOrdersStore();
   const { users } = useUsersStore();
-  const { addDriverSlip } = useReturnsStore();
+  const { addDriverReturnSlip } = useReturnsStore();
 
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [scannedValue, setScannedValue] = useState('');
@@ -76,7 +76,7 @@ export const ReceiveFromDrivers = () => {
         updateOrderStatus(order.id, 'مرجع للفرع');
     });
 
-    addDriverSlip({
+    addDriverReturnSlip({
       driverName: driver.name,
       date: new Date().toISOString(),
       itemCount: receivedItems.length,

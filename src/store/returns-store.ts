@@ -1,11 +1,10 @@
-
 'use client';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { Order } from './orders-store';
 import { ordersStore } from './orders-store';
 
-export type DriverSlip = {
+export type DriverReturnSlip = {
   id: string;
   driverName: string;
   date: string;
@@ -23,21 +22,21 @@ export type MerchantSlip = {
 };
 
 // --- Mock Data ---
-const createInitialDriverSlips = (): DriverSlip[] => {
+const createInitialDriverSlips = (): DriverReturnSlip[] => {
   const { orders } = ordersStore.getState();
   const abuAlAbdOrders = orders.filter(o => o.driver === 'ابو العبد' && o.status === 'مرجع للفرع').slice(0, 3);
   const mohammadSweidOrders = orders.filter(o => o.driver === 'محمد سويد' && o.status === 'مرجع للفرع').slice(0, 2);
 
   return [
     ...(abuAlAbdOrders.length > 0 ? [{
-      id: `DS-1721650000000`,
+      id: `DRS-1721650000000`, // Changed prefix to Driver Return Slip
       driverName: 'ابو العبد',
       date: new Date('2024-07-22').toISOString(),
       itemCount: abuAlAbdOrders.length,
       orders: abuAlAbdOrders
     }] : []),
      ...(mohammadSweidOrders.length > 0 ? [{
-      id: `DS-1721563600000`,
+      id: `DRS-1721563600000`, // Changed prefix
       driverName: 'محمد سويد',
       date: new Date('2024-07-21').toISOString(),
       itemCount: mohammadSweidOrders.length,
@@ -48,31 +47,31 @@ const createInitialDriverSlips = (): DriverSlip[] => {
 
 
 type ReturnsState = {
-  driverSlips: DriverSlip[];
+  driverReturnSlips: DriverReturnSlip[];
   merchantSlips: MerchantSlip[];
-  addDriverSlip: (slip: Omit<DriverSlip, 'id'>) => void;
-  removeOrderFromDriverSlip: (slipId: string, orderId: string) => void;
+  addDriverReturnSlip: (slip: Omit<DriverReturnSlip, 'id'>) => void;
+  removeOrderFromDriverReturnSlip: (slipId: string, orderId: string) => void;
   addMerchantSlip: (slip: Omit<MerchantSlip, 'id'>) => void;
   updateMerchantSlipStatus: (slipId: string, status: MerchantSlip['status']) => void;
 };
 
 export const useReturnsStore = create<ReturnsState>()(immer((set) => ({
-  driverSlips: createInitialDriverSlips(),
+  driverReturnSlips: createInitialDriverSlips(),
   merchantSlips: [],
   
-  addDriverSlip: (slipData) => {
+  addDriverReturnSlip: (slipData) => {
     set(state => {
-      const newSlip: DriverSlip = {
+      const newSlip: DriverReturnSlip = {
         ...slipData,
-        id: `DS-${Date.now()}`
+        id: `DRS-${Date.now()}`
       };
-      state.driverSlips.unshift(newSlip);
+      state.driverReturnSlips.unshift(newSlip);
     });
   },
 
-  removeOrderFromDriverSlip: (slipId, orderId) => {
+  removeOrderFromDriverReturnSlip: (slipId, orderId) => {
     set(state => {
-        const slip = state.driverSlips.find(s => s.id === slipId);
+        const slip = state.driverReturnSlips.find(s => s.id === slipId);
         if (slip) {
             slip.orders = slip.orders.filter(o => o.id !== orderId);
             slip.itemCount = slip.orders.length;

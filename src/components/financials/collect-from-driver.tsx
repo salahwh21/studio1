@@ -20,7 +20,7 @@ import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useStatusesStore } from '@/store/statuses-store';
-import { useReturnsStore } from '@/store/returns-store';
+import { useFinancialsStore } from '@/store/financials-store';
 
 
 export const CollectFromDriver = () => {
@@ -29,7 +29,7 @@ export const CollectFromDriver = () => {
     const { orders, updateOrderField, bulkUpdateOrderStatus } = useOrdersStore();
     const { settings, formatCurrency } = useSettings();
     const { statuses } = useStatusesStore();
-    const { addDriverSlip } = useReturnsStore();
+    const { addDriverPaymentSlip } = useFinancialsStore();
     
     const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
@@ -81,7 +81,7 @@ export const CollectFromDriver = () => {
         const ordersToProcess = orders.filter(o => selectedOrderIds.includes(o.id));
         
         // 1. Create a new financial slip
-        addDriverSlip({
+        addDriverPaymentSlip({
             driverName: selectedDriver.name,
             date: new Date().toISOString(),
             itemCount: ordersToProcess.length,

@@ -4,7 +4,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
-import { useReturnsStore, type DriverSlip, type MerchantSlip } from '@/store/returns-store';
+import { useReturnsStore, type DriverReturnSlip, type MerchantSlip } from '@/store/returns-store';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,15 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { useOrdersStore } from '@/store/orders-store';
-
-declare module 'jspdf' {
-    interface jsPDF {
-        autoTable: (options: any) => jsPDF;
-    }
-}
 
 
 const SlipDetailPageSkeleton = () => (
@@ -54,18 +46,18 @@ export default function SlipDetailPage() {
     const params = useParams();
     const { slipId } = params;
     
-    const { driverSlips, merchantSlips, removeOrderFromDriverSlip } = useReturnsStore();
+    const { driverReturnSlips, merchantSlips, removeOrderFromDriverReturnSlip } = useReturnsStore();
     const { updateOrderField } = useOrdersStore();
     const { formatCurrency, settings } = useSettings();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
 
-    const [slip, setSlip] = useState<DriverSlip | MerchantSlip | null>(null);
+    const [slip, setSlip] = useState<DriverReturnSlip | MerchantSlip | null>(null);
     const [slipType, setSlipType] = useState<'driver' | 'merchant' | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        let foundSlip: DriverSlip | MerchantSlip | undefined = driverSlips.find(s => s.id === slipId);
+        let foundSlip: DriverReturnSlip | MerchantSlip | undefined = driverReturnSlips.find(s => s.id === slipId);
         let type: 'driver' | 'merchant' | null = null;
     
         if (foundSlip) {
@@ -81,86 +73,91 @@ export default function SlipDetailPage() {
         setSlipType(type);
         setIsLoading(false);
 
-    }, [slipId, driverSlips, merchantSlips]);
+    }, [slipId, driverReturnSlips, merchantSlips]);
 
     const handlePrint = async () => {
         if (!slip) return;
-        startTransition(() => {
-            toast({ title: 'جاري تحضير الكشف للطباعة...' });
 
-            try {
-                const doc = new jsPDF();
-            
-                doc.setFont("Times-Roman");
-                
-                const title = slipType === 'driver' ? `كشف استلام من السائق` : `كشف إرجاع للتاجر`;
-                const partyName = slipType === 'driver' ? (slip as DriverSlip).driverName : (slip as MerchantSlip).merchant;
-                const partyType = slipType === 'driver' ? 'السائق' : 'التاجر';
-                
-                const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-                if (reportsLogo) {
-                    try {
-                        doc.addImage(reportsLogo, 'PNG', 15, 10, 30, 10);
-                    } catch (e) {
-                        console.error("Error adding logo to PDF:", e);
-                    }
-                }
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'يرجى السماح بفتح النوافذ المنبثقة.' });
+            return;
+        }
 
-                doc.setFontSize(18);
-                doc.text(title, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-                
-                doc.setFontSize(12);
-                doc.text(`${partyType}: ${partyName}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
-                doc.text(`التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, doc.internal.pageSize.getWidth() - 15, 40, { align: 'right' });
-                doc.text(`رقم الكشف: ${slip.id}`, 15, 30, { align: 'left' });
-            
-                const tableColumn = ["#", "رقم الطلب", "المستلم", "الهاتف", "سبب الإرجاع", "المبلغ"].reverse();
-                const tableRows = slip.orders.map((order, index) => [
-                    index + 1,
-                    order.id,
-                    order.recipient,
-                    order.phone,
-                    order.previousStatus || order.status,
-                    formatCurrency(order.cod),
-                ].reverse());
+        const title = slipType === 'driver' ? `كشف استلام من السائق: ${(slip as DriverReturnSlip).driverName}` : `كشف إرجاع للتاجر: ${(slip as MerchantSlip).merchant}`;
+        const partyType = slipType === 'driver' ? 'السائق' : 'التاجر';
+        
+        const tableHeader = `
+            <thead>
+                <tr>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">الهاتف</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">سبب الإرجاع</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المبلغ</th>
+                </tr>
+            </thead>
+        `;
+        const tableRows = slip.orders.map((order, index) => `
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;">${index + 1}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${order.id}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${order.recipient}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${order.phone}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${order.previousStatus || order.status}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(order.cod)}</td>
+            </tr>
+        `).join('');
 
-                (doc as any).autoTable({
-                    head: [tableColumn],
-                    body: tableRows,
-                    startY: 50,
-                    theme: 'grid',
-                    styles: { font: 'Times-Roman', halign: 'right' },
-                    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-                    didDrawPage: (data: any) => {
-                        // Footer
-                        const finalY = data.cursor.y; // or doc.internal.pageSize.height - 20
-                        doc.setFontSize(10);
-                        doc.text('توقيع المستلم: .........................', doc.internal.pageSize.getWidth() - data.settings.margin.right, doc.internal.pageSize.height - 15, { align: 'right' });
-                        doc.text('توقيع مندوب الوميض: .........................', data.settings.margin.left, doc.internal.pageSize.height - 15, { align: 'left' });
-                    }
-                });
+        const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
 
-                doc.save(`${slip.id}.pdf`);
-                 toast({ title: 'تم تجهيز الملف', description: 'بدأ تحميل ملف الـ PDF.' });
-            } catch (error: any) {
-                console.error("PDF generation error:", error);
-                toast({
-                    variant: 'destructive',
-                    title: 'فشل في إنشاء PDF',
-                    description: error.message || 'حدث خطأ غير متوقع أثناء إنشاء الملف.'
-                });
-            }
-        });
+        const content = `
+            <html>
+                <head>
+                    <title>${title}</title>
+                    <style>
+                        body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { padding: 8px; border: 1px solid #ddd; text-align: right; }
+                        th { background-color: #f2f2f2; }
+                        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+                        .signatures { margin-top: 40px; display: flex; justify-content: space-between; }
+                        .signature { border-top: 1px solid #000; padding-top: 5px; width: 200px; text-align: center; }
+                    </style>
+                </head>
+                <body>
+                     <div class="header">
+                        ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="height: 50px;">` : `<h1>${settings.login.companyName || 'الشركة'}</h1>`}
+                        <div>
+                            <h2>${title}</h2>
+                            <p>التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}</p>
+                            <p>رقم الكشف: ${slip.id}</p>
+                        </div>
+                    </div>
+                    <table>${tableHeader}<tbody>${tableRows}</tbody></table>
+                    <div class="signatures">
+                        <div class="signature">توقيع المستلم (${partyType})</div>
+                        <div class="signature">توقيع مندوب الوميض</div>
+                    </div>
+                </body>
+            </html>
+        `;
+
+        printWindow.document.write(content);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
     };
 
     const handleRemoveOrder = (orderId: string) => {
         if (!slip || slipType !== 'driver') return;
         
-        removeOrderFromDriverSlip(slip.id, orderId);
+        removeOrderFromDriverReturnSlip(slip.id, orderId);
         updateOrderField(orderId, 'status', 'راجع');
         
         // This is a trick to force re-render with updated data from the store
-        const updatedSlip = useReturnsStore.getState().driverSlips.find(s => s.id === slipId);
+        const updatedSlip = useReturnsStore.getState().driverReturnSlips.find(s => s.id === slipId);
         setSlip(updatedSlip || null);
 
         toast({ title: "تم", description: "تمت إعادة الطلب إلى قائمة مرتجعات السائق."});
@@ -187,7 +184,7 @@ export default function SlipDetailPage() {
     }
 
     const title = slipType === 'driver' ? `تفاصيل كشف استلام من السائق` : `تفاصيل كشف إرجاع للتاجر`;
-    const partyName = slipType === 'driver' ? (slip as DriverSlip).driverName : (slip as MerchantSlip).merchant;
+    const partyName = slipType === 'driver' ? (slip as DriverReturnSlip).driverName : (slip as MerchantSlip).merchant;
     const partyType = slipType === 'driver' ? 'السائق' : 'التاجر';
     const totalCOD = slip.orders.reduce((acc, order) => acc + (order.cod || 0), 0);
 

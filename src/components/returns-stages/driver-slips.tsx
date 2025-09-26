@@ -1,148 +1,190 @@
 'use client';
 import { useState, useMemo, useTransition } from 'react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import { useReturnsStore, type DriverSlip } from '@/store/returns-store';
+import { useReturnsStore, type DriverReturnSlip } from '@/store/returns-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import Icon from '@/components/icon';
+import Icon from '../icon';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { parseISO, isWithinInterval } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { updateOrderAction } from '@/app/actions/update-order';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DateRangePicker } from '@/components/date-range-picker';
+import type { DateRange } from 'react-day-picker';
 
-declare module 'jspdf' {
-    interface jsPDF {
-        autoTable: (options: any) => jsPDF;
-    }
-}
 
 export const DriverSlips = () => {
     const { toast } = useToast();
     const { settings, formatCurrency } = useSettings();
-    const { driverSlips } = useReturnsStore();
+    const { driverReturnSlips, removeOrderFromDriverReturnSlip } = useReturnsStore();
     const [isPending, startTransition] = useTransition();
-
-    const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-    const [currentSlip, setCurrentSlip] = useState<DriverSlip | null>(null);
     
-    const [filterDriver, setFilterDriver] = useState<string | null>(null);
-    const [filterStartDate, setFilterStartDate] = useState<Date | null>(null);
-    const [filterEndDate, setFilterEndDate] = useState<Date | null>(null);
+    const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+    const [currentSlip, setCurrentSlip] = useState<DriverReturnSlip | null>(null);
 
-    const filteredSlips = useMemo(() => driverSlips.filter(slip => {
-        let matchesDriver = filterDriver ? slip.driverName === filterDriver : true;
+    const [filterDriver, setFilterDriver] = useState<string>('all');
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
+    const drivers = useMemo(() => Array.from(new Set(driverReturnSlips.map(s => s.driverName))), [driverReturnSlips]);
+
+
+    const filteredSlips = useMemo(() => driverReturnSlips.filter(slip => {
+        let matchesDriver = filterDriver === 'all' ? true : slip.driverName === filterDriver;
         let matchesDate = true;
-        if (filterStartDate && filterEndDate) {
+        if (dateRange?.from && dateRange?.to) {
             try {
                 const slipDate = parseISO(slip.date);
-                matchesDate = isWithinInterval(slipDate, { start: filterStartDate, end: filterEndDate });
+                matchesDate = isWithinInterval(slipDate, { start: dateRange.from, end: dateRange.to });
             } catch(e) { matchesDate = false; }
         }
         return matchesDriver && matchesDate;
-    }), [driverSlips, filterDriver, filterStartDate, filterEndDate]);
+    }), [driverReturnSlips, filterDriver, dateRange]);
     
-    const handleShowDetails = (slip: DriverSlip) => {
+    const handleShowDetails = (slip: DriverReturnSlip) => {
         setCurrentSlip(slip);
         setShowDetailsDialog(true);
     };
-    
-    const handlePrintAction = (slip: DriverSlip) => {
+
+    const handleRemoveOrderFromSlip = (orderId: string) => {
+        if (!currentSlip) return;
         startTransition(async () => {
-            toast({ title: "جاري تحضير ملف PDF...", description: `سيتم طباعة كشف السائق ${slip.driverName}.` });
-            try {
-                const doc = new jsPDF();
-                
-                // doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
-                // doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
-                // doc.setFont('Amiri');
-
-                const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
-
-                doc.setRTL(true);
-
-                if (reportsLogo) {
-                    try {
-                        doc.addImage(reportsLogo, 'PNG', 15, 10, 30, 10);
-                    } catch (e) {
-                        console.error("Error adding logo to PDF:", e);
-                    }
-                }
-
-                doc.setFontSize(18);
-                doc.text(`كشف استلام مرتجعات من السائق: ${slip.driverName}`, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-                
-                doc.setFontSize(10);
-                doc.text(`تاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
-                doc.text(`رقم الكشف: ${slip.id}`, 15, 30, { align: 'left' });
-
-                const tableColumn = ["#", "رقم الطلب", "المستلم", "الهاتف", "سبب الإرجاع", "المبلغ"];
-                const tableRows = slip.orders.map((order, index) => [
-                    index + 1,
-                    order.id,
-                    order.recipient,
-                    order.phone,
-                    order.previousStatus || order.status,
-                    formatCurrency(order.cod),
-                ]);
-
-                (doc as any).autoTable({
-                    head: [tableColumn],
-                    body: tableRows,
-                    startY: 45,
-                    theme: 'grid',
-                    styles: { font: 'Amiri', halign: 'center' },
-                    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-                    columnStyles: {
-                         1: { halign: 'right' },
-                         2: { halign: 'right' },
-                         3: { halign: 'center' },
-                         4: { halign: 'right' },
-                         5: { halign: 'right' },
-                    },
-                    didDrawPage: (data: any) => {
-                        // Footer
-                        doc.setFontSize(10);
-                        doc.text('توقيع السائق/المندوب: .........................', doc.internal.pageSize.getWidth() - data.settings.margin.right, doc.internal.pageSize.height - 15, { align: 'right' });
-                        doc.text('توقيع المستلم: .........................', data.settings.margin.left, doc.internal.pageSize.height - 15, { align: 'left' });
-                    }
-                });
-                
-                doc.save(`${slip.id}.pdf`);
-                toast({ title: 'تم تجهيز الملف', description: 'بدأ تحميل ملف الـ PDF.' });
-            } catch (e: any) {
-                console.error("PDF generation error:", e);
-                toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: e.message || 'حدث خطأ أثناء تجهيز الملف.' });
-            }
+            removeOrderFromDriverReturnSlip(currentSlip.id, orderId);
+            await updateOrderAction({ orderId, field: 'status', value: 'راجع' });
+            setCurrentSlip(prev => prev ? {...prev, orders: prev.orders.filter(o => o.id !== orderId), itemCount: prev.itemCount -1} : null);
+            toast({ title: 'تمت الإزالة', description: `تمت إزالة الطلب ${orderId} من الكشف وإعادته للسائق.` });
         });
+    }
+
+     const handlePrintAction = (slip: DriverReturnSlip) => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            toast({ variant: "destructive", title: "فشل الطباعة", description: "يرجى السماح بفتح النوافذ المنبثقة." });
+            return;
+        }
+
+        const tableHeader = `
+            <tr>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">سبب الإرجاع</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المبلغ</th>
+            </tr>
+        `;
+
+        const tableRows = slip.orders.map((o, i) => `
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;">${i + 1}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${o.id}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${o.recipient}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${o.previousStatus || o.status}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(o.cod)}</td>
+            </tr>
+        `).join('');
+
+        const slipDate = new Date(slip.date).toLocaleDateString('ar-EG');
+        const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
+
+        const content = `
+            <html>
+                <head>
+                    <title>كشف استلام: ${slip.id}</title>
+                    <style>
+                        body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { padding: 8px; border: 1px solid #ddd; text-align: right; }
+                        th { background-color: #f2f2f2; }
+                        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+                        .signatures { margin-top: 40px; display: flex; justify-content: space-between; }
+                        .signature { border-top: 1px solid #000; padding-top: 5px; width: 200px; text-align: center; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="height: 50px;">` : `<h1>${settings.login.companyName || 'الشركة'}</h1>`}
+                        <div>
+                            <h2>كشف استلام من السائق: ${slip.driverName}</h2>
+                            <p>رقم الكشف: ${slip.id}</p>
+                            <p>التاريخ: ${slipDate}</p>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>${tableHeader}</thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                    <div class="signatures">
+                        <div class="signature">توقيع المستلم</div>
+                        <div class="signature">توقيع المندوب</div>
+                    </div>
+                </body>
+            </html>
+        `;
+
+        printWindow.document.write(content);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
     };
 
     return (
         <div className="space-y-6">
             <Card>
                  <CardHeader>
-                    <CardTitle>كشوفات استلام المرتجعات من السائقين</CardTitle>
-                    <CardDescription>عرض وطباعة كشوفات استلام المرتجعات السابقة.</CardDescription>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <CardTitle>سجل كشوفات استلام المرتجعات</CardTitle>
+                            <CardDescription>
+                                عرض وطباعة وتعديل كشوفات المرتجعات التي تم استلامها من السائقين.
+                            </CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                             <DateRangePicker onUpdate={(range) => setDateRange(range.range)} />
+                             <Select value={filterDriver || 'all'} onValueChange={setFilterDriver}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="فلترة حسب السائق" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">كل السائقين</SelectItem>
+                                    {drivers.map(driver => (
+                                        <SelectItem key={driver} value={driver}>{driver}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                      <Table>
-                        <TableHeader><TableRow><TableHead>رقم الكشف</TableHead><TableHead>اسم السائق</TableHead><TableHead>تاريخ الإنشاء</TableHead><TableHead>عدد الشحنات</TableHead><TableHead>إجراءات</TableHead></TableRow></TableHeader>
+                        <TableHeader><TableRow><TableHead className="border-l">رقم الكشف</TableHead><TableHead className="border-l">اسم السائق</TableHead><TableHead className="border-l">تاريخ الإنشاء</TableHead><TableHead className="border-l">عدد الشحنات</TableHead><TableHead className="border-l">الحالة</TableHead><TableHead>إجراءات</TableHead></TableRow></TableHeader>
                         <TableBody>
-                            {filteredSlips.map(slip => (
+                            {filteredSlips.length === 0 ? (
+                                 <TableRow>
+                                    <TableCell colSpan={6} className="text-center h-24">
+                                        لم يتم العثور على أي كشوفات تطابق الفلاتر المحددة.
+                                    </TableCell>
+                                </TableRow>
+                            ) : filteredSlips.map(slip => (
                                 <TableRow key={slip.id}>
-                                    <TableCell><Link href={`/dashboard/returns/slips/${slip.id}`} className="text-primary hover:underline">{slip.id}</Link></TableCell>
-                                    <TableCell>{slip.driverName}</TableCell>
-                                    <TableCell>{new Date(slip.date).toLocaleDateString('ar-EG')}</TableCell>
-                                    <TableCell>{slip.itemCount}</TableCell>
-                                    <TableCell className="flex gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}>عرض</Button>
-                                        <Button size="sm" onClick={() => handlePrintAction(slip)} disabled={isPending}>
-                                            {isPending ? <Icon name="Loader2" className="animate-spin ml-2" /> : <Icon name="Printer" className="ml-2" />}
-                                            طباعة
+                                    <TableCell className="font-mono border-l">
+                                        <Link href={`/dashboard/returns/slips/${slip.id}`} className="text-primary hover:underline">
+                                            {slip.id}
+                                        </Link>
+                                    </TableCell>
+                                    <TableCell className="border-l">{slip.driverName}</TableCell>
+                                    <TableCell className="border-l">{new Date(slip.date).toLocaleDateString('ar-EG')}</TableCell>
+                                    <TableCell className="border-l">{slip.itemCount}</TableCell>
+                                    <TableCell className="border-l">
+                                        <Badge className="bg-blue-100 text-blue-800">مستلم بالفرع</Badge>
+                                    </TableCell>
+                                     <TableCell className="flex gap-2">
+                                        <Button variant="outline" size="sm" onClick={() => handlePrintAction(slip)}>
+                                            <Icon name="Printer" className="ml-2 h-4 w-4" /> عرض للطباعة
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -153,12 +195,35 @@ export const DriverSlips = () => {
             </Card>
 
             <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-                <DialogContent>
+                <DialogContent className="max-w-4xl">
                     <DialogHeader><DialogTitle>تفاصيل كشف {currentSlip?.id}</DialogTitle></DialogHeader>
                     <div className="max-h-[60vh] overflow-y-auto">
                         <Table>
-                             <TableHeader><TableRow><TableHead>رقم الطلب</TableHead><TableHead>سبب الإرجاع</TableHead></TableRow></TableHeader>
-                            <TableBody>{currentSlip?.orders.map(o => (<TableRow key={o.id}><TableCell>{o.id}</TableCell><TableCell><Badge variant="secondary">{o.previousStatus || o.status}</Badge></TableCell></TableRow>))}</TableBody>
+                             <TableHeader><TableRow>
+                                <TableHead className="w-16">#</TableHead>
+                                <TableHead>رقم الطلب</TableHead>
+                                <TableHead>المستلم</TableHead>
+                                <TableHead>سبب الإرجاع</TableHead>
+                                <TableHead className="text-center">إجراء</TableHead>
+                            </TableRow></TableHeader>
+                            <TableBody>{currentSlip?.orders.map((o, index) => (
+                                <TableRow key={o.id}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell>{o.id}</TableCell>
+                                    <TableCell>{o.recipient}</TableCell>
+                                    <TableCell><Badge variant="secondary">{o.previousStatus || o.status}</Badge></TableCell>
+                                    <TableCell className="text-center">
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon"
+                                            onClick={() => handleRemoveOrderFromSlip(o.id)}
+                                            disabled={isPending}
+                                        >
+                                            <Icon name="Trash2" className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}</TableBody>
                         </Table>
                     </div>
                 </DialogContent>
