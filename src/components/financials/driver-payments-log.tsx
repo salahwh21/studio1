@@ -2,8 +2,6 @@
 'use client';
 
 import { useState, useMemo, useTransition, useRef } from 'react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { useReturnsStore, type DriverSlip } from '@/store/returns-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -20,13 +18,7 @@ import { updateOrderAction } from '@/app/actions/update-order';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DateRangePicker } from '@/components/date-range-picker';
 import type { DateRange } from 'react-day-picker';
-
-
-declare module 'jspdf' {
-    interface jsPDF {
-        autoTable: (options: any) => jsPDF;
-    }
-}
+import { htmlToText } from 'html-to-text';
 
 
 export const DriverPaymentsLog = () => {
@@ -71,62 +63,75 @@ export const DriverPaymentsLog = () => {
         });
     }
 
-    const handlePrintAction = async (slip: DriverSlip) => {
-        startTransition(async () => {
-            toast({ title: "جاري تحضير ملف PDF...", description: `سيتم طباعة كشف السائق ${slip.driverName}.` });
-            try {
-                const doc = new jsPDF();
-                
-                doc.setFont("Times-Roman");
-                
-                const reportsLogo = settings.login.reportsLogo || settings.login.headerLogo;
+     const handlePrintAction = (slip: DriverSlip) => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            toast({ variant: "destructive", title: "فشل الطباعة", description: "يرجى السماح بفتح النوافذ المنبثقة." });
+            return;
+        }
 
-                if (reportsLogo) {
-                    try {
-                        doc.addImage(reportsLogo, 'PNG', 15, 10, 30, 10);
-                    } catch (e) {
-                        console.error("Error adding logo to PDF:", e);
-                    }
-                }
+        const tableHeader = `
+            <tr>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">سبب الإرجاع</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المبلغ</th>
+            </tr>
+        `;
 
-                doc.setFontSize(18);
-                doc.text(`كشف استلام مرتجعات من السائق: ${slip.driverName}`, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-                
-                doc.setFontSize(10);
-                doc.text(`تاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}`, doc.internal.pageSize.getWidth() - 15, 30, { align: 'right' });
-                doc.text(`رقم الكشف: ${slip.id}`, 15, 30, { align: 'left' });
+        const tableRows = slip.orders.map((o, i) => `
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;">${i + 1}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${o.id}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${o.recipient}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${o.previousStatus || o.status}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(o.cod)}</td>
+            </tr>
+        `).join('');
 
-                const tableColumn = ["المبلغ", "سبب الإرجاع", "الهاتف", "المستلم", "رقم الطلب", "#"].reverse();
-                const tableRows = slip.orders.map((order, index) => [
-                    index + 1,
-                    order.id,
-                    order.recipient,
-                    order.phone,
-                    order.previousStatus || order.status,
-                    formatCurrency(order.cod),
-                ].reverse());
+        const slipDate = new Date(slip.date).toLocaleDateString('ar-EG');
+        const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
 
-                doc.autoTable({
-                    head: [tableColumn],
-                    body: tableRows,
-                    startY: 45,
-                    theme: 'grid',
-                    styles: { font: "Times-Roman", halign: 'right' },
-                    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-                    didDrawPage: (data: any) => {
-                        doc.setFontSize(10);
-                        doc.text('توقيع المستلم: .........................', doc.internal.pageSize.getWidth() - data.settings.margin.right, doc.internal.pageSize.height - 15, { align: 'right' });
-                        doc.text('توقيع مندوب الوميض: .........................', data.settings.margin.left, doc.internal.pageSize.height - 15, { align: 'left' });
-                    }
-                });
+        const content = `
+            <html>
+                <head>
+                    <title>كشف استلام: ${slip.id}</title>
+                    <style>
+                        body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { padding: 8px; border: 1px solid #ddd; text-align: right; }
+                        th { background-color: #f2f2f2; }
+                        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+                        .signatures { margin-top: 40px; display: flex; justify-content: space-between; }
+                        .signature { border-top: 1px solid #000; padding-top: 5px; width: 200px; text-align: center; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="height: 50px;">` : `<h1>${settings.login.companyName || 'الشركة'}</h1>`}
+                        <div>
+                            <h2>كشف استلام من السائق: ${slip.driverName}</h2>
+                            <p>رقم الكشف: ${slip.id}</p>
+                            <p>التاريخ: ${slipDate}</p>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>${tableHeader}</thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                    <div class="signatures">
+                        <div class="signature">توقيع المستلم</div>
+                        <div class="signature">توقيع المندوب</div>
+                    </div>
+                </body>
+            </html>
+        `;
 
-                doc.save(`${slip.id}.pdf`);
-                toast({ title: 'تم تجهيز الملف', description: 'بدأ تحميل ملف الـ PDF.' });
-            } catch (e: any) {
-                console.error("PDF generation error:", e);
-                toast({ variant: 'destructive', title: 'فشل إنشاء PDF', description: e.message || 'حدث خطأ أثناء تجهيز الملف.' });
-            }
-        });
+        printWindow.document.write(content);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
     };
 
     const handleQuickPrint = (slip: DriverSlip) => {
@@ -136,7 +141,6 @@ export const DriverPaymentsLog = () => {
             printWindow.document.write('<html><head><title>كشف استلام سريع</title><style>body{direction:rtl; font-family: sans-serif;} table{width:100%; border-collapse: collapse;} th,td{border:1px solid #ddd; padding: 8px; text-align:right;}</style></head><body>');
             printWindow.document.write(`<h2>كشف استلام من: ${slip.driverName}</h2><p>رقم: ${slip.id}</p>`);
             printWindow.document.write(`<table><thead><tr><th>#</th><th>رقم الطلب</th><th>المستلم</th><th>السبب</th></tr></thead><tbody>${tableRows}</tbody></table>`);
-            printWindow.document.write('</body></html>');
             printWindow.document.close();
             printWindow.print();
         }
@@ -195,8 +199,8 @@ export const DriverPaymentsLog = () => {
                                         <Badge className="bg-blue-100 text-blue-800">مستلم بالفرع</Badge>
                                     </TableCell>
                                      <TableCell className="flex gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => handleShowDetails(slip)}>
-                                            <Icon name="Eye" className="ml-2 h-4 w-4" /> عرض
+                                        <Button variant="outline" size="sm" onClick={() => handleQuickPrint(slip)}>
+                                            <Icon name="Printer" className="ml-2 h-4 w-4" /> عرض للطباعة
                                         </Button>
                                         <Button size="sm" onClick={() => handlePrintAction(slip)} disabled={isPending}>
                                             {isPending ? <Icon name="Loader2" className="animate-spin ml-2" /> : <Icon name="FileText" className="ml-2" />}
