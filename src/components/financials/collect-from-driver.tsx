@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -149,11 +148,12 @@ export const CollectFromDriver = () => {
 
             <Card>
                 <CardContent className="p-0">
-                    <div className="overflow-auto">
+                    <div className="overflow-auto h-[calc(100vh-26rem)]">
                         <Table className="relative">
-                            <TableHeader className="sticky top-0 z-20 bg-muted/50">
+                            <TableHeader className="sticky top-0 z-20 bg-muted/50 backdrop-blur-sm">
                                 <TableRow>
-                                    <TableHead className="w-12 text-center border-l whitespace-nowrap sticky right-0 z-30 bg-muted/50"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
+                                    <TableHead className="w-12 text-center border-l whitespace-nowrap sticky right-0 z-30 bg-muted/80 backdrop-blur-sm"><Checkbox onCheckedChange={handleSelectAll} checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} /></TableHead>
+                                    <TableHead className="w-16 text-center border-l whitespace-nowrap">#</TableHead>
                                     <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">رقم الطلب</TableHead>
                                     <TableHead className="text-center border-l whitespace-nowrap min-w-[200px]">التاجر</TableHead>
                                     <TableHead className="text-center border-l whitespace-nowrap min-w-[150px]">الحالة</TableHead>
@@ -167,17 +167,18 @@ export const CollectFromDriver = () => {
                             </TableHeader>
                             <TableBody>
                                 {!selectedDriver ? (
-                                    <TableRow><TableCell colSpan={10} className="h-24 text-center">الرجاء اختيار سائق لعرض الطلبات.</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={11} className="h-24 text-center">الرجاء اختيار سائق لعرض الطلبات.</TableCell></TableRow>
                                 ) : ordersForCollection.length === 0 ? (
-                                    <TableRow><TableCell colSpan={10} className="h-24 text-center">لا توجد طلبات تطابق معايير البحث.</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={11} className="h-24 text-center">لا توجد طلبات تطابق معايير البحث.</TableCell></TableRow>
                                 ) : (
-                                    ordersForCollection.map(order => {
+                                    ordersForCollection.map((order, index) => {
                                         const netAmount = (order.cod || 0) - (order.driverFee || 0);
                                         return (
                                             <TableRow key={order.id} data-state={selectedOrderIds.includes(order.id) ? "selected" : ""}>
                                                 <TableCell className="text-center border-l whitespace-nowrap sticky right-0 z-10 bg-card data-[state=selected]:bg-muted">
                                                     <Checkbox checked={selectedOrderIds.includes(order.id)} onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)} />
                                                 </TableCell>
+                                                <TableCell className="text-center border-l whitespace-nowrap font-mono">{index + 1}</TableCell>
                                                 <TableCell className="text-center border-l font-mono whitespace-nowrap">{order.id}</TableCell>
                                                 <TableCell className="text-center border-l whitespace-nowrap">
                                                     <Popover open={popoverStates[`merchant-${order.id}`]} onOpenChange={() => togglePopover(`merchant-${order.id}`)}>
