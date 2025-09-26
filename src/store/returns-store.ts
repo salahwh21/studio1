@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { Order } from './orders-store';
+import { ordersStore } from './orders-store';
 
 export type DriverSlip = {
   id: string;
@@ -20,6 +21,31 @@ export type MerchantSlip = {
   orders: Order[];
 };
 
+// --- Mock Data ---
+const createInitialDriverSlips = (): DriverSlip[] => {
+  const { orders } = ordersStore.getState();
+  const abuAlAbdOrders = orders.filter(o => o.driver === 'ابو العبد' && o.status === 'مرجع للفرع').slice(0, 3);
+  const mohammadSweidOrders = orders.filter(o => o.driver === 'محمد سويد' && o.status === 'مرجع للفرع').slice(0, 2);
+
+  return [
+    ...(abuAlAbdOrders.length > 0 ? [{
+      id: `DS-1721650000000`,
+      driverName: 'ابو العبد',
+      date: new Date('2024-07-22').toISOString(),
+      itemCount: abuAlAbdOrders.length,
+      orders: abuAlAbdOrders
+    }] : []),
+     ...(mohammadSweidOrders.length > 0 ? [{
+      id: `DS-1721563600000`,
+      driverName: 'محمد سويد',
+      date: new Date('2024-07-21').toISOString(),
+      itemCount: mohammadSweidOrders.length,
+      orders: mohammadSweidOrders
+    }] : []),
+  ];
+}
+
+
 type ReturnsState = {
   driverSlips: DriverSlip[];
   merchantSlips: MerchantSlip[];
@@ -29,7 +55,7 @@ type ReturnsState = {
 };
 
 export const useReturnsStore = create<ReturnsState>()(immer((set) => ({
-  driverSlips: [],
+  driverSlips: createInitialDriverSlips(),
   merchantSlips: [],
   
   addDriverSlip: (slipData) => {
