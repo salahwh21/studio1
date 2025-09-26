@@ -12,31 +12,40 @@ const createInitialOrders = () => {
     
     if (merchants.length === 0 || drivers.length === 0) return [];
 
-    return Array.from({ length: 50 }, (_, i) => ({
-        id: `ORD-171981000${1+i}`,
-        source: (['Shopify', 'Manual', 'API', 'WooCommerce'] as const)[i % 4],
-        referenceNumber: `REF-00${100+i}`,
-        recipient: ['محمد جاسم', 'أحمد محمود', 'أحمد خالد', 'فاطمة علي', 'حسن محمود', 'نور الهدى', 'خالد وليد'][i % 7],
-        phone: `07${(791234567 + i * 1111111).toString().slice(0,8)}`,
-        whatsapp: i % 5 === 0 ? `07${(987654321 - i * 1111111).toString().slice(0,8)}` : '',
-        address: `${['الصويفية', 'تلاع العلي', 'تلاع العلي', 'حي معصوم', 'الجبيهة', 'الحي الشرقي', 'العبدلي'][i % 7]}`,
-        city: ['عمان', 'الزرقاء', 'إربد'][i % 3],
-        region: ['الصويفية', 'خلدا', 'تلاع العلي', 'حي معصوم', 'الجبيهة', 'الحي الشرقي', 'العبدلي'][i % 7],
-        status: (['تم التوصيل', 'جاري التوصيل', 'بالانتظار', 'راجع', 'مؤجل', 'تم استلام المال في الفرع'] as const)[i % 6],
-        previousStatus: (['بالانتظار', 'جاري التوصيل', 'بالانتظار', 'جاري التوصيل', 'جاري التوصيل', 'تم التوصيل'] as const)[i % 6],
-        driver: drivers[i % drivers.length].name,
-        merchant: merchants[i % merchants.length].storeName || merchants[i % merchants.length].name,
-        cod: 35.50 + i * 5,
-        itemPrice: 34.00 + i * 5,
-        deliveryFee: 1.50,
-        additionalCost: i % 10 === 0 ? 0.5 : 0, 
-        driverFee: 1.00,
-        driverAdditionalFare: i % 15 === 0 ? -0.25 : 0, 
-        date: `2024-07-${(1 + i % 28).toString().padStart(2,'0')}`,
-        notes: i % 3 === 0 ? 'اتصل قبل الوصول' : '',
-        lat: i % 2 === 0 ? 31.9539 + (Math.random() - 0.5) * 0.15 : undefined,
-        lng: i % 2 === 0 ? 35.9106 + (Math.random() - 0.5) * 0.15 : undefined,
-    }));
+    const abuAlAbd = drivers.find(d => d.name === 'ابو العبد');
+
+    return Array.from({ length: 50 }, (_, i) => {
+        let assignedDriver = drivers[i % drivers.length].name;
+        if (abuAlAbd && i < 10) { 
+            assignedDriver = abuAlAbd.name;
+        }
+
+        return {
+            id: `ORD-171981000${1+i}`,
+            source: (['Shopify', 'Manual', 'API', 'WooCommerce'] as const)[i % 4],
+            referenceNumber: `REF-00${100+i}`,
+            recipient: ['محمد جاسم', 'أحمد محمود', 'أحمد خالد', 'فاطمة علي', 'حسن محمود', 'نور الهدى', 'خالد وليد'][i % 7],
+            phone: `07${(791234567 + i * 1111111).toString().slice(0,8)}`,
+            whatsapp: i % 5 === 0 ? `07${(987654321 - i * 1111111).toString().slice(0,8)}` : '',
+            address: `${['الصويفية', 'تلاع العلي', 'تلاع العلي', 'حي معصوم', 'الجبيهة', 'الحي الشرقي', 'العبدلي'][i % 7]}`,
+            city: ['عمان', 'الزرقاء', 'إربد'][i % 3],
+            region: ['الصويفية', 'خلدا', 'تلاع العلي', 'حي معصوم', 'الجبيهة', 'الحي الشرقي', 'العبدلي'][i % 7],
+            status: (['تم التوصيل', 'جاري التوصيل', 'بالانتظار', 'راجع', 'مؤجل', 'تم استلام المال في الفرع'] as const)[i % 6],
+            previousStatus: (['بالانتظار', 'جاري التوصيل', 'بالانتظار', 'جاري التوصيل', 'جاري التوصيل', 'تم التوصيل'] as const)[i % 6],
+            driver: assignedDriver,
+            merchant: merchants[i % merchants.length].storeName || merchants[i % merchants.length].name,
+            cod: 35.50 + i * 5,
+            itemPrice: 34.00 + i * 5,
+            deliveryFee: 1.50,
+            additionalCost: i % 10 === 0 ? 0.5 : 0, 
+            driverFee: 1.00,
+            driverAdditionalFare: i % 15 === 0 ? -0.25 : 0, 
+            date: `2024-07-${(1 + i % 28).toString().padStart(2,'0')}`,
+            notes: i % 3 === 0 ? 'اتصل قبل الوصول' : '',
+            lat: i % 2 === 0 ? 31.9539 + (Math.random() - 0.5) * 0.15 : undefined,
+            lng: i % 2 === 0 ? 35.9106 + (Math.random() - 0.5) * 0.15 : undefined,
+        }
+    });
 }
 
 
