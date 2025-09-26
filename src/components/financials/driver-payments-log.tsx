@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,22 +5,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Icon from '../icon';
-
-const mockDriverPayments = [
-    { id: 'DP-001', driverName: 'ابو العبد', date: '2023-10-01', amount: '150.00 د.أ', status: 'مدفوع' },
-    { id: 'DP-002', driverName: 'سامر الطباخي', date: '2023-10-01', amount: '125.50 د.أ', status: 'مدفوع' },
-    { id: 'DP-003', driverName: 'محمد سويد', date: '2023-09-25', amount: '210.00 د.أ', status: 'مدفوع' },
-];
+import { useReturnsStore } from '@/store/returns-store';
+import Link from 'next/link';
 
 export const DriverPaymentsLog = () => {
+    const { driverSlips } = useReturnsStore();
+
     return (
         <Card>
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <CardTitle>سجل دفعات أجور السائقين</CardTitle>
+                        <CardTitle>سجل كشوفات استلام المرتجعات</CardTitle>
                         <CardDescription>
-                            عرض وتأكيد دفع أجور السائقين المستحقة.
+                            عرض وطباعة وتعديل كشوفات المرتجعات التي تم استلامها من السائقين.
                         </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
@@ -34,22 +31,32 @@ export const DriverPaymentsLog = () => {
                  <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="text-center border-l">رقم الدفعة</TableHead>
+                            <TableHead className="text-center border-l">رقم الكشف</TableHead>
                             <TableHead className="text-center border-l">اسم السائق</TableHead>
-                            <TableHead className="text-center border-l">تاريخ الدفعة</TableHead>
-                            <TableHead className="text-center border-l">المبلغ</TableHead>
+                            <TableHead className="text-center border-l">تاريخ الإنشاء</TableHead>
+                            <TableHead className="text-center border-l">عدد الشحنات</TableHead>
                             <TableHead className="text-center">الحالة</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {mockDriverPayments.map(payment => (
-                            <TableRow key={payment.id}>
-                                <TableCell className="text-center border-l font-mono">{payment.id}</TableCell>
-                                <TableCell className="text-center border-l">{payment.driverName}</TableCell>
-                                <TableCell className="text-center border-l">{payment.date}</TableCell>
-                                <TableCell className="text-center border-l font-bold">{payment.amount}</TableCell>
+                        {driverSlips.length === 0 ? (
+                             <TableRow>
+                                <TableCell colSpan={5} className="text-center h-24">
+                                    لم يتم إنشاء أي كشوفات بعد.
+                                </TableCell>
+                            </TableRow>
+                        ) : driverSlips.map(slip => (
+                            <TableRow key={slip.id}>
+                                <TableCell className="text-center border-l font-mono">
+                                    <Link href={`/dashboard/returns/slips/${slip.id}`} className="text-primary hover:underline">
+                                        {slip.id}
+                                    </Link>
+                                </TableCell>
+                                <TableCell className="text-center border-l">{slip.driverName}</TableCell>
+                                <TableCell className="text-center border-l">{new Date(slip.date).toLocaleDateString('ar-EG')}</TableCell>
+                                <TableCell className="text-center border-l">{slip.itemCount}</TableCell>
                                 <TableCell className="text-center">
-                                    <Badge className="bg-green-100 text-green-800">{payment.status}</Badge>
+                                    <Badge className="bg-blue-100 text-blue-800">مستلم بالفرع</Badge>
                                 </TableCell>
                             </TableRow>
                         ))}
