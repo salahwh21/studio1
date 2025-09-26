@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -11,104 +11,151 @@ import { useFinancialsStore, type MerchantPaymentSlip } from '@/store/financials
 import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 export const MerchantPaymentsLog = () => {
     const { merchantPaymentSlips } = useFinancialsStore();
     const { settings, formatCurrency } = useSettings();
     const { toast } = useToast();
+    const [isExporting, setIsExporting] = useState<string | null>(null);
+    const slipPrintRef = useRef<HTMLDivElement>(null);
+    const [slipToPrint, setSlipToPrint] = useState<MerchantPaymentSlip | null>(null);
+
 
     const handlePrint = (slip: MerchantPaymentSlip) => {
         if (!slip) return;
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-            toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'يرجى السماح بفتح النوافذ المنبثقة.' });
+        setSlipToPrint(slip);
+
+        setTimeout(() => {
+            if (!slipPrintRef.current) {
+                toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'لم يتم العثور على محتوى للطباعة.' });
+                return;
+            }
+
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'يرجى السماح بفتح النوافذ المنبثقة.' });
+                return;
+            }
+            printWindow.document.write(slipPrintRef.current.innerHTML);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+            setSlipToPrint(null);
+        }, 100);
+    };
+
+     const handleDownloadPdf = async (slip: MerchantPaymentSlip) => {
+        if (!slip) return;
+        setIsExporting(slip.id);
+        setSlipToPrint(slip);
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        if (!slipPrintRef.current) {
+            toast({ variant: 'destructive', title: 'فشل التنزيل', description: 'لم يتم العثور على محتوى للتصدير.' });
+            setIsExporting(null);
             return;
         }
 
-        const tableHeader = `
-            <thead>
-                <tr>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">قيمة التحصيل</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">أجور التوصيل</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">الصافي المستحق</th>
-                </tr>
-            </thead>
-        `;
+        try {
+            const canvas = await html2canvas(slipPrintRef.current.querySelector('.slip-container') as HTMLElement, { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a5'
+            });
 
-        const tableRows = slip.orders.map((o, i) => `
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd;">${i + 1}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${o.id}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${o.recipient}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(o.cod)}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(o.deliveryFee)}</td>
-                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">${formatCurrency(o.itemPrice)}</td>
-            </tr>
-        `).join('');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            
+            const today = new Date().toISOString().split('T')[0];
+            pdf.save(`${slip.merchantName}_${today}.pdf`);
+            
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            toast({ variant: 'destructive', title: 'خطأ', description: 'حدث خطأ أثناء إنشاء ملف PDF.' });
+        } finally {
+            setIsExporting(null);
+            setSlipToPrint(null);
+        }
+    };
+    
+    const SlipHTML = ({ slip }: { slip: MerchantPaymentSlip | null }) => {
+        if (!slip) return null;
         
         const totalCod = slip.orders.reduce((sum, o) => sum + (o.cod || 0), 0);
         const totalDelivery = slip.orders.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
         const totalNet = slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
-
-
-        const tableFooter = `
-            <tfoot style="background-color: #f9f9f9; font-weight: bold;">
-                <tr>
-                    <td colspan="3" style="padding: 8px; border: 1px solid #ddd; text-align: right;">الإجمالي</td>
-                    <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalCod)}</td>
-                    <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalDelivery)}</td>
-                    <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalNet)}</td>
-                </tr>
-            </tfoot>
-        `;
-        
         const slipDate = new Date(slip.date).toLocaleDateString('ar-EG');
         const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
 
-        const content = `
-            <html>
-                <head>
-                    <title>كشف دفع لـ: ${slip.merchantName}</title>
-                    <style>
-                        body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                        th, td { padding: 8px; border: 1px solid #ddd; text-align: right; }
-                        th { background-color: #f2f2f2; }
-                        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-                        .signatures { margin-top: 40px; display: flex; justify-content: space-between; }
-                        .signature { border-top: 1px solid #000; padding-top: 5px; width: 200px; text-align: center; }
-                        tfoot { background-color: #f9f9f9; font-weight: bold; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="height: 50px;">` : `<h1>${settings.login.companyName || 'الشركة'}</h1>`}
-                        <div>
-                            <h2>كشف دفع للتاجر: ${slip.merchantName}</h2>
-                            <p>التاريخ: ${slipDate}</p>
-                            <p>رقم الكشف: ${slip.id}</p>
-                        </div>
+        return (
+             <div className="slip-container">
+                <style>{`
+                    body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10px; }
+                    th, td { padding: 4px; border: 1px solid #ddd; text-align: right; }
+                    th { background-color: #f2f2f2; }
+                    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+                    .header img { height: 40px; }
+                    h2 { font-size: 16px; margin: 0;}
+                    p { font-size: 10px; margin: 2px 0;}
+                    .signatures { margin-top: 30px; display: flex; justify-content: space-between; font-size: 10px; }
+                    .signature { border-top: 1px solid #000; padding-top: 5px; width: 150px; text-align: center; }
+                    tfoot { background-color: #f9f9f9; font-weight: bold; }
+                `}</style>
+                <div className="header">
+                    ${logoUrl ? `<img src="${logoUrl}" alt="Logo" />` : `<h1>${settings.login.companyName || 'الشركة'}</h1>`}
+                    <div>
+                        <h2>كشف دفع للتاجر: ${slip.merchantName}</h2>
+                        <p>التاريخ: ${slipDate}</p>
+                        <p>رقم الكشف: ${slip.id}</p>
                     </div>
-                    <table>
-                        ${tableHeader}
-                        <tbody>${tableRows}</tbody>
-                        ${tableFooter}
-                    </table>
-                    <div class="signatures">
-                        <div class="signature">توقيع المستلم (التاجر)</div>
-                        <div class="signature">توقيع الموظف المالي</div>
-                    </div>
-                </body>
-            </html>
-        `;
-        printWindow.document.write(content);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-    };
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>رقم الطلب</th>
+                            <th>المستلم</th>
+                            <th>قيمة التحصيل</th>
+                            <th>أجور التوصيل</th>
+                            <th>الصافي المستحق</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${slip.orders.map((o, i) => `
+                            <tr>
+                                <td>${i + 1}</td>
+                                <td>${o.id}</td>
+                                <td>${o.recipient}</td>
+                                <td>${formatCurrency(o.cod)}</td>
+                                <td>${formatCurrency(o.deliveryFee)}</td>
+                                <td style="font-weight: bold;">${formatCurrency(o.itemPrice)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="3">الإجمالي</th>
+                            <th>${formatCurrency(totalCod)}</th>
+                            <th>${formatCurrency(totalDelivery)}</th>
+                            <th>${formatCurrency(totalNet)}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+                <div className="signatures">
+                    <div className="signature">توقيع المستلم (التاجر)</div>
+                    <div className="signature">توقيع الموظف المالي</div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <Card>
@@ -121,7 +168,6 @@ export const MerchantPaymentsLog = () => {
                         </CardDescription>
                     </div>
                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm"><Icon name="FileDown" className="ml-2 h-4 w-4"/>تصدير PDF</Button>
                         <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
                     </div>
                 </div>
@@ -157,10 +203,14 @@ export const MerchantPaymentsLog = () => {
                                     <TableCell className="text-center border-l">
                                         <Badge className={payment.status === 'مدفوع' ? 'bg-green-100 text-green-800' : ''}>{payment.status}</Badge>
                                     </TableCell>
-                                    <TableCell className="text-center">
-                                        <Button variant="outline" size="sm" onClick={() => handlePrint(payment)}>
+                                    <TableCell className="text-center flex gap-2 justify-center">
+                                         <Button variant="outline" size="sm" onClick={() => handlePrint(payment)}>
                                             <Icon name="Printer" className="ml-2 h-4 w-4" />
-                                            طباعة الكشف
+                                            طباعة
+                                        </Button>
+                                         <Button variant="outline" size="sm" onClick={() => handleDownloadPdf(payment)} disabled={isExporting === payment.id}>
+                                            <Icon name={isExporting === payment.id ? "Loader2" : "FileDown"} className="ml-2 h-4 w-4" />
+                                            تنزيل PDF
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -169,6 +219,12 @@ export const MerchantPaymentsLog = () => {
                     </TableBody>
                 </Table>
             </CardContent>
+            {/* Hidden div for printing */}
+            <div className="hidden">
+                <div ref={slipPrintRef}>
+                    {slipToPrint && <SlipHTML slip={slipToPrint} />}
+                </div>
+            </div>
         </Card>
     );
 }
