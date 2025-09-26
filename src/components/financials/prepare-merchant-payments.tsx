@@ -15,18 +15,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { DateRangePicker } from '@/components/date-range-picker';
+import type { DateRange } from 'react-day-picker';
+import { useReturnsStore } from '@/store/returns-store';
 
 export const PrepareMerchantPayments = () => {
     const { toast } = useToast();
     const { users } = useUsersStore();
     const { orders } = useOrdersStore();
     const { settings, formatCurrency } = useSettings();
+    const { addMerchantSlip } = useReturnsStore();
     
     const [selectedMerchantId, setSelectedMerchantId] = useState<string | null>(null);
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
     const [adjustments, setAdjustments] = useState<Record<string, number>>({});
     const [searchQuery, setSearchQuery] = useState('');
-    const [dateRange, setDateRange] = useState<{ from: Date | undefined, to: Date | undefined }>({ from: undefined, to: undefined });
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
     const merchants = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
     
@@ -54,8 +57,8 @@ export const PrepareMerchantPayments = () => {
              o.id.toLowerCase().includes(lowercasedQuery) ||
              o.recipient.toLowerCase().includes(lowercasedQuery)
             ) &&
-            (!dateRange.from || new Date(o.date) >= dateRange.from) &&
-            (!dateRange.to || new Date(o.date) <= dateRange.to)
+            (!dateRange?.from || new Date(o.date) >= dateRange.from) &&
+            (!dateRange?.to || new Date(o.date) <= dateRange.to)
         );
     }, [orders, selectedMerchant, searchQuery, dateRange]);
     
@@ -67,11 +70,13 @@ export const PrepareMerchantPayments = () => {
             const itemPrice = order.itemPrice || 0;
             const netAmount = itemPrice + adjustment;
             
+            acc.cod += order.cod || 0;
+            acc.deliveryFee += order.deliveryFee || 0;
             acc.totalItemPrice += itemPrice;
             acc.totalAdjustments += adjustment;
             acc.totalNet += netAmount;
             return acc;
-        }, { totalItemPrice: 0, totalAdjustments: 0, totalNet: 0 });
+        }, { cod: 0, deliveryFee: 0, totalItemPrice: 0, totalAdjustments: 0, totalNet: 0 });
 
     }, [ordersForPayment, selectedOrderIds, adjustments]);
 
@@ -80,8 +85,19 @@ export const PrepareMerchantPayments = () => {
             toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء اختيار تاجر وطلب واحد على الأقل.'});
             return;
         }
+
+        const ordersToProcess = ordersForPayment.filter(o => selectedOrderIds.includes(o.id));
+        
+        addMerchantSlip({
+            merchant: selectedMerchant.storeName || selectedMerchant.name,
+            date: new Date().toISOString(),
+            items: ordersToProcess.length,
+            status: 'جاهز للتسليم',
+            orders: ordersToProcess
+        });
+
         toast({
-            title: 'تم إنشاء كشف الدفع (محاكاة)',
+            title: 'تم إنشاء كشف الدفع',
             description: `تم إنشاء كشف دفع للتاجر ${selectedMerchant.name} بالمبلغ الصافي ${formatCurrency(totals.totalNet)}.`
         });
         setSelectedOrderIds([]);
@@ -125,6 +141,8 @@ export const PrepareMerchantPayments = () => {
                     <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
                     <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
                     <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">قيمة التحصيل</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">أجور التوصيل</th>
                     <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستحق للتاجر</th>
                     <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">تعديلات</th>
                     <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">الصافي</th>
@@ -140,6 +158,8 @@ export const PrepareMerchantPayments = () => {
                     <td style="padding: 8px; border: 1px solid #ddd;">${i + 1}</td>
                     <td style="padding: 8px; border: 1px solid #ddd;">${o.id}</td>
                     <td style="padding: 8px; border: 1px solid #ddd;">${o.recipient}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(o.cod)}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(o.deliveryFee)}</td>
                     <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(o.itemPrice)}</td>
                     <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(adjustment)}</td>
                     <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(netAmount)}</td>
@@ -147,6 +167,8 @@ export const PrepareMerchantPayments = () => {
             `
         }).join('');
 
+        const totalCOD = ordersToPrint.reduce((sum, o) => sum + (o.cod || 0), 0);
+        const totalDeliveryFee = ordersToPrint.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
         const totalItemPrice = ordersToPrint.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
         const totalAdjustments = ordersToPrint.reduce((sum, o) => sum + (adjustments[o.id] || 0), 0);
         const totalNet = totalItemPrice + totalAdjustments;
@@ -155,6 +177,8 @@ export const PrepareMerchantPayments = () => {
             <tfoot>
                 <tr>
                     <th colspan="3" style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">الإجمالي</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(totalCOD)}</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(totalDeliveryFee)}</th>
                     <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(totalItemPrice)}</th>
                     <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(totalAdjustments)}</th>
                     <th style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold;">${formatCurrency(totalNet)}</th>
@@ -236,7 +260,7 @@ export const PrepareMerchantPayments = () => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        {/* <DateRangePicker onUpdate={(range) => setDateRange(range.range)} /> */}
+                        <DateRangePicker onUpdate={({ range }) => setDateRange(range)} />
                         <div className="flex items-center gap-2 sm:mr-auto">
                             <Button variant="outline" size="sm" onClick={handlePrint} disabled={selectedOrderIds.length === 0}><Icon name="Printer" className="ml-2 h-4 w-4"/>طباعة المحدد</Button>
                             <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
@@ -311,7 +335,7 @@ export const PrepareMerchantPayments = () => {
                 </div>
                 <CardFooter className="flex-none flex items-center justify-between p-2 border-t">
                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                        <span><span className="font-semibold text-muted-foreground">المستحق:</span> {formatCurrency(totals.totalItemPrice)}</span>
+                        <span><span className="font-semibold text-muted-foreground">الإجمالي المستحق:</span> {formatCurrency(totals.totalItemPrice)}</span>
                         <Separator orientation='vertical' className="h-4"/>
                         <span><span className="font-semibold text-muted-foreground">التعديلات:</span> {formatCurrency(totals.totalAdjustments)}</span>
                         <Separator orientation='vertical' className="h-4"/>
@@ -326,3 +350,5 @@ export const PrepareMerchantPayments = () => {
         </div>
     );
 };
+
+    
