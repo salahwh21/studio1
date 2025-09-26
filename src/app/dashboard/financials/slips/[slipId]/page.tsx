@@ -59,6 +59,7 @@ export default function FinancialSlipDetailPage() {
     const [slip, setSlip] = useState<DriverPaymentSlip | MerchantPaymentSlip | null>(null);
     const [slipType, setSlipType] = useState<'driver' | 'merchant' | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [adjustments, setAdjustments] = useState<Record<string, number>>({});
 
     useEffect(() => {
         let foundSlip: DriverPaymentSlip | MerchantPaymentSlip | undefined = driverPaymentSlips.find(s => s.id === slipId);
@@ -92,43 +93,64 @@ export default function FinancialSlipDetailPage() {
             ? `كشف تحصيل من السائق: ${(slip as DriverPaymentSlip).driverName}`
             : `كشف دفع للتاجر: ${(slip as MerchantPaymentSlip).merchantName}`;
 
-        const tableHeader = isDriverSlip ? `
-            <thead>
-                <tr>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">قيمة التحصيل</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">أجرة السائق</th>
-                </tr>
-            </thead>
-        ` : `
-             <thead>
-                <tr>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المبلغ المستحق</th>
-                </tr>
-            </thead>
-        `;
-        
-        const tableRows = slip.orders.map((order, index) => isDriverSlip ? `
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd;">${index + 1}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${order.id}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${order.recipient}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(order.cod)}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(order.driverFee)}</td>
-            </tr>
-        ` : `
-             <tr>
-                <td style="padding: 8px; border: 1px solid #ddd;">${index + 1}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${order.id}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${order.recipient}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(order.itemPrice)}</td>
-            </tr>
-        `).join('');
+        let tableHeader = '';
+        if (isDriverSlip) {
+            tableHeader = `
+                <thead>
+                    <tr>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">قيمة التحصيل</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">أجرة السائق</th>
+                    </tr>
+                </thead>
+            `;
+        } else {
+            tableHeader = `
+                <thead>
+                    <tr>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">رقم الطلب</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستلم</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">قيمة التحصيل</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">أجور التوصيل</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">المستحق للتاجر</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">تعديلات</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">الصافي المستحق</th>
+                    </tr>
+                </thead>
+            `;
+        }
+
+        const tableRows = slip.orders.map((order, index) => {
+            if (isDriverSlip) {
+                return `
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${index + 1}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${order.id}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${order.recipient}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(order.cod)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(order.driverFee)}</td>
+                    </tr>
+                `;
+            } else {
+                const adjustment = adjustments[order.id] || 0;
+                const netAmount = (order.itemPrice || 0) + adjustment;
+                return `
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${index + 1}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${order.id}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${order.recipient}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(order.cod)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(order.deliveryFee)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(order.itemPrice)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(adjustment)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">${formatCurrency(netAmount)}</td>
+                    </tr>
+                `;
+            }
+        }).join('');
 
         let tableFooter = '';
         if (isDriverSlip) {
@@ -149,12 +171,21 @@ export default function FinancialSlipDetailPage() {
                 </tfoot>
             `;
         } else {
-             const totalAmount = slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
+             const totalItemPrice = slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
+             const totalCod = slip.orders.reduce((sum, o) => sum + (o.cod || 0), 0);
+             const totalDelivery = slip.orders.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
+             const totalAdjustments = Object.values(adjustments).reduce((sum, adj) => sum + adj, 0);
+             const totalNet = totalItemPrice + totalAdjustments;
+
              tableFooter = `
                 <tfoot style="background-color: #f9f9f9; font-weight: bold;">
                     <tr>
                         <td colspan="3" style="padding: 8px; border: 1px solid #ddd; text-align: right;">الإجمالي</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalAmount)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalCod)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalDelivery)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalItemPrice)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalAdjustments)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${formatCurrency(totalNet)}</td>
                     </tr>
                 </tfoot>
             `;
@@ -225,7 +256,6 @@ export default function FinancialSlipDetailPage() {
         
         const newOrderData = { ...updatedOrder, [field]: value };
         
-        // Recalculate dependent fields
         const cod = field === 'cod' ? parseFloat(value) : (newOrderData.cod || 0);
         const deliveryFee = field === 'deliveryFee' ? parseFloat(value) : (newOrderData.deliveryFee || 0);
         const additionalCost = field === 'additionalCost' ? parseFloat(value) : (newOrderData.additionalCost || 0);
@@ -244,6 +274,14 @@ export default function FinancialSlipDetailPage() {
                 orders: prev.orders.map(o => o.id === orderId ? newOrderData : o)
             }
         });
+    };
+
+    const handleAdjustmentChange = (orderId: string, value: string) => {
+        const numericValue = parseFloat(value) || 0;
+        setAdjustments(prev => ({
+            ...prev,
+            [orderId]: numericValue,
+        }));
     };
 
 
@@ -277,6 +315,9 @@ export default function FinancialSlipDetailPage() {
     const totalDriverFare = slip.orders.reduce((acc, order) => acc + (order.driverFee || 0), 0);
     const netTotalDriver = totalCOD - totalDriverFare;
     const totalItemPrice = slip.orders.reduce((acc, order) => acc + (order.itemPrice || 0), 0);
+    const totalDeliveryFee = slip.orders.reduce((acc, order) => acc + (order.deliveryFee || 0), 0);
+    const totalAdjustments = slip.orders.reduce((sum, o) => sum + (adjustments[o.id] || 0), 0);
+    const totalNetMerchant = totalItemPrice + totalAdjustments;
 
     return (
         <div className="space-y-6">
@@ -342,15 +383,29 @@ export default function FinancialSlipDetailPage() {
                                 <TableHead className="border-l">#</TableHead>
                                 <TableHead className="border-l">رقم الطلب</TableHead>
                                 <TableHead className="border-l">المستلم</TableHead>
-                                {isDriverSlip && <TableHead className="border-l">قيمة التحصيل</TableHead>}
-                                {isDriverSlip && <TableHead className="border-l">أجرة السائق</TableHead>}
-                                {!isDriverSlip && <TableHead className="border-l">المستحق للتاجر</TableHead>}
+                                {isDriverSlip ? (
+                                    <>
+                                        <TableHead className="border-l">قيمة التحصيل</TableHead>
+                                        <TableHead className="border-l">أجرة السائق</TableHead>
+                                    </>
+                                ) : (
+                                    <>
+                                        <TableHead className="border-l">قيمة التحصيل</TableHead>
+                                        <TableHead className="border-l">أجور التوصيل</TableHead>
+                                        <TableHead className="border-l">المستحق للتاجر</TableHead>
+                                        <TableHead className="border-l">تعديلات</TableHead>
+                                        <TableHead className="border-l">الصافي</TableHead>
+                                    </>
+                                )}
                                 <TableHead className="border-l">الحالة</TableHead>
                                 <TableHead className="text-center">إجراء</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {slip.orders.map((order, index) => (
+                            {slip.orders.map((order, index) => {
+                                const adjustment = adjustments[order.id] || 0;
+                                const netAmount = (order.itemPrice || 0) + adjustment;
+                                return (
                                 <TableRow key={order.id}>
                                     <TableCell className="border-l">{index + 1}</TableCell>
                                     <TableCell className="border-l">
@@ -359,14 +414,19 @@ export default function FinancialSlipDetailPage() {
                                     <TableCell className="border-l">
                                         <Input defaultValue={order.recipient} onBlur={(e) => handleFieldUpdate(order.id, 'recipient', e.target.value)} className="h-8 border-0 bg-transparent focus-visible:ring-1"/>
                                     </TableCell>
-                                    {isDriverSlip && (
+                                    {isDriverSlip ? (
                                         <>
                                             <TableCell className="border-l"><Input type="number" defaultValue={order.cod} onBlur={(e) => handleFieldUpdate(order.id, 'cod', parseFloat(e.target.value))} className="h-8 border-0 bg-transparent focus-visible:ring-1"/></TableCell>
                                             <TableCell className="border-l"><Input type="number" defaultValue={order.driverFee} onBlur={(e) => handleFieldUpdate(order.id, 'driverFee', parseFloat(e.target.value))} className="h-8 border-0 bg-transparent focus-visible:ring-1"/></TableCell>
                                         </>
-                                    )}
-                                    {!isDriverSlip && (
-                                        <TableCell className="border-l"><Input type="number" defaultValue={order.itemPrice} onBlur={(e) => handleFieldUpdate(order.id, 'itemPrice', parseFloat(e.target.value))} className="h-8 border-0 bg-transparent focus-visible:ring-1"/></TableCell>
+                                    ) : (
+                                        <>
+                                            <TableCell className="border-l"><Input type="number" readOnly defaultValue={order.cod} className="h-8 border-0 bg-transparent focus-visible:ring-0" /></TableCell>
+                                            <TableCell className="border-l"><Input type="number" readOnly defaultValue={order.deliveryFee} className="h-8 border-0 bg-transparent focus-visible:ring-0" /></TableCell>
+                                            <TableCell className="border-l"><Input type="number" readOnly defaultValue={order.itemPrice} className="h-8 border-0 bg-transparent focus-visible:ring-0" /></TableCell>
+                                            <TableCell className="border-l"><Input type="number" defaultValue={adjustment} onChange={(e) => handleAdjustmentChange(order.id, e.target.value)} className="h-8 border-0 bg-transparent focus-visible:ring-1" /></TableCell>
+                                            <TableCell className="border-l font-semibold">{formatCurrency(netAmount)}</TableCell>
+                                        </>
                                     )}
                                     <TableCell className="border-l"><Badge variant="secondary">{order.status}</Badge></TableCell>
                                     <TableCell className="text-center">
@@ -375,21 +435,24 @@ export default function FinancialSlipDetailPage() {
                                         </Button>
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )})}
                         </TableBody>
                          <TableFooter>
-                            {isDriverSlip && (
+                            {isDriverSlip ? (
                                 <TableRow className="bg-muted/50 font-bold">
                                     <TableCell colSpan={3} className="border-l">الإجمالي</TableCell>
                                     <TableCell className="border-l">{formatCurrency(totalCOD)}</TableCell>
                                     <TableCell className="border-l">{formatCurrency(totalDriverFare)}</TableCell>
                                     <TableCell colSpan={2} className="text-lg text-primary">{formatCurrency(netTotalDriver)}</TableCell>
                                 </TableRow>
-                            )}
-                            {!isDriverSlip && (
+                            ) : (
                                 <TableRow className="bg-muted/50 font-bold">
                                     <TableCell colSpan={3} className="border-l">الإجمالي</TableCell>
+                                    <TableCell className="border-l">{formatCurrency(totalCOD)}</TableCell>
+                                    <TableCell className="border-l">{formatCurrency(totalDeliveryFee)}</TableCell>
                                     <TableCell className="border-l">{formatCurrency(totalItemPrice)}</TableCell>
+                                    <TableCell className="border-l">{formatCurrency(totalAdjustments)}</TableCell>
+                                    <TableCell className="border-l text-lg text-primary">{formatCurrency(totalNetMerchant)}</TableCell>
                                     <TableCell colSpan={2}></TableCell>
                                 </TableRow>
                             )}
