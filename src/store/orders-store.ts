@@ -3,6 +3,7 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { usersStore } from './user-store';
 import { rolesStore } from './roles-store';
+import { apiSync } from '@/services/api-sync';
 
 
 const createInitialOrders = () => {
@@ -59,13 +60,16 @@ const getHighestOrderNumber = (orders: Order[]): number => {
 type OrdersState = {
   orders: Order[];
   nextOrderNumber: number;
+  isLoading: boolean;
+  error: string | null;
   setOrders: (orders: Order[]) => void;
-  updateOrderStatus: (orderId: string, newStatus: Order['status']) => void;
+  updateOrderStatus: (orderId: string, newStatus: Order['status'], driverId?: string) => Promise<void>;
   bulkUpdateOrderStatus: (orderIds: string[], newStatus: Order['status']) => void;
   updateOrderField: (orderId: string, field: keyof Order, value: any) => void;
   deleteOrders: (orderIds: string[]) => void;
   addOrder: (order: Omit<Order, 'id' | 'orderNumber' | 'previousStatus'>) => Order;
-  refreshOrders: () => void;
+  refreshOrders: () => Promise<void>;
+  loadOrdersFromAPI: () => Promise<void>;
 };
 
 const getSettings = () => {
@@ -91,6 +95,8 @@ export const ordersStore = create<OrdersState>()(immer((set, get) => {
     return {
         orders: initialOrdersWithNumbers,
         nextOrderNumber: initialOrderNumber + 1,
+        isLoading: false,
+        error: null,
         
         setOrders: (orders) => {
             const numberedOrders = orders.map((o, i) => ({ ...o, orderNumber: o.orderNumber || i + 1 }));
@@ -100,14 +106,33 @@ export const ordersStore = create<OrdersState>()(immer((set, get) => {
             });
         },
 
-        updateOrderStatus: (orderId, newStatus) =>
-            set((state) => {
-            const order = state.orders.find(o => o.id === orderId);
-            if (order) {
-                order.previousStatus = order.status;
-                order.status = newStatus;
+        updateOrderStatus: async (orderId, newStatus, driverId) => {
+            try {
+                set((state) => { state.isLoading = true; });
+                await apiSync.syncOrderStatus(orderId, newStatus, driverId);
+                set((state) => {
+                    const order = state.orders.find(o => o.id === orderId);
+                    if (order) {
+                        order.previousStatus = order.status;
+                        order.status = newStatus as any;
+                    }
+                    state.isLoading = false;
+                });
+            } catch (error) {
+                set((state) => {
+                    state.error = String(error);
+                    state.isLoading = false;
+                });
+                // Fallback to local update if API fails
+                set((state) => {
+                    const order = state.orders.find(o => o.id === orderId);
+                    if (order) {
+                        order.previousStatus = order.status;
+                        order.status = newStatus as any;
+                    }
+                });
             }
-            }),
+        },
 
         bulkUpdateOrderStatus: (orderIds, newStatus) =>
             set((state) => {
