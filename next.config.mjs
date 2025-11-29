@@ -34,7 +34,7 @@ const nextConfig = {
       },
     ],
   },
-  allowedDevOrigins: true,
+  allowedDevOrigins: [],
   experimental: {
     serverActions: {
       bodySizeLimit: '4mb',
