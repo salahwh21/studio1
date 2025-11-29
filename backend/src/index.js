@@ -76,8 +76,76 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Backend API running on http://0.0.0.0:${PORT}`);
+// ==================== Socket.IO Real-time Events ====================
+
+io.on('connection', (socket) => {
+  console.log(`✅ Client connected: ${socket.id}`);
+
+  // السائق يرسل موقعه الفعلي
+  socket.on('driver_location', async (data) => {
+    try {
+      const { driver_id, order_id, latitude, longitude } = data;
+
+      // تحديث موقع السائق في قاعدة البيانات
+      await db.query(
+        'UPDATE drivers SET current_latitude = $1, current_longitude = $2 WHERE id = $3',
+        [latitude, longitude, driver_id]
+      );
+
+      // حفظ في جدول التتبع
+      if (order_id) {
+        await db.query(
+          'INSERT INTO order_tracking (order_id, driver_latitude, driver_longitude, status) VALUES ($1, $2, $3, $4)',
+          [order_id, latitude, longitude, 'in_transit']
+        );
+      }
+
+      // بث الموقع للعملاء المتابعين للطلبية
+      io.emit(`order_tracking_${order_id}`, { 
+        driver_id, 
+        latitude, 
+        longitude, 
+        timestamp: new Date() 
+      });
+    } catch (error) {
+      console.error('Driver location error:', error);
+      socket.emit('error', { message: 'Failed to update location' });
+    }
+  });
+
+  // طلب جديد تم إنشاؤه
+  socket.on('new_order', (data) => {
+    io.emit('new_order_created', data);
+  });
+
+  // تحديث حالة الطلبية
+  socket.on('order_status_changed', (data) => {
+    io.emit(`order_status_${data.order_id}`, data);
+  });
+
+  // السائق متصل/غير متصل
+  socket.on('driver_status_changed', async (data) => {
+    try {
+      const { driver_id, is_online } = data;
+      await db.query(
+        'UPDATE drivers SET is_online = $1 WHERE id = $2',
+        [is_online, driver_id]
+      );
+      io.emit('driver_status_update', data);
+    } catch (error) {
+      console.error('Driver status error:', error);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`❌ Client disconnected: ${socket.id}`);
+  });
 });
 
-module.exports = app;
+// Start Server with Socket.IO
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Backend API running on http://0.0.0.0:${PORT}`);
+  console.log(`📡 Socket.IO server ready for real-time communication`);
+});
+
+module.exports = { app, server, io };
