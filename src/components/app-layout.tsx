@@ -49,7 +49,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     const currentUserRole = 'admin'; 
     const userRole = roles.find(r => r.id === currentUserRole);
     const userPermissions = userRole?.permissions || [];
-    const visiblePermissionIds = (settingsContext && settingsContext.settings) ? settingsContext.settings.menuVisibility[currentUserRole] : allNavItems.map(item => item.permissionId);
+    const visiblePermissionIds = (settingsContext?.settings?.menuVisibility?.[currentUserRole]) || allNavItems.map(item => item.permissionId);
 
     const hasPermission = (permissionId: string) => {
         if (!userPermissions) return false;
