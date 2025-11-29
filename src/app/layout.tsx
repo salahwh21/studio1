@@ -1,10 +1,7 @@
 
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import { Toaster } from '@/components/ui/toaster';
-import { ThemeProvider } from 'next-themes';
-import { SettingsProvider } from '@/contexts/SettingsContext';
-
+import { Providers } from '@/components/providers';
 import { Tajawal, Inter, Cairo, IBM_Plex_Sans_Arabic } from 'next/font/google';
 
 const tajawal = Tajawal({ subsets: ['latin', 'arabic'], weight: ['400', '700'], variable: '--font-tajawal' });
@@ -32,17 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${tajawal.variable} ${inter.variable} ${cairo.variable} ${ibmPlexSansArabic.variable}`}
     >
       <body>
-        <SettingsProvider>
-          <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-          >
-          {children}
-          <Toaster />
-          </ThemeProvider>
-        </SettingsProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
