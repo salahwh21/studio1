@@ -34,6 +34,13 @@ const nextConfig = {
       },
     ],
   },
+  allowedDevOrigins: ['*'],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '4mb',
+      allowedOrigins: ['*'],
+    },
+  },
 };
 
 export default nextConfig;
