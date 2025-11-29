@@ -40,8 +40,8 @@ const mobileMainItems: NavItem[] = [
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const settingsContext = useSettings();
     const [isMounted, setIsMounted] = useState(false);
+    const settingsContext = useSettings();
     
     // --- RBAC Logic ---
     const { roles } = useRolesStore();
@@ -49,7 +49,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     const currentUserRole = 'admin'; 
     const userRole = roles.find(r => r.id === currentUserRole);
     const userPermissions = userRole?.permissions || [];
-    const visiblePermissionIds = settingsContext?.settings.menuVisibility[currentUserRole] || allNavItems.map(item => item.permissionId);
+    const visiblePermissionIds = (settingsContext && settingsContext.settings) ? settingsContext.settings.menuVisibility[currentUserRole] : allNavItems.map(item => item.permissionId);
 
     const hasPermission = (permissionId: string) => {
         if (!userPermissions) return false;
@@ -72,7 +72,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
     // Apply UI settings from context to the body
     useEffect(() => {
-        if (settingsContext?.isHydrated) {
+        if (isMounted && settingsContext?.isHydrated) {
             const { density, borderRadius, iconStrokeWidth, iconLibrary } = settingsContext.settings.ui;
             document.body.dataset.density = density;
             document.documentElement.style.setProperty('--radius', `${borderRadius}rem`);
