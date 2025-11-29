@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
 
 const db = require('./config/database');
@@ -11,8 +13,18 @@ const statusesRoutes = require('./routes/statuses');
 const areasRoutes = require('./routes/areas');
 const financialsRoutes = require('./routes/financials');
 const returnsRoutes = require('./routes/returns');
+const dashboardRoutes = require('./routes/dashboard');
+const driversRoutes = require('./routes/drivers');
 
 const app = express();
+const server = createServer(app);
+const io = new Server(server, {
+  cors: { 
+    origin: process.env.FRONTEND_URL || '*',
+    credentials: true
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({
@@ -49,6 +61,8 @@ app.use('/api/statuses', statusesRoutes);
 app.use('/api/areas', areasRoutes);
 app.use('/api/financials', financialsRoutes);
 app.use('/api/returns', returnsRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/drivers', driversRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
