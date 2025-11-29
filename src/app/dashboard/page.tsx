@@ -40,6 +40,9 @@ import {
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import Icon from '@/components/icon';
 import { useSettings } from '@/contexts/SettingsContext';
+import { KPICard } from '@/components/dashboard/kpi-card';
+import { AlertsSection } from '@/components/dashboard/alerts-section';
+import { RecentActivities } from '@/components/dashboard/recent-activities';
 
 
 const chartConfig = {
@@ -72,6 +75,7 @@ export default function DashboardPage() {
     const { orders } = useOrdersStore();
 
     const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
+    const merchants = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
 
     const driverStats = useMemo(() => {
         return drivers.map(driver => {
@@ -133,18 +137,114 @@ export default function DashboardPage() {
         returned: d.returned
     }));
 
+    // حساب الإحصائيات
+    const totalRevenue = profitChartData.reduce((sum, item) => sum + (item.profit || 0), 0);
+    const completedToday = orders.filter(o => o.date === new Date().toISOString().split('T')[0] && o.status === 'تم التوصيل').length;
+    const pendingOrders = orders.filter(o => o.status === 'بالانتظار').length;
+    const activeDrivers = drivers.filter(d => driverStats.find(ds => ds.id === d.id && ds.total > 0)).length;
+
+    // التنبيهات الحرجة
+    const alerts = useMemo(() => {
+      const alertsList: any[] = [];
+      
+      if (pendingOrders > 10) {
+        alertsList.push({
+          id: '1',
+          title: 'عدد طلبات عالي',
+          description: `هناك ${pendingOrders} طلب في الانتظار`,
+          type: 'warning' as const,
+          timestamp: new Date()
+        });
+      }
+      
+      const inactiveDrivers = drivers.filter(d => {
+        const driverOrderCount = orders.filter(o => o.driver === d.name).length;
+        return driverOrderCount === 0;
+      });
+      if (inactiveDrivers.length > 0) {
+        alertsList.push({
+          id: '2',
+          title: 'سائقين غير نشطين',
+          description: `${inactiveDrivers.length} من السائقين لم يقوموا بأي مهام`,
+          type: 'info' as const,
+          timestamp: new Date()
+        });
+      }
+
+      return alertsList;
+    }, [pendingOrders, drivers, orders]);
+
+    // الأنشطة الحديثة
+    const activities = useMemo(() => {
+      const recent = orders.slice(-5).reverse().map((order, idx) => ({
+        id: `order-${idx}`,
+        user: order.merchant || 'نظام',
+        avatar: '',
+        action: 'أضاف طلبية',
+        details: `إلى ${order.recipient} في ${order.region}`,
+        timestamp: new Date(order.createdAt || new Date()),
+        type: 'order' as const
+      }));
+      return recent;
+    }, [orders]);
+
     return (
         <div className="flex flex-col gap-8">
-            <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
+              <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString('ar-JO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            </div>
+
+            {/* مؤشرات KPI الرئيسية */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <KPICard
+                title="إجمالي الإيرادات"
+                value={formatCurrency(totalRevenue)}
+                icon="TrendingUp"
+                color="text-green-500"
+                subtitle="منذ بداية اليوم"
+                trend={{ value: 12, isPositive: true }}
+              />
+              <KPICard
+                title="إجمالي الطلبات"
+                value={orders.length}
+                icon="ShoppingCart"
+                color="text-blue-500"
+                subtitle={`${completedToday} منها مكتملة اليوم`}
+              />
+              <KPICard
+                title="الطلبات المعلقة"
+                value={pendingOrders}
+                icon="Clock"
+                color="text-orange-500"
+                subtitle="بانتظار التسليم"
+                trend={{ value: 8, isPositive: false }}
+              />
+              <KPICard
+                title="السائقين النشطين"
+                value={activeDrivers}
+                icon="Truck"
+                color="text-purple-500"
+                subtitle={`من أصل ${drivers.length} سائق`}
+              />
+            </div>
+
+            {/* التنبيهات والأنشطة */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <AlertsSection alerts={alerts} />
+              </div>
+              <RecentActivities activities={activities} />
+            </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>إحصائيات عامة</CardTitle>
+                    <CardTitle>ملخص الحالات</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        <RevenueCard title="إجمالي الإيرادات" value={formatCurrency(profitChartData.reduce((sum, item) => sum + (item.profit || 0), 0))} iconName="TrendingUp" />
-                         <RevenueCard title="إجمالي الطلبات" value={orders.length} iconName="ShoppingCart" color="text-blue-500" />
+                        <RevenueCard title="الإيرادات" value={formatCurrency(totalRevenue)} iconName="TrendingUp" />
+                         <RevenueCard title="إجمالي" value={orders.length} iconName="ShoppingCart" color="text-blue-500" />
                         {Object.values(orderStatusData).map((stat) => (
                              <Button
                                 key={stat.name}
