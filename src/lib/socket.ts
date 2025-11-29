@@ -1,7 +1,19 @@
 import { io } from 'socket.io-client';
 
 // Get socket URL from environment or use localhost
-const SOCKET_URL = import.meta.env.VITE_SOCKET_IO_URL || import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
+const getSocketUrl = () => {
+  if (typeof window === 'undefined') return 'http://localhost:3001';
+  
+  const socketUrl = (globalThis as any).VITE_SOCKET_IO_URL;
+  if (socketUrl) return socketUrl;
+  
+  const apiUrl = (globalThis as any).VITE_API_URL;
+  if (apiUrl) return apiUrl.replace('/api', '');
+  
+  return 'http://localhost:3001';
+};
+
+const SOCKET_URL = getSocketUrl();
 
 export const socket = io(SOCKET_URL, {
   autoConnect: false,

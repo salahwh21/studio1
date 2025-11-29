@@ -38,6 +38,10 @@ const nextConfig = {
     '*.pike.replit.dev',
     'localhost'
   ],
+  env: {
+    VITE_API_URL: process.env.VITE_API_URL || 'http://localhost:3001/api',
+    VITE_SOCKET_IO_URL: process.env.VITE_SOCKET_IO_URL || 'http://localhost:3001',
+  },
   async headers() {
     return [
       {
@@ -45,19 +49,13 @@ const nextConfig = {
         headers: [
           {
             key: "Access-Control-Allow-Origin",
-            value: "https://61d3aebb-18f7-456b-bc47-a9278154b11b-00-2jw4z6d864bdc.pike.replit.dev"
+            value: "*"
           },
-          { key: "Access-Control-Allow-Methods", value: "GET,POST,PUT,DELETE,OPTIONS" },
+          { key: "Access-Control-Allow-Methods", value: "GET,POST,PUT,DELETE,OPTIONS,PATCH" },
           { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" }
         ]
       }
     ];
-  },
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '4mb',
-      allowedOrigins: ['*'],
-    },
   },
 };
 
