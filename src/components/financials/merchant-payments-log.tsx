@@ -83,7 +83,6 @@ export const MerchantPaymentsLog = () => {
             pdf.save(`${slip.merchantName}_${today}.pdf`);
             
         } catch (error) {
-            console.error("Error generating PDF:", error);
             toast({ variant: 'destructive', title: 'خطأ', description: 'حدث خطأ أثناء إنشاء ملف PDF.' });
         } finally {
             setIsExporting(null);
