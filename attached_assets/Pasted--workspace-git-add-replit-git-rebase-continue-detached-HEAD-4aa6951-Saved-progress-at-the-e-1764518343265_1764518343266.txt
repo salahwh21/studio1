@@ -1,0 +1,36 @@
+~/workspace$ git add .replit
+git rebase --continue
+[detached HEAD 4aa6951] Saved progress at the end of the loop
+ Author: abuahmad21 <49499133-abuahmad21@users.noreply.replit.com>
+ 1 file changed, 71 insertions(+)
+ create mode 100644 .replit
+Auto-merging package.json
+CONFLICT (modify/delete): yarn.lock deleted in HEAD and modified in 83ed884 (Add PDF generation and manipulation capabilities to the application).  Version 83ed884 (Add PDF generation and manipulation capabilities to the application) of yarn.lock left in tree.
+error: could not apply 83ed884... Add PDF generation and manipulation capabilities to the application
+hint: Resolve all conflicts manually, mark them as resolved with
+hint: "git add/rm <conflicted_files>", then run "git rebase --continue".
+hint: You can instead skip this commit: run "git rebase --skip".
+hint: To abort and get back to the state before "git rebase", run "git rebase --abort".
+hint: Disable this message with "git config set advice.mergeConflict false"
+Could not apply 83ed884... # Add PDF generation and manipulation capabilities to the application
+~/workspace$ git rebase --skip
+Auto-merging .replit
+CONFLICT (content): Merge conflict in .replit
+error: could not apply 4d2adab... Saved progress at the end of the loop
+hint: Resolve all conflicts manually, mark them as resolved with
+hint: "git add/rm <conflicted_files>", then run "git rebase --continue".
+hint: You can instead skip this commit: run "git rebase --skip".
+hint: To abort and get back to the state before "git rebase", run "git rebase --abort".
+hint: Disable this message with "git config set advice.mergeConflict false"
+Could not apply 4d2adab... # Saved progress at the end of the loop
+~/workspace$ git rebase --abort
+git merge origin/main
+error: The following untracked working tree files would be overwritten by reset:
+    replit.md
+Please move or remove them before you reset.
+Aborting
+fatal: could not move back to 49533a95537570c806b15e35f385d55e5b36a11d
+Already up to date.
+~/workspace$ cd frontend && npm install
+bash: cd: frontend: No such file or directory
+~/workspace$ 
