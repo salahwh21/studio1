@@ -5,6 +5,181 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
+// New Statistics API Endpoints
+
+// Driver Statistics
+router.get('/driver-statistics/:driverName', authenticateToken, async (req, res) => {
+  try {
+    const { driverName } = req.params;
+    const { period = 'today' } = req.query;
+    
+    let dateFilter = '';
+    if (period === 'today') {
+      dateFilter = `DATE(created_at) = CURRENT_DATE`;
+    } else if (period === 'week') {
+      dateFilter = `created_at >= CURRENT_DATE - INTERVAL '7 days'`;
+    } else if (period === 'month') {
+      dateFilter = `created_at >= CURRENT_DATE - INTERVAL '30 days'`;
+    }
+
+    const statsResult = await db.query(`
+      SELECT 
+        COUNT(*) as total_orders,
+        SUM(CASE WHEN status = 'تم التوصيل' THEN 1 ELSE 0 END) as delivered_orders,
+        SUM(driver_fee)::DECIMAL(10,2) as total_earnings,
+        SUM(driver_additional_fare)::DECIMAL(10,2) as additional_fare,
+        AVG(EXTRACT(EPOCH FROM (updated_at - created_at))/3600)::DECIMAL(5,2) as avg_delivery_time_hours
+      FROM orders 
+      WHERE driver = $1 AND ${dateFilter}
+    `, [driverName]);
+
+    const stats = statsResult.rows[0] || {};
+    const successRate = stats.total_orders > 0 ? ((stats.delivered_orders / stats.total_orders) * 100).toFixed(2) : 0;
+
+    res.json({
+      driverName,
+      period,
+      totalOrders: parseInt(stats.total_orders) || 0,
+      deliveredOrders: parseInt(stats.delivered_orders) || 0,
+      totalEarnings: parseFloat(stats.total_earnings) || 0,
+      additionalFare: parseFloat(stats.additional_fare) || 0,
+      successRate: parseFloat(successRate),
+      avgDeliveryTimeHours: parseFloat(stats.avg_delivery_time_hours) || 0
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Merchant Statistics
+router.get('/merchant-statistics/:merchantName', authenticateToken, async (req, res) => {
+  try {
+    const { merchantName } = req.params;
+    const { period = 'month' } = req.query;
+
+    let dateFilter = '';
+    if (period === 'week') {
+      dateFilter = `created_at >= CURRENT_DATE - INTERVAL '7 days'`;
+    } else if (period === 'month') {
+      dateFilter = `created_at >= CURRENT_DATE - INTERVAL '30 days'`;
+    }
+
+    const statsResult = await db.query(`
+      SELECT 
+        COUNT(*) as total_orders,
+        SUM(CASE WHEN status = 'تم التوصيل' THEN 1 ELSE 0 END) as delivered_orders,
+        SUM(CASE WHEN status = 'راجع' THEN 1 ELSE 0 END) as returned_orders,
+        SUM(cod)::DECIMAL(10,2) as total_revenue,
+        AVG(EXTRACT(EPOCH FROM (updated_at - created_at))/86400)::DECIMAL(5,2) as avg_delivery_days
+      FROM orders 
+      WHERE merchant = $1 AND ${dateFilter}
+    `, [merchantName]);
+
+    const stats = statsResult.rows[0] || {};
+    const successRate = stats.total_orders > 0 ? ((stats.delivered_orders / stats.total_orders) * 100).toFixed(2) : 0;
+    const returnRate = stats.total_orders > 0 ? ((stats.returned_orders / stats.total_orders) * 100).toFixed(2) : 0;
+
+    res.json({
+      merchantName,
+      period,
+      totalOrders: parseInt(stats.total_orders) || 0,
+      deliveredOrders: parseInt(stats.delivered_orders) || 0,
+      returnedOrders: parseInt(stats.returned_orders) || 0,
+      totalRevenue: parseFloat(stats.total_revenue) || 0,
+      successRate: parseFloat(successRate),
+      returnRate: parseFloat(returnRate),
+      avgDeliveryDays: parseFloat(stats.avg_delivery_days) || 0
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Period Comparison
+router.get('/comparison/:driverName', authenticateToken, async (req, res) => {
+  try {
+    const { driverName } = req.params;
+
+    const currentResult = await db.query(`
+      SELECT 
+        COUNT(*) as orders,
+        SUM(driver_fee)::DECIMAL(10,2) as earnings,
+        SUM(CASE WHEN status = 'تم التوصيل' THEN 1 ELSE 0 END) as delivered
+      FROM orders 
+      WHERE driver = $1 AND created_at >= CURRENT_DATE - INTERVAL '30 days'
+    `, [driverName]);
+
+    const previousResult = await db.query(`
+      SELECT 
+        COUNT(*) as orders,
+        SUM(driver_fee)::DECIMAL(10,2) as earnings,
+        SUM(CASE WHEN status = 'تم التوصيل' THEN 1 ELSE 0 END) as delivered
+      FROM orders 
+      WHERE driver = $1 AND created_at >= CURRENT_DATE - INTERVAL '60 days' 
+        AND created_at < CURRENT_DATE - INTERVAL '30 days'
+    `, [driverName]);
+
+    const current = currentResult.rows[0] || { orders: 0, earnings: 0 };
+    const previous = previousResult.rows[0] || { orders: 0, earnings: 0 };
+
+    const growthOrders = previous.orders > 0 ? (((current.orders - previous.orders) / previous.orders) * 100).toFixed(2) : 0;
+    const growthEarnings = previous.earnings > 0 ? (((current.earnings - previous.earnings) / previous.earnings) * 100).toFixed(2) : 0;
+
+    res.json({
+      current: {
+        orders: parseInt(current.orders),
+        earnings: parseFloat(current.earnings),
+        delivered: parseInt(current.delivered)
+      },
+      previous: {
+        orders: parseInt(previous.orders),
+        earnings: parseFloat(previous.earnings),
+        delivered: parseInt(previous.delivered)
+      },
+      growth: {
+        orders: `${growthOrders > 0 ? '+' : ''}${growthOrders}%`,
+        earnings: `${growthEarnings > 0 ? '+' : ''}${growthEarnings}%`
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Fee Breakdown
+router.get('/fee-breakdown/:driverName', authenticateToken, async (req, res) => {
+  try {
+    const { driverName } = req.params;
+
+    const breakdownResult = await db.query(`
+      SELECT 
+        SUM(driver_fee)::DECIMAL(10,2) as delivery_fees,
+        SUM(driver_additional_fare)::DECIMAL(10,2) as additional_fares,
+        COUNT(*) as total_items
+      FROM orders 
+      WHERE driver = $1 AND status = 'تم التوصيل'
+    `, [driverName]);
+
+    const breakdown = breakdownResult.rows[0] || {};
+    const deliveryFees = parseFloat(breakdown.delivery_fees) || 0;
+    const additionalFares = parseFloat(breakdown.additional_fares) || 0;
+    const netTotal = deliveryFees + additionalFares;
+
+    res.json({
+      driverName,
+      deliveryFees,
+      additionalFares,
+      penalties: 0,
+      bonuses: 0,
+      netTotal,
+      totalItems: parseInt(breakdown.total_items) || 0
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Original Driver Payments (kept for compatibility)
 router.get('/driver-payments', authenticateToken, async (req, res) => {
   try {
     const { page = 0, limit = 20, driverName, dateFrom, dateTo } = req.query;
