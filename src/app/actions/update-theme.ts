@@ -122,10 +122,6 @@ export async function updateThemeAction(formData: FormData) {
                 const regex = new RegExp(`(${cssVar}:\\s*)[\\d\\s%\\.]+;`, 'g');
                 if (cssContent.match(regex)) {
                     cssContent = cssContent.replace(regex, `$1${item.hsl};`);
-                } else {
-                    // This is a fallback if the variable is somehow not in the file.
-                    // It's less safe but can prevent crashes.
-                    console.warn(`CSS variable ${cssVar} not found, could not apply update.`);
                 }
             });
         }
@@ -147,7 +143,6 @@ export async function updateThemeAction(formData: FormData) {
     
     return { success: true };
   } catch (error) {
-    console.error('Error updating theme:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to update theme file(s).';
     return { success: false, error: errorMessage };
   }

@@ -34,7 +34,6 @@ export async function optimizeRouteAction(validatedData: z.infer<typeof formSche
       success: true,
     };
   } catch (error: any) {
-    console.error('Error in optimizeRouteAction action:', error);
     return {
       data: null,
       error: error.message || 'Failed to optimize route from the AI model.',

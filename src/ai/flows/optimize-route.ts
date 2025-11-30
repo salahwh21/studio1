@@ -58,7 +58,6 @@ const optimizeRouteFlow = ai.defineFlow(
       const { output } = await prompt(input);
       return output!;
     } catch (e) {
-      console.error('Error optimizing route:', e);
       throw e;
     }
   }

@@ -78,7 +78,6 @@ const customerServiceAgentFlow = ai.defineFlow(
       const { output } = await prompt(input);
       return output!;
     } catch (e) {
-      console.error('Error generating customer service response:', e);
       throw e;
     }
   }

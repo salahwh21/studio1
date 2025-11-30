@@ -38,7 +38,6 @@ export async function parseOrderFromRequest(prevState: State, formData: FormData
       message: 'Order parsed successfully.',
     };
   } catch (error: any) {
-    console.error('Error in parseOrderFromRequest action:', error);
     return {
       data: null,
       error: error.message || 'Failed to parse order details from the AI model.',

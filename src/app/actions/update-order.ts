@@ -23,7 +23,6 @@ export async function updateOrderAction(validatedData: z.infer<typeof updateSche
     
     return { success: true };
   } catch (error: any) {
-    console.error('Error in updateOrderAction:', error);
     return {
       success: false,
       error: error.message || 'Failed to update order.',

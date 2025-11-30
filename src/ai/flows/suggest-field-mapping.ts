@@ -76,7 +76,6 @@ const suggestFieldMappingFlow = ai.defineFlow(
       const { output } = await prompt(input);
       return output!;
     } catch (e) {
-      console.error('Error suggesting field mapping:', e);
       throw e;
     }
   }

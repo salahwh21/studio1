@@ -59,7 +59,6 @@ export async function suggestMappingAction(prevState: State, formData: FormData)
       success: true,
     };
   } catch (error: any) {
-    console.error('Error in suggestMappingAction:', error);
     return {
       data: null,
       error: error.message || 'Failed to get suggestions from the AI model.',

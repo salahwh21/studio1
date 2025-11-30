@@ -21,7 +21,6 @@ export async function generateCsResponseAction(validatedData: z.infer<typeof Gen
       success: true,
     };
   } catch (error: any) {
-    console.error('Error in generateCsResponseAction:', error);
     return {
       data: null,
       error: error.message || 'Failed to get a response from the AI model.',
