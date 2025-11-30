@@ -8,7 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import Icon from '../icon';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useSettings } from '@/contexts/SettingsContext';
-import apiClient from '@/lib/api';
+const API_URL = typeof window !== 'undefined' 
+  ? ((globalThis as any).VITE_API_URL || 'http://localhost:3001/api')
+  : 'http://localhost:3001/api';
 
 interface DriverStats {
   driverName: string;
@@ -51,14 +53,18 @@ export const DriverDashboard = ({ driverName }: { driverName: string }) => {
         setLoading(true);
         
         const [statsRes, compRes, feeRes] = await Promise.all([
-          apiClient.get(`/api/financials/driver-statistics/${driverName}?period=${period}`),
-          apiClient.get(`/api/financials/comparison/${driverName}`),
-          apiClient.get(`/api/financials/fee-breakdown/${driverName}`)
+          fetch(`${API_URL}/financials/driver-statistics/${driverName}?period=${period}`),
+          fetch(`${API_URL}/financials/comparison/${driverName}`),
+          fetch(`${API_URL}/financials/fee-breakdown/${driverName}`)
         ]);
 
-        setStats(statsRes.data);
-        setComparison(compRes.data);
-        setFeeBreakdown(feeRes.data);
+        const statsData = statsRes.ok ? await statsRes.json() : null;
+        const compData = compRes.ok ? await compRes.json() : null;
+        const feeData = feeRes.ok ? await feeRes.json() : null;
+
+        setStats(statsData);
+        setComparison(compData);
+        setFeeBreakdown(feeData);
       } catch (error) {
       } finally {
         setLoading(false);

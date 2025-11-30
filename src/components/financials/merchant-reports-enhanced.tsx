@@ -8,7 +8,10 @@ import { Button } from '@/components/ui/button';
 import Icon from '../icon';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useSettings } from '@/contexts/SettingsContext';
-import apiClient from '@/lib/api';
+
+const API_URL = typeof window !== 'undefined' 
+  ? ((globalThis as any).VITE_API_URL || 'http://localhost:3001/api')
+  : 'http://localhost:3001/api';
 
 interface MerchantStats {
   merchantName: string;
@@ -32,8 +35,9 @@ export const MerchantReportsEnhanced = ({ merchantName }: { merchantName: string
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await apiClient.get(`/api/financials/merchant-statistics/${merchantName}?period=${period}`);
-        setStats(res.data);
+        const res = await fetch(`${API_URL}/financials/merchant-statistics/${merchantName}?period=${period}`);
+        const data = res.ok ? await res.json() : null;
+        setStats(data);
       } catch (error) {
       } finally {
         setLoading(false);
