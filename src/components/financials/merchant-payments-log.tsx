@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -12,8 +12,10 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { flushSync } from 'react-dom';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { exportToPDF, type PDFExportOptions } from '@/lib/pdf-export-utils';
+import * as XLSX from 'xlsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 
 
 export const MerchantPaymentsLog = () => {
@@ -23,6 +25,9 @@ export const MerchantPaymentsLog = () => {
     const [isExporting, setIsExporting] = useState<string | null>(null);
     const slipPrintRef = useRef<HTMLDivElement>(null);
     const [slipToPrint, setSlipToPrint] = useState<MerchantPaymentSlip | null>(null);
+    const [filterMerchant, setFilterMerchant] = useState<string>('all');
+    const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [searchQuery, setSearchQuery] = useState('');
 
 
     const handlePrint = (slip: MerchantPaymentSlip) => {
@@ -51,42 +56,54 @@ export const MerchantPaymentsLog = () => {
      const handleDownloadPdf = async (slip: MerchantPaymentSlip) => {
         if (!slip) return;
         setIsExporting(slip.id);
-        
-        flushSync(() => {
-            setSlipToPrint(slip);
-        });
-
-        const slipContainer = slipPrintRef.current?.querySelector('.slip-container');
-
-        if (!slipContainer) {
-            toast({ variant: 'destructive', title: 'فشل التنزيل', description: 'لم يتم العثور على محتوى للتصدير.' });
-            setIsExporting(null);
-            return;
-        }
 
         try {
-            const canvas = await html2canvas(slipContainer as HTMLElement, { scale: 3, useCORS: true });
-            const imgData = canvas.toDataURL('image/jpeg', 0.95);
-            
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a4'
+            const totalCod = slip.orders.reduce((sum, o) => sum + (o.cod || 0), 0);
+            const totalDelivery = slip.orders.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
+            const totalNet = slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
+            const slipDate = new Date(slip.date).toLocaleDateString('ar-EG', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
             });
+            const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
 
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            const headers = ['#', 'رقم الطلب', 'المستلم', 'قيمة التحصيل', 'أجور التوصيل', 'الصافي المستحق'];
             
+            const rows = slip.orders.map((o, i) => [
+                (i + 1).toString(),
+                o.id,
+                o.recipient,
+                formatCurrency(o.cod || 0),
+                formatCurrency(o.deliveryFee || 0),
+                formatCurrency(o.itemPrice || 0),
+            ]);
+
+            const footerRow = ['الإجمالي', '', '', formatCurrency(totalCod), formatCurrency(totalDelivery), formatCurrency(totalNet)];
+
+            const pdfOptions: PDFExportOptions = {
+                title: `كشف دفع للتاجر: ${slip.merchantName}`,
+                subtitle: `رقم الكشف: ${slip.id}`,
+                logoUrl,
+                companyName: settings.login.companyName || 'الشركة',
+                date: slipDate,
+                tableHeaders: headers,
+                tableRows: rows,
+                footerRow,
+                showSignatures: true,
+                signatureLabels: ['توقيع المستلم (التاجر)', 'توقيع الموظف المالي'],
+                orientation: 'portrait' // Use portrait for single slip
+            };
+
             const today = new Date().toISOString().split('T')[0];
-            pdf.save(`${slip.merchantName}_${today}.pdf`);
+            const fileName = `${slip.merchantName}_${today}.pdf`;
+            await exportToPDF(pdfOptions, fileName);
             
         } catch (error) {
+            console.error('PDF export error:', error);
             toast({ variant: 'destructive', title: 'خطأ', description: 'حدث خطأ أثناء إنشاء ملف PDF.' });
         } finally {
             setIsExporting(null);
-            setSlipToPrint(null);
         }
     };
     
@@ -166,74 +183,334 @@ export const MerchantPaymentsLog = () => {
         )
     }
 
+    const merchants = useMemo(() => Array.from(new Set(merchantPaymentSlips.map(s => s.merchantName))), [merchantPaymentSlips]);
+
+    const filteredSlips = useMemo(() => {
+        return merchantPaymentSlips.filter(slip => {
+            const matchesMerchant = filterMerchant === 'all' || slip.merchantName === filterMerchant;
+            const matchesStatus = filterStatus === 'all' || slip.status === filterStatus;
+            const matchesSearch = searchQuery === '' || 
+                slip.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                slip.merchantName.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesMerchant && matchesStatus && matchesSearch;
+        });
+    }, [merchantPaymentSlips, filterMerchant, filterStatus, searchQuery]);
+
+    const totalStats = useMemo(() => {
+        return filteredSlips.reduce((acc, slip) => {
+            const totalAmount = slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
+            acc.totalAmount += totalAmount;
+            acc.totalOrders += slip.itemCount;
+            return acc;
+        }, { totalAmount: 0, totalOrders: 0 });
+    }, [filteredSlips]);
+
+    const handleExportExcel = () => {
+        if (filteredSlips.length === 0) {
+            toast({ variant: 'destructive', title: 'خطأ', description: 'لا توجد كشوفات للتصدير.' });
+            return;
+        }
+
+        try {
+            const data = filteredSlips.map(slip => {
+                const totalAmount = slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
+                return {
+                    'رقم الكشف': slip.id,
+                    'اسم التاجر': slip.merchantName,
+                    'تاريخ الإنشاء': new Date(slip.date).toLocaleDateString('ar-EG'),
+                    'عدد الطلبات': slip.itemCount,
+                    'المبلغ الإجمالي': totalAmount,
+                    'الحالة': slip.status,
+                };
+            });
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'دفعات التجار');
+
+            const fileName = `دفعات_التجار_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+
+            toast({
+                title: 'تم التصدير بنجاح',
+                description: `تم تصدير ${filteredSlips.length} كشف إلى ملف Excel.`
+            });
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'خطأ في التصدير',
+                description: 'حدث خطأ أثناء تصدير البيانات.'
+            });
+        }
+    };
+
+    const handleExportPDF = () => {
+        if (filteredSlips.length === 0) {
+            toast({ variant: 'destructive', title: 'خطأ', description: 'لا توجد كشوفات للتصدير.' });
+            return;
+        }
+
+        try {
+            const doc = new jsPDF('l', 'mm', 'a4');
+            
+            doc.setFontSize(18);
+            doc.text('سجل دفعات التجار', 14, 15);
+            
+            doc.setFontSize(12);
+            doc.text(`التاريخ: ${new Date().toLocaleDateString('ar-EG')}`, 14, 22);
+            doc.text(`عدد الكشوفات: ${filteredSlips.length}`, 14, 28);
+
+            const tableData = filteredSlips.map(slip => {
+                const totalAmount = slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
+                return [
+                    slip.id,
+                    slip.merchantName,
+                    new Date(slip.date).toLocaleDateString('ar-EG'),
+                    slip.itemCount.toString(),
+                    formatCurrency(totalAmount),
+                    slip.status,
+                ];
+            });
+
+            (doc as any).autoTable({
+                head: [['رقم الكشف', 'اسم التاجر', 'تاريخ الإنشاء', 'عدد الطلبات', 'المبلغ الإجمالي', 'الحالة']],
+                body: tableData,
+                startY: 35,
+                styles: { font: 'Arial', fontSize: 9, halign: 'right' },
+                headStyles: { fillColor: [66, 139, 202], textColor: 255, fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [245, 245, 245] },
+                margin: { top: 35 },
+            });
+
+            const fileName = `دفعات_التجار_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+
+            toast({
+                title: 'تم التصدير بنجاح',
+                description: `تم تصدير ${filteredSlips.length} كشف إلى ملف PDF.`
+            });
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'خطأ في التصدير',
+                description: 'حدث خطأ أثناء تصدير البيانات.'
+            });
+        }
+    };
+
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <CardTitle>سجل دفعات التجار</CardTitle>
-                        <CardDescription>
-                            عرض وطباعة وتأكيد كشوفات الدفع التي تم إنشاؤها للتجار.
-                        </CardDescription>
+        <div className="space-y-6">
+            <Card className="border-2 shadow-sm">
+                <CardHeader className="pb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="p-2 rounded-lg bg-primary/10">
+                                    <Icon name="Receipt" className="h-5 w-5 text-primary" />
+                                </div>
+                                <CardTitle>سجل دفعات التجار</CardTitle>
+                            </div>
+                            <CardDescription>
+                                عرض وطباعة وتأكيد كشوفات الدفع التي تم إنشاؤها للتجار
+                            </CardDescription>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <div className="relative w-full sm:w-auto sm:min-w-[200px]">
+                                <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    placeholder="بحث..."
+                                    className="pr-10"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                            <Select value={filterMerchant || 'all'} onValueChange={setFilterMerchant}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="فلترة حسب التاجر" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">كل التجار</SelectItem>
+                                    {merchants.map(merchant => (
+                                        <SelectItem key={merchant} value={merchant}>{merchant}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select value={filterStatus || 'all'} onValueChange={setFilterStatus}>
+                                <SelectTrigger className="w-[150px]">
+                                    <SelectValue placeholder="فلترة حسب الحالة" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">كل الحالات</SelectItem>
+                                    <SelectItem value="جاهز للتسليم">جاهز للتسليم</SelectItem>
+                                    <SelectItem value="مدفوع">مدفوع</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={handleExportExcel}
+                                className="gap-2"
+                                disabled={filteredSlips.length === 0}
+                            >
+                                <Icon name="FileSpreadsheet" className="h-4 w-4"/>
+                                <span className="hidden sm:inline">تصدير Excel</span>
+                                <span className="sm:hidden">Excel</span>
+                            </Button>
+                            <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={handleExportPDF}
+                                className="gap-2"
+                                disabled={filteredSlips.length === 0}
+                            >
+                                <Icon name="FileText" className="h-4 w-4"/>
+                                <span className="hidden sm:inline">تصدير PDF</span>
+                                <span className="sm:hidden">PDF</span>
+                            </Button>
+                        </div>
                     </div>
-                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="text-center border-l">رقم الكشف</TableHead>
-                            <TableHead className="text-center border-l">اسم التاجر</TableHead>
-                            <TableHead className="text-center border-l">تاريخ الدفعة</TableHead>
-                            <TableHead className="text-center border-l">المبلغ الإجمالي</TableHead>
-                            <TableHead className="text-center border-l">الحالة</TableHead>
-                            <TableHead className="text-center">إجراءات</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {merchantPaymentSlips.length === 0 ? (
-                             <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center">لم يتم إنشاء أي كشوفات دفع للتجار بعد.</TableCell>
-                            </TableRow>
-                        ) : (
-                            merchantPaymentSlips.map(payment => (
-                                <TableRow key={payment.id}>
-                                    <TableCell className="text-center border-l font-mono">
-                                        <Link href={`/dashboard/financials/slips/${payment.id}`} className="text-primary hover:underline">
-                                            {payment.id}
-                                        </Link>
-                                    </TableCell>
-                                    <TableCell className="text-center border-l">{payment.merchantName}</TableCell>
-                                    <TableCell className="text-center border-l">{new Date(payment.date).toLocaleDateString('ar-EG')}</TableCell>
-                                    <TableCell className="text-center border-l font-bold">{formatCurrency(payment.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0))}</TableCell>
-                                    <TableCell className="text-center border-l">
-                                        <Badge className={payment.status === 'مدفوع' ? 'bg-green-100 text-green-800' : ''}>{payment.status}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-center flex gap-2 justify-center">
-                                         <Button variant="outline" size="sm" onClick={() => handlePrint(payment)}>
-                                            <Icon name="Printer" className="ml-2 h-4 w-4" />
-                                            طباعة
-                                        </Button>
-                                         <Button variant="outline" size="sm" onClick={() => handleDownloadPdf(payment)} disabled={isExporting === payment.id}>
-                                            <Icon name={isExporting === payment.id ? "Loader2" : "FileDown"} className="ml-2 h-4 w-4" />
-                                            تنزيل PDF
-                                        </Button>
-                                    </TableCell>
+                </CardHeader>
+                <CardContent>
+                    {/* إحصائيات سريعة */}
+                    {filteredSlips.length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                            <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20 border border-blue-200 dark:border-blue-900">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="Receipt" className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                    <span className="text-xs font-medium text-blue-700 dark:text-blue-300">عدد الكشوفات</span>
+                                </div>
+                                <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                                    {filteredSlips.length}
+                                </div>
+                            </div>
+                            <div className="p-4 rounded-lg bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/20 border border-emerald-200 dark:border-emerald-900">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="ShoppingCart" className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">إجمالي الطلبات</span>
+                                </div>
+                                <div className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
+                                    {totalStats.totalOrders}
+                                </div>
+                            </div>
+                            <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20 border border-purple-200 dark:border-purple-900">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="Banknote" className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                    <span className="text-xs font-medium text-purple-700 dark:text-purple-300">إجمالي المبلغ</span>
+                                </div>
+                                <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+                                    {formatCurrency(totalStats.totalAmount)}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    <div className="overflow-x-auto rounded-lg border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="bg-muted/50">
+                                    <TableHead className="text-center border-l">رقم الكشف</TableHead>
+                                    <TableHead className="text-center border-l">اسم التاجر</TableHead>
+                                    <TableHead className="text-center border-l">تاريخ الدفعة</TableHead>
+                                    <TableHead className="text-center border-l">عدد الطلبات</TableHead>
+                                    <TableHead className="text-center border-l">المبلغ الإجمالي</TableHead>
+                                    <TableHead className="text-center border-l">الحالة</TableHead>
+                                    <TableHead className="text-center">إجراءات</TableHead>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </CardContent>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredSlips.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="h-24 text-center">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <Icon name="Receipt" className="h-12 w-12 text-muted-foreground opacity-50" />
+                                                <p className="text-muted-foreground font-medium">لم يتم العثور على أي كشوفات تطابق الفلاتر المحددة</p>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    filteredSlips.map(payment => {
+                                        const totalAmount = payment.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
+                                        return (
+                                            <TableRow key={payment.id} className="hover:bg-muted/30">
+                                                <TableCell className="text-center border-l font-mono">
+                                                    <Link 
+                                                        href={`/dashboard/financials/slips/${payment.id}`} 
+                                                        className="text-primary hover:underline font-semibold"
+                                                    >
+                                                        {payment.id}
+                                                    </Link>
+                                                </TableCell>
+                                                <TableCell className="text-center border-l font-semibold">{payment.merchantName}</TableCell>
+                                                <TableCell className="text-center border-l">
+                                                    <div className="flex flex-col">
+                                                        <span>{new Date(payment.date).toLocaleDateString('ar-EG')}</span>
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {new Date(payment.date).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-center border-l">
+                                                    <Badge variant="secondary">{payment.itemCount}</Badge>
+                                                </TableCell>
+                                                <TableCell className="text-center border-l font-bold">{formatCurrency(totalAmount)}</TableCell>
+                                                <TableCell className="text-center border-l">
+                                                    <Badge 
+                                                        className={payment.status === 'مدفوع' 
+                                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400' 
+                                                            : 'bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400'
+                                                        }
+                                                    >
+                                                        {payment.status}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <Button 
+                                                            variant="outline" 
+                                                            size="sm" 
+                                                            onClick={() => handlePrint(payment)}
+                                                            className="gap-2"
+                                                        >
+                                                            <Icon name="Printer" className="h-4 w-4" />
+                                                            <span className="hidden sm:inline">طباعة</span>
+                                                        </Button>
+                                                        <Button 
+                                                            variant="outline" 
+                                                            size="sm" 
+                                                            onClick={() => handleDownloadPdf(payment)} 
+                                                            disabled={isExporting === payment.id}
+                                                            className="gap-2"
+                                                        >
+                                                            <Icon name={isExporting === payment.id ? "Loader2" : "FileDown"} className="h-4 w-4" />
+                                                            <span className="hidden sm:inline">PDF</span>
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            asChild
+                                                            className="h-8 w-8 p-0"
+                                                        >
+                                                            <Link href={`/dashboard/financials/slips/${payment.id}`}>
+                                                                <Icon name="Eye" className="h-4 w-4" />
+                                                            </Link>
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
             {/* Hidden div for printing/exporting, positioned off-screen */}
-             <div style={{ position: 'absolute', right: '-9999px', top: '-9999px' }}>
+            <div style={{ position: 'absolute', right: '-9999px', top: '-9999px' }}>
                 <div ref={slipPrintRef}>
                     {slipToPrint && <SlipHTML slip={slipToPrint} />}
                 </div>
             </div>
-        </Card>
+        </div>
     );
 }

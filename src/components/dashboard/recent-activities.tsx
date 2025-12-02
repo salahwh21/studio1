@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Icon from '@/components/icon';
+import { cn } from '@/lib/utils';
 
 interface Activity {
   id: string;
@@ -18,6 +19,29 @@ interface RecentActivitiesProps {
   activities: Activity[];
 }
 
+const activityStyles = {
+  order: {
+    bg: 'bg-blue-50 dark:bg-blue-950/20',
+    icon: 'text-blue-600 dark:text-blue-400',
+    iconBg: 'bg-blue-100 dark:bg-blue-900/50',
+  },
+  user: {
+    bg: 'bg-purple-50 dark:bg-purple-950/20',
+    icon: 'text-purple-600 dark:text-purple-400',
+    iconBg: 'bg-purple-100 dark:bg-purple-900/50',
+  },
+  driver: {
+    bg: 'bg-emerald-50 dark:bg-emerald-950/20',
+    icon: 'text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-emerald-100 dark:bg-emerald-900/50',
+  },
+  system: {
+    bg: 'bg-gray-50 dark:bg-gray-900/50',
+    icon: 'text-gray-600 dark:text-gray-400',
+    iconBg: 'bg-gray-100 dark:bg-gray-800/50',
+  },
+};
+
 export function RecentActivities({ activities }: RecentActivitiesProps) {
   const getActivityIcon = (type: Activity['type']) => {
     const icons: Record<Activity['type'], string> = {
@@ -29,56 +53,77 @@ export function RecentActivities({ activities }: RecentActivitiesProps) {
     return icons[type];
   };
 
-  const getActivityColor = (type: Activity['type']) => {
-    const colors: Record<Activity['type'], string> = {
-      order: 'bg-blue-100 text-blue-600',
-      user: 'bg-purple-100 text-purple-600',
-      driver: 'bg-green-100 text-green-600',
-      system: 'bg-gray-100 text-gray-600'
-    };
-    return colors[type];
+  const formatTime = (timestamp: Date) => {
+    const minutes = Math.floor((Date.now() - timestamp.getTime()) / 60000);
+    if (minutes < 1) return 'الآن';
+    if (minutes < 60) return `منذ ${minutes} دقيقة`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `منذ ${hours} ساعة`;
+    const days = Math.floor(hours / 24);
+    return `منذ ${days} يوم`;
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="border-2">
+      <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2">
-          <Icon name="Activity" className="h-5 w-5" />
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Icon name="Activity" className="h-5 w-5 text-primary" />
+          </div>
           الأنشطة الحديثة
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4 max-h-96 overflow-y-auto">
+        <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
           {activities.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>لا توجد أنشطة حالية</p>
+            <div className="text-center py-12">
+              <div className="inline-flex p-4 rounded-full bg-muted mb-4">
+                <Icon name="Activity" className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="font-medium text-muted-foreground">لا توجد أنشطة حالية</p>
+              <p className="text-sm text-muted-foreground mt-1">سيتم عرض الأنشطة هنا عند حدوثها</p>
             </div>
           ) : (
-            activities.map((activity) => (
-              <div key={activity.id} className="flex items-start gap-3 pb-3 border-b last:border-b-0">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={activity.avatar} alt={activity.user} />
-                  <AvatarFallback>{activity.user.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">
-                        {activity.user}
-                        <span className="text-muted-foreground font-normal"> {activity.action}</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{activity.details}</p>
+            activities.map((activity) => {
+              const styles = activityStyles[activity.type];
+              
+              return (
+                <div 
+                  key={activity.id} 
+                  className={cn(
+                    "flex items-start gap-3 p-3 rounded-lg border transition-all hover:shadow-sm",
+                    styles.bg,
+                    "border-border"
+                  )}
+                >
+                  <div className={cn("p-2 rounded-lg flex-shrink-0", styles.iconBg)}>
+                    <Icon 
+                      name={getActivityIcon(activity.type) as any} 
+                      className={cn("h-4 w-4", styles.icon)} 
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold">
+                          {activity.user}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {activity.action}
+                        </p>
+                      </div>
                     </div>
-                    <div className={`p-1.5 rounded-md ${getActivityColor(activity.type)}`}>
-                      <Icon name={getActivityIcon(activity.type)} className="h-3.5 w-3.5" />
+                    <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                      {activity.details}
+                    </p>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Icon name="Clock" className="h-3 w-3" />
+                      <span>{formatTime(activity.timestamp)}</span>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    منذ {Math.floor((Date.now() - activity.timestamp.getTime()) / 60000)} دقيقة
-                  </p>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </CardContent>
