@@ -27,13 +27,6 @@ import { ModalState, OrderSource } from './types';
 import { SOURCE_ICONS } from './constants';
 import { ColumnConfig } from '@/components/export-data-dialog';
 
-// Valid sortable keys from Order type
-const SORTABLE_KEYS: (keyof Order)[] = [
-    'id', 'source', 'referenceNumber', 'recipient', 'phone', 'address',
-    'city', 'region', 'status', 'previousStatus', 'driver', 'merchant',
-    'cod', 'itemPrice', 'deliveryFee', 'additionalCost', 'driverFee',
-    'driverAdditionalFare', 'date', 'notes', 'orderNumber'
-];
 
 interface OrdersTableViewProps {
     orders: Order[];
@@ -464,12 +457,20 @@ export const OrdersTableView = ({
         )
     }
 
+    // Valid sortable keys from Order type (exclude computed/virtual fields)
+    const isValidSortKey = (key: string | keyof Order): key is keyof Order => {
+        // Exclude non-Order fields that may appear in ColumnConfig
+        if (key === 'id-link' || key === 'companyDue') return false;
+        // All other keys should be valid Order keys
+        return true;
+    };
+
     return (
-        <div className="flex-1 overflow-auto flex flex-col bg-white dark:bg-slate-900">
-            <Table>
+        <div className="flex-1 overflow-auto flex flex-col bg-white dark:bg-slate-900" style={{ pointerEvents: 'auto' }}>
+            <Table style={{ pointerEvents: 'auto' }}>
                 {/* رأس الجدول - ثابت في الأعلى: position: sticky; top: 0; */}
-                <TableHeader className="sticky top-0 z-20 bg-[#1a1a2e] dark:bg-[#0a0e27] shadow-lg">
-                    <TableRow className="hover:bg-transparent border-none">
+                <TableHeader className="sticky top-0 z-20 bg-[#1a1a2e] dark:bg-[#0a0e27] shadow-lg" style={{ pointerEvents: 'auto' }}>
+                    <TableRow className="hover:bg-transparent border-none" style={{ pointerEvents: 'auto' }}>
                         <TableHead className="sticky right-0 z-30 p-2 text-center border-l border-white/30 w-24 bg-[#0a0e27] dark:bg-[#050710]">
                             <div className="flex items-center justify-center gap-4">
                                 <span className="text-sm font-bold text-white">#</span>
@@ -483,30 +484,59 @@ export const OrdersTableView = ({
                             </div>
                         </TableHead>
                         {visibleColumns.map((col) => {
+                            const handleSortClick = (e: React.MouseEvent) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                // Skip invalid sort keys
+                                if (!isValidSortKey(col.key)) {
+                                    return;
+                                }
+                                
+                                if (!col.sortable) {
+                                    return;
+                                }
+                                
+                                if (typeof handleSort === 'function') {
+                                    handleSort(col.key as keyof Order);
+                                }
+                            };
+
                             return (
                                 <TableHead 
                                     key={col.key} 
                                     className="p-2 text-center border-l border-white/30 bg-[#1a1a2e] dark:bg-[#0a0e27] text-white hover:bg-[#0f0f1e] dark:hover:bg-[#050710] transition-colors font-semibold text-sm"
-                                    style={{ minWidth: '200px' }} // ← زيادة العرض من 150px إلى 200px
+                                    style={{ 
+                                        minWidth: '200px', 
+                                        cursor: col.sortable ? 'pointer' : 'default',
+                                        pointerEvents: 'auto',
+                                        position: 'relative',
+                                        zIndex: 25
+                                    }}
+                                    onClick={col.sortable ? handleSortClick : undefined}
+                                    onMouseDown={col.sortable ? (e) => {
+                                        e.stopPropagation();
+                                    } : undefined}
                                 >
                                     {col.sortable ? (
-                                        <Button 
-                                            variant="ghost" 
-                                            type="button"
-                                            onClick={(e) => {
+                                        <div
+                                            onClick={handleSortClick}
+                                            onMouseDown={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
-                                                // Ensure col.key is a valid keyof Order before sorting
-                                                const sortKey = col.key;
-                                                if (sortKey && typeof sortKey === 'string' && SORTABLE_KEYS.includes(sortKey as keyof Order)) {
-                                                    handleSort(sortKey as keyof Order);
-                                                }
-                                            }} 
-                                            className="text-white hover:bg-white/20 hover:text-white w-full p-0 h-auto font-bold"
+                                            }}
+                                            className="text-white hover:bg-white/20 hover:text-white w-full p-0 h-auto font-bold cursor-pointer flex items-center justify-center gap-2"
+                                            style={{ 
+                                                pointerEvents: 'auto', 
+                                                userSelect: 'none',
+                                                position: 'relative',
+                                                zIndex: 10,
+                                                minHeight: '20px'
+                                            }}
                                         >
-                                            {col.label}
-                                            <ArrowUpDown className="mr-2 h-3 w-3 text-white/90" />
-                                        </Button>
+                                            <span>{col.label}</span>
+                                            <ArrowUpDown className="h-3 w-3 text-white/90" />
+                                        </div>
                                     ) : (
                                         <span className='text-white font-bold'>{col.label}</span>
                                     )}

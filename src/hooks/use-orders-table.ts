@@ -102,7 +102,7 @@ export const useOrdersTable = () => {
 
         // Apply sorting
         if (sortConfig) {
-            filtered.sort((a, b) => {
+            filtered = [...filtered].sort((a, b) => {
                 const aValue = a[sortConfig.key];
                 const bValue = b[sortConfig.key];
 
@@ -134,14 +134,19 @@ export const useOrdersTable = () => {
     }, [storeOrders, storeLoading, filters, sortConfig, searchParams, globalSearch]);
 
     // Update orders and totalCount when filteredOrders change, but only if actually different
+    // Track both content (sorted IDs) and order (unsorted IDs + sortConfig) to detect all changes
     useEffect(() => {
-        const currentHash = JSON.stringify(filteredOrders.map(o => o.id).sort());
-        if (lastFilteredRef.current !== currentHash) {
-            lastFilteredRef.current = currentHash;
-            setOrders(filteredOrders);
+        const contentHash = JSON.stringify(filteredOrders.map(o => o.id).sort());
+        const orderHash = JSON.stringify(filteredOrders.map(o => o.id));
+        const sortHash = sortConfig ? `${sortConfig.key}:${sortConfig.direction}` : 'none';
+        const combinedHash = `${contentHash}|${orderHash}|${sortHash}`;
+        
+        if (lastFilteredRef.current !== combinedHash) {
+            lastFilteredRef.current = combinedHash;
+            setOrders([...filteredOrders]); // Create new array to trigger re-render
             setTotalCount(filteredOrders.length);
         }
-    }, [filteredOrders]);
+    }, [filteredOrders, sortConfig]);
 
     const fetchData = useCallback(() => {
         // This is now just a manual refresh function
