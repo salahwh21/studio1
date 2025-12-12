@@ -2,6 +2,8 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { GlobalErrorBoundary } from '@/components/global-error-boundary';
 import { Tajawal, Inter, Cairo, IBM_Plex_Sans_Arabic } from 'next/font/google';
 
 const tajawal = Tajawal({ subsets: ['latin', 'arabic'], weight: ['400', '700'], variable: '--font-tajawal' });
@@ -29,7 +31,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${tajawal.variable} ${inter.variable} ${cairo.variable} ${ibmPlexSansArabic.variable}`}
     >
       <body>
-        <Providers>{children}</Providers>
+        <GlobalErrorBoundary>
+          <ErrorBoundary>
+            <Providers>{children}</Providers>
+          </ErrorBoundary>
+        </GlobalErrorBoundary>
       </body>
     </html>
   );

@@ -5,23 +5,24 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import Icon from '@/components/icon';
 import { Switch } from '@/components/ui/switch';
+import { SettingsHeader } from '@/components/settings-header';
 
 type AutomationRule = {
     id: string;
@@ -54,7 +55,7 @@ const AutomationEngine = () => {
     return (
         <Card className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Icon name="Wand2"/> محرك الأتمتة للمرتجعات</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Icon name="Wand2" /> محرك الأتمتة للمرتجعات</CardTitle>
                 <CardDescription>إنشاء قواعد تلقائية لتسهيل إدارة المرتجعات. سيتم تنفيذ هذه القواعد مرة واحدة يوميًا.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -72,8 +73,8 @@ const AutomationEngine = () => {
                         {rules.map(rule => (
                             <TableRow key={rule.id}>
                                 <TableCell className="flex flex-col gap-2">
-                                     <Select defaultValue={rule.conditionField}>
-                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                    <Select defaultValue={rule.conditionField}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="age_in_branch">عمر المرتجع بالفرع (أيام)</SelectItem>
                                             <SelectItem value="reason">سبب الإرجاع</SelectItem>
@@ -81,20 +82,20 @@ const AutomationEngine = () => {
                                     </Select>
                                 </TableCell>
                                 <TableCell>
-                                     <div className="flex gap-2">
+                                    <div className="flex gap-2">
                                         <Select defaultValue={rule.conditionOperator} className="w-1/3">
-                                            <SelectTrigger><SelectValue/></SelectTrigger>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="greater_than">&gt;</SelectItem>
                                                 <SelectItem value="equals">=</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <Input placeholder="القيمة" defaultValue={rule.conditionValue} className="w-2/3"/>
-                                     </div>
+                                        <Input placeholder="القيمة" defaultValue={rule.conditionValue} className="w-2/3" />
+                                    </div>
                                 </TableCell>
                                 <TableCell>
-                                     <Select defaultValue={rule.action}>
-                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                    <Select defaultValue={rule.action}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="change_status">تغيير الحالة إلى</SelectItem>
                                             <SelectItem value="notify_merchant">إرسال تنبيه للتاجر</SelectItem>
@@ -108,13 +109,13 @@ const AutomationEngine = () => {
                                     />
                                 </TableCell>
                                 <TableCell className="text-center">
-                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveRule(rule.id)}><Icon name="Trash2" className="h-4 w-4 text-destructive"/></Button>
+                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveRule(rule.id)}><Icon name="Trash2" className="h-4 w-4 text-destructive" /></Button>
                                 </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
-                <Button variant="outline" className="mt-4 w-full" onClick={handleAddRule}><Icon name="PlusCircle" className="mr-2 h-4 w-4"/> إضافة قاعدة جديدة</Button>
+                <Button variant="outline" className="mt-4 w-full" onClick={handleAddRule}><Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة قاعدة جديدة</Button>
             </CardContent>
         </Card>
     );
@@ -124,19 +125,12 @@ const AutomationEngine = () => {
 export default function ReturnsSettingsPage() {
     return (
         <div className="space-y-6">
-            <Card>
-                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                    <CardTitle className="text-2xl font-bold tracking-tight">إعدادات المرتجعات</CardTitle>
-                    <CardDescription className="mt-1">أتمتة وتخصيص عمليات إدارة المرتجعات.</CardDescription>
-                </div>
-                <Button variant="outline" size="icon" asChild>
-                    <Link href="/dashboard/settings">
-                        <Icon name="ArrowLeft" className="h-4 w-4" />
-                    </Link>
-                </Button>
-                </CardHeader>
-            </Card>
+            <SettingsHeader
+                icon="Undo2"
+                title="إعدادات المرتجعات"
+                description="أتمتة وتخصيص عمليات إدارة المرتجعات"
+                color="emerald"
+            />
             <AutomationEngine />
         </div>
     )

@@ -1,28 +1,29 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore } from '@/store/orders-store';
 import { useStatusesStore } from '@/store/statuses-store';
+import { useRealTimeOrders } from '@/hooks/useRealTimeOrders';
 
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import {
     Area,
@@ -51,15 +52,44 @@ import { GoalsSection } from '@/components/dashboard/goals-section';
 
 
 const chartConfig = {
-  delivered: { label: 'تم التوصيل', color: '#10b981' }, // emerald-500
-  postponed: { label: 'مؤجلة', color: '#f59e0b' }, // amber-500
-  returned: { label: 'مرتجعة', color: '#ef4444' }, // red-500
-  profit: { label: 'الربح', color: '#3b82f6' }, // blue-500
-  'تم التوصيل': { label: 'مكتملة', color: '#10b981' },
-  'جاري التوصيل': { label: 'قيد التوصيل', color: '#3b82f6' },
-  'راجع': { label: 'مرتجعة', color: '#ef4444' },
+    delivered: { label: 'تم التوصيل', color: '#10b981' }, // emerald-500
+    postponed: { label: 'مؤجلة', color: '#f59e0b' }, // amber-500
+    returned: { label: 'مرتجعة', color: '#ef4444' }, // red-500
+    profit: { label: 'الربح', color: '#3b82f6' }, // blue-500
+    'تم التوصيل': { label: 'مكتملة', color: '#10b981' },
+    'جاري التوصيل': { label: 'قيد التوصيل', color: '#3b82f6' },
+    'مرتجع': { label: 'مرتجعة', color: '#ef4444' },
 };
 
+
+
+// Helper functions for status checking (Handles Arabic, English, and Codes)
+const normalizeStatusInput = (status: string) => status?.toLowerCase() || '';
+
+const isDelivered = (status: string) => {
+    const s = normalizeStatusInput(status);
+    return s === 'تم التوصيل' || s === 'delivered' || s === 'completed' || s === 'sts_003' || s === 'sts_008';
+};
+
+const isPending = (status: string) => {
+    const s = normalizeStatusInput(status);
+    return s === 'بالانتظار' || s === 'pending' || s === 'waiting_driver_approval' || s === 'بانتظار السائق' || s === 'sts_001' || s === 'sts_018';
+};
+
+const isPostponed = (status: string) => {
+    const s = normalizeStatusInput(status);
+    return s === 'مؤجل' || s === 'postponed' || s === 'sts_004';
+};
+
+const isReturned = (status: string) => {
+    const s = normalizeStatusInput(status);
+    return s === 'مرتجع' || s === 'returned' || s === 'sts_005' || s === 'sts_010' || s === 'sts_011' || s === 'refused_paid' || s === 'refused_unpaid' || s === 'branch_returned';
+};
+
+const isCashCollected = (status: string) => {
+    const s = normalizeStatusInput(status);
+    return s === 'تم استلام المال في الفرع' || s === 'money_received' || s === 'sts_007';
+};
 
 const RevenueCard = ({ title, value, iconName, color = 'primary' }: { title: string, value: string | number, iconName: any, color?: string }) => (
     <Card className="bg-card/80 border border-border/60 shadow-sm">
@@ -85,15 +115,89 @@ export default function DashboardPage() {
     const searchParams = useSearchParams();
     const { formatCurrency } = useSettings();
     const { users } = useUsersStore();
-    const { orders } = useOrdersStore();
+    const { orders, isLoading: ordersLoading, error: ordersError, loadOrdersFromAPI } = useOrdersStore();
     const { statuses } = useStatusesStore();
+    
+    // Real-time updates for orders
+    useRealTimeOrders();
+    
+    // Load orders if empty
+    useEffect(() => {
+        if (orders.length === 0 && !ordersLoading) {
+            console.log('🔄 Dashboard: Loading orders...');
+            loadOrdersFromAPI().catch((error) => {
+                console.error('❌ Dashboard: Failed to load orders:', error);
+            });
+        }
+    }, [orders.length, ordersLoading, loadOrdersFromAPI]);
+    
+    // Debug: Log orders count and details
+    useEffect(() => {
+        console.log('📊 Dashboard: Orders count:', orders.length);
+        console.log('📊 Dashboard: Loading state:', ordersLoading);
+        console.log('📊 Dashboard: Error state:', ordersError);
+        if (orders.length > 0) {
+            console.log('📊 Dashboard: First order:', orders[0]);
+            console.log('📊 Dashboard: Orders statuses:', [...new Set(orders.map(o => o.status))]);
+        } else {
+            if (!ordersLoading && !ordersError) {
+                console.warn('⚠️ Dashboard: No orders found in database!');
+            }
+        }
+    }, [orders.length, orders, ordersLoading, ordersError]);
+
+    // دالة تحقق ذكية تعتمد على الحالة النصية والكود والمعرف وتسميات المتجر
+    const checkIsStatus = useCallback((orderStatus: any, type: 'delivered' | 'pending' | 'postponed' | 'returned' | 'collected') => {
+        const s = String(orderStatus || '').toLowerCase().trim();
+        if (!s) return false;
+
+        // القوائم الثابتة (Codes, IDs, Standard Arabic)
+        const staticMap = {
+            delivered: ['delivered', 'completed', 'sts_003', 'sts_008', 'تم التوصيل', 'مكتمل', 'تم التسليم'],
+            pending: ['pending', 'waiting_driver_approval', 'sts_001', 'sts_018', 'بالانتظار', 'بانتظار السائق', 'قيد الانتظار', 'new'],
+            postponed: ['postponed', 'sts_004', 'مؤجل', 'تأجيل'],
+            returned: ['returned', 'refused_paid', 'refused_unpaid', 'branch_returned', 'sts_005', 'sts_006', 'sts_010', 'sts_011', 'sts_012', 'مرتجع', 'راجع', 'ملغي'],
+            collected: ['money_received', 'merchant_paid', 'sts_007', 'sts_017', 'تم استلام المال في الفرع', 'تم التحصيل']
+        };
+
+        // التحقق من القائمة الثابتة أولاً
+        if (staticMap[type].includes(s)) return true;
+
+        // التحقق الديناميكي من المتجر (في حال قام المستخدم بتغيير الاسم)
+        // نبحث عن الحالات التي تطابق النوع المطلوب بناءً على الكود
+        const targetCodes = {
+            delivered: ['DELIVERED', 'COMPLETED', 'STS_003', 'STS_008'],
+            pending: ['PENDING', 'WAITING_DRIVER_APPROVAL', 'STS_001', 'STS_018'],
+            postponed: ['POSTPONED', 'STS_004'],
+            returned: ['RETURNED', 'REFUSED_PAID', 'REFUSED_UNPAID', 'BRANCH_RETURNED', 'CANCELLED', 'STS_005', 'STS_006'],
+            collected: ['MONEY_RECEIVED', 'MERCHANT_PAID', 'STS_007']
+        };
+
+        // هل الحالة الحالية (s) تطابق *اسم* أي حالة في المتجر لها كود من Codes المطلوبة؟
+        const matchesDynamic = statuses.some(st => {
+            const isTargetType = targetCodes[type].includes(st.code) || targetCodes[type].includes(st.id);
+            if (!isTargetType) return false;
+
+            // إذا كانت حالة المتجر من النوع المطلوب، هل اسم الحالة الحالية يطابق اسم حالة المتجر؟
+            return st.name.toLowerCase().trim() === s || st.code.toLowerCase() === s || st.id.toLowerCase() === s;
+        });
+
+        return matchesDynamic;
+    }, [statuses]);
+
+    // Wrappers for ease of use
+    const isDelivered = useCallback((s: any) => checkIsStatus(s, 'delivered'), [checkIsStatus]);
+    const isPending = useCallback((s: any) => checkIsStatus(s, 'pending'), [checkIsStatus]);
+    const isPostponed = useCallback((s: any) => checkIsStatus(s, 'postponed'), [checkIsStatus]);
+    const isReturned = useCallback((s: any) => checkIsStatus(s, 'returned'), [checkIsStatus]);
+    const isCashCollected = useCallback((s: any) => checkIsStatus(s, 'collected'), [checkIsStatus]);
 
     // قراءة الفلاتر من URLSearchParams
     const driverFilter = searchParams.get('driver') || 'all';
     const statusFilter = searchParams.get('status') || 'all';
     const regionFilter = searchParams.get('region') || 'all';
     const merchantFilter = searchParams.get('merchant') || 'all';
-    const period = searchParams.get('period') || 'today';
+    const period = searchParams.get('period') || 'all';
     const dateFrom = searchParams.get('from');
     const dateTo = searchParams.get('to');
 
@@ -101,10 +205,19 @@ export default function DashboardPage() {
     const filteredOrders = useMemo(() => {
         let filtered = orders.filter(o => {
             if (driverFilter !== 'all' && o.driver !== driverFilter) return false;
-            if (statusFilter !== 'all' && o.status !== statusFilter) return false;
+            if (statusFilter !== 'all') {
+                const s1 = statuses.find(s => s.name === statusFilter || s.code === statusFilter || s.id === statusFilter);
+                const s2 = statuses.find(s => s.name === o.status || s.code === o.status || s.id === o.status);
+
+                if (s1 && s2) {
+                    if (s1.id !== s2.id) return false;
+                } else if (o.status !== statusFilter) {
+                    return false;
+                }
+            }
             if (regionFilter !== 'all' && o.region !== regionFilter) return false;
             if (merchantFilter !== 'all' && o.merchant !== merchantFilter) return false;
-            
+
             // فلترة حسب التاريخ
             if (dateFrom && dateTo) {
                 const orderDate = new Date(o.date);
@@ -115,7 +228,7 @@ export default function DashboardPage() {
                 // تطبيق الفلترة حسب الفترة المختارة
                 const today = new Date();
                 const orderDate = new Date(o.date);
-                
+
                 switch (period) {
                     case 'today':
                         if (o.date !== today.toISOString().split('T')[0]) return false;
@@ -145,11 +258,18 @@ export default function DashboardPage() {
                         break;
                 }
             }
-            
+
             return true;
         });
         return filtered;
-    }, [orders, driverFilter, statusFilter, regionFilter, merchantFilter, period, dateFrom, dateTo]);
+    }, [orders, driverFilter, statusFilter, regionFilter, merchantFilter, period, dateFrom, dateTo, statuses]);
+
+    // Debug: Log filtered orders count (after filteredOrders is defined)
+    useEffect(() => {
+        if (orders.length > 0) {
+            console.log('📊 Dashboard: Filtered orders count:', filteredOrders.length);
+        }
+    }, [filteredOrders.length, orders.length]);
 
     const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
     const merchants = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
@@ -158,9 +278,9 @@ export default function DashboardPage() {
         return drivers.map(driver => {
             // استخدام filteredOrders لضمان الاتساق
             const driverOrders = filteredOrders.filter(o => o.driver === driver.name);
-            const completed = driverOrders.filter(o => o.status === 'تم التوصيل').length;
-            const postponed = driverOrders.filter(o => o.status === 'مؤجل').length;
-            const returned = driverOrders.filter(o => o.status === 'راجع').length;
+            const completed = driverOrders.filter(o => isDelivered(o.status)).length;
+            const postponed = driverOrders.filter(o => isPostponed(o.status)).length;
+            const returned = driverOrders.filter(o => isReturned(o.status)).length;
             const total = driverOrders.length;
             return {
                 id: driver.id,
@@ -179,14 +299,24 @@ export default function DashboardPage() {
     // حساب عدد الطلبات لكل حالة (من البيانات المفلترة)
     const orderStatusCounts = useMemo(() => {
         return filteredOrders.reduce((acc, order) => {
-            const status = order.status;
-            if (!acc[status]) {
-                acc[status] = 0;
+            // Find matching status in store
+            const matched = statuses.find(s =>
+                s.name === order.status ||
+                s.code === order.status ||
+                s.id === order.status ||
+                s.name?.toLowerCase() === order.status?.toLowerCase() ||
+                s.code?.toLowerCase() === order.status?.toLowerCase()
+            );
+
+            const key = matched ? matched.name : order.status;
+
+            if (!acc[key]) {
+                acc[key] = 0;
             }
-            acc[status]++;
+            acc[key]++;
             return acc;
         }, {} as Record<string, number>);
-    }, [filteredOrders]);
+    }, [filteredOrders, statuses]);
 
     // إنشاء بيانات الحالات - جميع الحالات النشطة مع عدد الطلبات
     const allStatusesData = useMemo(() => {
@@ -210,7 +340,7 @@ export default function DashboardPage() {
 
     const profitChartData = useMemo(() => {
         const dataByDate = filteredOrders.reduce((acc, order) => {
-            if (order.status === 'تم التوصيل') {
+            if (isDelivered(order.status)) {
                 const date = order.date;
                 if (!acc[date]) {
                     acc[date] = 0;
@@ -222,7 +352,7 @@ export default function DashboardPage() {
 
         return Object.entries(dataByDate)
             .map(([date, profit]) => ({ date, profit }))
-            .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }, [filteredOrders]);
 
     const filteredDriverStats = selectedDriver === 'all'
@@ -250,7 +380,7 @@ export default function DashboardPage() {
         const today = new Date();
         let previousStart: Date;
         let previousEnd: Date;
-        
+
         // تحديد الفترة السابقة بناءً على الفترة الحالية
         if (dateFrom && dateTo) {
             const fromDate = new Date(dateFrom);
@@ -267,12 +397,12 @@ export default function DashboardPage() {
             previousStart = new Date(previousEnd);
             previousStart.setDate(previousStart.getDate() - 7);
         }
-        
+
         const previousOrders = orders.filter(o => {
             const orderDate = new Date(o.date);
-            return orderDate >= previousStart && orderDate <= previousEnd && o.status === 'تم التوصيل';
+            return orderDate >= previousStart && orderDate <= previousEnd && isDelivered(o.status);
         });
-        
+
         return previousOrders.reduce((sum, o) => {
             return sum + (o.deliveryFee || 0) + (o.additionalCost || 0) - ((o.driverFee || 0) + (o.driverAdditionalFare || 0));
         }, 0);
@@ -285,11 +415,11 @@ export default function DashboardPage() {
 
     const completedToday = useMemo(() => {
         const today = new Date().toISOString().split('T')[0];
-        return filteredOrders.filter(o => o.date === today && o.status === 'تم التوصيل').length;
+        return filteredOrders.filter(o => o.date === today && isDelivered(o.status)).length;
     }, [filteredOrders]);
 
     const pendingOrders = useMemo(() => {
-        return filteredOrders.filter(o => o.status === 'بالانتظار').length;
+        return filteredOrders.filter(o => isPending(o.status)).length;
     }, [filteredOrders]);
 
     const activeDrivers = useMemo(() => {
@@ -297,7 +427,7 @@ export default function DashboardPage() {
     }, [drivers, driverStats]);
 
     const totalCompleted = useMemo(() => {
-        return filteredOrders.filter(o => o.status === 'تم التوصيل').length;
+        return filteredOrders.filter(o => isDelivered(o.status)).length;
     }, [filteredOrders]);
 
     const successRate = useMemo(() => {
@@ -305,7 +435,7 @@ export default function DashboardPage() {
     }, [filteredOrders, totalCompleted]);
 
     const criticalPending = useMemo(() => {
-        return filteredOrders.filter(o => o.status === 'بالانتظار' || o.status === 'مؤجل').length;
+        return filteredOrders.filter(o => isPending(o.status) || isPostponed(o.status)).length;
     }, [filteredOrders]);
 
     // بيانات الأهداف
@@ -338,13 +468,13 @@ export default function DashboardPage() {
     // تحصيل الأموال مع السائقين
     const cashWithDrivers = useMemo(() => {
         return filteredOrders
-            .filter(o => o.status === 'تم التوصيل')
+            .filter(o => isDelivered(o.status))
             .reduce((sum, o) => sum + (o.cod || 0), 0);
     }, [filteredOrders]);
 
     const cashCollected = useMemo(() => {
         return filteredOrders
-            .filter(o => o.status === 'تم استلام المال في الفرع')
+            .filter(o => isCashCollected(o.status))
             .reduce((sum, o) => sum + (o.cod || 0), 0);
     }, [filteredOrders]);
 
@@ -356,164 +486,239 @@ export default function DashboardPage() {
     const driversWithOutstandingCash = useMemo(() => {
         return new Set(
             filteredOrders
-                .filter(o => o.status === 'تم التوصيل')
+                .filter(o => isDelivered(o.status))
                 .map(o => o.driver)
         ).size;
     }, [filteredOrders]);
 
     // التنبيهات الحرجة
     const alerts = useMemo(() => {
-      const alertsList: any[] = [];
-      
-      if (pendingOrders > 10) {
-        alertsList.push({
-          id: '1',
-          title: 'عدد طلبات عالي',
-          description: `هناك ${pendingOrders} طلب في الانتظار`,
-          type: 'warning' as const,
-          timestamp: new Date()
-        });
-      }
-      
-      const inactiveDrivers = drivers.filter(d => {
-        const driverOrderCount = filteredOrders.filter(o => o.driver === d.name).length;
-        return driverOrderCount === 0;
-      });
-      if (inactiveDrivers.length > 0) {
-        alertsList.push({
-          id: '2',
-          title: 'سائقين غير نشطين',
-          description: `${inactiveDrivers.length} من السائقين لم يقوموا بأي مهام`,
-          type: 'info' as const,
-          timestamp: new Date()
-        });
-      }
+        const alertsList: any[] = [];
 
-      return alertsList;
+        if (pendingOrders > 10) {
+            alertsList.push({
+                id: '1',
+                title: 'عدد طلبات عالي',
+                description: `هناك ${pendingOrders} طلب في الانتظار`,
+                type: 'warning' as const,
+                timestamp: new Date()
+            });
+        }
+
+        const inactiveDrivers = drivers.filter(d => {
+            const driverOrderCount = filteredOrders.filter(o => o.driver === d.name).length;
+            return driverOrderCount === 0;
+        });
+        if (inactiveDrivers.length > 0) {
+            alertsList.push({
+                id: '2',
+                title: 'سائقين غير نشطين',
+                description: `${inactiveDrivers.length} من السائقين لم يقوموا بأي مهام`,
+                type: 'info' as const,
+                timestamp: new Date()
+            });
+        }
+
+        return alertsList;
     }, [pendingOrders, drivers, filteredOrders]);
 
     // الأنشطة الحديثة - مرتبة حسب التاريخ (الأحدث أولاً)
     const activities = useMemo(() => {
-      const recent = [...filteredOrders]
-        .sort((a, b) => {
-          // ترتيب حسب التاريخ (الأحدث أولاً)
-          const dateA = new Date(a.date).getTime();
-          const dateB = new Date(b.date).getTime();
-          return dateB - dateA;
-        })
-        .slice(0, 5)
-        .map((order) => ({
-          id: order.id || `order-${order.orderNumber}`,
-          user: order.merchant || 'نظام',
-          avatar: '',
-          action: 'أضاف طلبية',
-          details: `إلى ${order.recipient} في ${order.region}`,
-          timestamp: new Date(order.date),
-          type: 'order' as const
-        }));
-      return recent;
+        const recent = [...filteredOrders]
+            .sort((a, b) => {
+                // ترتيب حسب التاريخ (الأحدث أولاً)
+                const dateA = new Date(a.date).getTime();
+                const dateB = new Date(b.date).getTime();
+                return dateB - dateA;
+            })
+            .slice(0, 5)
+            .map((order) => ({
+                id: order.id || `order-${order.orderNumber}`,
+                user: order.merchant || 'نظام',
+                avatar: '',
+                action: 'أضاف طلبية',
+                details: `إلى ${order.recipient} في ${order.region}`,
+                timestamp: new Date(order.date),
+                type: 'order' as const
+            }));
+        return recent;
     }, [filteredOrders]);
+
+    // Show loading state
+    if (ordersLoading && orders.length === 0) {
+        return (
+            <div className="flex flex-col gap-8">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
+                    <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString('ar-JO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                </div>
+                <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p className="text-muted-foreground">جاري تحميل البيانات...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    
+    // Show error state
+    if (ordersError && orders.length === 0) {
+        return (
+            <div className="flex flex-col gap-8">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
+                    <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString('ar-JO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                </div>
+                <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                        <p className="text-destructive mb-4">خطأ في تحميل البيانات</p>
+                        <p className="text-muted-foreground mb-4">{ordersError}</p>
+                        <button 
+                            onClick={() => loadOrdersFromAPI()}
+                            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                        >
+                            إعادة المحاولة
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    
+    // Show empty state if no orders after loading
+    if (!ordersLoading && orders.length === 0 && !ordersError) {
+        return (
+            <div className="flex flex-col gap-8">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
+                    <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString('ar-JO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                </div>
+                <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                        <Icon name="ShoppingCart" className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                        <p className="text-lg font-semibold mb-2">لا توجد طلبات</p>
+                        <p className="text-muted-foreground mb-4">قاعدة البيانات فارغة أو لا توجد طلبات متطابقة مع الفلاتر</p>
+                        <div className="flex gap-2 justify-center">
+                            <button 
+                                onClick={() => loadOrdersFromAPI()}
+                                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                            >
+                                إعادة التحميل
+                            </button>
+                            <Link 
+                                href="/dashboard/add-order"
+                                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
+                            >
+                                إضافة طلب جديد
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-8">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
-              <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString('ar-JO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
+                <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString('ar-JO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
 
             {/* إجراءات سريعة */}
             <QuickActions />
 
             {/* فلاتر زمنية */}
-            <TimeFilters 
-              defaultPeriod={(searchParams.get('period') as any) || 'today'}
-              showCompare={true}
+            <TimeFilters
+                defaultPeriod={(searchParams.get('period') as any) || 'today'}
+                showCompare={true}
             />
 
             {/* مؤشرات KPI الرئيسية */}
             <div className="flex items-center justify-between mt-2">
-              <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                <Icon name="Gauge" className="h-4 w-4" />
-                بطاقات الأداء الرئيسية
-              </h2>
+                <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                    <Icon name="Gauge" className="h-4 w-4" />
+                    بطاقات الأداء الرئيسية
+                </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <KPICard
-                title="إجمالي الإيرادات"
-                value={formatCurrency(totalRevenue)}
-                icon="TrendingUp"
-                variant="revenue"
-                subtitle="إجمالي الربح في الفترة الحالية"
-                trend={{
-                  value: Math.abs(revenueTrend),
-                  isPositive: revenueTrend >= 0,
-                  previousValue: formatCurrency(previousPeriodRevenue),
-                  period: "الفترة السابقة"
-                }}
-                onClick={() => window.location.href = '/dashboard/financials'}
-              />
-              <KPICard
-                title="إجمالي الطلبات"
-                value={filteredOrders.length}
-                icon="ShoppingCart"
-                variant="orders"
-                subtitle={`${completedToday} طلب مكتمل اليوم`}
-              />
-              <KPICard
-                title="نسبة النجاح"
-                value={`${successRate}%`}
-                icon="Percent"
-                variant="success"
-                subtitle="نسبة الطلبات التي تم توصيلها بنجاح"
-                trend={successRate ? { value: successRate, isPositive: successRate >= 80 } : undefined}
-                progress={successRate}
-                target="90%"
-              />
-              <KPICard
-                title="الطلبات المعلقة والحرجة"
-                value={criticalPending}
-                icon="Clock"
-                variant="warning"
-                subtitle="طلبات بالانتظار أو مؤجلة"
-              />
+                <KPICard
+                    title="إجمالي الإيرادات"
+                    value={formatCurrency(totalRevenue)}
+                    icon="TrendingUp"
+                    variant="revenue"
+                    subtitle="إجمالي الربح في الفترة الحالية"
+                    trend={{
+                        value: Math.abs(revenueTrend),
+                        isPositive: revenueTrend >= 0,
+                        previousValue: formatCurrency(previousPeriodRevenue),
+                        period: "الفترة السابقة"
+                    }}
+                    onClick={() => window.location.href = '/dashboard/financials'}
+                />
+                <KPICard
+                    title="إجمالي الطلبات"
+                    value={filteredOrders.length}
+                    icon="ShoppingCart"
+                    variant="orders"
+                    subtitle={`${orders.length} إجمالي | ${completedToday} مكتمل اليوم`}
+                />
+                <KPICard
+                    title="نسبة النجاح"
+                    value={`${successRate}%`}
+                    icon="Percent"
+                    variant="success"
+                    subtitle="نسبة الطلبات التي تم توصيلها بنجاح"
+                    trend={successRate ? { value: successRate, isPositive: successRate >= 80 } : undefined}
+                    progress={successRate}
+                    target="90%"
+                />
+                <KPICard
+                    title="الطلبات المعلقة والحرجة"
+                    value={criticalPending}
+                    icon="Clock"
+                    variant="warning"
+                    subtitle="طلبات بالانتظار أو مؤجلة"
+                />
             </div>
 
             {/* تحصيل الأموال مع السائقين */}
             <div className="flex items-center justify-between mt-4">
-              <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                <Icon name="Wallet" className="h-4 w-4" />
-                تحصيل الأموال مع السائقين
-              </h2>
+                <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                    <Icon name="Wallet" className="h-4 w-4" />
+                    تحصيل الأموال مع السائقين
+                </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <KPICard
-                title="مبالغ مع السائقين"
-                value={formatCurrency(cashWithDrivers)}
-                icon="Wallet"
-                variant="warning"
-                subtitle="أموال لَم يتم تسليمها بعد"
-              />
-              <KPICard
-                title="مبالغ تم استلامها"
-                value={formatCurrency(cashCollected)}
-                icon="Banknote"
-                variant="revenue"
-                subtitle="أموال وصلت إلى الشركة"
-              />
-              <KPICard
-                title="نسبة التحصيل"
-                value={`${collectionRate}%`}
-                icon="PieChart"
-                variant="success"
-                subtitle="جزء المبالغ المستلمة من الإجمالي"
-              />
-              <KPICard
-                title="سائقون عليهم مبالغ"
-                value={driversWithOutstandingCash}
-                icon="Users"
-                variant="orders"
-                subtitle={`من أصل ${drivers.length} سائق`}
-              />
+                <KPICard
+                    title="مبالغ مع السائقين"
+                    value={formatCurrency(cashWithDrivers)}
+                    icon="Wallet"
+                    variant="warning"
+                    subtitle="أموال لَم يتم تسليمها بعد"
+                />
+                <KPICard
+                    title="مبالغ تم استلامها"
+                    value={formatCurrency(cashCollected)}
+                    icon="Banknote"
+                    variant="revenue"
+                    subtitle="أموال وصلت إلى الشركة"
+                />
+                <KPICard
+                    title="نسبة التحصيل"
+                    value={`${collectionRate}%`}
+                    icon="PieChart"
+                    variant="success"
+                    subtitle="جزء المبالغ المستلمة من الإجمالي"
+                />
+                <KPICard
+                    title="سائقون عليهم مبالغ"
+                    value={driversWithOutstandingCash}
+                    icon="Users"
+                    variant="orders"
+                    subtitle={`من أصل ${drivers.length} سائق`}
+                />
             </div>
 
             {/* الأهداف اليومية */}
@@ -521,168 +726,168 @@ export default function DashboardPage() {
 
             {/* التنبيهات والأنشطة */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                <AlertsSection alerts={alerts} />
-              </div>
-              <div className="lg:col-span-1">
-              <RecentActivities activities={activities} />
-              </div>
+                <div className="lg:col-span-2">
+                    <AlertsSection alerts={alerts} />
+                </div>
+                <div className="lg:col-span-1">
+                    <RecentActivities activities={activities} />
+                </div>
             </div>
 
             {/* تقرير الأرباح اليومي */}
             <Card className="border-2 shadow-sm">
                 <CardHeader className="pb-4">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                          <Icon name="TrendingUp" className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <div className="flex justify-between items-start gap-4">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                                    <Icon name="TrendingUp" className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <CardTitle>تقرير الأرباح اليومي</CardTitle>
+                            </div>
+                            <CardDescription className="mt-1">
+                                نظرة على الأرباح المحققة خلال الأسبوع الماضي.
+                            </CardDescription>
                         </div>
-                        <CardTitle>تقرير الأرباح اليومي</CardTitle>
-                      </div>
-                      <CardDescription className="mt-1">
-                        نظرة على الأرباح المحققة خلال الأسبوع الماضي.
-                      </CardDescription>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1 flex-shrink-0"
+                            onClick={() => {
+                                const canvas = document.querySelector('[data-chart] canvas');
+                                if (canvas) {
+                                    const url = (canvas as HTMLCanvasElement).toDataURL('image/png');
+                                    const link = document.createElement('a');
+                                    link.download = 'تقرير-الأرباح.png';
+                                    link.href = url;
+                                    link.click();
+                                }
+                            }}
+                        >
+                            <Icon name="Download" className="h-4 w-4" />
+                            تصدير
+                        </Button>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="gap-1 flex-shrink-0"
-                      onClick={() => {
-                        const canvas = document.querySelector('[data-chart] canvas');
-                        if (canvas) {
-                          const url = (canvas as HTMLCanvasElement).toDataURL('image/png');
-                          const link = document.createElement('a');
-                          link.download = 'تقرير-الأرباح.png';
-                          link.href = url;
-                          link.click();
-                        }
-                      }}
-                    >
-                      <Icon name="Download" className="h-4 w-4" />
-                      تصدير
-                    </Button>
-                  </div>
                 </CardHeader>
                 <CardContent className="h-[400px]">
-                  {profitChartData.length > 0 ? (
-                    <>
-                      <ChartContainer config={chartConfig} className="w-full h-full">
-                        <LineChart 
-                          data={profitChartData} 
-                          margin={{ top: 20, right: 20, left: 10, bottom: 20 }}
-                        >
-                          <defs>
-                            <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid 
-                            vertical={false} 
-                            strokeDasharray="3 3" 
-                            stroke="hsl(var(--muted))"
-                            opacity={0.3}
-                          />
-                          <XAxis 
-                            dataKey="date" 
-                            tickFormatter={(value) => {
-                              const date = new Date(value);
-                              return date.toLocaleDateString('ar-JO', {day: 'numeric', month: 'short'});
-                            }}
-                            tickLine={false}
-                            axisLine={false}
-                            className="text-xs font-medium"
-                          />
-                          <YAxis 
-                            tickFormatter={(value) => formatCurrency(value)}
-                            tickLine={false}
-                            axisLine={false}
-                            className="text-xs font-medium"
-                            width={80}
-                          />
-                          <Tooltip
-                            content={({ active, payload }) => {
-                              if (active && payload && payload.length) {
-                                const data = payload[0].payload;
-                                return (
-                                  <div className="rounded-lg border bg-background p-3 shadow-lg">
-                                    <div className="font-semibold mb-2">
-                                      {new Date(data.date).toLocaleDateString('ar-JO', {
-                                        weekday: 'long',
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric'
-                                      })}
+                    {profitChartData.length > 0 ? (
+                        <>
+                            <ChartContainer config={chartConfig} className="w-full h-full">
+                                <LineChart
+                                    data={profitChartData}
+                                    margin={{ top: 20, right: 20, left: 10, bottom: 20 }}
+                                >
+                                    <defs>
+                                        <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid
+                                        vertical={false}
+                                        strokeDasharray="3 3"
+                                        stroke="hsl(var(--muted))"
+                                        opacity={0.3}
+                                    />
+                                    <XAxis
+                                        dataKey="date"
+                                        tickFormatter={(value) => {
+                                            const date = new Date(value);
+                                            return date.toLocaleDateString('ar-JO', { day: 'numeric', month: 'short' });
+                                        }}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        className="text-xs font-medium"
+                                    />
+                                    <YAxis
+                                        tickFormatter={(value) => formatCurrency(value)}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        className="text-xs font-medium"
+                                        width={80}
+                                    />
+                                    <Tooltip
+                                        content={({ active, payload }) => {
+                                            if (active && payload && payload.length) {
+                                                const data = payload[0].payload;
+                                                return (
+                                                    <div className="rounded-lg border bg-background p-3 shadow-lg">
+                                                        <div className="font-semibold mb-2">
+                                                            {new Date(data.date).toLocaleDateString('ar-JO', {
+                                                                weekday: 'long',
+                                                                year: 'numeric',
+                                                                month: 'long',
+                                                                day: 'numeric'
+                                                            })}
+                                                        </div>
+                                                        <div className="flex items-center justify-between gap-4">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                                                <span className="text-sm text-muted-foreground">الربح</span>
+                                                            </div>
+                                                            <span className="font-bold text-blue-600">
+                                                                {formatCurrency(data.profit)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        }}
+                                        cursor={{ stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '5 5' }}
+                                    />
+                                    <Legend
+                                        wrapperStyle={{ paddingTop: '10px' }}
+                                        iconType="line"
+                                        formatter={(value) => (
+                                            <span className="text-xs font-medium">{value}</span>
+                                        )}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="profit"
+                                        stroke="#3b82f6"
+                                        strokeWidth={3}
+                                        name="الربح"
+                                        dot={{ fill: '#3b82f6', r: 5, strokeWidth: 2, stroke: '#fff' }}
+                                        activeDot={{ r: 7, strokeWidth: 2, stroke: '#fff' }}
+                                        animationDuration={800}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="profit"
+                                        fill="url(#profitGradient)"
+                                        stroke="none"
+                                    />
+                                </LineChart>
+                            </ChartContainer>
+
+                            {/* إحصائيات سريعة - فقط أعلى ربح ومتوسط يومي (إجمالي الأرباح موجود في KPI) */}
+                            <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-blue-600">
+                                        {formatCurrency(Math.max(...profitChartData.map(d => d.profit)))}
                                     </div>
-                                    <div className="flex items-center justify-between gap-4">
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                                        <span className="text-sm text-muted-foreground">الربح</span>
-                                      </div>
-                                      <span className="font-bold text-blue-600">
-                                        {formatCurrency(data.profit)}
-                                      </span>
+                                    <div className="text-xs text-muted-foreground mt-1">أعلى ربح</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-muted-foreground">
+                                        {formatCurrency(profitChartData.reduce((sum, d) => sum + d.profit, 0) / profitChartData.length || 0)}
                                     </div>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                            cursor={{ stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '5 5' }}
-                          />
-                          <Legend 
-                            wrapperStyle={{ paddingTop: '10px' }}
-                            iconType="line"
-                            formatter={(value) => (
-                              <span className="text-xs font-medium">{value}</span>
-                            )}
-                          />
-                          <Line 
-                            type="monotone" 
-                            dataKey="profit" 
-                            stroke="#3b82f6" 
-                            strokeWidth={3} 
-                            name="الربح"
-                            dot={{ fill: '#3b82f6', r: 5, strokeWidth: 2, stroke: '#fff' }}
-                            activeDot={{ r: 7, strokeWidth: 2, stroke: '#fff' }}
-                            animationDuration={800}
-                          />
-                          <Area 
-                            type="monotone" 
-                            dataKey="profit" 
-                            fill="url(#profitGradient)" 
-                            stroke="none"
-                          />
-                        </LineChart>
-                      </ChartContainer>
-                      
-                      {/* إحصائيات سريعة - فقط أعلى ربح ومتوسط يومي (إجمالي الأرباح موجود في KPI) */}
-                      <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-600">
-                            {formatCurrency(Math.max(...profitChartData.map(d => d.profit)))}
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">أعلى ربح</div>
+                                    <div className="text-xs text-muted-foreground mt-1">متوسط يومي</div>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex items-center justify-center h-full">
+                            <div className="text-center">
+                                <Icon name="TrendingUp" className="h-12 w-12 mx-auto mb-2 text-muted-foreground opacity-50" />
+                                <p className="text-muted-foreground">لا توجد بيانات للأرباح</p>
+                            </div>
                         </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-muted-foreground">
-                            {formatCurrency(profitChartData.reduce((sum, d) => sum + d.profit, 0) / profitChartData.length || 0)}
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">متوسط يومي</div>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <Icon name="TrendingUp" className="h-12 w-12 mx-auto mb-2 text-muted-foreground opacity-50" />
-                        <p className="text-muted-foreground">لا توجد بيانات للأرباح</p>
-                      </div>
-                    </div>
-                  )}
+                    )}
                 </CardContent>
-              </Card>
+            </Card>
 
             <Card className="border-2 shadow-sm">
                 <CardHeader className="pb-4">
@@ -699,34 +904,33 @@ export default function DashboardPage() {
                         {/* جميع الحالات فقط (الإيرادات والطلبات موجودة في KPI Cards أعلاه) */}
                         {allStatusesData.map((status) => {
                             const hasOrders = status.count > 0;
-                            
+
                             return (
                                 <Button
                                     key={status.id}
                                     asChild
                                     variant={hasOrders ? "default" : "outline"}
-                                    className={`h-auto flex-col items-center justify-center p-4 transition-all hover:scale-105 ${
-                                        hasOrders 
-                                            ? 'border-2 shadow-sm' 
-                                            : 'opacity-60 hover:opacity-100'
-                                    }`}
+                                    className={`h-auto flex-col items-center justify-center p-4 transition-all hover:scale-105 ${hasOrders
+                                        ? 'border-2 shadow-sm'
+                                        : 'opacity-60 hover:opacity-100'
+                                        }`}
                                     style={hasOrders ? {
                                         borderColor: status.color,
                                         backgroundColor: `${status.color}15`,
                                     } : {}}
                                 >
                                     <Link href={`/dashboard/orders?status=${encodeURIComponent(status.name)}`}>
-                                        <div 
+                                        <div
                                             className="p-2 rounded-lg mb-2"
                                             style={{ backgroundColor: `${status.color}20` }}
                                         >
-                                            <Icon 
-                                                name={status.icon as any} 
+                                            <Icon
+                                                name={status.icon as any}
                                                 className="h-5 w-5"
                                                 style={{ color: status.color }}
                                             />
                                         </div>
-                                        <p 
+                                        <p
                                             className="text-2xl font-bold mb-1"
                                             style={{ color: hasOrders ? status.color : 'inherit' }}
                                         >
@@ -812,8 +1016,8 @@ export default function DashboardPage() {
                                                 const isTopPerformer = index === 0 && selectedDriver === 'all';
 
                                                 return (
-                                                    <tr 
-                                                        key={id} 
+                                                    <tr
+                                                        key={id}
                                                         className="border-b hover:bg-muted/30 transition-colors"
                                                     >
                                                         <td className="p-4">
@@ -826,7 +1030,7 @@ export default function DashboardPage() {
                                                                 </Avatar>
                                                                 <div className="flex-1">
                                                                     <div className="flex items-center gap-2">
-                                                                        <Link 
+                                                                        <Link
                                                                             href={`/dashboard/orders?driver=${encodeURIComponent(name)}`}
                                                                             className="font-semibold hover:text-primary transition-colors"
                                                                         >
@@ -847,7 +1051,7 @@ export default function DashboardPage() {
                                                             <div className="font-bold text-lg">{total}</div>
                                                         </td>
                                                         <td className="p-4 text-center">
-                                                            <Link 
+                                                            <Link
                                                                 href={`/dashboard/orders?driver=${encodeURIComponent(name)}&status=تم التوصيل`}
                                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors"
                                                             >
@@ -856,7 +1060,7 @@ export default function DashboardPage() {
                                                             </Link>
                                                         </td>
                                                         <td className="p-4 text-center">
-                                                            <Link 
+                                                            <Link
                                                                 href={`/dashboard/orders?driver=${encodeURIComponent(name)}&status=مؤجل`}
                                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 font-semibold hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
                                                             >
@@ -865,8 +1069,8 @@ export default function DashboardPage() {
                                                             </Link>
                                                         </td>
                                                         <td className="p-4 text-center">
-                                                            <Link 
-                                                                href={`/dashboard/orders?driver=${encodeURIComponent(name)}&status=راجع`}
+                                                            <Link
+                                                                href={`/dashboard/orders?driver=${encodeURIComponent(name)}&status=مرتجع`}
                                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 font-semibold hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
                                                             >
                                                                 <Icon name="XCircle" className="h-4 w-4" />
@@ -876,16 +1080,15 @@ export default function DashboardPage() {
                                                         <td className="p-4">
                                                             <div className="flex items-center gap-3">
                                                                 <div className="flex-1">
-                                                                    <Progress 
-                                                                        value={successRate} 
+                                                                    <Progress
+                                                                        value={successRate}
                                                                         className="h-2"
                                                                     />
                                                                 </div>
-                                                                <span className={`text-sm font-bold min-w-[3rem] text-right ${
-                                                                    successRate >= 80 ? 'text-emerald-600' :
+                                                                <span className={`text-sm font-bold min-w-[3rem] text-right ${successRate >= 80 ? 'text-emerald-600' :
                                                                     successRate >= 60 ? 'text-amber-600' :
-                                                                    'text-red-600'
-                                                                }`}>
+                                                                        'text-red-600'
+                                                                    }`}>
                                                                     {successRate}%
                                                                 </span>
                                                             </div>
@@ -943,7 +1146,7 @@ export default function DashboardPage() {
                                 </div>
                                 <div className="text-center p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900">
                                     <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                                        {filteredDriverStats.length > 0 
+                                        {filteredDriverStats.length > 0
                                             ? Math.round(
                                                 filteredDriverStats.reduce((sum, d) => {
                                                     const rate = d.total > 0 ? (d.completed / d.total) * 100 : 0;
@@ -972,4 +1175,3 @@ export default function DashboardPage() {
     )
 }
 
-    

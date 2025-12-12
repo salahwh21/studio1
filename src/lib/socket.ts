@@ -1,93 +1,102 @@
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 
-// Get socket URL from environment or use localhost
-const getSocketUrl = () => {
-  if (typeof window === 'undefined') return 'http://localhost:3001';
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_IO_URL || 'http://localhost:3001';
+
+let socket: Socket | null = null;
+
+export const initSocket = () => {
+  if (socket) return socket;
   
-  const socketUrl = (globalThis as any).VITE_SOCKET_IO_URL;
-  if (socketUrl) return socketUrl;
+  socket = io(SOCKET_URL, {
+    autoConnect: false,
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionAttempts: 5,
+  });
   
-  const apiUrl = (globalThis as any).VITE_API_URL;
-  if (apiUrl) return apiUrl.replace('/api', '');
+  socket.on('connect', () => {
+    console.log('✅ Socket.IO connected');
+  });
   
-  return 'http://localhost:3001';
+  socket.on('disconnect', () => {
+    console.log('❌ Socket.IO disconnected');
+  });
+  
+  socket.on('connect_error', (error) => {
+    console.error('Socket.IO connection error:', error);
+  });
+  
+  return socket;
 };
 
-const SOCKET_URL = getSocketUrl();
-
-export const socket = io(SOCKET_URL, {
-  autoConnect: false,
-  reconnection: true,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 5000,
-  reconnectionAttempts: 5
-});
-
-// Subscribe to new orders
-export const subscribeToNewOrders = (callback: (data: any) => void) => {
-  socket.on('new_order_created', callback);
-  return () => socket.off('new_order_created', callback);
-};
-
-// Track driver location in real-time
-export const trackDriverLocation = (orderId: string, callback: (data: any) => void) => {
-  socket.on(`order_tracking_${orderId}`, callback);
-  return () => socket.off(`order_tracking_${orderId}`, callback);
-};
-
-// Subscribe to order status changes
-export const subscribeToOrderStatus = (orderId: string, callback: (data: any) => void) => {
-  socket.on(`order_status_${orderId}`, callback);
-  return () => socket.off(`order_status_${orderId}`, callback);
-};
-
-// Subscribe to driver status updates
-export const subscribeToDriverStatus = (callback: (data: any) => void) => {
-  socket.on('driver_status_update', callback);
-  return () => socket.off('driver_status_update', callback);
-};
-
-// Emit driver location
-export const emitDriverLocation = (driverId: string, orderId: string, latitude: number, longitude: number) => {
-  socket.emit('driver_location', { driver_id: driverId, order_id: orderId, latitude, longitude });
-};
-
-// Emit driver status change
-export const emitDriverStatusChange = (driverId: string, is_online: boolean) => {
-  socket.emit('driver_status_changed', { driver_id: driverId, is_online });
-};
-
-// Emit order status change
-export const emitOrderStatusChange = (orderId: string, status: string) => {
-  socket.emit('order_status_changed', { order_id: orderId, status });
-};
-
-// Socket connection management
-export const connectSocket = () => {
-  if (!socket.connected) {
-    socket.connect();
-    console.log('🔌 Socket connected');
+export const getSocket = () => {
+  if (!socket) {
+    return initSocket();
   }
+  return socket;
+};
+
+export const connectSocket = () => {
+  const sock = getSocket();
+  if (!sock.connected) {
+    sock.connect();
+  }
+  return sock;
 };
 
 export const disconnectSocket = () => {
-  if (socket.connected) {
+  if (socket && socket.connected) {
     socket.disconnect();
-    console.log('🔌 Socket disconnected');
   }
 };
 
-// Socket event listeners
-socket.on('connect', () => {
-  console.log('✅ Socket.IO connected:', socket.id);
-});
+// Real-time event listeners
+export const onNewOrder = (callback: (data: any) => void) => {
+  const sock = getSocket();
+  sock.on('new_order_created', callback);
+  return () => sock.off('new_order_created', callback);
+};
 
-socket.on('disconnect', () => {
-  console.log('❌ Socket.IO disconnected');
-});
+export const onOrderStatusChanged = (orderId: string, callback: (data: any) => void) => {
+  const sock = getSocket();
+  sock.on(`order_status_${orderId}`, callback);
+  return () => sock.off(`order_status_${orderId}`, callback);
+};
 
-socket.on('connect_error', (error) => {
-  console.error('⚠️ Socket connection error:', error);
-});
+export const onDriverLocationUpdate = (orderId: string, callback: (data: any) => void) => {
+  const sock = getSocket();
+  sock.on(`order_tracking_${orderId}`, callback);
+  return () => sock.off(`order_tracking_${orderId}`, callback);
+};
 
-export default socket;
+export const onDriverStatusUpdate = (callback: (data: any) => void) => {
+  const sock = getSocket();
+  sock.on('driver_status_update', callback);
+  return () => sock.off('driver_status_update', callback);
+};
+
+// Emit events
+export const emitNewOrder = (orderData: any) => {
+  const sock = getSocket();
+  sock.emit('new_order', orderData);
+};
+
+export const emitOrderStatusChange = (data: { order_id: string; status: string }) => {
+  const sock = getSocket();
+  sock.emit('order_status_changed', data);
+};
+
+export const emitDriverLocation = (data: {
+  driver_id: string;
+  order_id: string;
+  latitude: number;
+  longitude: number;
+}) => {
+  const sock = getSocket();
+  sock.emit('driver_location', data);
+};
+
+export const emitDriverStatus = (data: { driver_id: string; is_online: boolean }) => {
+  const sock = getSocket();
+  sock.emit('driver_status_changed', data);
+};

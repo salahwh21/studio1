@@ -45,7 +45,7 @@ export type Status = {
   };
 };
 
-const initialStatuses: Status[] = [
+export const initialStatuses: Status[] = [
   {
     id: "STS_001",
     code: "PENDING",
@@ -63,6 +63,24 @@ const initialStatuses: Status[] = [
     },
     flow: { isEntry: true, isFinal: false, nextCodes: ["OUT_FOR_DELIVERY", "CANCELLED"], blockedFrom: [] },
     triggers: { requiresReason: false, createsReturnTask: false, sendsCustomerMessage: false, updatesDriverAccount: false },
+  },
+  {
+    id: "STS_018", // New ID
+    code: "WAITING_DRIVER_APPROVAL",
+    name: "بانتظار السائق",
+    icon: "UserCheck",
+    color: "#78909C",
+    isActive: true,
+    reasonCodes: [],
+    setByRoles: ["admin", "merchant"],
+    visibleTo: { admin: true, driver: true, merchant: true },
+    permissions: {
+      driver: { canSet: true, requireProof: false, allowCODCollection: false },
+      merchant: { showInPortal: true, showInReports: true },
+      admin: { lockPriceEdit: false, lockAddressEdit: false },
+    },
+    flow: { isEntry: false, isFinal: false, nextCodes: ["OUT_FOR_DELIVERY", "CANCELLED"], blockedFrom: [] },
+    triggers: { requiresReason: false, createsReturnTask: false, sendsCustomerMessage: true, updatesDriverAccount: false },
   },
   {
     id: "STS_002",
@@ -316,7 +334,7 @@ const initialStatuses: Status[] = [
     flow: { isEntry: false, isFinal: false, nextCodes: ["OUT_FOR_DELIVERY", "POSTPONED"], blockedFrom: [] },
     triggers: { requiresReason: true, createsReturnTask: false, sendsCustomerMessage: true, updatesDriverAccount: false },
   },
-   {
+  {
     id: "STS_016",
     code: "ARRIVAL_NO_ANSWER",
     name: "وصول وعدم رد",
@@ -334,47 +352,147 @@ const initialStatuses: Status[] = [
     flow: { isEntry: false, isFinal: true, nextCodes: ["BRANCH_RETURNED"], blockedFrom: [] },
     triggers: { requiresReason: false, createsReturnTask: true, sendsCustomerMessage: true, updatesDriverAccount: false },
   },
+  {
+    id: "STS_017",
+    code: "MERCHANT_PAID",
+    name: "تم محاسبة التاجر",
+    icon: "Banknote",
+    color: "#0891b2",
+    isActive: true,
+    reasonCodes: [],
+    setByRoles: ["admin"],
+    visibleTo: { admin: true, driver: false, merchant: true },
+    permissions: {
+      driver: { canSet: false, requireProof: false, allowCODCollection: false },
+      merchant: { showInPortal: true, showInReports: true },
+      admin: { lockPriceEdit: true, lockAddressEdit: true },
+    },
+    flow: { isEntry: false, isFinal: true, nextCodes: ["ARCHIVED"], blockedFrom: [] },
+    triggers: { requiresReason: false, createsReturnTask: false, sendsCustomerMessage: false, updatesDriverAccount: false },
+  },
 ];
 
 
 type StatusesState = {
   statuses: Status[];
+  isLoading: boolean;
+  error: string | null;
+  loadStatusesFromAPI: () => Promise<void>;
   setStatuses: (statuses: Status[]) => void;
-  addStatus: (newStatus: Omit<Status, 'id'>) => void;
-  updateStatus: (statusId: string, updatedStatus: Partial<Status>) => void;
-  deleteStatus: (statusId: string) => void;
+  addStatus: (newStatus: Omit<Status, 'id'>) => Promise<void>;
+  updateStatus: (statusId: string, updatedStatus: Partial<Status>) => Promise<void>;
+  deleteStatus: (statusId: string) => Promise<void>;
 };
 
 const generateId = () => `STS_${Date.now()}`;
 
-export const useStatusesStore = create<StatusesState>()(immer((set) => ({
-  statuses: initialStatuses,
-  
-  setStatuses: (newStatuses) => {
-    set({ statuses: newStatuses });
-  },
+export const useStatusesStore = create<StatusesState>()(immer((set, get) => {
+  // Auto-load on first access
+  const autoLoad = () => {
+    const state = get();
+    if (state.statuses.length === 0 && !state.isLoading && !state.error) {
+      state.loadStatusesFromAPI();
+    }
+  };
 
-  addStatus: (newStatus) => {
-    set(state => {
-      state.statuses.push({
-        ...newStatus,
-        id: generateId(),
-      });
-    });
-  },
+  if (typeof window !== 'undefined') {
+    setTimeout(autoLoad, 1400);
+  }
 
-  updateStatus: (statusId, updatedStatus) => {
-      set(state => {
+  return {
+    statuses: initialStatuses,
+    isLoading: false,
+    error: null,
+
+    loadStatusesFromAPI: async () => {
+      try {
+        set(state => { state.isLoading = true; state.error = null; });
+        const { default: api } = await import('@/lib/api');
+        const statuses = await api.getStatuses();
+        if (statuses.length > 0) {
+          set(state => {
+            state.statuses = statuses;
+            state.isLoading = false;
+          });
+          console.log('✅ Statuses loaded from API:', statuses.length);
+        } else {
+          set(state => { state.isLoading = false; });
+          console.log('ℹ️ Using initial statuses');
+        }
+      } catch (error) {
+        console.error('❌ Failed to load statuses from API:', error);
+        set(state => {
+          state.isLoading = false;
+          state.error = 'Failed to load statuses';
+        });
+      }
+    },
+
+    setStatuses: (newStatuses) => {
+      set({ statuses: newStatuses });
+    },
+
+    addStatus: async (newStatus) => {
+      try {
+        const { default: api } = await import('@/lib/api');
+        const createdStatus = await api.createStatus(newStatus);
+        set(state => {
+          state.statuses.push({
+            ...newStatus,
+            id: createdStatus.id,
+          });
+        });
+        console.log('✅ Status created in database:', createdStatus.id);
+      } catch (error) {
+        console.error('❌ Failed to create status:', error);
+        // Fallback to local
+        set(state => {
+          state.statuses.push({
+            ...newStatus,
+            id: generateId(),
+          });
+        });
+      }
+    },
+
+    updateStatus: async (statusId, updatedStatus) => {
+      try {
+        const { default: api } = await import('@/lib/api');
+        await api.updateStatus(statusId, updatedStatus);
+        set(state => {
           const status = state.statuses.find(s => s.id === statusId);
           if (status) {
-              Object.assign(status, updatedStatus);
+            Object.assign(status, updatedStatus);
           }
-      });
-  },
+        });
+        console.log('✅ Status updated in database:', statusId);
+      } catch (error) {
+        console.error('❌ Failed to update status:', error);
+        // Still update locally
+        set(state => {
+          const status = state.statuses.find(s => s.id === statusId);
+          if (status) {
+            Object.assign(status, updatedStatus);
+          }
+        });
+      }
+    },
 
-  deleteStatus: (statusId) => {
-      set(state => {
+    deleteStatus: async (statusId) => {
+      try {
+        const { default: api } = await import('@/lib/api');
+        await api.deleteStatus(statusId);
+        set(state => {
           state.statuses = state.statuses.filter(s => s.id !== statusId);
-      });
-  },
-})));
+        });
+        console.log('✅ Status deleted from database:', statusId);
+      } catch (error) {
+        console.error('❌ Failed to delete status:', error);
+        // Still delete locally
+        set(state => {
+          state.statuses = state.statuses.filter(s => s.id !== statusId);
+        });
+      }
+    },
+  };
+}));

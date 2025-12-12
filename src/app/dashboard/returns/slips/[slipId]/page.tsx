@@ -45,7 +45,7 @@ export default function SlipDetailPage() {
     const router = useRouter();
     const params = useParams();
     const { slipId } = params;
-    
+
     const { driverReturnSlips, merchantSlips, removeOrderFromDriverReturnSlip, removeOrderFromMerchantSlip } = useReturnsStore();
     const { updateOrderField } = useOrdersStore();
     const { formatCurrency, settings } = useSettings();
@@ -59,7 +59,7 @@ export default function SlipDetailPage() {
     useEffect(() => {
         let foundSlip: DriverReturnSlip | MerchantSlip | undefined = driverReturnSlips.find(s => s.id === slipId);
         let type: 'driver' | 'merchant' | null = null;
-    
+
         if (foundSlip) {
             type = 'driver';
         } else {
@@ -68,7 +68,7 @@ export default function SlipDetailPage() {
                 type = 'merchant';
             }
         }
-        
+
         setSlip(foundSlip || null);
         setSlipType(type);
         setIsLoading(false);
@@ -86,7 +86,7 @@ export default function SlipDetailPage() {
 
         const title = slipType === 'driver' ? `كشف استلام من السائق: ${(slip as DriverReturnSlip).driverName}` : `كشف إرجاع للتاجر: ${(slip as MerchantSlip).merchant}`;
         const partyType = slipType === 'driver' ? 'السائق' : 'التاجر';
-        
+
         const tableHeader = `
             <thead>
                 <tr>
@@ -152,20 +152,20 @@ export default function SlipDetailPage() {
 
     const handleRemoveOrder = (orderId: string) => {
         if (!slip) return;
-        
+
         if (slipType === 'driver') {
             removeOrderFromDriverReturnSlip(slip.id, orderId);
-            updateOrderField(orderId, 'status', 'راجع');
+            updateOrderField(orderId, 'status', 'مرتجع');
             // This is a trick to force re-render with updated data from the store
             const updatedSlip = useReturnsStore.getState().driverReturnSlips.find(s => s.id === slipId);
             setSlip(updatedSlip || null);
-            toast({ title: "تم", description: "تمت إعادة الطلب إلى قائمة مرتجعات السائق."});
+            toast({ title: "تم", description: "تمت إعادة الطلب إلى قائمة مرتجعات السائق." });
         } else if (slipType === 'merchant') {
             removeOrderFromMerchantSlip(slip.id, orderId);
             updateOrderField(orderId, 'status', 'مرجع للفرع');
             const updatedSlip = useReturnsStore.getState().merchantSlips.find(s => s.id === slipId);
             setSlip(updatedSlip || null);
-            toast({ title: "تم", description: "تمت إعادة الطلب إلى قائمة المرتجعات بالفرع."});
+            toast({ title: "تم", description: "تمت إعادة الطلب إلى قائمة المرتجعات بالفرع." });
         }
     };
 
@@ -205,7 +205,7 @@ export default function SlipDetailPage() {
                         </CardTitle>
                         <CardDescription className="mt-2 font-mono text-base">{slip.id}</CardDescription>
                     </div>
-                     <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
                         <Button variant="outline" onClick={handlePrint} disabled={isPending}>
                             <Icon name={isPending ? "Loader2" : "Printer"} className={cn("ml-2 h-4 w-4", { "animate-spin": isPending })} />
                             طباعة
@@ -215,10 +215,10 @@ export default function SlipDetailPage() {
                                 <Icon name="ArrowLeft" className="h-4 w-4" />
                             </Link>
                         </Button>
-                     </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
-                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div className="p-3 bg-muted rounded-md space-y-1">
                             <p className="text-muted-foreground">{partyType}</p>
                             <p className="font-semibold">{partyName}</p>
@@ -235,8 +235,8 @@ export default function SlipDetailPage() {
                             <p className="text-muted-foreground">إجمالي قيمة المرتجعات</p>
                             <p className="font-semibold">{formatCurrency(totalCOD)}</p>
                         </div>
-                         {slipType === 'merchant' && (
-                             <div className="p-3 bg-muted rounded-md space-y-1">
+                        {slipType === 'merchant' && (
+                            <div className="p-3 bg-muted rounded-md space-y-1">
                                 <p className="text-muted-foreground">الحالة</p>
                                 <p className="font-semibold">
                                     <Badge variant={(slip as MerchantSlip).status === 'تم التسليم' ? 'default' : 'outline'} className={(slip as MerchantSlip).status === 'تم التسليم' ? 'bg-green-100 text-green-800' : ''}>
@@ -244,8 +244,8 @@ export default function SlipDetailPage() {
                                     </Badge>
                                 </p>
                             </div>
-                         )}
-                     </div>
+                        )}
+                    </div>
                 </CardContent>
             </Card>
 

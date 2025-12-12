@@ -1,9 +1,99 @@
-
 @import "leaflet/dist/leaflet.css";
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Force Western Arabic Numerals (0-9) instead of Arabic-Indic (٠-٩) */
+* {
+  font-variant-numeric: lining-nums !important;
+  font-feature-settings: "lnum" 1 !important;
+  font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* RTL Support */
+body {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Numbers and inputs should be LTR */
+input[type="number"],
+input[type="tel"],
+input[type="date"],
+.numeric,
+.font-mono,
+[dir="ltr"] {
+  font-variant-numeric: lining-nums !important;
+  font-feature-settings: "lnum" 1 !important;
+}
+
+/* Dropdowns and menus RTL */
+[role="menu"],
+[role="listbox"],
+[role="dialog"],
+.dropdown-content,
+.popover-content,
+.rtl-content,
+[data-radix-popper-content-wrapper],
+[data-radix-dropdown-menu-content],
+[data-radix-popover-content],
+[data-radix-select-content],
+[data-radix-dialog-content] {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+/* All menu items and options RTL */
+[role="menuitem"],
+[role="option"],
+[data-radix-collection-item] {
+  direction: rtl !important;
+  text-align: right !important;
+  display: flex !important;
+  justify-content: flex-start !important;
+}
+
+/* Fix scrollbar position for RTL */
+[data-radix-scroll-area-viewport] {
+  direction: rtl !important;
+}
+
+/* Dropdowns max height and scroll */
+[data-radix-dropdown-menu-content],
+[data-radix-select-content],
+[data-radix-popover-content] {
+  max-height: 400px !important;
+  overflow-y: auto !important;
+}
+
+/* Dialog positioning */
+[data-radix-dialog-content] {
+  max-width: 90vw !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+}
+
+/* Responsive dropdowns */
+@media (max-width: 768px) {
+
+  [role="menu"],
+  [role="listbox"],
+  [data-radix-dropdown-menu-content],
+  [data-radix-popover-content],
+  [data-radix-select-content] {
+    max-width: 95vw !important;
+    max-height: 60vh !important;
+    overflow-y: auto !important;
+  }
+
+  [data-radix-dialog-content] {
+    max-width: 95vw !important;
+    max-height: 85vh !important;
+    margin: 1rem !important;
+  }
+}
 
 @layer base {
   :root {
@@ -82,31 +172,107 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-tajawal), sans-serif;
     font-size: 14px;
   }
+
   .custom-table-container {
     display: flex;
     flex-direction: column;
     height: 100%;
   }
+
   .custom-table-scroll {
     flex-grow: 1;
     overflow: auto;
   }
-  .custom-table thead, .custom-table tfoot {
+
+  .custom-table thead,
+  .custom-table tfoot {
     position: sticky;
     z-index: 10;
   }
+
   .custom-table thead {
     top: 0;
   }
+
   .custom-table tfoot {
-    bottom: 56px; /* Height of pagination footer */
+    bottom: 56px;
+    /* Height of pagination footer */
   }
+
   .leaflet-routing-container {
     display: none !important;
   }
+}
+
+/* macOS/iOS Style Design System */
+
+/* Command Items - macOS Style */
+[cmdk-item] {
+  border-radius: 8px !important;
+  padding: 0.625rem 1rem !important;
+  margin: 2px 0 !important;
+  font-weight: 500 !important;
+  transition: all 0.15s ease !important;
+  cursor: pointer !important;
+}
+
+[cmdk-item]:hover,
+[cmdk-item][data-selected="true"] {
+  background: #3b82f6 !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+  transform: translateX(-2px) !important;
+}
+
+/* Command List - macOS Style */
+[cmdk-list] {
+  padding: 0.25rem !important;
+}
+
+[cmdk-group] {
+  padding: 0.25rem 0 !important;
+}
+
+[cmdk-group-heading] {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: #6b7280 !important;
+  padding: 0.5rem 1rem 0.25rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* Popover Content - macOS Style */
+[data-radix-popper-content-wrapper] {
+  z-index: 50;
+}
+
+[data-radix-popper-content-wrapper]>div {
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid #d1d5db !important;
+}
+
+/* Select Trigger - macOS Style */
+button[role="combobox"] {
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+button[role="combobox"]:hover {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+button[role="combobox"]:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+  outline: none !important;
 }

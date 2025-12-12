@@ -13,6 +13,7 @@ import Icon from '@/components/icon';
 import { useStatusesStore } from '@/store/statuses-store';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SettingsHeader } from '@/components/settings-header';
 
 const SettingInput = ({ id, label, description, children }: { id: string, label: string, description: string, children: React.ReactNode }) => (
     <div className="space-y-2">
@@ -38,30 +39,23 @@ export default function OrderSettingsPage() {
 
     if (!context || !context.isHydrated) {
         return (
-             <div className="space-y-6">
+            <div className="space-y-6">
                 <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-64 w-full" />
             </div>
         );
     }
-    
+
     const { settings, updateOrderSetting } = context;
 
     return (
         <div className="space-y-6">
-            <Card className="shadow-sm">
-                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                        <CardTitle className="text-2xl font-bold tracking-tight">إعدادات الطلبات والأرشفة</CardTitle>
-                        <CardDescription className="mt-1">التحكم في دورة حياة الطلبات وقواعد الأرشفة التلقائية.</CardDescription>
-                    </div>
-                    <Button variant="outline" size="icon" asChild>
-                        <Link href="/dashboard/settings/general">
-                            <Icon name="ArrowLeft" className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                </CardHeader>
-            </Card>
+            <SettingsHeader
+                icon="ShoppingCart"
+                title="إعدادات الطلبات والأرشفة"
+                description="التحكم في دورة حياة الطلبات وقواعد الأرشفة التلقائية"
+                color="emerald"
+            />
 
             <Card>
                 <CardContent className="pt-6">
@@ -75,7 +69,7 @@ export default function OrderSettingsPage() {
                         </SettingInput>
 
                         <SettingInput id="default-status" label="الحالة الافتراضية للطلب الجديد" description="الحالة التي يتم تعيينها تلقائيا للطلبات الجديدة.">
-                             <Select
+                            <Select
                                 value={settings.orders.defaultStatus}
                                 onValueChange={(value) => updateOrderSetting('defaultStatus', value)}
                             >
@@ -97,12 +91,12 @@ export default function OrderSettingsPage() {
                                 onChange={(e) => updateOrderSetting('refPrefix', e.target.value)}
                             />
                         </SettingInput>
-                        
-                         <div></div>
+
+                        <div></div>
 
 
                         <SettingInput id="archive-status" label="حالة بدء الأرشفة" description="أرشفة الطلبات بعد وصولها للحالة النهائية.">
-                             <Select
+                            <Select
                                 value={settings.orders.archiveStartStatus}
                                 onValueChange={(value) => updateOrderSetting('archiveStartStatus', value)}
                             >
@@ -127,7 +121,7 @@ export default function OrderSettingsPage() {
                         </SettingInput>
 
                         <SettingInput id="archive-warning" label="التنبيه قبل الأرشفة بـ (أيام)" description="تنبيه للمراجعة قبل نقل الطلب للأرشيف.">
-                             <Input
+                            <Input
                                 id="archive-warning"
                                 type="number"
                                 value={settings.orders.archiveWarningDays}
@@ -138,7 +132,7 @@ export default function OrderSettingsPage() {
 
                     <div className="flex justify-start mt-8 pt-6 border-t">
                         <Button onClick={handleSave}>
-                           <Icon name="Save" className="ml-2 h-4 w-4" /> حفظ التغييرات
+                            <Icon name="Save" className="ml-2 h-4 w-4" /> حفظ التغييرات
                         </Button>
                     </div>
                 </CardContent>

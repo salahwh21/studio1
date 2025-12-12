@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
 import Icon from '@/components/icon';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SettingsHeader } from '@/components/settings-header';
 
 
 const currencies = [
@@ -80,22 +81,15 @@ export default function RegionalSettingsPage() {
 
     return (
         <div className="space-y-6">
-            <Card className="shadow-sm">
-                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                    <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2"><Icon name="Languages" /> الإعدادات الإقليمية</CardTitle>
-                    <CardDescription className="mt-1">إدارة العملة، اللغة، والمنطقة الزمنية لتكييف النظام مع احتياجاتك.</CardDescription>
-                </div>
-                <Button variant="outline" size="icon" asChild>
-                    <Link href="/dashboard/settings/general">
-                    <Icon name="ArrowLeft" className="h-4 w-4" />
-                    </Link>
-                </Button>
-                </CardHeader>
-            </Card>
+            <SettingsHeader
+                icon="Languages"
+                title="الإعدادات الإقليمية"
+                description="إدارة العملة، اللغة، والمنطقة الزمنية لتكييف النظام مع احتياجاتك"
+                color="blue"
+            />
 
             <div className="space-y-6">
-                 <Card>
+                <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-lg"><Icon name="DollarSign" /> إعدادات العملة والأرقام</CardTitle>
                     </CardHeader>
@@ -111,7 +105,7 @@ export default function RegionalSettingsPage() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="currencySymbol">رمز العملة</Label>
-                            <Input id="currencySymbol" value={settings.regional.currencySymbol} onChange={(e) => updateRegionalSetting('currencySymbol', e.target.value)} placeholder="مثال: د.أ"/>
+                            <Input id="currencySymbol" value={settings.regional.currencySymbol} onChange={(e) => updateRegionalSetting('currencySymbol', e.target.value)} placeholder="مثال: د.أ" />
                         </div>
                         <div className="space-y-2">
                             <Label>موضع رمز العملة</Label>
@@ -128,17 +122,17 @@ export default function RegionalSettingsPage() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="thousandsSeparator">فاصل الآلاف</Label>
-                             <Select value={settings.regional.thousandsSeparator} onValueChange={(value) => updateRegionalSetting('thousandsSeparator', value)}>
-                                <SelectTrigger id="thousandsSeparator"><SelectValue/></SelectTrigger>
+                            <Select value={settings.regional.thousandsSeparator} onValueChange={(value) => updateRegionalSetting('thousandsSeparator', value)}>
+                                <SelectTrigger id="thousandsSeparator"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     {numberSeparators.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
-                         <div className="space-y-2">
+                        <div className="space-y-2">
                             <Label htmlFor="decimalSeparator">الفاصل العشري</Label>
                             <Select value={settings.regional.decimalSeparator} onValueChange={(value) => updateRegionalSetting('decimalSeparator', value)}>
-                                <SelectTrigger id="decimalSeparator"><SelectValue/></SelectTrigger>
+                                <SelectTrigger id="decimalSeparator"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     {numberSeparators.filter(s => s.value !== ' ').map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                                 </SelectContent>
@@ -157,28 +151,28 @@ export default function RegionalSettingsPage() {
                             <Select value={settings.regional.language} onValueChange={(value) => updateRegionalSetting('language', value)}>
                                 <SelectTrigger id="language"><SelectValue placeholder="اختر اللغة..." /></SelectTrigger>
                                 <SelectContent>
-                                     {languages.map(l => <SelectItem key={l.code} value={l.code}>{l.name}</SelectItem>)}
+                                    {languages.map(l => <SelectItem key={l.code} value={l.code}>{l.name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
                     </CardContent>
                 </Card>
-                
-                 <Card>
+
+                <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-lg"><Icon name="Package" /> نظام الوحدات</CardTitle>
                     </CardHeader>
                     <CardContent>
-                         <RadioGroup value={settings.regional.unitsSystem} onValueChange={(value) => updateRegionalSetting('unitsSystem', value as 'metric' | 'imperial')} className="flex gap-6 pt-2">
-                                <div className="flex items-center space-x-2 space-x-reverse">
-                                    <RadioGroupItem value="metric" id="unit-metric" />
-                                    <Label htmlFor="unit-metric" className="font-normal">النظام المتري (كيلوجرام، سنتيمتر)</Label>
-                                </div>
-                                <div className="flex items-center space-x-2 space-x-reverse">
-                                    <RadioGroupItem value="imperial" id="unit-imperial" />
-                                    <Label htmlFor="unit-imperial" className="font-normal">النظام الإمبراطوري (رطل، بوصة)</Label>
-                                </div>
-                            </RadioGroup>
+                        <RadioGroup value={settings.regional.unitsSystem} onValueChange={(value) => updateRegionalSetting('unitsSystem', value as 'metric' | 'imperial')} className="flex gap-6 pt-2">
+                            <div className="flex items-center space-x-2 space-x-reverse">
+                                <RadioGroupItem value="metric" id="unit-metric" />
+                                <Label htmlFor="unit-metric" className="font-normal">النظام المتري (كيلوجرام، سنتيمتر)</Label>
+                            </div>
+                            <div className="flex items-center space-x-2 space-x-reverse">
+                                <RadioGroupItem value="imperial" id="unit-imperial" />
+                                <Label htmlFor="unit-imperial" className="font-normal">النظام الإمبراطوري (رطل، بوصة)</Label>
+                            </div>
+                        </RadioGroup>
                     </CardContent>
                 </Card>
 
@@ -188,7 +182,7 @@ export default function RegionalSettingsPage() {
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div className="space-y-2">
-                             <Label htmlFor="timezone">المنطقة الزمنية</Label>
+                            <Label htmlFor="timezone">المنطقة الزمنية</Label>
                             <Select value={settings.regional.timezone} onValueChange={(value) => updateRegionalSetting('timezone', value)}>
                                 <SelectTrigger id="timezone"><SelectValue placeholder="اختر المنطقة الزمنية..." /></SelectTrigger>
                                 <SelectContent>
@@ -196,7 +190,7 @@ export default function RegionalSettingsPage() {
                                 </SelectContent>
                             </Select>
                         </div>
-                         <div className="space-y-2">
+                        <div className="space-y-2">
                             <Label>تنسيق التاريخ</Label>
                             <RadioGroup value={settings.regional.dateFormat} onValueChange={(value) => updateRegionalSetting('dateFormat', value)} className="space-y-2">
                                 {dateFormats.map(df => (
@@ -207,9 +201,9 @@ export default function RegionalSettingsPage() {
                                 ))}
                             </RadioGroup>
                         </div>
-                         <div className="space-y-2">
+                        <div className="space-y-2">
                             <Label htmlFor="weekStartDay">بداية الأسبوع</Label>
-                             <Select value={settings.regional.firstDayOfWeek} onValueChange={(value) => updateRegionalSetting('firstDayOfWeek', value)}>
+                            <Select value={settings.regional.firstDayOfWeek} onValueChange={(value) => updateRegionalSetting('firstDayOfWeek', value)}>
                                 <SelectTrigger id="weekStartDay"><SelectValue placeholder="اختر اليوم..." /></SelectTrigger>
                                 <SelectContent>
                                     {weekStartDays.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}

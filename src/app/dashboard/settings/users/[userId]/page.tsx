@@ -22,40 +22,41 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Icon from '@/components/icon';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { SettingsHeader } from '@/components/settings-header';
 
 // This is now defined in the pricing page, but we'll keep a local copy for now
 // In a real app, this would be a shared resource.
 const mockPriceLists = [
-  { id: 'pl_1', name: 'الأسعار الافتراضية' },
-  { id: 'pl_brands_of_less', name: 'Brands of less' },
-  { id: 'pl_soundrush', name: 'SoundRush' },
-  { id: 'pl_stress_killer', name: 'Stress Killer' },
-  { id: 'pl_brandlet_outlet', name: 'Brandlet Outlet -1' },
-  { id: 'pl_nl_botique', name: 'N&L Botique' },
-  { id: 'pl_d_boutique', name: 'D boutique -1' },
-  { id: 'pl_macrame', name: 'Macrame -1' },
-  { id: 'pl_jacks_nyc', name: 'Jacks NYC-1' },
-  { id: 'pl_bader', name: 'بدر' },
-  { id: 'pl_oud_aljadail', name: 'عود الجدايل' },
-  { id: 'pl_luxury_baskets', name: 'Luxury Baskets - 1' },
-  { id: 'pl_malek_mobile', name: 'مالك موبايل - 1' },
-  { id: 'pl_oceansfounds', name: 'Oceansfounds -1' },
-  { id: 'pl_rubber_ducky', name: 'Rubber Ducky' },
-  { id: 'pl_travelers_cart', name: 'Travelers Cart' },
-  { id: 'pl_liali', name: 'ليالي' },
-  { id: 'pl_alsami_jadeed', name: 'السامي جديد' },
-  { id: 'pl_alsami', name: 'السامي' },
-  { id: 'pl_nitrous', name: 'Nitrous Delivery' },
-  { id: 'pl_majd', name: 'ماجد' },
-  { id: 'pl_abu_saif', name: 'ابو سيف' },
-  { id: 'pl_2_5_3', name: 'أسعار 2.5-3' },
-  { id: 'pl_1-5_2', name: 'أسعار 1.5-2' },
-  { id: 'pl_1-5_3', name: 'أسعار 1.5-3' },
-  { id: 'pl_2_5_3_5', name: 'أسعار 2.5-3.5' },
-  { id: 'pl_3_3_5', name: 'أسعار 3-3.5' },
-  { id: 'pl_2_5', name: 'أسعار 2.5' },
-  { id: 'pl_2_2_5', name: 'أسعار 2-2.5' },
-  { id: 'pl_2_3_5', name: 'أسعار 2-3.5' },
+    { id: 'pl_1', name: 'الأسعار الافتراضية' },
+    { id: 'pl_brands_of_less', name: 'Brands of less' },
+    { id: 'pl_soundrush', name: 'SoundRush' },
+    { id: 'pl_stress_killer', name: 'Stress Killer' },
+    { id: 'pl_brandlet_outlet', name: 'Brandlet Outlet -1' },
+    { id: 'pl_nl_botique', name: 'N&L Botique' },
+    { id: 'pl_d_boutique', name: 'D boutique -1' },
+    { id: 'pl_macrame', name: 'Macrame -1' },
+    { id: 'pl_jacks_nyc', name: 'Jacks NYC-1' },
+    { id: 'pl_bader', name: 'بدر' },
+    { id: 'pl_oud_aljadail', name: 'عود الجدايل' },
+    { id: 'pl_luxury_baskets', name: 'Luxury Baskets - 1' },
+    { id: 'pl_malek_mobile', name: 'مالك موبايل - 1' },
+    { id: 'pl_oceansfounds', name: 'Oceansfounds -1' },
+    { id: 'pl_rubber_ducky', name: 'Rubber Ducky' },
+    { id: 'pl_travelers_cart', name: 'Travelers Cart' },
+    { id: 'pl_liali', name: 'ليالي' },
+    { id: 'pl_alsami_jadeed', name: 'السامي جديد' },
+    { id: 'pl_alsami', name: 'السامي' },
+    { id: 'pl_nitrous', name: 'Nitrous Delivery' },
+    { id: 'pl_majd', name: 'ماجد' },
+    { id: 'pl_abu_saif', name: 'ابو سيف' },
+    { id: 'pl_2_5_3', name: 'أسعار 2.5-3' },
+    { id: 'pl_1-5_2', name: 'أسعار 1.5-2' },
+    { id: 'pl_1-5_3', name: 'أسعار 1.5-3' },
+    { id: 'pl_2_5_3_5', name: 'أسعار 2.5-3.5' },
+    { id: 'pl_3_3_5', name: 'أسعار 3-3.5' },
+    { id: 'pl_2_5', name: 'أسعار 2.5' },
+    { id: 'pl_2_2_5', name: 'أسعار 2-2.5' },
+    { id: 'pl_2_3_5', name: 'أسعار 2-3.5' },
 ];
 
 function UserEditPageSkeleton() {
@@ -71,7 +72,7 @@ function UserEditPageSkeleton() {
                             <Skeleton className="h-4 w-24 mt-2" />
                         </CardHeader>
                         <CardContent>
-                             <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
                         </CardContent>
                     </Card>
                 </div>
@@ -81,11 +82,11 @@ function UserEditPageSkeleton() {
                             <Skeleton className="h-6 w-40" />
                         </CardHeader>
                         <CardContent className="space-y-4">
-                             <Skeleton className="h-4 w-20" />
-                             <Skeleton className="h-10 w-full" />
-                             <Skeleton className="h-4 w-20 mt-2" />
-                             <Skeleton className="h-10 w-full" />
-                             <Skeleton className="h-10 w-24 mt-4" />
+                            <Skeleton className="h-4 w-20" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-4 w-20 mt-2" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-24 mt-4" />
                         </CardContent>
                     </Card>
                 </div>
@@ -101,7 +102,7 @@ const PricingPanel = ({ title, priceListId, onPriceListChange }: { title: string
             <CardDescription>اختر طريقة حساب الأجور لطلبات هذا المستخدم.</CardDescription>
         </CardHeader>
         <CardContent>
-             <div className="space-y-2">
+            <div className="space-y-2">
                 <Label htmlFor="price_list" className="font-bold">قائمة أسعار</Label>
                 <div className="mr-6">
                     <Select value={priceListId} onValueChange={onPriceListChange}>
@@ -167,7 +168,7 @@ const FareAdjustmentPanel = () => {
                             <TableRow key={rule.id}>
                                 <TableCell>
                                     <Select value={rule.merchantId} onValueChange={(value) => handleRuleChange(rule.id, 'merchantId', value)}>
-                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="any">أي تاجر</SelectItem>
                                             {merchants.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
@@ -175,8 +176,8 @@ const FareAdjustmentPanel = () => {
                                     </Select>
                                 </TableCell>
                                 <TableCell>
-                                     <Select value={rule.cityId} onValueChange={(value) => handleRuleChange(rule.id, 'cityId', value)}>
-                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                    <Select value={rule.cityId} onValueChange={(value) => handleRuleChange(rule.id, 'cityId', value)}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="any">أي مدينة</SelectItem>
                                             {cities.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -209,10 +210,10 @@ export default function UserEditPage() {
     const params = useParams();
     const { userId } = params;
     const { toast } = useToast();
-    
+
     const { users, updateUser } = useUsersStore();
     const { roles } = useRolesStore();
-    
+
     const user = users.find(u => u.id === userId);
 
     const [name, setName] = useState('');
@@ -222,12 +223,12 @@ export default function UserEditPage() {
     const [isActive, setIsActive] = useState(true);
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    
+
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const [isLoading, setIsLoading] = useState(true);
-    
+
     const role = roles.find(r => r.id === user?.roleId);
 
     useEffect(() => {
@@ -245,7 +246,7 @@ export default function UserEditPage() {
 
     const handleSaveChanges = () => {
         if (!user) return;
-        
+
         let passwordUpdate = {};
         if (newPassword) {
             if (newPassword !== confirmPassword) {
@@ -277,43 +278,49 @@ export default function UserEditPage() {
         return null; // or a not-found component
     }
 
+
+
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold">تعديل المستخدم</h1>
-                <Button variant="outline" size="icon" asChild>
-                    <Link href="/dashboard/settings/users"><Icon name="ArrowLeft" /></Link>
-                </Button>
-            </div>
-            
+            <SettingsHeader
+                icon="UserCog"
+                title={`تعديل المستخدم: ${name}`}
+                description="تعديل بيانات وصلاحيات المستخدم"
+                backHref="/dashboard/settings/users"
+                breadcrumbs={[
+                    { label: 'إدارة المستخدمين', href: '/dashboard/settings/users' }
+                ]}
+                color="purple"
+            />
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                 {/* Left Column: Profile Card */}
                 <div className="lg:col-span-1 space-y-6">
                     <Card>
                         <CardHeader className="items-center text-center">
-                             <Avatar className="h-24 w-24 border-2 border-primary">
+                            <Avatar className="h-24 w-24 border-2 border-primary">
                                 <AvatarImage src={user.avatar} alt={user.name} />
                                 <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <div className="pt-2">
-                               <CardTitle>{name}</CardTitle>
-                               <CardDescription>{role?.name || 'بدون دور'}</CardDescription>
+                                <CardTitle>{name}</CardTitle>
+                                <CardDescription>{role?.name || 'بدون دور'}</CardDescription>
                             </div>
                         </CardHeader>
                         <CardContent>
                             <div className="flex items-center justify-between rounded-lg border p-3">
                                 <Label htmlFor="user-status" className="font-medium flex items-center gap-2">
-                                     <Badge variant={isActive ? 'default' : 'destructive'} className={isActive ? "bg-green-500" : ""}>
+                                    <Badge variant={isActive ? 'default' : 'destructive'} className={isActive ? "bg-green-500" : ""}>
                                         {isActive ? 'نشط' : 'غير نشط'}
-                                     </Badge>
-                                     <span>حالة الحساب</span>
+                                    </Badge>
+                                    <span>حالة الحساب</span>
                                 </Label>
                                 <Switch id="user-status" checked={isActive} onCheckedChange={setIsActive} />
                             </div>
                         </CardContent>
                     </Card>
                 </div>
-                
+
                 {/* Right Column: Edit Forms */}
                 <div className="lg:col-span-2 space-y-6">
                     <Card>
@@ -323,13 +330,13 @@ export default function UserEditPage() {
                                 <Label htmlFor="name">الاسم</Label>
                                 <Input id="name" value={name} onChange={e => setName(e.target.value)} />
                             </div>
-                             <div className="space-y-2">
+                            <div className="space-y-2">
                                 <Label htmlFor="email">البريد الإلكتروني / رقم الهاتف</Label>
                                 <Input id="email" value={email} onChange={e => setEmail(e.target.value)} />
                             </div>
-                             <div className="space-y-2">
+                            <div className="space-y-2">
                                 <Label htmlFor="role">الدور</Label>
-                                 <Select value={userRoleId} onValueChange={setUserRoleId}>
+                                <Select value={userRoleId} onValueChange={setUserRoleId}>
                                     <SelectTrigger id="role"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         {roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
@@ -338,7 +345,7 @@ export default function UserEditPage() {
                             </div>
                         </CardContent>
                     </Card>
-                    
+
                     {role?.id === 'merchant' && <PricingPanel title="تسعير التوصيل للتاجر" priceListId={priceListId} onPriceListChange={setPriceListId} />}
                     {role?.id === 'driver' && <PricingPanel title="تسعير أجور السائق" priceListId={priceListId} onPriceListChange={setPriceListId} />}
                     {role?.id === 'driver' && <FareAdjustmentPanel />}
@@ -355,11 +362,11 @@ export default function UserEditPage() {
                                     </Button>
                                 </div>
                             </div>
-                             <div className="space-y-2">
+                            <div className="space-y-2">
                                 <Label htmlFor="confirm-password">تأكيد كلمة المرور</Label>
                                 <div className="relative">
                                     <Input id="confirm-password" type={showConfirmPassword ? 'text' : 'password'} placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                                     <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowConfirmPassword(prev => !prev)}>
+                                    <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowConfirmPassword(prev => !prev)}>
                                         <Icon name={showConfirmPassword ? 'EyeOff' : 'Eye'} className="h-4 w-4" />
                                     </Button>
                                 </div>
@@ -376,6 +383,5 @@ export default function UserEditPage() {
     );
 }
 
-    
 
-    
+

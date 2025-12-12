@@ -24,6 +24,7 @@ import { MerchantPaymentsLog } from '@/components/financials/merchant-payments-l
 import { DriverDashboard } from '@/components/financials/driver-dashboard';
 import { MerchantReportsEnhanced } from '@/components/financials/merchant-reports-enhanced';
 import { DriversFinancialTable } from '@/components/financials/drivers-financial-table';
+import { FinancialOverview } from '@/components/financials/financial-overview';
 
 // ---------------- Main Component ----------------
 export default function FinancialsPage() {
@@ -36,36 +37,36 @@ export default function FinancialsPage() {
   const quickStats = useMemo(() => {
     const drivers = users.filter(u => u.roleId === 'driver');
     const merchants = users.filter(u => u.roleId === 'merchant');
-    
+
     // مبالغ مع السائقين
     const cashWithDrivers = orders
       .filter(o => o.status === 'تم التوصيل')
       .reduce((sum, o) => sum + (o.cod || 0), 0);
-    
+
     // مبالغ مستلمة
     const cashCollected = orders
       .filter(o => o.status === 'تم استلام المال في الفرع')
       .reduce((sum, o) => sum + (o.cod || 0), 0);
-    
+
     // إجمالي كشوفات السائقين
     const totalDriverSlips = driverPaymentSlips.length;
     const totalDriverSlipsAmount = driverPaymentSlips.reduce((sum, slip) => {
       return sum + slip.orders.reduce((s, o) => s + (o.cod || 0), 0);
     }, 0);
-    
+
     // إجمالي كشوفات التجار
     const totalMerchantSlips = merchantPaymentSlips.length;
     const totalMerchantSlipsAmount = merchantPaymentSlips.reduce((sum, slip) => {
       return sum + slip.orders.reduce((s, o) => s + (o.itemPrice || 0), 0);
     }, 0);
-    
+
     // سائقون عليهم مبالغ
     const driversWithOutstanding = new Set(
       orders
         .filter(o => o.status === 'تم التوصيل')
         .map(o => o.driver)
     ).size;
-    
+
     return {
       cashWithDrivers,
       cashCollected,
@@ -115,7 +116,7 @@ export default function FinancialsPage() {
                 {formatCurrency(quickStats.cashWithDrivers)}
               </div>
             </div>
-            
+
             <div className="p-4 rounded-lg bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/20 border border-emerald-200 dark:border-emerald-900">
               <div className="flex items-center gap-2 mb-2">
                 <Icon name="Banknote" className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
@@ -125,7 +126,7 @@ export default function FinancialsPage() {
                 {formatCurrency(quickStats.cashCollected)}
               </div>
             </div>
-            
+
             <div className="p-4 rounded-lg bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200 dark:border-amber-900">
               <div className="flex items-center gap-2 mb-2">
                 <Icon name="FileText" className="h-4 w-4 text-amber-600 dark:text-amber-400" />
@@ -138,7 +139,7 @@ export default function FinancialsPage() {
                 {formatCurrency(quickStats.totalDriverSlipsAmount)}
               </div>
             </div>
-            
+
             <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20 border border-purple-200 dark:border-purple-900">
               <div className="flex items-center gap-2 mb-2">
                 <Icon name="Receipt" className="h-4 w-4 text-purple-600 dark:text-purple-400" />
@@ -151,7 +152,7 @@ export default function FinancialsPage() {
                 {formatCurrency(quickStats.totalMerchantSlipsAmount)}
               </div>
             </div>
-            
+
             <div className="p-4 rounded-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/20 border border-red-200 dark:border-red-900">
               <div className="flex items-center gap-2 mb-2">
                 <Icon name="Users" className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -164,7 +165,7 @@ export default function FinancialsPage() {
                 من {quickStats.totalDrivers} سائق
               </div>
             </div>
-            
+
             <div className="p-4 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950/30 dark:to-gray-900/20 border border-gray-200 dark:border-gray-900">
               <div className="flex items-center gap-2 mb-2">
                 <Icon name="Store" className="h-4 w-4 text-gray-600 dark:text-gray-400" />
@@ -179,73 +180,82 @@ export default function FinancialsPage() {
       </Card>
 
       {/* Main Tabs */}
-      <Tabs defaultValue="drivers-info" className="w-full" dir="rtl">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 h-auto p-1 bg-muted/50">
+      <Tabs defaultValue="overview" className="w-full" dir="rtl">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 h-auto p-1 bg-muted/50">
+          <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-background">
+            <Icon name="LayoutDashboard" className="h-4 w-4" />
+            <span className="hidden sm:inline">نظرة عامة</span>
+            <span className="sm:hidden">عامة</span>
+          </TabsTrigger>
           <TabsTrigger value="drivers-info" className="flex items-center gap-2 data-[state=active]:bg-background">
             <Icon name="Users" className="h-4 w-4" />
-            <span className="hidden sm:inline">معلومات السائقين</span>
-            <span className="sm:hidden">السائقين</span>
+            <span className="hidden sm:inline">السائقين</span>
+            <span className="sm:hidden">سائقين</span>
           </TabsTrigger>
           <TabsTrigger value="collect-from-driver" className="flex items-center gap-2 data-[state=active]:bg-background">
             <Icon name="Wallet" className="h-4 w-4" />
-            <span className="hidden sm:inline">تحصيل من السائق</span>
+            <span className="hidden sm:inline">تحصيل</span>
             <span className="sm:hidden">تحصيل</span>
           </TabsTrigger>
           <TabsTrigger value="driver-payments-log" className="flex items-center gap-2 data-[state=active]:bg-background">
             <Icon name="FileText" className="h-4 w-4" />
-            <span className="hidden sm:inline">كشوفات الاستلام</span>
+            <span className="hidden sm:inline">كشوفات</span>
             <span className="sm:hidden">كشوفات</span>
           </TabsTrigger>
           <TabsTrigger value="driver-analytics" className="flex items-center gap-2 data-[state=active]:bg-background">
             <Icon name="BarChart3" className="h-4 w-4" />
-            <span className="hidden sm:inline">تحليلات السائقين</span>
+            <span className="hidden sm:inline">تحليلات</span>
             <span className="sm:hidden">تحليلات</span>
           </TabsTrigger>
           <TabsTrigger value="prepare-merchant-payments" className="flex items-center gap-2 data-[state=active]:bg-background">
             <Icon name="CreditCard" className="h-4 w-4" />
-            <span className="hidden sm:inline">تجهيز دفعات</span>
+            <span className="hidden sm:inline">دفعات</span>
             <span className="sm:hidden">دفعات</span>
           </TabsTrigger>
           <TabsTrigger value="merchant-payments-log" className="flex items-center gap-2 data-[state=active]:bg-background">
             <Icon name="Receipt" className="h-4 w-4" />
-            <span className="hidden sm:inline">دفعات التجار</span>
+            <span className="hidden sm:inline">سجل التجار</span>
             <span className="sm:hidden">سجل</span>
           </TabsTrigger>
           <TabsTrigger value="merchant-analytics" className="flex items-center gap-2 data-[state=active]:bg-background">
             <Icon name="TrendingUp" className="h-4 w-4" />
-            <span className="hidden sm:inline">تقارير التجار</span>
+            <span className="hidden sm:inline">تقارير</span>
             <span className="sm:hidden">تقارير</span>
           </TabsTrigger>
         </TabsList>
-        
+
+        <TabsContent value="overview" className="mt-6">
+          <FinancialOverview />
+        </TabsContent>
+
         <TabsContent value="drivers-info" className="mt-6">
           <DriversFinancialTable />
         </TabsContent>
-        
+
         <TabsContent value="collect-from-driver" className="mt-6">
           <CollectFromDriver />
         </TabsContent>
-        
+
         <TabsContent value="driver-payments-log" className="mt-6">
           <DriverPaymentsLog />
         </TabsContent>
-        
+
         <TabsContent value="driver-analytics" className="mt-6">
           <DriverDashboard driverName="أحمد" />
         </TabsContent>
-        
+
         <TabsContent value="prepare-merchant-payments" className="mt-6">
           <PrepareMerchantPayments />
         </TabsContent>
-        
+
         <TabsContent value="merchant-payments-log" className="mt-6">
           <MerchantPaymentsLog />
         </TabsContent>
-        
+
         <TabsContent value="merchant-analytics" className="mt-6">
           <MerchantReportsEnhanced merchantName="المتجر الأول" />
         </TabsContent>
       </Tabs>
-    </div>
+    </div >
   );
 }

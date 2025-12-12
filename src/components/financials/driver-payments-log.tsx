@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DateRangePicker } from '@/components/date-range-picker';
 import type { DateRange } from 'react-day-picker';
 import { htmlToText } from 'html-to-text';
-import * as XLSX from 'xlsx';
+import { exportToExcel } from '@/lib/export-utils';
 import { exportToPDF, type PDFExportOptions } from '@/lib/pdf-export-utils';
 
 
@@ -27,7 +27,7 @@ export const DriverPaymentsLog = () => {
     const { settings, formatCurrency } = useSettings();
     const { driverPaymentSlips } = useFinancialsStore();
     const [isPending, startTransition] = useTransition();
-    
+
     const [showDetailsDialog, setShowDetailsDialog] = useState(false);
     const [currentSlip, setCurrentSlip] = useState<DriverPaymentSlip | null>(null);
 
@@ -44,11 +44,11 @@ export const DriverPaymentsLog = () => {
             try {
                 const slipDate = parseISO(slip.date);
                 matchesDate = isWithinInterval(slipDate, { start: dateRange.from, end: dateRange.to });
-            } catch(e) { matchesDate = false; }
+            } catch (e) { matchesDate = false; }
         }
         return matchesDriver && matchesDate;
     }), [driverPaymentSlips, filterDriver, dateRange]);
-    
+
     const handleShowDetails = (slip: DriverPaymentSlip) => {
         setCurrentSlip(slip);
         setShowDetailsDialog(true);
@@ -144,7 +144,7 @@ export const DriverPaymentsLog = () => {
         printWindow.print();
     };
 
-    const handleExportExcel = () => {
+    const handleExportExcel = async () => {
         if (filteredSlips.length === 0) {
             toast({ variant: 'destructive', title: 'خطأ', description: 'لا توجد كشوفات للتصدير.' });
             return;
@@ -155,7 +155,7 @@ export const DriverPaymentsLog = () => {
                 const totalCOD = slip.orders.reduce((sum, o) => sum + (o.cod || 0), 0);
                 const totalDriverFare = slip.orders.reduce((sum, o) => sum + (o.driverFee || 0), 0);
                 const totalNet = totalCOD - totalDriverFare;
-                
+
                 return {
                     'رقم الكشف': slip.id,
                     'اسم السائق': slip.driverName,
@@ -167,12 +167,8 @@ export const DriverPaymentsLog = () => {
                 };
             });
 
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'كشوفات التحصيل');
-
             const fileName = `كشوفات_التحصيل_${new Date().toISOString().split('T')[0]}.xlsx`;
-            XLSX.writeFile(wb, fileName);
+            await exportToExcel(data, fileName, 'كشوفات التحصيل');
 
             toast({
                 title: 'تم التصدير بنجاح',
@@ -202,12 +198,12 @@ export const DriverPaymentsLog = () => {
             const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
 
             const headers = ['رقم الكشف', 'اسم السائق', 'تاريخ الإنشاء', 'عدد الشحنات', 'إجمالي التحصيل', 'إجمالي أجرة السائق', 'الصافي'];
-            
+
             const rows = filteredSlips.map(slip => {
                 const totalCOD = slip.orders.reduce((sum, o) => sum + (o.cod || 0), 0);
                 const totalDriverFare = slip.orders.reduce((sum, o) => sum + (o.driverFee || 0), 0);
                 const totalNet = totalCOD - totalDriverFare;
-                
+
                 return [
                     slip.id,
                     slip.driverName,
@@ -288,8 +284,8 @@ export const DriverPaymentsLog = () => {
                             </CardDescription>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                            <DateRangePicker 
-                                onUpdate={(range) => setDateRange(range.range)} 
+                            <DateRangePicker
+                                onUpdate={(range) => setDateRange(range.range)}
                                 className="[&>button]:w-[200px]"
                             />
                             <Select value={filterDriver || 'all'} onValueChange={setFilterDriver}>
@@ -303,25 +299,25 @@ export const DriverPaymentsLog = () => {
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={handleExportExcel}
                                 className="gap-2"
                                 disabled={filteredSlips.length === 0}
                             >
-                                <Icon name="FileSpreadsheet" className="h-4 w-4"/>
+                                <Icon name="FileSpreadsheet" className="h-4 w-4" />
                                 <span className="hidden sm:inline">تصدير Excel</span>
                                 <span className="sm:hidden">Excel</span>
                             </Button>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={handleExportPDF}
                                 className="gap-2"
                                 disabled={filteredSlips.length === 0}
                             >
-                                <Icon name="FileText" className="h-4 w-4"/>
+                                <Icon name="FileText" className="h-4 w-4" />
                                 <span className="hidden sm:inline">تصدير PDF</span>
                                 <span className="sm:hidden">PDF</span>
                             </Button>
@@ -370,7 +366,7 @@ export const DriverPaymentsLog = () => {
                             </div>
                         </div>
                     )}
-                    
+
                     <div className="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>
@@ -402,8 +398,8 @@ export const DriverPaymentsLog = () => {
                                     return (
                                         <TableRow key={slip.id} className="hover:bg-muted/30">
                                             <TableCell className="font-mono border-l">
-                                                <Link 
-                                                    href={`/dashboard/financials/slips/${slip.id}`} 
+                                                <Link
+                                                    href={`/dashboard/financials/slips/${slip.id}`}
                                                     className="text-primary hover:underline font-semibold"
                                                 >
                                                     {slip.id}
@@ -426,9 +422,9 @@ export const DriverPaymentsLog = () => {
                                             <TableCell className="border-l font-bold text-center text-primary">{formatCurrency(totalNet)}</TableCell>
                                             <TableCell>
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <Button 
-                                                        variant="outline" 
-                                                        size="sm" 
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
                                                         onClick={() => handlePrintAction(slip)}
                                                         className="gap-2"
                                                     >

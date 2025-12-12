@@ -19,6 +19,7 @@ import Icon from '@/components/icon';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
+import { SettingsHeader } from '@/components/settings-header';
 
 
 const integrationsList = [
@@ -81,7 +82,7 @@ export default function IntegrationsPage() {
             let userConnections: Connection[] = saved ? JSON.parse(saved) : [];
 
             if (userConnections.length === 0) {
-                 userConnections.push({
+                userConnections.push({
                     id: nanoid(),
                     integrationId: 'shopify',
                     name: 'متجري على شوبيفاي',
@@ -99,7 +100,7 @@ export default function IntegrationsPage() {
                     lastSync: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
                 });
             }
-            
+
             setConnections(userConnections);
 
         } catch (e) {
@@ -125,9 +126,9 @@ export default function IntegrationsPage() {
         saveConnections(newConnections);
         router.push(`/dashboard/settings/integrations/${newConnection.id}`);
     };
-    
-     const handleToggleConnection = (connectionId: string, enabled: boolean) => {
-        const newConnections = connections.map(c => 
+
+    const handleToggleConnection = (connectionId: string, enabled: boolean) => {
+        const newConnections = connections.map(c =>
             c.id === connectionId ? { ...c, enabled } : c
         );
         saveConnections(newConnections);
@@ -142,18 +143,18 @@ export default function IntegrationsPage() {
             setIntegrationToDelete(connectionToDisconnect);
         }
     };
-    
+
     const confirmDelete = () => {
-        if(integrationToDelete) {
+        if (integrationToDelete) {
             const newConnections = connections.filter(c => c.id !== integrationToDelete.id);
             saveConnections(newConnections);
             toast({ title: 'تم قطع الاتصال', description: `تم إلغاء التكامل مع ${integrationToDelete.name}.`, variant: 'destructive' });
             setIntegrationToDelete(null);
         }
     }
-    
+
     const healthStats = connections.reduce((acc, conn) => {
-        if(conn.enabled) {
+        if (conn.enabled) {
             acc[conn.health] = (acc[conn.health] || 0) + 1;
         }
         return acc;
@@ -182,18 +183,18 @@ export default function IntegrationsPage() {
                 <CardHeader>
                     <div className="flex items-center gap-4">
                         <div className="bg-primary/10 text-primary p-3 rounded-lg h-12 w-12 flex items-center justify-center">
-                           {logoError || !logoUrl ? (
+                            {logoError || !logoUrl ? (
                                 <Icon name={integration.iconName} className="h-6 w-6" />
-                           ) : (
-                                <Image 
-                                    src={logoUrl} 
-                                    alt={`${integration.name} logo`} 
+                            ) : (
+                                <Image
+                                    src={logoUrl}
+                                    alt={`${integration.name} logo`}
                                     width={24}
                                     height={24}
                                     className="object-contain h-6 w-6"
                                     onError={() => setLogoError(true)}
                                 />
-                           )}
+                            )}
                         </div>
                         <div>
                             <CardTitle className="text-base">{integration.name}</CardTitle>
@@ -204,17 +205,17 @@ export default function IntegrationsPage() {
                 <CardContent className="mt-auto">
                     <Separator className="my-2" />
                     <div className="flex justify-end gap-2 pt-2">
-                         <Button size="sm" onClick={() => handleActionClick(integration.id)}>
+                        <Button size="sm" onClick={() => handleActionClick(integration.id)}>
                             <Icon name="PlusCircle" className="ml-2" />
                             {integration.type === 'factory' ? 'إضافة' : 'اتصال'}
-                         </Button>
+                        </Button>
                     </div>
                 </CardContent>
             </Card>
         );
     };
-    
-     const ConnectedIntegrationCard = ({ connection }: { connection: Connection }) => {
+
+    const ConnectedIntegrationCard = ({ connection }: { connection: Connection }) => {
         const integrationInfo = integrationsList.find(i => i.id === connection.integrationId)!;
         const healthInfo = {
             healthy: { text: 'سليم', color: 'text-green-600', icon: 'CheckCircle2' as const },
@@ -222,62 +223,57 @@ export default function IntegrationsPage() {
             error: { text: 'خطأ', color: 'text-red-600', icon: 'XCircle' as const },
             inactive: { text: 'غير نشط', color: 'text-gray-500', icon: 'Clock' as const }
         }[connection.health] || { text: 'غير معروف', color: 'text-gray-500', icon: 'HelpCircle' as const };
-        
-         return (
-             <Card className="bg-card shadow-sm hover:shadow-lg transition-shadow">
-                 <CardHeader className="p-4">
-                     <div className="flex justify-between items-start">
-                         <div className="flex items-center gap-3">
+
+        return (
+            <Card className="bg-card shadow-sm hover:shadow-lg transition-shadow">
+                <CardHeader className="p-4">
+                    <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
                             <div className="bg-primary/10 text-primary p-2 rounded-md h-10 w-10 flex items-center justify-center">
                                 <Icon name={integrationInfo.iconName} className="h-5 w-5" />
                             </div>
                             <div>
-                               <CardTitle className="text-sm font-semibold">{connection.name}</CardTitle>
-                               <CardDescription className="text-xs">{integrationInfo.name}</CardDescription>
+                                <CardTitle className="text-sm font-semibold">{connection.name}</CardTitle>
+                                <CardDescription className="text-xs">{integrationInfo.name}</CardDescription>
                             </div>
-                         </div>
+                        </div>
                         <Badge variant={connection.enabled ? 'default' : 'secondary'} className={connection.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}>
-                          {connection.enabled ? 'مفعل' : 'معطل'}
+                            {connection.enabled ? 'مفعل' : 'معطل'}
                         </Badge>
-                     </div>
-                 </CardHeader>
-                 <CardContent className="p-4 pt-0">
-                     <Separator className="mb-4" />
-                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
+                    </div>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                    <Separator className="mb-4" />
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
                         <div className={`flex items-center gap-1.5 font-medium ${healthInfo.color}`}>
                             <Icon name={healthInfo.icon} className="h-4 w-4" />
                             <span>الصحة: {healthInfo.text}</span>
                         </div>
                         <span>آخر مزامنة: {new Date(connection.lastSync).toLocaleString('ar-JO')}</span>
-                     </div>
-                     <div className="flex items-center justify-end gap-2">
-                         <Switch 
+                    </div>
+                    <div className="flex items-center justify-end gap-2">
+                        <Switch
                             checked={connection.enabled}
                             onCheckedChange={(checked) => handleToggleConnection(connection.id, checked)}
                             aria-label={`تفعيل أو تعطيل ${connection.name}`}
                         />
                         <Button variant="destructive" size="sm" onClick={() => handleDisconnect(connection.id)}>قطع</Button>
                         <Button variant="secondary" size="sm" onClick={() => router.push(`/dashboard/settings/integrations/${connection.id}`)}>إدارة</Button>
-                     </div>
-                 </CardContent>
-             </Card>
-         );
-     }
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
 
 
     return (
         <div className="space-y-6">
-            <Card>
-                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                        <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2"><Icon name="Share2" /> التكاملات والربط البرمجي</CardTitle>
-                        <CardDescription className="mt-1">ربط خدمات وتطبيقات خارجية لتوسيع إمكانيات النظام.</CardDescription>
-                    </div>
-                    <Button variant="outline" size="icon" asChild>
-                        <Link href="/dashboard/settings"><Icon name="ArrowLeft" className="h-4 w-4" /></Link>
-                    </Button>
-                </CardHeader>
-            </Card>
+            <SettingsHeader
+                icon="Share2"
+                title="التكاملات والربط البرمجي"
+                description="ربط خدمات وتطبيقات خارجية لتوسيع إمكانيات النظام"
+                color="amber"
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <HealthStatusCard title="تكاملات سليمة" count={healthStats.healthy || 0} icon="CheckCircle2" colorClass="text-green-600" link="#" />
@@ -304,7 +300,7 @@ export default function IntegrationsPage() {
                         {categories.map(cat => <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>)}
                     </TabsList>
                 </div>
-                
+
                 {categories.map(cat => (
                     <TabsContent key={cat.id} value={cat.id}>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
@@ -315,13 +311,13 @@ export default function IntegrationsPage() {
                     </TabsContent>
                 ))}
             </Tabs>
-            
+
             <AlertDialog open={!!integrationToDelete} onOpenChange={() => setIntegrationToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>تأكيد قطع الاتصال</AlertDialogTitle>
-                         <AlertDialogDescription>
-                           هل أنت متأكد من إلغاء التكامل مع "{integrationToDelete?.name}"؟
+                        <AlertDialogDescription>
+                            هل أنت متأكد من إلغاء التكامل مع "{integrationToDelete?.name}"؟
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

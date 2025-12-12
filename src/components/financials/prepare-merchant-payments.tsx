@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { DateRangePicker } from '@/components/date-range-picker';
 import type { DateRange } from 'react-day-picker';
 import { useFinancialsStore } from '@/store/financials-store';
-import * as XLSX from 'xlsx';
+import { exportToExcel } from '@/lib/export-utils';
 import { exportToPDF, type PDFExportOptions } from '@/lib/pdf-export-utils';
 import { ExportSettingsDialog, type ExportSettings, type ExportField } from '@/components/export-settings-dialog';
 
@@ -28,7 +28,7 @@ export const PrepareMerchantPayments = () => {
     const { orders } = useOrdersStore();
     const { settings, formatCurrency } = useSettings();
     const { addMerchantPaymentSlip } = useFinancialsStore();
-    
+
     const [selectedMerchantId, setSelectedMerchantId] = useState<string | null>(null);
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
     const [adjustments, setAdjustments] = useState<Record<string, number>>({});
@@ -40,12 +40,12 @@ export const PrepareMerchantPayments = () => {
     const [exportSettings, setExportSettings] = useState<ExportSettings | null>(null);
 
     const merchants = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
-    
+
     const merchantsWithCounts = useMemo(() => {
         return merchants.map(merchant => {
-            const count = orders.filter(o => 
-                o.merchant === merchant.storeName && 
-                o.status === 'تم التوصيل'
+            const count = orders.filter(o =>
+                o.merchant === merchant.storeName &&
+                (o.status === 'تم التوصيل' || o.status === 'تم استلام المال في الفرع')
             ).length;
             return { ...merchant, payableOrdersCount: count };
         });
@@ -58,26 +58,26 @@ export const PrepareMerchantPayments = () => {
 
         const lowercasedQuery = searchQuery.toLowerCase();
 
-        return orders.filter(o => 
-            o.merchant === selectedMerchant.storeName && 
-            o.status === 'تم التوصيل' &&
-            (searchQuery === '' || 
-             o.id.toLowerCase().includes(lowercasedQuery) ||
-             o.recipient.toLowerCase().includes(lowercasedQuery)
+        return orders.filter(o =>
+            o.merchant === selectedMerchant.storeName &&
+            (o.status === 'تم التوصيل' || o.status === 'تم استلام المال في الفرع') &&
+            (searchQuery === '' ||
+                o.id.toLowerCase().includes(lowercasedQuery) ||
+                o.recipient.toLowerCase().includes(lowercasedQuery)
             ) &&
             (!dateRange?.from || new Date(o.date) >= dateRange.from) &&
             (!dateRange?.to || new Date(o.date) <= dateRange.to)
         );
     }, [orders, selectedMerchant, searchQuery, dateRange]);
-    
+
     const totals = useMemo(() => {
         const selectedOrders = ordersForPayment.filter(o => selectedOrderIds.includes(o.id));
-        
+
         return selectedOrders.reduce((acc, order) => {
             const adjustment = adjustments[order.id] || 0;
             const itemPrice = order.itemPrice || 0;
             const netAmount = itemPrice + adjustment;
-            
+
             acc.cod += order.cod || 0;
             acc.deliveryFee += order.deliveryFee || 0;
             acc.totalItemPrice += itemPrice;
@@ -90,12 +90,12 @@ export const PrepareMerchantPayments = () => {
 
     const handleCreatePaymentSlip = () => {
         if (!selectedMerchant || selectedOrderIds.length === 0) {
-            toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء اختيار تاجر وطلب واحد على الأقل.'});
+            toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء اختيار تاجر وطلب واحد على الأقل.' });
             return;
         }
 
         const ordersToProcess = ordersForPayment.filter(o => selectedOrderIds.includes(o.id));
-        
+
         addMerchantPaymentSlip({
             merchantName: selectedMerchant.storeName || selectedMerchant.name,
             date: new Date().toISOString(),
@@ -115,9 +115,9 @@ export const PrepareMerchantPayments = () => {
     const handleSelectAll = (checked: boolean) => {
         setSelectedOrderIds(checked ? ordersForPayment.map(o => o.id) : []);
     };
-    
+
     const handleSelectRow = (orderId: string, isChecked: boolean) => {
-        setSelectedOrderIds(prev => 
+        setSelectedOrderIds(prev =>
             isChecked ? [...prev, orderId] : prev.filter(id => id !== orderId)
         );
     };
@@ -129,7 +129,7 @@ export const PrepareMerchantPayments = () => {
             [orderId]: numericValue,
         }));
     };
-    
+
     const handlePrintClick = () => {
         const ordersToPrint = ordersForPayment.filter(o => selectedOrderIds.includes(o.id));
         if (ordersToPrint.length === 0) {
@@ -165,7 +165,7 @@ export const PrepareMerchantPayments = () => {
         if (printSettings.fields.netAmount) headers.push('الصافي المستحق');
 
         const tableHeader = `<thead><tr>${headers.map(h => `<th style="padding: 8px; border: 1px solid #d1d5db; text-align: center; background: #f9fafb; font-weight: bold; font-size: 12px;">${h}</th>`).join('')}</tr></thead>`;
-        
+
         const tableRows = ordersToPrint.map((o, i) => {
             const adjustment = adjustments[o.id] || 0;
             const netAmount = (o.itemPrice || 0) + adjustment;
@@ -201,7 +201,7 @@ export const PrepareMerchantPayments = () => {
         if (printSettings.fields.netAmount) footerCells.push(formatCurrency(totalNet));
 
         const tableFooter = `<tfoot><tr>${footerCells.map((cell, idx) => `<${idx === 1 ? 'th' : 'td'} colspan="${idx === 1 ? colspan : 1}" style="padding: 8px; border: 1px solid #d1d5db; text-align: right; font-weight: bold; font-size: 12px; background: #f9fafb;">${cell}</${idx === 1 ? 'th' : 'td'}>`).join('')}</tr></tfoot>`;
-        
+
         const slipDate = new Date().toLocaleDateString('ar-EG', {
             year: 'numeric',
             month: 'long',
@@ -347,7 +347,7 @@ export const PrepareMerchantPayments = () => {
         setExcelSettingsOpen(true);
     };
 
-    const handleExportExcel = (excelSettings: ExportSettings) => {
+    const handleExportExcel = async (excelSettings: ExportSettings) => {
         const ordersToExport = ordersForPayment.filter(o => selectedOrderIds.includes(o.id));
         if (ordersToExport.length === 0) {
             toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء تحديد طلب واحد على الأقل للتصدير.' });
@@ -389,12 +389,8 @@ export const PrepareMerchantPayments = () => {
             if (excelSettings.fields.netAmount) totalRow['الصافي المستحق'] = totalNet;
             data.push(totalRow);
 
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'كشف الدفع');
-
             const fileName = `كشف_دفع_${selectedMerchant?.storeName || selectedMerchant?.name || 'تاجر'}_${new Date().toISOString().split('T')[0]}.xlsx`;
-            XLSX.writeFile(wb, fileName);
+            await exportToExcel(data, fileName, 'كشف الدفع');
 
             toast({
                 title: 'تم التصدير بنجاح',
@@ -567,48 +563,48 @@ export const PrepareMerchantPayments = () => {
                         </div>
                         <div className="relative w-full sm:w-auto sm:min-w-[250px]">
                             <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input 
-                                placeholder="بحث بالرقم، المستلم..." 
+                            <Input
+                                placeholder="بحث بالرقم، المستلم..."
                                 className="pr-10"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <DateRangePicker 
-                            onUpdate={({ range }) => setDateRange(range)} 
+                        <DateRangePicker
+                            onUpdate={({ range }) => setDateRange(range)}
                             className="[&>button]:w-[200px]"
                         />
                         <div className="flex items-center gap-2 sm:mr-auto flex-wrap">
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={handlePrintClick} 
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handlePrintClick}
                                 disabled={selectedOrderIds.length === 0}
                                 className="gap-2"
                             >
-                                <Icon name="Printer" className="h-4 w-4"/>
+                                <Icon name="Printer" className="h-4 w-4" />
                                 <span className="hidden sm:inline">طباعة المحدد</span>
                                 <span className="sm:hidden">طباعة</span>
                             </Button>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={handleExportExcelClick}
                                 disabled={selectedOrderIds.length === 0}
                                 className="gap-2"
                             >
-                                <Icon name="FileSpreadsheet" className="h-4 w-4"/>
+                                <Icon name="FileSpreadsheet" className="h-4 w-4" />
                                 <span className="hidden sm:inline">تصدير Excel</span>
                                 <span className="sm:hidden">Excel</span>
                             </Button>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={handleExportPDFClick}
                                 disabled={selectedOrderIds.length === 0}
                                 className="gap-2"
                             >
-                                <Icon name="FileText" className="h-4 w-4"/>
+                                <Icon name="FileText" className="h-4 w-4" />
                                 <span className="hidden sm:inline">تصدير PDF</span>
                                 <span className="sm:hidden">PDF</span>
                             </Button>
@@ -623,7 +619,7 @@ export const PrepareMerchantPayments = () => {
                         <div>
                             <CardTitle className="text-lg">الطلبات المكتملة</CardTitle>
                             <CardDescription className="mt-1">
-                                {selectedMerchant 
+                                {selectedMerchant
                                     ? `طلبات التاجر ${selectedMerchant.storeName || selectedMerchant.name} - ${ordersForPayment.length} طلب`
                                     : 'اختر تاجرًا لعرض الطلبات'
                                 }
@@ -643,24 +639,24 @@ export const PrepareMerchantPayments = () => {
                                 <TableHead className="sticky right-0 z-30 p-3 text-center border-l w-20 bg-muted">
                                     <div className="flex items-center justify-center gap-2">
                                         <span className="text-sm font-bold">#</span>
-                                        <Checkbox 
-                                            onCheckedChange={handleSelectAll} 
+                                        <Checkbox
+                                            onCheckedChange={handleSelectAll}
                                             checked={isAllSelected}
                                             aria-label="Select all rows"
                                         />
                                     </div>
                                 </TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '150px'}}>رقم الطلب</TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '150px'}}>المستلم</TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '150px'}}>تاريخ التوصيل</TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '150px'}}>قيمة التحصيل</TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '150px'}}>أجور التوصيل</TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '150px'}}>المستحق للتاجر</TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '120px'}}>تعديلات (+/-)</TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '120px'}}>الصافي المستحق</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '150px' }}>رقم الطلب</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '150px' }}>المستلم</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '150px' }}>تاريخ التوصيل</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '150px' }}>قيمة التحصيل</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '150px' }}>أجور التوصيل</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '150px' }}>المستحق للتاجر</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '120px' }}>تعديلات (+/-)</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '120px' }}>الصافي المستحق</TableHead>
                             </TableRow>
                         </TableHeader>
-                         <TableBody>
+                        <TableBody>
                             {!selectedMerchant ? (
                                 <TableRow><TableCell colSpan={9} className="h-24 text-center">الرجاء اختيار تاجر لعرض الطلبات.</TableCell></TableRow>
                             ) : ordersForPayment.length === 0 ? (
@@ -684,9 +680,9 @@ export const PrepareMerchantPayments = () => {
                                             <TableCell className="text-center border-l">{formatCurrency(order.deliveryFee)}</TableCell>
                                             <TableCell className="text-center border-l font-semibold">{formatCurrency(order.itemPrice)}</TableCell>
                                             <TableCell className="text-center border-l">
-                                                <Input 
-                                                    type="number" 
-                                                    className="h-8 text-center" 
+                                                <Input
+                                                    type="number"
+                                                    className="h-8 text-center"
                                                     value={adjustment}
                                                     onChange={(e) => handleAdjustmentChange(order.id, e.target.value)}
                                                 />
@@ -708,7 +704,7 @@ export const PrepareMerchantPayments = () => {
                                 <span className="font-bold text-lg">{formatCurrency(totals.totalItemPrice)}</span>
                             </div>
                         </div>
-                        <Separator orientation='vertical' className="h-8"/>
+                        <Separator orientation='vertical' className="h-8" />
                         <div className="flex items-center gap-2">
                             <Icon name="Edit" className="h-4 w-4 text-muted-foreground" />
                             <div>
@@ -716,7 +712,7 @@ export const PrepareMerchantPayments = () => {
                                 <span className="font-bold text-lg">{formatCurrency(totals.totalAdjustments)}</span>
                             </div>
                         </div>
-                        <Separator orientation='vertical' className="h-8"/>
+                        <Separator orientation='vertical' className="h-8" />
                         <div className="flex items-center gap-2">
                             <Icon name="TrendingUp" className="h-4 w-4 text-primary" />
                             <div>
@@ -725,9 +721,9 @@ export const PrepareMerchantPayments = () => {
                             </div>
                         </div>
                     </div>
-                    <Button 
-                        onClick={handleCreatePaymentSlip} 
-                        disabled={selectedOrderIds.length === 0} 
+                    <Button
+                        onClick={handleCreatePaymentSlip}
+                        disabled={selectedOrderIds.length === 0}
                         size="lg"
                         className="gap-2 w-full sm:w-auto"
                     >

@@ -5,7 +5,7 @@ import * as React from 'react';
 import { CalendarIcon } from 'lucide-react';
 import { addDays, format, isAfter, isBefore } from 'date-fns';
 import { DateRange, DayPicker } from 'react-day-picker';
-import { ar } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,7 @@ export function DateRangePicker({
   // Helper function to format date display
   const formatDate = (date: Date | undefined) => {
     if (!date) return '';
-    return format(date, 'd LLL, y', { locale: ar });
+    return format(date, 'd LLL, y', { locale: enUS });
   };
 
   const displayLabel =
@@ -82,7 +82,7 @@ export function DateRangePicker({
             selected={date}
             onSelect={setDate}
             numberOfMonths={2}
-            locale={ar}
+            locale={enUS}
           />
         </PopoverContent>
       </Popover>

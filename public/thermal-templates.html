@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام قوالب الملصقات الحرارية - XPrinter XP-301</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* ========== المقاس 100×150 ========== */
+        body.label-100x150 {
+            width: 100mm;
+            height: 150mm;
+        }
+
+        body.label-100x150 .label {
+            width: 100mm;
+            height: 150mm;
+            padding: 4mm;
+        }
+
+        body.label-100x150 .header {
+            height: 12mm;
+            font-size: 14px;
+            margin-bottom: 2mm;
+        }
+
+        body.label-100x150 .barcode {
+            height: 30mm;
+            margin-bottom: 2mm;
+        }
+
+        body.label-100x150 .barcode svg {
+            max-height: 28mm;
+            max-width: 92mm;
+        }
+
+        body.label-100x150 .order-id {
+            height: 8mm;
+            font-size: 13px;
+            margin-bottom: 2mm;
+        }
+
+        body.label-100x150 .customer-info {
+            height: 30mm;
+            font-size: 12px;
+            line-height: 1.4;
+            margin-bottom: 2mm;
+        }
+
+        body.label-100x150 .address {
+            height: 35mm;
+            font-size: 11px;
+            line-height: 1.4;
+            margin-bottom: 2mm;
+        }
+
+        body.label-100x150 .notes {
+            height: 20mm;
+            font-size: 10px;
+            line-height: 1.3;
+        }
+
+        /* ========== المقاس 100×100 ========== */
+        body.label-100x100 {
+            width: 100mm;
+            height: 100mm;
+        }
+
+        body.label-100x100 .label {
+            width: 100mm;
+            height: 100mm;
+            padding: 3mm;
+        }
+
+        body.label-100x100 .header {
+            height: 10mm;
+            font-size: 12px;
+            margin-bottom: 1.5mm;
+        }
+
+        body.label-100x100 .barcode {
+            height: 20mm;
+            margin-bottom: 1.5mm;
+        }
+
+        body.label-100x100 .barcode svg {
+            max-height: 18mm;
+            max-width: 94mm;
+        }
+
+        body.label-100x100 .order-id {
+            height: 6mm;
+            font-size: 11px;
+            margin-bottom: 1.5mm;
+        }
+
+        body.label-100x100 .customer-info {
+            height: 20mm;
+            font-size: 10px;
+            line-height: 1.3;
+            margin-bottom: 1.5mm;
+        }
+
+        body.label-100x100 .address {
+            height: 20mm;
+            font-size: 9px;
+            line-height: 1.3;
+            margin-bottom: 1.5mm;
+        }
+
+        body.label-100x100 .notes {
+            height: 15mm;
+            font-size: 8px;
+            line-height: 1.2;
+        }
+
+        /* ========== المقاس 75×50 ========== */
+        body.label-75x50 {
+            width: 75mm;
+            height: 50mm;
+        }
+
+        body.label-75x50 .label {
+            width: 75mm;
+            height: 50mm;
+            padding: 2mm;
+        }
+
+        body.label-75x50 .header {
+            height: 6mm;
+            font-size: 9px;
+            margin-bottom: 1mm;
+        }
+
+        body.label-75x50 .barcode {
+            height: 12mm;
+            margin-bottom: 1mm;
+        }
+
+        body.label-75x50 .barcode svg {
+            max-height: 10mm;
+            max-width: 71mm;
+        }
+
+        body.label-75x50 .order-id {
+            height: 4mm;
+            font-size: 8px;
+            margin-bottom: 1mm;
+        }
+
+        body.label-75x50 .customer-info {
+            height: 10mm;
+            font-size: 7px;
+            line-height: 1.2;
+            margin-bottom: 1mm;
+        }
+
+        body.label-75x50 .address {
+            height: 12mm;
+            font-size: 7px;
+            line-height: 1.2;
+        }
+
+        body.label-75x50 .notes {
+            display: none;
+        }
+
+        /* ========== المقاس 50×25 ========== */
+        body.label-50x25 {
+            width: 50mm;
+            height: 25mm;
+        }
+
+        body.label-50x25 .label {
+            width: 50mm;
+            height: 25mm;
+            padding: 1mm;
+        }
+
+        body.label-50x25 .header {
+            height: 3mm;
+            font-size: 7px;
+            margin-bottom: 0.5mm;
+        }
+
+        body.label-50x25 .barcode {
+            height: 8mm;
+            margin-bottom: 0.5mm;
+        }
+
+        body.label-50x25 .barcode svg {
+            max-height: 7mm;
+            max-width: 48mm;
+        }
+
+        body.label-50x25 .order-id {
+            height: 3mm;
+            font-size: 6px;
+            margin-bottom: 0.5mm;
+        }
+
+        body.label-50x25 .customer-info {
+            height: 5mm;
+            font-size: 6px;
+            line-height: 1.1;
+            margin-bottom: 0.5mm;
+        }
+
+        body.label-50x25 .address {
+            height: 4mm;
+            font-size: 5px;
+            line-height: 1.1;
+        }
+
+        body.label-50x25 .notes {
+            display: none;
+        }
+
+        /* ========== أنماط مشتركة ========== */
+        .label {
+            background: white;
+            border: 1px solid #ccc;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #000;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .barcode {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .barcode svg {
+            display: block;
+        }
+
+        .order-id {
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .customer-info {
+            padding: 1mm;
+            border-bottom: 1px solid #ddd;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .customer-info div {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .address {
+            padding: 1mm;
+            border-bottom: 1px solid #ddd;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .address div {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .notes {
+            padding: 1mm;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .notes div {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ========== إعدادات الطباعة ========== */
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background: white;
+            }
+
+            .label {
+                margin: 0;
+                border: none;
+            }
+
+            .controls {
+                display: none;
+            }
+        }
+
+        body.label-100x150 @media print {
+            @page {
+                size: 100mm 150mm;
+                margin: 0;
+            }
+        }
+
+        body.label-100x100 @media print {
+            @page {
+                size: 100mm 100mm;
+                margin: 0;
+            }
+        }
+
+        body.label-75x50 @media print {
+            @page {
+                size: 75mm 50mm;
+                margin: 0;
+            }
+        }
+
+        body.label-50x25 @media print {
+            @page {
+                size: 50mm 25mm;
+                margin: 0;
+            }
+        }
+
+        /* ========== أزرار التحكم (للمعاينة فقط) ========== */
+        .controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: white;
+            padding: 15px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .controls h3 {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .controls button {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .controls button:hover {
+            background: #0056b3;
+        }
+
+        .controls button.active {
+            background: #28a745;
+        }
+
+        @media print {
+            .controls {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="label-100x150">
+    <!-- أزرار التحكم -->
+    <div class="controls">
+        <h3>اختر المقاس:</h3>
+        <button onclick="changeSize('100x150')" id="btn-100x150" class="active">100×150 mm</button>
+        <button onclick="changeSize('100x100')" id="btn-100x100">100×100 mm</button>
+        <button onclick="changeSize('75x50')" id="btn-75x50">75×50 mm</button>
+        <button onclick="changeSize('50x25')" id="btn-50x25">50×25 mm</button>
+        <hr style="margin: 10px 0;">
+        <button onclick="window.print()" style="background: #dc3545;">طباعة (Ctrl+P)</button>
+    </div>
+
+    <!-- القالب -->
+    <div class="label">
+        <div class="header">بوليصة شحن</div>
+        
+        <div class="barcode">
+            <svg width="80mm" height="25mm" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg">
+                <rect width="300" height="100" fill="white"/>
+                <!-- باركود تجريبي -->
+                <rect x="10" y="10" width="3" height="60" fill="black"/>
+                <rect x="16" y="10" width="2" height="60" fill="black"/>
+                <rect x="21" y="10" width="4" height="60" fill="black"/>
+                <rect x="28" y="10" width="2" height="60" fill="black"/>
+                <rect x="33" y="10" width="3" height="60" fill="black"/>
+                <rect x="39" y="10" width="2" height="60" fill="black"/>
+                <rect x="44" y="10" width="5" height="60" fill="black"/>
+                <rect x="52" y="10" width="2" height="60" fill="black"/>
+                <rect x="57" y="10" width="3" height="60" fill="black"/>
+                <rect x="63" y="10" width="2" height="60" fill="black"/>
+                <rect x="68" y="10" width="4" height="60" fill="black"/>
+                <rect x="75" y="10" width="2" height="60" fill="black"/>
+                <rect x="80" y="10" width="3" height="60" fill="black"/>
+                <rect x="86" y="10" width="2" height="60" fill="black"/>
+                <rect x="91" y="10" width="5" height="60" fill="black"/>
+                <rect x="99" y="10" width="2" height="60" fill="black"/>
+                <rect x="104" y="10" width="3" height="60" fill="black"/>
+                <rect x="110" y="10" width="2" height="60" fill="black"/>
+                <rect x="115" y="10" width="4" height="60" fill="black"/>
+                <rect x="122" y="10" width="2" height="60" fill="black"/>
+                <rect x="127" y="10" width="3" height="60" fill="black"/>
+                <rect x="133" y="10" width="2" height="60" fill="black"/>
+                <rect x="138" y="10" width="5" height="60" fill="black"/>
+                <rect x="146" y="10" width="2" height="60" fill="black"/>
+                <rect x="151" y="10" width="3" height="60" fill="black"/>
+                <rect x="157" y="10" width="2" height="60" fill="black"/>
+                <rect x="162" y="10" width="4" height="60" fill="black"/>
+                <rect x="169" y="10" width="2" height="60" fill="black"/>
+                <rect x="174" y="10" width="3" height="60" fill="black"/>
+                <rect x="180" y="10" width="2" height="60" fill="black"/>
+                <rect x="185" y="10" width="5" height="60" fill="black"/>
+                <rect x="193" y="10" width="2" height="60" fill="black"/>
+                <rect x="198" y="10" width="3" height="60" fill="black"/>
+                <rect x="204" y="10" width="2" height="60" fill="black"/>
+                <rect x="209" y="10" width="4" height="60" fill="black"/>
+                <rect x="216" y="10" width="2" height="60" fill="black"/>
+                <rect x="221" y="10" width="3" height="60" fill="black"/>
+                <rect x="227" y="10" width="2" height="60" fill="black"/>
+                <rect x="232" y="10" width="5" height="60" fill="black"/>
+                <rect x="240" y="10" width="2" height="60" fill="black"/>
+                <rect x="245" y="10" width="3" height="60" fill="black"/>
+                <rect x="251" y="10" width="2" height="60" fill="black"/>
+                <rect x="256" y="10" width="4" height="60" fill="black"/>
+                <rect x="263" y="10" width="2" height="60" fill="black"/>
+                <rect x="268" y="10" width="3" height="60" fill="black"/>
+                <rect x="274" y="10" width="2" height="60" fill="black"/>
+                <rect x="279" y="10" width="5" height="60" fill="black"/>
+                <text x="150" y="85" text-anchor="middle" font-size="14" fill="black">1234567890123</text>
+            </svg>
+        </div>
+        
+        <div class="order-id">رقم الطلب: ORD-2025-001</div>
+        
+        <div class="customer-info">
+            <div><strong>المستلم:</strong> أحمد محمد علي</div>
+            <div><strong>الهاتف:</strong> 07890267503</div>
+            <div><strong>الهاتف 2:</strong> 07712345678</div>
+        </div>
+        
+        <div class="address">
+            <div><strong>العنوان:</strong></div>
+            <div>عمّان، الأردن</div>
+            <div>الشارع الرئيسي، بناية رقم 22</div>
+            <div>الطابق الثالث، شقة 5</div>
+        </div>
+        
+        <div class="notes">
+            <div><strong>ملاحظات:</strong></div>
+            <div>يرجى الاتصال قبل التسليم. التوصيل من الساعة 2-5 مساءً فقط.</div>
+        </div>
+    </div>
+
+    <script>
+        function changeSize(size) {
+            // تغيير الكلاس على body
+            document.body.className = 'label-' + size;
+            
+            // تحديث الأزرار
+            document.querySelectorAll('.controls button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById('btn-' + size).classList.add('active');
+        }
+    </script>
+</body>
+</html>

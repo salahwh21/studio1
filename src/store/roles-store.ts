@@ -46,27 +46,27 @@ export const allPermissionGroups = [
     id: 'returns',
     label: 'إدارة المرتجعات',
     permissions: [
-        { id: 'returns:view', label: 'عرض المرتجعات' },
-        { id: 'returns:manage', label: 'إدارة المرتجعات' },
+      { id: 'returns:view', label: 'عرض المرتجعات' },
+      { id: 'returns:manage', label: 'إدارة المرتجعات' },
     ],
   },
   {
     id: 'financials',
     label: 'الإدارة المالية',
     permissions: [
-        { id: 'financials:view', label: 'عرض التقارير المالية' },
-        { id: 'financials:manage_drivers', label: 'إدارة محاسبة السائقين' },
-        { id: 'financials:manage_merchants', label: 'إدارة محاسبة التجار' },
+      { id: 'financials:view', label: 'عرض التقارير المالية' },
+      { id: 'financials:manage_drivers', label: 'إدارة محاسبة السائقين' },
+      { id: 'financials:manage_merchants', label: 'إدارة محاسبة التجار' },
     ],
   },
   {
     id: 'settings',
     label: 'الإعدادات',
     permissions: [
-        { id: 'settings:view', label: 'الوصول إلى الإعدادات' },
-        { id: 'settings:manage_general', label: 'إدارة الإعدادات العامة' },
-        { id: 'settings:manage_roles', label: 'إدارة الأدوار والصلاحيات' },
-        { id: 'settings:manage_users', label: 'إدارة المستخدمين' },
+      { id: 'settings:view', label: 'الوصول إلى الإعدادات' },
+      { id: 'settings:manage_general', label: 'إدارة الإعدادات العامة' },
+      { id: 'settings:manage_roles', label: 'إدارة الأدوار والصلاحيات' },
+      { id: 'settings:manage_users', label: 'إدارة المستخدمين' },
     ],
   },
   {
@@ -98,19 +98,19 @@ const initialRoles: Role[] = [
     description: 'يمكنه إدارة الطلبات والسائقين والتقارير.',
     userCount: 3,
     permissions: [
-        'dashboard:view', 
-        'orders:view', 
-        'orders:create', 
-        'orders:edit',
-        'parse-order:use',
-        'optimize:use',
-        'drivers-map:view',
-        'returns:view',
-        'returns:manage',
-        'financials:view',
-        'settings:view',
-        'settings:manage_roles',
-        'settings:manage_users',
+      'dashboard:view',
+      'orders:view',
+      'orders:create',
+      'orders:edit',
+      'parse-order:use',
+      'optimize:use',
+      'drivers-map:view',
+      'returns:view',
+      'returns:manage',
+      'financials:view',
+      'settings:view',
+      'settings:manage_roles',
+      'settings:manage_users',
     ],
   },
   {
@@ -138,67 +138,160 @@ const initialRoles: Role[] = [
 
 type RolesState = {
   roles: Role[];
-  addRole: (newRole: Omit<Role, 'id' | 'permissions' | 'userCount'>) => void;
-  updateRole: (roleId: string, updatedRole: Omit<Role, 'id' | 'permissions' | 'userCount'>) => void;
-  updateRolePermissions: (roleId: string, permissions: string[]) => void;
-  deleteRole: (roleId: string) => void;
+  isLoading: boolean;
+  error: string | null;
+  loadRolesFromAPI: () => Promise<void>;
+  addRole: (newRole: Omit<Role, 'id' | 'permissions' | 'userCount'>) => Promise<void>;
+  updateRole: (roleId: string, updatedRole: Omit<Role, 'id' | 'permissions' | 'userCount'>) => Promise<void>;
+  updateRolePermissions: (roleId: string, permissions: string[]) => Promise<void>;
+  deleteRole: (roleId: string) => Promise<void>;
   incrementUserCount: (roleId: string) => void;
   decrementUserCount: (roleId: string) => void;
 };
 
-export const useRolesStore = create<RolesState>()(immer((set) => ({
-  roles: initialRoles,
-  
-  addRole: (newRole) => {
-    set(state => {
-      state.roles.push({
-        ...newRole,
-        id: newRole.name.toLowerCase().replace(/\s+/g, '-'),
-        userCount: 0,
-        permissions: [],
-      });
-    });
-  },
+export const useRolesStore = create<RolesState>()(immer((set, get) => {
+  // Auto-load on first access
+  const autoLoad = () => {
+    const state = get();
+    if (state.roles.length === 0 && !state.isLoading && !state.error) {
+      state.loadRolesFromAPI();
+    }
+  };
 
-  updateRole: (roleId, updatedRole) => {
-      set(state => {
-          const role = state.roles.find(r => r.id === roleId);
-          if (role) {
-              role.name = updatedRole.name;
-              role.description = updatedRole.description;
-          }
-      });
-  },
+  if (typeof window !== 'undefined') {
+    setTimeout(autoLoad, 1300);
+  }
 
-  updateRolePermissions: (roleId, permissions) =>
-    set((state) => {
-      const role = state.roles.find(r => r.id === roleId);
-      if (role) {
-          role.permissions = permissions;
+  return {
+    roles: initialRoles,
+    isLoading: false,
+    error: null,
+
+    loadRolesFromAPI: async () => {
+      try {
+        set(state => { state.isLoading = true; state.error = null; });
+        const { default: api } = await import('@/lib/api');
+        const roles = await api.getRoles();
+        set(state => {
+          state.roles = roles;
+          state.isLoading = false;
+        });
+        console.log('✅ Roles loaded from API:', roles.length);
+      } catch (error) {
+        console.error('❌ Failed to load roles from API:', error);
+        set(state => {
+          state.isLoading = false;
+          state.error = 'Failed to load roles';
+        });
       }
-    }),
+    },
 
-  deleteRole: (roleId) => {
-      set(state => {
+    addRole: async (newRole) => {
+      try {
+        const { default: api } = await import('@/lib/api');
+        const createdRole = await api.createRole(newRole);
+        set(state => {
+          state.roles.push({
+            ...createdRole,
+            permissions: createdRole.permissions || [],
+          });
+        });
+        console.log('✅ Role created in database:', createdRole.id);
+      } catch (error) {
+        console.error('❌ Failed to create role:', error);
+        // Fallback to local
+        set(state => {
+          state.roles.push({
+            ...newRole,
+            id: newRole.name.toLowerCase().replace(/\s+/g, '-'),
+            userCount: 0,
+            permissions: [],
+          });
+        });
+      }
+    },
+
+    updateRole: async (roleId, updatedRole) => {
+      try {
+        const { default: api } = await import('@/lib/api');
+        await api.updateRole(roleId, updatedRole);
+        set(state => {
+          const role = state.roles.find(r => r.id === roleId);
+          if (role) {
+            role.name = updatedRole.name;
+            role.description = updatedRole.description;
+          }
+        });
+        console.log('✅ Role updated in database:', roleId);
+      } catch (error) {
+        console.error('❌ Failed to update role:', error);
+        // Still update locally
+        set(state => {
+          const role = state.roles.find(r => r.id === roleId);
+          if (role) {
+            role.name = updatedRole.name;
+            role.description = updatedRole.description;
+          }
+        });
+      }
+    },
+
+    updateRolePermissions: async (roleId, permissions) => {
+      try {
+        const { default: api } = await import('@/lib/api');
+        await api.updateRolePermissions(roleId, permissions);
+        set((state) => {
+          const role = state.roles.find(r => r.id === roleId);
+          if (role) {
+            role.permissions = permissions;
+          }
+        });
+        console.log('✅ Role permissions updated in database:', roleId);
+      } catch (error) {
+        console.error('❌ Failed to update role permissions:', error);
+        // Still update locally
+        set((state) => {
+          const role = state.roles.find(r => r.id === roleId);
+          if (role) {
+            role.permissions = permissions;
+          }
+        });
+      }
+    },
+
+    deleteRole: async (roleId) => {
+      try {
+        const { default: api } = await import('@/lib/api');
+        await api.deleteRole(roleId);
+        set(state => {
           state.roles = state.roles.filter(r => r.id !== roleId);
-      });
-  },
+        });
+        console.log('✅ Role deleted from database:', roleId);
+      } catch (error) {
+        console.error('❌ Failed to delete role:', error);
+        // Still delete locally
+        set(state => {
+          state.roles = state.roles.filter(r => r.id !== roleId);
+        });
+      }
+    },
 
-  incrementUserCount: (roleId) => {
+    incrementUserCount: (roleId) => {
       set(state => {
-          const role = state.roles.find(r => r.id === roleId);
-          if (role) {
-              role.userCount++;
-          }
+        const role = state.roles.find(r => r.id === roleId);
+        if (role) {
+          role.userCount++;
+        }
       });
-  },
+    },
 
-  decrementUserCount: (roleId) => {
+    decrementUserCount: (roleId) => {
       set(state => {
-          const role = state.roles.find(r => r.id === roleId);
-          if (role) {
-              role.userCount--;
-          }
+        const role = state.roles.find(r => r.id === roleId);
+        if (role) {
+          role.userCount--;
+        }
       });
-  },
-})));
+    },
+  };
+}));

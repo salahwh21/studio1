@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جدول بيانات - آلية الحركة</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        /* ============================================
+           الحاوية الرئيسية للجدول
+           ============================================
+           تغيير الارتفاع: عدّل height هنا ↓
+        */
+        .table-container {
+            width: 100%;
+            height: 400px; /* ← تغيير الارتفاع هنا (مثلاً: 500px, 600px, 80vh) */
+            
+            /* السكرول الرأسي والأفقي داخل الحاوية فقط */
+            overflow: auto;
+            
+            position: relative;
+            
+            /* ============================================
+               العناصر الجمالية - يمكن إزالتها بسهولة
+               ============================================
+               لإزالة الكارد والحدود:
+               - احذف أو علّق السطور التالية:
+            */
+            border: 2px solid #ddd; /* ← يمكن حذف هذا السطر */
+            border-radius: 8px; /* ← يمكن حذف هذا السطر */
+            background: white; /* ← يمكن حذف هذا السطر */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* ← يمكن حذف هذا السطر */
+            /* ============================================ */
+        }
+
+        /* ============================================
+           الجدول نفسه
+           ============================================
+           عرض الجدول الكبير لإجبار السكرول الأفقي
+        */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 2000px; /* عرض كبير لإظهار السكرول الأفقي */
+        }
+
+        /* ============================================
+           رأس الجدول - ثابت في الأعلى
+           ============================================
+           position: sticky; top: 0; يجعله ثابتًا في أعلى الحاوية
+           يتحرك أفقيًا مع السكرول الأفقي تلقائيًا
+           
+           لتعديل ثبات الرأس:
+           - top: 0; (القيمة الحالية - ثابت في الأعلى)
+           - يمكن تغيير z-index إذا كان هناك تداخل
+        */
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        thead th {
+            background: #1a1a2e; /* كحلي غامق */
+            color: white;
+            padding: 12px;
+            text-align: center;
+            border-right: 1px solid rgba(255, 255, 255, 0.3);
+            font-weight: bold;
+            white-space: nowrap;
+            min-width: 120px; /* عرض كل عمود */
+        }
+
+        /* العمود الأول في الرأس - ثابت من اليمين */
+        thead th:first-child {
+            position: sticky;
+            right: 0;
+            z-index: 101;
+            background: #0a0e27; /* كحلي أغمق */
+        }
+
+        /* ============================================
+           جسم الجدول - يتحرك رأسيًا فقط
+           ============================================
+           tbody يتحرك رأسيًا بين thead و tfoot
+        */
+        tbody td {
+            padding: 10px;
+            text-align: center;
+            border-right: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+            background: white;
+            min-width: 120px; /* نفس عرض الأعمدة في thead */
+        }
+
+        tbody tr:nth-child(even) td {
+            background: #f9fafb;
+        }
+
+        tbody tr:hover td {
+            background: #eff6ff;
+        }
+
+        /* العمود الأول في الجسم - ثابت من اليمين */
+        tbody td:first-child {
+            position: sticky;
+            right: 0;
+            z-index: 10;
+            background: inherit;
+        }
+
+        tbody tr:hover td:first-child {
+            background: #eff6ff;
+        }
+
+        /* ============================================
+           سطر المجاميع - ثابت في الأسفل
+           ============================================
+           position: sticky; bottom: 0; يجعله ثابتًا في أسفل الحاوية
+           يتحرك أفقيًا مع السكرول الأفقي تلقائيًا
+           
+           لتعديل ثبات سطر المجاميع:
+           - bottom: 0; (القيمة الحالية - ثابت في الأسفل)
+           - يمكن تغيير z-index إذا كان هناك تداخل
+        */
+        tfoot {
+            position: sticky;
+            bottom: 0;
+            z-index: 99;
+        }
+
+        tfoot td {
+            background: #f3f4f6;
+            padding: 12px;
+            text-align: center;
+            border-right: 1px solid #d1d5db;
+            border-top: 2px solid #9ca3af;
+            font-weight: bold;
+            min-width: 120px; /* نفس عرض الأعمدة في thead و tbody */
+        }
+
+        /* العمود الأول في سطر المجاميع - ثابت من اليمين */
+        tfoot td:first-child {
+            position: sticky;
+            right: 0;
+            z-index: 100;
+            background: #f3f4f6;
+        }
+
+        /* ============================================
+           شريط التقليب (Pagination)
+           ============================================
+           ثابت خارج حاوية الجدول
+           لا يتحرك مع سكرول الجدول
+        */
+        .pagination-bar {
+            padding: 12px 16px;
+            background: #f9fafb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+            
+            /* ============================================
+               العناصر الجمالية - يمكن إزالتها بسهولة
+               ============================================
+               لإزالة الكارد والحدود:
+               - احذف أو علّق السطور التالية:
+            */
+            margin-top: 10px; /* ← المسافة بين الجدول وشريط التقليب - يمكن حذفها */
+            border: 1px solid #ddd; /* ← يمكن حذف هذا السطر */
+            border-radius: 8px; /* ← يمكن حذف هذا السطر */
+            /* ============================================ */
+        }
+
+        .pagination-bar button {
+            padding: 6px 12px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .pagination-bar button:hover {
+            background: #f3f4f6;
+        }
+
+        .pagination-bar button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            margin: 0 8px;
+            font-size: 14px;
+        }
+
+        /* ============================================
+           أزرار التحديد (Checkboxes)
+           ============================================
+        */
+        .select-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="margin-bottom: 20px;">جدول بيانات - آلية الحركة</h1>
+    
+    <!-- الحاوية الرئيسية للجدول -->
+    <div class="table-container">
+        <table>
+            <!-- رأس الجدول - ثابت في الأعلى -->
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>رقم الطلب</th>
+                    <th>المصدر</th>
+                    <th>الحالة</th>
+                    <th>المستلم</th>
+                    <th>الهاتف</th>
+                    <th>العنوان</th>
+                    <th>المدينة</th>
+                    <th>المنطقة</th>
+                    <th>التاجر</th>
+                    <th>السائق</th>
+                    <th>قيمة التحصيل</th>
+                    <th>المستحق للتاجر</th>
+                    <th>أجور التوصيل</th>
+                    <th>أجور السائق</th>
+                    <th>المطلوب للشركة</th>
+                    <th>التاريخ</th>
+                    <th>ملاحظات</th>
+                </tr>
+            </thead>
+            
+            <!-- جسم الجدول - يتحرك رأسيًا -->
+            <tbody>
+                <!-- صفوف تجريبية كثيرة لإظهار السكرول الرأسي -->
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-001</td>
+                    <td>Manual</td>
+                    <td>بالانتظار</td>
+                    <td>أحمد محمد</td>
+                    <td>0799123456</td>
+                    <td>شارع الملكة رانيا</td>
+                    <td>عمان</td>
+                    <td>الدوار السابع</td>
+                    <td>متجر ABC</td>
+                    <td>خالد علي</td>
+                    <td>50.00</td>
+                    <td>45.00</td>
+                    <td>5.00</td>
+                    <td>3.00</td>
+                    <td>2.00</td>
+                    <td>2024-01-15</td>
+                    <td>توصيل سريع</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-002</td>
+                    <td>Shopify</td>
+                    <td>جاري التوصيل</td>
+                    <td>فاطمة أحمد</td>
+                    <td>0799234567</td>
+                    <td>شارع الجامعة الأردنية</td>
+                    <td>عمان</td>
+                    <td>الجندويل</td>
+                    <td>متجر XYZ</td>
+                    <td>محمد حسن</td>
+                    <td>75.50</td>
+                    <td>70.00</td>
+                    <td>5.50</td>
+                    <td>4.00</td>
+                    <td>1.50</td>
+                    <td>2024-01-15</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-003</td>
+                    <td>API</td>
+                    <td>تم التوصيل</td>
+                    <td>علي خالد</td>
+                    <td>0799345678</td>
+                    <td>شارع المدينة الطبية</td>
+                    <td>عمان</td>
+                    <td>خلدا</td>
+                    <td>متجر 123</td>
+                    <td>سامي وليد</td>
+                    <td>120.00</td>
+                    <td>110.00</td>
+                    <td>10.00</td>
+                    <td>7.00</td>
+                    <td>3.00</td>
+                    <td>2024-01-14</td>
+                    <td>تم التوصيل بنجاح</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-004</td>
+                    <td>Manual</td>
+                    <td>بالانتظار</td>
+                    <td>سارة محمود</td>
+                    <td>0799456789</td>
+                    <td>شارع الدوار السابع</td>
+                    <td>عمان</td>
+                    <td>الدوار السابع</td>
+                    <td>متجر DEF</td>
+                    <td>-</td>
+                    <td>30.00</td>
+                    <td>28.00</td>
+                    <td>2.00</td>
+                    <td>1.50</td>
+                    <td>0.50</td>
+                    <td>2024-01-16</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-005</td>
+                    <td>WooCommerce</td>
+                    <td>مؤجل</td>
+                    <td>يوسف علي</td>
+                    <td>0799567890</td>
+                    <td>شارع الشهيد وصفي التل</td>
+                    <td>إربد</td>
+                    <td>الوسط</td>
+                    <td>متجر GHI</td>
+                    <td>-</td>
+                    <td>90.75</td>
+                    <td>85.00</td>
+                    <td>5.75</td>
+                    <td>4.50</td>
+                    <td>1.25</td>
+                    <td>2024-01-17</td>
+                    <td>مؤجل للغد</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-006</td>
+                    <td>Manual</td>
+                    <td>جاري التوصيل</td>
+                    <td>نورا سعد</td>
+                    <td>0799678901</td>
+                    <td>شارع الملك حسين</td>
+                    <td>الزرقاء</td>
+                    <td>الوسط</td>
+                    <td>متجر JKL</td>
+                    <td>أحمد يوسف</td>
+                    <td>65.25</td>
+                    <td>60.00</td>
+                    <td>5.25</td>
+                    <td>3.75</td>
+                    <td>1.50</td>
+                    <td>2024-01-16</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-007</td>
+                    <td>Shopify</td>
+                    <td>تم التوصيل</td>
+                    <td>محمود خليل</td>
+                    <td>0799789012</td>
+                    <td>شارع الأمير حسن</td>
+                    <td>عمان</td>
+                    <td>عبدون</td>
+                    <td>متجر MNO</td>
+                    <td>حسن محمود</td>
+                    <td>110.50</td>
+                    <td>100.00</td>
+                    <td>10.50</td>
+                    <td>8.00</td>
+                    <td>2.50</td>
+                    <td>2024-01-15</td>
+                    <td>تم التوصيل</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-008</td>
+                    <td>API</td>
+                    <td>بالانتظار</td>
+                    <td>ليلى عمر</td>
+                    <td>0799890123</td>
+                    <td>شارع الدستور</td>
+                    <td>عمان</td>
+                    <td>جبل اللويبدة</td>
+                    <td>متجر PQR</td>
+                    <td>-</td>
+                    <td>40.00</td>
+                    <td>38.00</td>
+                    <td>2.00</td>
+                    <td>1.50</td>
+                    <td>0.50</td>
+                    <td>2024-01-17</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-009</td>
+                    <td>Manual</td>
+                    <td>جاري التوصيل</td>
+                    <td>طارق زياد</td>
+                    <td>0799901234</td>
+                    <td>شارع الشهيد محمد الدرة</td>
+                    <td>عمان</td>
+                    <td>الصويفية</td>
+                    <td>متجر STU</td>
+                    <td>زياد طارق</td>
+                    <td>85.75</td>
+                    <td>80.00</td>
+                    <td>5.75</td>
+                    <td>4.25</td>
+                    <td>1.50</td>
+                    <td>2024-01-16</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-010</td>
+                    <td>WooCommerce</td>
+                    <td>تم التوصيل</td>
+                    <td>رانيا نادر</td>
+                    <td>0799012345</td>
+                    <td>شارع المدينة الرياضية</td>
+                    <td>عمان</td>
+                    <td>الشميساني</td>
+                    <td>متجر VWX</td>
+                    <td>نادر رانيا</td>
+                    <td>95.00</td>
+                    <td>90.00</td>
+                    <td>5.00</td>
+                    <td>3.75</td>
+                    <td>1.25</td>
+                    <td>2024-01-15</td>
+                    <td>تم التوصيل</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-011</td>
+                    <td>Manual</td>
+                    <td>بالانتظار</td>
+                    <td>باسم كريم</td>
+                    <td>0799123456</td>
+                    <td>شارع الملكة نور</td>
+                    <td>عمان</td>
+                    <td>الدوار السابع</td>
+                    <td>متجر YZ</td>
+                    <td>-</td>
+                    <td>55.50</td>
+                    <td>50.00</td>
+                    <td>5.50</td>
+                    <td>4.00</td>
+                    <td>1.50</td>
+                    <td>2024-01-17</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-012</td>
+                    <td>Shopify</td>
+                    <td>جاري التوصيل</td>
+                    <td>دينا فارس</td>
+                    <td>0799234567</td>
+                    <td>شارع الجامعة الأردنية</td>
+                    <td>عمان</td>
+                    <td>الجندويل</td>
+                    <td>متجر ABC2</td>
+                    <td>فارس دينا</td>
+                    <td>70.25</td>
+                    <td>65.00</td>
+                    <td>5.25</td>
+                    <td>3.75</td>
+                    <td>1.50</td>
+                    <td>2024-01-16</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-013</td>
+                    <td>API</td>
+                    <td>تم التوصيل</td>
+                    <td>وسام رامي</td>
+                    <td>0799345678</td>
+                    <td>شارع المدينة الطبية</td>
+                    <td>عمان</td>
+                    <td>خلدا</td>
+                    <td>متجر XYZ2</td>
+                    <td>رامي وسام</td>
+                    <td>125.00</td>
+                    <td>115.00</td>
+                    <td>10.00</td>
+                    <td>7.50</td>
+                    <td>2.50</td>
+                    <td>2024-01-15</td>
+                    <td>تم التوصيل</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-014</td>
+                    <td>Manual</td>
+                    <td>بالانتظار</td>
+                    <td>تالا سامر</td>
+                    <td>0799456789</td>
+                    <td>شارع الدوار السابع</td>
+                    <td>عمان</td>
+                    <td>الدوار السابع</td>
+                    <td>متجر DEF2</td>
+                    <td>-</td>
+                    <td>35.00</td>
+                    <td>33.00</td>
+                    <td>2.00</td>
+                    <td>1.50</td>
+                    <td>0.50</td>
+                    <td>2024-01-17</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-015</td>
+                    <td>WooCommerce</td>
+                    <td>مؤجل</td>
+                    <td>عمر يزن</td>
+                    <td>0799567890</td>
+                    <td>شارع الشهيد وصفي التل</td>
+                    <td>إربد</td>
+                    <td>الوسط</td>
+                    <td>متجر GHI2</td>
+                    <td>-</td>
+                    <td>88.75</td>
+                    <td>83.00</td>
+                    <td>5.75</td>
+                    <td>4.25</td>
+                    <td>1.50</td>
+                    <td>2024-01-18</td>
+                    <td>مؤجل</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-016</td>
+                    <td>Manual</td>
+                    <td>جاري التوصيل</td>
+                    <td>لينا مالك</td>
+                    <td>0799678901</td>
+                    <td>شارع الملك حسين</td>
+                    <td>الزرقاء</td>
+                    <td>الوسط</td>
+                    <td>متجر JKL2</td>
+                    <td>مالك لينا</td>
+                    <td>62.25</td>
+                    <td>57.00</td>
+                    <td>5.25</td>
+                    <td>3.75</td>
+                    <td>1.50</td>
+                    <td>2024-01-16</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-017</td>
+                    <td>Shopify</td>
+                    <td>تم التوصيل</td>
+                    <td>كامل نعيم</td>
+                    <td>0799789012</td>
+                    <td>شارع الأمير حسن</td>
+                    <td>عمان</td>
+                    <td>عبدون</td>
+                    <td>متجر MNO2</td>
+                    <td>نعيم كامل</td>
+                    <td>105.50</td>
+                    <td>95.00</td>
+                    <td>10.50</td>
+                    <td>8.00</td>
+                    <td>2.50</td>
+                    <td>2024-01-15</td>
+                    <td>تم التوصيل</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-018</td>
+                    <td>API</td>
+                    <td>بالانتظار</td>
+                    <td>ميساء هشام</td>
+                    <td>0799890123</td>
+                    <td>شارع الدستور</td>
+                    <td>عمان</td>
+                    <td>جبل اللويبدة</td>
+                    <td>متجر PQR2</td>
+                    <td>-</td>
+                    <td>42.00</td>
+                    <td>40.00</td>
+                    <td>2.00</td>
+                    <td>1.50</td>
+                    <td>0.50</td>
+                    <td>2024-01-17</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-019</td>
+                    <td>Manual</td>
+                    <td>جاري التوصيل</td>
+                    <td>بشار عادل</td>
+                    <td>0799901234</td>
+                    <td>شارع الشهيد محمد الدرة</td>
+                    <td>عمان</td>
+                    <td>الصويفية</td>
+                    <td>متجر STU2</td>
+                    <td>عادل بشار</td>
+                    <td>82.75</td>
+                    <td>77.00</td>
+                    <td>5.75</td>
+                    <td>4.25</td>
+                    <td>1.50</td>
+                    <td>2024-01-16</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="select-checkbox"></td>
+                    <td>ORD-020</td>
+                    <td>WooCommerce</td>
+                    <td>تم التوصيل</td>
+                    <td>ريم عدنان</td>
+                    <td>0799012345</td>
+                    <td>شارع المدينة الرياضية</td>
+                    <td>عمان</td>
+                    <td>الشميساني</td>
+                    <td>متجر VWX2</td>
+                    <td>عدنان ريم</td>
+                    <td>92.00</td>
+                    <td>87.00</td>
+                    <td>5.00</td>
+                    <td>3.75</td>
+                    <td>1.25</td>
+                    <td>2024-01-15</td>
+                    <td>تم التوصيل</td>
+                </tr>
+            </tbody>
+            
+            <!-- سطر المجاميع - ثابت في الأسفل -->
+            <tfoot>
+                <tr>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>1,888.80</td>
+                    <td>1,733.55</td>
+                    <td>105.50</td>
+                    <td>75.25</td>
+                    <td>30.25</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    
+    <!-- شريط التقليب - ثابت خارج حاوية الجدول -->
+    <div class="pagination-bar">
+        <button disabled>‹</button>
+        <span class="pagination-info">الصفحة 1 من 10</span>
+        <button>›</button>
+    </div>
+</body>
+</html>

@@ -13,13 +13,15 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { flushSync } from 'react-dom';
 import { exportToPDF, type PDFExportOptions } from '@/lib/pdf-export-utils';
-import * as XLSX from 'xlsx';
+import { exportToExcel } from '@/lib/export-utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { api } from '@/lib/api';
+import { useEffect } from 'react';
 
 
 export const MerchantPaymentsLog = () => {
-    const { merchantPaymentSlips } = useFinancialsStore();
+    const { merchantPaymentSlips, setMerchantPaymentSlips } = useFinancialsStore();
     const { settings, formatCurrency } = useSettings();
     const { toast } = useToast();
     const [isExporting, setIsExporting] = useState<string | null>(null);
@@ -29,6 +31,35 @@ export const MerchantPaymentsLog = () => {
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
 
+    useEffect(() => {
+        const fetchSlips = async () => {
+            try {
+                const data = await api.getMerchantPaymentSlips();
+                if (Array.isArray(data)) {
+                    setMerchantPaymentSlips(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch merchant payments', error);
+            }
+        };
+        fetchSlips();
+    }, [setMerchantPaymentSlips]);
+
+    const handleConfirmPayment = async (slip: MerchantPaymentSlip) => {
+        if (!confirm(`هل أنت متأكد من تسليم المبلغ للتاجر "${slip.merchantName}"؟\nسيتم تغيير حالة ${slip.itemCount} طلب إلى "تم محاسبة التاجر".`)) return;
+
+        try {
+            await api.updateMerchantPaymentStatus(slip.id, 'تم التسليم');
+            toast({ title: 'تم التحديث', description: 'تم تأكيد تسليم المبلغ بنجاح.' });
+
+            const data = await api.getMerchantPaymentSlips();
+            if (Array.isArray(data)) {
+                setMerchantPaymentSlips(data);
+            }
+        } catch (err: any) {
+            toast({ variant: 'destructive', title: 'خطأ', description: err.message || 'فشل تحديث الحالة' });
+        }
+    };
 
     const handlePrint = (slip: MerchantPaymentSlip) => {
         if (!slip) return;
@@ -53,7 +84,7 @@ export const MerchantPaymentsLog = () => {
         setSlipToPrint(null);
     };
 
-     const handleDownloadPdf = async (slip: MerchantPaymentSlip) => {
+    const handleDownloadPdf = async (slip: MerchantPaymentSlip) => {
         if (!slip) return;
         setIsExporting(slip.id);
 
@@ -69,7 +100,7 @@ export const MerchantPaymentsLog = () => {
             const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
 
             const headers = ['#', 'رقم الطلب', 'المستلم', 'قيمة التحصيل', 'أجور التوصيل', 'الصافي المستحق'];
-            
+
             const rows = slip.orders.map((o, i) => [
                 (i + 1).toString(),
                 o.id,
@@ -98,7 +129,7 @@ export const MerchantPaymentsLog = () => {
             const today = new Date().toISOString().split('T')[0];
             const fileName = `${slip.merchantName}_${today}.pdf`;
             await exportToPDF(pdfOptions, fileName);
-            
+
         } catch (error) {
             console.error('PDF export error:', error);
             toast({ variant: 'destructive', title: 'خطأ', description: 'حدث خطأ أثناء إنشاء ملف PDF.' });
@@ -106,10 +137,10 @@ export const MerchantPaymentsLog = () => {
             setIsExporting(null);
         }
     };
-    
+
     const SlipHTML = ({ slip }: { slip: MerchantPaymentSlip | null }) => {
         if (!slip) return null;
-        
+
         const totalCod = slip.orders.reduce((sum, o) => sum + (o.cod || 0), 0);
         const totalDelivery = slip.orders.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
         const totalNet = slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
@@ -117,7 +148,7 @@ export const MerchantPaymentsLog = () => {
         const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
 
         return (
-             <div className="slip-container" style={{ width: '210mm', minHeight: '297mm', padding: '15mm', boxSizing: 'border-box', backgroundColor: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div className="slip-container" style={{ width: '210mm', minHeight: '297mm', padding: '15mm', boxSizing: 'border-box', backgroundColor: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <style>{`
                     .slip-container { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: black; }
                     .slip-table { width: 100%; border-collapse: collapse; margin: 40px 0; font-size: 11px; }
@@ -133,13 +164,13 @@ export const MerchantPaymentsLog = () => {
                 `}</style>
                 <div>
                     <div className="slip-header">
-                        <div style={{textAlign: 'right'}}>
+                        <div style={{ textAlign: 'right' }}>
                             <h2>كشف دفع للتاجر: {slip.merchantName}</h2>
                             <p>التاريخ: {slipDate}</p>
                             <p>رقم الكشف: {slip.id}</p>
                         </div>
                         <div className="slip-logo">
-                             {logoUrl ? <img src={logoUrl} alt="Logo" style={{ maxHeight: '40px' }} /> : (settings.login.companyName || 'الوميض')}
+                            {logoUrl ? <img src={logoUrl} alt="Logo" style={{ maxHeight: '40px' }} /> : (settings.login.companyName || 'الوميض')}
                         </div>
                     </div>
                     <table className="slip-table">
@@ -161,7 +192,7 @@ export const MerchantPaymentsLog = () => {
                                     <td>{o.recipient}</td>
                                     <td>{formatCurrency(o.cod)}</td>
                                     <td>{formatCurrency(o.deliveryFee)}</td>
-                                    <td style={{fontWeight: 'bold'}}>{formatCurrency(o.itemPrice)}</td>
+                                    <td style={{ fontWeight: 'bold' }}>{formatCurrency(o.itemPrice)}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -189,7 +220,7 @@ export const MerchantPaymentsLog = () => {
         return merchantPaymentSlips.filter(slip => {
             const matchesMerchant = filterMerchant === 'all' || slip.merchantName === filterMerchant;
             const matchesStatus = filterStatus === 'all' || slip.status === filterStatus;
-            const matchesSearch = searchQuery === '' || 
+            const matchesSearch = searchQuery === '' ||
                 slip.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 slip.merchantName.toLowerCase().includes(searchQuery.toLowerCase());
             return matchesMerchant && matchesStatus && matchesSearch;
@@ -205,7 +236,7 @@ export const MerchantPaymentsLog = () => {
         }, { totalAmount: 0, totalOrders: 0 });
     }, [filteredSlips]);
 
-    const handleExportExcel = () => {
+    const handleExportExcel = async () => {
         if (filteredSlips.length === 0) {
             toast({ variant: 'destructive', title: 'خطأ', description: 'لا توجد كشوفات للتصدير.' });
             return;
@@ -224,12 +255,8 @@ export const MerchantPaymentsLog = () => {
                 };
             });
 
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'دفعات التجار');
-
             const fileName = `دفعات_التجار_${new Date().toISOString().split('T')[0]}.xlsx`;
-            XLSX.writeFile(wb, fileName);
+            await exportToExcel(data, fileName, 'دفعات التجار');
 
             toast({
                 title: 'تم التصدير بنجاح',
@@ -252,10 +279,10 @@ export const MerchantPaymentsLog = () => {
 
         try {
             const doc = new jsPDF('l', 'mm', 'a4');
-            
+
             doc.setFontSize(18);
             doc.text('سجل دفعات التجار', 14, 15);
-            
+
             doc.setFontSize(12);
             doc.text(`التاريخ: ${new Date().toLocaleDateString('ar-EG')}`, 14, 22);
             doc.text(`عدد الكشوفات: ${filteredSlips.length}`, 14, 28);
@@ -343,27 +370,28 @@ export const MerchantPaymentsLog = () => {
                                     <SelectItem value="all">كل الحالات</SelectItem>
                                     <SelectItem value="جاهز للتسليم">جاهز للتسليم</SelectItem>
                                     <SelectItem value="مدفوع">مدفوع</SelectItem>
+                                    <SelectItem value="تم التسليم">تم التسليم</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={handleExportExcel}
                                 className="gap-2"
                                 disabled={filteredSlips.length === 0}
                             >
-                                <Icon name="FileSpreadsheet" className="h-4 w-4"/>
+                                <Icon name="FileSpreadsheet" className="h-4 w-4" />
                                 <span className="hidden sm:inline">تصدير Excel</span>
                                 <span className="sm:hidden">Excel</span>
                             </Button>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={handleExportPDF}
                                 className="gap-2"
                                 disabled={filteredSlips.length === 0}
                             >
-                                <Icon name="FileText" className="h-4 w-4"/>
+                                <Icon name="FileText" className="h-4 w-4" />
                                 <span className="hidden sm:inline">تصدير PDF</span>
                                 <span className="sm:hidden">PDF</span>
                             </Button>
@@ -403,7 +431,7 @@ export const MerchantPaymentsLog = () => {
                             </div>
                         </div>
                     )}
-                    
+
                     <div className="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>
@@ -433,8 +461,8 @@ export const MerchantPaymentsLog = () => {
                                         return (
                                             <TableRow key={payment.id} className="hover:bg-muted/30">
                                                 <TableCell className="text-center border-l font-mono">
-                                                    <Link 
-                                                        href={`/dashboard/financials/slips/${payment.id}`} 
+                                                    <Link
+                                                        href={`/dashboard/financials/slips/${payment.id}`}
                                                         className="text-primary hover:underline font-semibold"
                                                     >
                                                         {payment.id}
@@ -454,30 +482,41 @@ export const MerchantPaymentsLog = () => {
                                                 </TableCell>
                                                 <TableCell className="text-center border-l font-bold">{formatCurrency(totalAmount)}</TableCell>
                                                 <TableCell className="text-center border-l">
-                                                    <Badge 
-                                                        className={payment.status === 'مدفوع' 
-                                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400' 
+                                                    <Badge
+                                                        className={payment.status === 'مدفوع' || payment.status === 'تم التسليم'
+                                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400'
                                                             : 'bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400'
                                                         }
                                                     >
-                                                        {payment.status}
+                                                        {payment.status === 'تم التسليم' ? 'مدفوع' : payment.status}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center justify-center gap-2">
-                                                        <Button 
-                                                            variant="outline" 
-                                                            size="sm" 
+                                                        {(payment.status === 'جاهز للتسليم') && (
+                                                            <Button
+                                                                variant="default"
+                                                                size="sm"
+                                                                onClick={() => handleConfirmPayment(payment)}
+                                                                className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                                                            >
+                                                                <Icon name="CheckCircle" className="h-4 w-4" />
+                                                                <span className="hidden sm:inline">تسليم</span>
+                                                            </Button>
+                                                        )}
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
                                                             onClick={() => handlePrint(payment)}
                                                             className="gap-2"
                                                         >
                                                             <Icon name="Printer" className="h-4 w-4" />
                                                             <span className="hidden sm:inline">طباعة</span>
                                                         </Button>
-                                                        <Button 
-                                                            variant="outline" 
-                                                            size="sm" 
-                                                            onClick={() => handleDownloadPdf(payment)} 
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleDownloadPdf(payment)}
                                                             disabled={isExporting === payment.id}
                                                             className="gap-2"
                                                         >

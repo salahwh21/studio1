@@ -3,36 +3,36 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect, forwardRef } from 'react';
 import Link from 'next/link';
 import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
-  Copy,
-  Download,
-  Image as ImageIcon,
-  MoreVertical,
-  PlusCircle,
-  Save,
-  ScanBarcode,
-  Shapes,
-  Type,
-  Upload,
-  ZoomIn,
-  ZoomOut,
-  Palette,
-  Bold,
-  Italic,
-  Underline,
-  AlignVerticalSpaceAround,
-  Printer as PrinterIcon,
-  LayoutGrid,
-  Trash,
-  ChevronsUp,
-  ChevronUp,
-  ChevronDown,
-  ChevronsDown,
-  ArrowLeft,
-  MousePointerSquare,
-  RefreshCcw,
+    AlignCenter,
+    AlignLeft,
+    AlignRight,
+    Copy,
+    Download,
+    Image as ImageIcon,
+    MoreVertical,
+    PlusCircle,
+    Save,
+    ScanBarcode,
+    Shapes,
+    Type,
+    Upload,
+    ZoomIn,
+    ZoomOut,
+    Palette,
+    Bold,
+    Italic,
+    Underline,
+    AlignVerticalSpaceAround,
+    Printer as PrinterIcon,
+    LayoutGrid,
+    Trash,
+    ChevronsUp,
+    ChevronUp,
+    ChevronDown,
+    ChevronsDown,
+    ArrowLeft,
+    MousePointer,
+    RefreshCcw,
 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { Rnd } from 'react-rnd';
@@ -48,6 +48,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useToast } from '@/hooks/use-toast';
 import { useSettings, type PolicySettings, type PolicyElement, type SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
 import { Separator } from '@/components/ui/separator';
+import { SettingsHeader } from '@/components/settings-header';
 import { PrintablePolicy } from '@/components/printable-policy';
 import { useOrdersStore } from '@/store/orders-store';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -63,10 +64,10 @@ const snapToGrid = (value: number) => Math.round(value / GRID_SIZE) * GRID_SIZE;
 const mmToPx = (mm: number) => (mm / 25.4) * 96;
 
 const paperSizes: Record<string, { width: number; height: number }> = {
-  a4: { width: 210, height: 297 },
-  a5: { width: 148, height: 210 },
-  a6: { width: 105, height: 148 },
-  '4x6': { width: 101.6, height: 152.4 },
+    a4: { width: 210, height: 297 },
+    a5: { width: 148, height: 210 },
+    a6: { width: 105, height: 148 },
+    '4x6': { width: 101.6, height: 152.4 },
 };
 
 const toolboxItems = [
@@ -77,62 +78,62 @@ const toolboxItems = [
 ];
 
 const dataFields = [
-  { value: '{{recipient}}', label: 'اسم المستلم' },
-  { value: '{{phone}}', label: 'هاتف المستلم' },
-  { value: '{{address}}', label: 'العنوان الكامل' },
-  { value: '{{city}}', label: 'المدينة' },
-  { value: '{{region}}', label: 'المنطقة' },
-  { value: '{{cod}}', label: 'قيمة التحصيل' },
-  { value: '{{merchant}}', label: 'اسم التاجر' },
-  { value: '{{date}}', label: 'التاريخ' },
-  { value: '{{orderId}}', label: 'رقم الطلب' },
-  { value: '{{referenceNumber}}', label: 'الرقم المرجعي' },
-  { value: '{{driver}}', label: 'اسم السائق' },
-  { value: '{{source}}', label: 'مصدر الطلب' },
-  { value: '{{items}}', label: 'المنتجات' },
-  { value: '{{notes}}', label: 'الملاحظات' },
-  { value: '{{company_logo}}', label: 'شعار الشركة' },
+    { value: '{{recipient}}', label: 'اسم المستلم' },
+    { value: '{{phone}}', label: 'هاتف المستلم' },
+    { value: '{{address}}', label: 'العنوان الكامل' },
+    { value: '{{city}}', label: 'المدينة' },
+    { value: '{{region}}', label: 'المنطقة' },
+    { value: '{{cod}}', label: 'قيمة التحصيل' },
+    { value: '{{merchant}}', label: 'اسم التاجر' },
+    { value: '{{date}}', label: 'التاريخ' },
+    { value: '{{orderId}}', label: 'رقم الطلب' },
+    { value: '{{referenceNumber}}', label: 'الرقم المرجعي' },
+    { value: '{{driver}}', label: 'اسم السائق' },
+    { value: '{{source}}', label: 'مصدر الطلب' },
+    { value: '{{items}}', label: 'المنتجات' },
+    { value: '{{notes}}', label: 'الملاحظات' },
+    { value: '{{company_logo}}', label: 'شعار الشركة' },
 ];
 
 // --- Sub-components ---
 
 const PolicyElementComponent = forwardRef(({ element }: { element: PolicyElement }, ref: React.Ref<HTMLDivElement>) => {
-  const renderContent = () => {
-    switch (element.type) {
-      case 'text':
-        return <div className="p-1 w-full h-full" style={{ fontFamily: 'inherit', fontSize: `${element.fontSize}px`, fontWeight: element.fontWeight as any, color: element.color, textAlign: element.textAlign as any, fontStyle: element.fontStyle as any, textDecoration: element.textDecoration as any }}>{element.content}</div>;
-      case 'barcode':
-        return <div className="p-1 w-full h-full flex flex-col items-center justify-center text-xs"> <ScanBarcode className="w-10 h-10" /> <p className='mt-1'>باركود: {element.content}</p> </div>;
-      case 'image':
-        if (element.content) {
-          return <img src={element.content} alt="logo" className="w-full h-full object-contain" />;
+    const renderContent = () => {
+        switch (element.type) {
+            case 'text':
+                return <div className="p-1 w-full h-full" style={{ fontFamily: 'inherit', fontSize: `${element.fontSize}px`, fontWeight: element.fontWeight as any, color: element.color, textAlign: element.textAlign as any, fontStyle: element.fontStyle as any, textDecoration: element.textDecoration as any }}>{element.content}</div>;
+            case 'barcode':
+                return <div className="p-1 w-full h-full flex flex-col items-center justify-center text-xs"> <ScanBarcode className="w-10 h-10" /> <p className='mt-1'>باركود: {element.content}</p> </div>;
+            case 'image':
+                if (element.content) {
+                    return <img src={element.content} alt="logo" className="w-full h-full object-contain" />;
+                }
+                return <ImageIcon className="w-full h-full text-muted-foreground p-2" />;
+            case 'shape':
+                return <div className="w-full h-full" style={{ backgroundColor: element.backgroundColor, opacity: element.opacity }} />;
+            default: return null;
         }
-        return <ImageIcon className="w-full h-full text-muted-foreground p-2" />;
-      case 'shape':
-        return <div className="w-full h-full" style={{ backgroundColor: element.backgroundColor, opacity: element.opacity }} />;
-      default: return null;
-    }
-  };
+    };
 
-  return (
-    <div
-      ref={ref}
-      className="w-full h-full"
-      style={{ borderColor: element.borderColor, borderWidth: `${element.borderWidth}px`, borderRadius: `${element.borderRadius}px` }}
-    >
-      {renderContent()}
-    </div>
-  );
+    return (
+        <div
+            ref={ref}
+            className="w-full h-full"
+            style={{ borderColor: element.borderColor, borderWidth: `${element.borderWidth}px`, borderRadius: `${element.borderRadius}px` }}
+        >
+            {renderContent()}
+        </div>
+    );
 });
 PolicyElementComponent.displayName = 'PolicyElementComponent';
 
 
-const PropertiesPanel = ({ element, onUpdate }: { 
-    element: PolicyElement | null; 
+const PropertiesPanel = ({ element, onUpdate }: {
+    element: PolicyElement | null;
     onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
 }) => {
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if(e.target.files && e.target.files[0] && element) {
+        if (e.target.files && e.target.files[0] && element) {
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onload = () => {
@@ -141,14 +142,14 @@ const PropertiesPanel = ({ element, onUpdate }: {
             reader.readAsDataURL(file);
         }
     };
-    
+
     return (
         <Card>
             <CardHeader><CardTitle className='text-base'>خصائص العنصر</CardTitle></CardHeader>
             <CardContent>
                 {!element ? (
                     <div className="text-center text-muted-foreground py-10">
-                        <Icon name="MousePointerSquare" className="mx-auto h-8 w-8 mb-2" />
+                        <Icon name="MousePointer" className="mx-auto h-8 w-8 mb-2" />
                         <p>حدد عنصرًا لتعديل خصائصه</p>
                     </div>
                 ) : (
@@ -169,14 +170,14 @@ const PropertiesPanel = ({ element, onUpdate }: {
                                         </Select>
                                     </div>
                                     <div><Label>حجم الخط (px)</Label><Input type="number" value={element.fontSize} onChange={e => onUpdate(element.id, { fontSize: +e.target.value })} /></div>
-                                    <div><Label>اللون</Label><Input type="color" value={element.color} onChange={e => onUpdate(element.id, { color: e.target.value })} className="w-full h-10"/></div>
+                                    <div><Label>اللون</Label><Input type="color" value={element.color} onChange={e => onUpdate(element.id, { color: e.target.value })} className="w-full h-10" /></div>
                                     <div className='flex items-center gap-1'>
                                         <Label>المحاذاة والنمط</Label>
-                                        <Button variant={element.fontWeight === 'bold' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { fontWeight: element.fontWeight === 'bold' ? 'normal' : 'bold' })}><Bold/></Button>
-                                        <Button variant={element.fontStyle === 'italic' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { fontStyle: element.fontStyle === 'italic' ? 'normal' : 'italic' })}><Italic/></Button>
-                                        <Button variant={element.textAlign === 'left' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { textAlign: 'left'})}><AlignLeft/></Button>
-                                        <Button variant={element.textAlign === 'center' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { textAlign: 'center'})}><AlignCenter/></Button>
-                                        <Button variant={element.textAlign === 'right' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { textAlign: 'right'})}><AlignRight/></Button>
+                                        <Button variant={element.fontWeight === 'bold' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { fontWeight: element.fontWeight === 'bold' ? 'normal' : 'bold' })}><Bold /></Button>
+                                        <Button variant={element.fontStyle === 'italic' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { fontStyle: element.fontStyle === 'italic' ? 'normal' : 'italic' })}><Italic /></Button>
+                                        <Button variant={element.textAlign === 'left' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { textAlign: 'left' })}><AlignLeft /></Button>
+                                        <Button variant={element.textAlign === 'center' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { textAlign: 'center' })}><AlignCenter /></Button>
+                                        <Button variant={element.textAlign === 'right' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { textAlign: 'right' })}><AlignRight /></Button>
                                     </div>
                                 </>
                             )}
@@ -185,7 +186,7 @@ const PropertiesPanel = ({ element, onUpdate }: {
                                     <Label>ربط الباركود بـ</Label>
                                     <Select value={element.content} onValueChange={value => onUpdate(element.id, { content: value })}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>{dataFields.filter(f=>f.value.includes('Id') || f.value.includes('phone')).map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
+                                        <SelectContent>{dataFields.filter(f => f.value.includes('Id') || f.value.includes('phone')).map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
                                     </Select>
                                 </div>
                             )}
@@ -197,8 +198,8 @@ const PropertiesPanel = ({ element, onUpdate }: {
                             )}
                             {element.type === 'shape' && (
                                 <>
-                                    <div><Label>لون الخلفية</Label><Input type="color" value={element.backgroundColor} onChange={e => onUpdate(element.id, { backgroundColor: e.target.value })} className="w-full h-10"/></div>
-                                    <div><Label>الشفافية</Label><Slider value={[element.opacity || 1]} onValueChange={v => onUpdate(element.id, { opacity: v[0]})} max={1} step={0.1}/></div>
+                                    <div><Label>لون الخلفية</Label><Input type="color" value={element.backgroundColor} onChange={e => onUpdate(element.id, { backgroundColor: e.target.value })} className="w-full h-10" /></div>
+                                    <div><Label>الشفافية</Label><Slider value={[element.opacity || 1]} onValueChange={v => onUpdate(element.id, { opacity: v[0] })} max={1} step={0.1} /></div>
                                 </>
                             )}
                             <div>
@@ -262,7 +263,7 @@ export default function PolicyEditorPage() {
     const { toast } = useToast();
     const { orders } = useOrdersStore();
     const context = useSettings();
-    
+
     const { settings: policySettings, isHydrated, updatePolicySetting } = context;
 
     const [elements, setElements] = useState<PolicyElement[]>([]);
@@ -271,18 +272,18 @@ export default function PolicyEditorPage() {
     const [margins, setMargins] = useState({ top: 2, right: 2, bottom: 2, left: 2 });
     const [zoomLevel, setZoomLevel] = useState(0.8);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    
+
     const canvasRef = useRef<HTMLDivElement>(null);
 
     const [templates, setTemplates] = useState<SavedTemplate[]>([]);
-    
+
     const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
     const [templateName, setTemplateName] = useState('');
     const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
     const [templateToDelete, setTemplateToDelete] = useState<SavedTemplate | null>(null);
     const [isPrintSampleDialogOpen, setIsPrintSampleDialogOpen] = useState(false);
     const printablePolicyRef = useRef<{ handleExport: () => void; handleDirectPrint: (order: any, type: 'zpl' | 'escpos') => Promise<void> }>(null);
-    
+
     const loadTemplatesFromStorage = useCallback(() => {
         const savedTemplatesJson = localStorage.getItem('policyTemplates');
         const userTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
@@ -304,7 +305,7 @@ export default function PolicyEditorPage() {
     useEffect(() => {
         loadTemplatesFromStorage();
     }, [loadTemplatesFromStorage]);
-    
+
 
     const paperDimensions = useMemo(() => {
         if (paperSize === 'custom') return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
@@ -312,7 +313,7 @@ export default function PolicyEditorPage() {
         if (!size) return { width: mmToPx(100), height: mmToPx(150) }; // Fallback
         return { width: mmToPx(size.width), height: mmToPx(size.height) };
     }, [paperSize, customDimensions]);
-    
+
     const canvasBounds = useMemo(() => {
         return {
             left: mmToPx(margins.left),
@@ -326,7 +327,7 @@ export default function PolicyEditorPage() {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (selectedIds.length === 0) return;
-            
+
             const isArrowKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
             if (!isArrowKey) return;
 
@@ -341,7 +342,7 @@ export default function PolicyEditorPage() {
             if (e.key === 'ArrowUp') dy = -moveAmount;
             if (e.key === 'ArrowDown') dy = moveAmount;
 
-            setElements(prevElements => 
+            setElements(prevElements =>
                 prevElements.map(el => {
                     if (selectedIds.includes(el.id)) {
                         const newX = el.x + dx;
@@ -395,20 +396,20 @@ export default function PolicyEditorPage() {
     const handleUpdateElement = (id: string, updates: Partial<PolicyElement>) => {
         setElements(prev => prev.map(el => el.id === id ? { ...el, ...updates } : el));
     };
-    
+
     const handleDeleteElement = () => {
         if (selectedIds.length > 0) {
             setElements(p => p.filter(el => !selectedIds.includes(el.id)));
             setSelectedIds([]);
         }
     };
-    
+
     const handleDuplicate = () => {
         if (selectedIds.length === 0) return;
         const newElements: PolicyElement[] = [];
         const newSelectedIds: string[] = [];
         elements.forEach(el => {
-            if(selectedIds.includes(el.id)){
+            if (selectedIds.includes(el.id)) {
                 const newEl: PolicyElement = {
                     ...el,
                     id: nanoid(),
@@ -436,12 +437,12 @@ export default function PolicyEditorPage() {
                 case 'front': sorted.push(item); break;
                 case 'back': sorted.unshift(item); break;
                 case 'forward': sorted.splice(Math.min(index + 1, sorted.length), 0, item); break;
-                case 'backward': sorted.splice(Math.max(index - 1, 0), item); break;
+                case 'backward': sorted.splice(Math.max(index - 1, 0), 0, item); break;
             }
             return sorted.map((el, i) => ({ ...el, zIndex: i }));
         });
     };
-    
+
     const selectedElement = useMemo(() => elements.find(el => el.id === selectedIds[0]), [elements, selectedIds]);
 
     const handleSelect = (id: string, e: React.MouseEvent<HTMLDivElement>) => {
@@ -452,13 +453,13 @@ export default function PolicyEditorPage() {
             setSelectedIds([id]);
         }
     };
-    
+
     // --- Template Management ---
     const saveTemplatesToStorage = (newTemplates: SavedTemplate[]) => {
         localStorage.setItem('policyTemplates', JSON.stringify(newTemplates));
         setTemplates(newTemplates);
     };
-    
+
     const handleSaveTemplate = () => {
         if (!templateName) {
             toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء إدخال اسم للقالب.' });
@@ -470,17 +471,17 @@ export default function PolicyEditorPage() {
             elements, paperSize, customDimensions, margins
         };
 
-        if(editingTemplateId) {
-             const newTemplates = templates.map(t => t.id === editingTemplateId ? { ...templateData, id: editingTemplateId, isReadyMade: false } : t);
-             saveTemplatesToStorage(newTemplates);
-             toast({ title: "تم حفظ التعديل", description: `تم تحديث قالب "${templateName}" بنجاح.` });
+        if (editingTemplateId) {
+            const newTemplates = templates.map(t => t.id === editingTemplateId ? { ...templateData, id: editingTemplateId, isReadyMade: false } : t);
+            saveTemplatesToStorage(newTemplates);
+            toast({ title: "تم حفظ التعديل", description: `تم تحديث قالب "${templateName}" بنجاح.` });
         } else {
             const newTemplate: SavedTemplate = { ...templateData, id: nanoid() };
             const newTemplates = [...templates, newTemplate];
             saveTemplatesToStorage(newTemplates);
             toast({ title: "تم إنشاء قالب جديد", description: `تم حفظ قالب "${templateName}" بنجاح.` });
         }
-        
+
         setIsSaveDialogOpen(false);
         setTemplateName('');
         setEditingTemplateId(null);
@@ -491,9 +492,9 @@ export default function PolicyEditorPage() {
         setPaperSize(template.paperSize);
         setCustomDimensions(template.customDimensions);
         setMargins(template.margins);
-        toast({ title: 'تم التحميل', description: `تم تحميل قالب "${template.name}".`});
+        toast({ title: 'تم التحميل', description: `تم تحميل قالب "${template.name}".` });
     };
-    
+
     const handleConfirmDelete = () => {
         if (templateToDelete) {
             const newTemplates = templates.filter(t => t.id !== templateToDelete.id);
@@ -502,7 +503,7 @@ export default function PolicyEditorPage() {
             setTemplateToDelete(null);
         }
     };
-    
+
     const currentTemplate: SavedTemplate = useMemo(() => ({
         id: 'current_design',
         name: 'Current Design',
@@ -510,235 +511,226 @@ export default function PolicyEditorPage() {
         paperSize,
         customDimensions,
         margins,
-      }), [elements, paperSize, customDimensions, margins]);
-      
+    }), [elements, paperSize, customDimensions, margins]);
+
     const handleRestoreDefaults = () => {
         saveTemplatesToStorage(readyTemplates);
         toast({ title: "تمت الاستعادة", description: "تمت استعادة القوالب الافتراضية بنجاح." });
     };
 
-  return (
-    <div className="space-y-6">
-        <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
-            <DialogContent>
-                <DialogHeader>
-                <DialogTitle>{editingTemplateId ? 'حفظ التعديل' : 'حفظ كقالب جديد'}</DialogTitle>
-                <DialogDescription>أدخل اسمًا مميزًا لهذا القالب.</DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                <Label htmlFor="templateName">اسم القالب</Label>
-                <Input id="templateName" value={templateName} onChange={(e) => setTemplateName(e.target.value)} />
-                </div>
-                <DialogFooter>
-                <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
-                <Button onClick={handleSaveTemplate}>
-                    {editingTemplateId ? 'حفظ التعديل' : 'حفظ'}
-                </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-        <Dialog open={isPrintSampleDialogOpen} onOpenChange={setIsPrintSampleDialogOpen}>
-            <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                <DialogTitle>معاينة الطباعة</DialogTitle>
-                <DialogDescription>هذه معاينة لكيف ستبدو البوليصة عند الطباعة بالبيانات الفعلية.</DialogDescription>
-                </DialogHeader>
-                <div className="bg-muted p-4 rounded-md flex items-center justify-center">
-                    <PrintablePolicy ref={printablePolicyRef} orders={orders.length > 0 ? [orders[0]] : []} template={currentTemplate} />
-                </div>
-                 <DialogFooter className="justify-start gap-2">
-                    <Button onClick={() => printablePolicyRef.current?.handleExport()}>
-                        <Save className="ml-2 h-4 w-4 inline" /> طباعة PDF
-                    </Button>
-                    <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(orders.length > 0 ? orders[0] : null, 'zpl')}>
-                        <PrinterIcon className="ml-2 h-4 w-4 inline" /> طباعة ZPL
-                    </Button>
-                     <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(orders.length > 0 ? orders[0] : null, 'escpos')}>
-                        <PrinterIcon className="ml-2 h-4 w-4 inline" /> طباعة ESC/POS
-                    </Button>
-                    <DialogClose asChild><Button variant="outline" className="mr-auto">إلغاء</Button></DialogClose>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-        <AlertDialog open={!!templateToDelete} onOpenChange={() => setTemplateToDelete(null)}>
-            <AlertDialogContent>
-                 <AlertDialogHeader>
-                    <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-                    <AlertDialogDescription>هل أنت متأكد من حذف قالب "{templateToDelete?.name}"؟</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">حذف</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-      
-        <Card>
-            <CardHeader>
-                <div className="flex justify-between items-start">
-                    <div>
-                        <CardTitle className="text-2xl font-bold tracking-tight">محرر البوليصة</CardTitle>
-                        <CardDescription className="mt-1">اسحب وأفلت العناصر لتصميم البوليصة. انقر على عنصر لتعديل خصائصه.</CardDescription>
+    return (
+        <div className="space-y-6">
+            <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{editingTemplateId ? 'حفظ التعديل' : 'حفظ كقالب جديد'}</DialogTitle>
+                        <DialogDescription>أدخل اسمًا مميزًا لهذا القالب.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Label htmlFor="templateName">اسم القالب</Label>
+                        <Input id="templateName" value={templateName} onChange={(e) => setTemplateName(e.target.value)} />
                     </div>
-                    <Button variant="outline" size="icon" asChild>
-                        <Link href="/dashboard/settings/general">
-                            <ArrowLeft className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                </div>
-            </CardHeader>
-        </Card>
-        
-         <Card>
-            <CardContent className="p-2">
-                 <div className="flex items-center flex-wrap gap-x-4 gap-y-2">
-                    <div className="flex items-center gap-2">
-                        <Label className="text-sm font-medium whitespace-nowrap">إضافة:</Label>
-                        {toolboxItems.map(tool => (
-                             <Button key={tool.label} variant="outline" size="sm" className="flex items-center gap-2 h-8" onClick={() => addElement(tool)}>
-                                <tool.icon className="h-4 w-4 text-muted-foreground" />
-                                <span>{tool.label}</span>
-                            </Button>
-                        ))}
+                    <DialogFooter>
+                        <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+                        <Button onClick={handleSaveTemplate}>
+                            {editingTemplateId ? 'حفظ التعديل' : 'حفظ'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <Dialog open={isPrintSampleDialogOpen} onOpenChange={setIsPrintSampleDialogOpen}>
+                <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                        <DialogTitle>معاينة الطباعة</DialogTitle>
+                        <DialogDescription>هذه معاينة لكيف ستبدو البوليصة عند الطباعة بالبيانات الفعلية.</DialogDescription>
+                    </DialogHeader>
+                    <div className="bg-muted p-4 rounded-md flex items-center justify-center">
+                        <PrintablePolicy ref={printablePolicyRef} orders={orders.length > 0 ? [orders[0]] : []} template={currentTemplate} />
                     </div>
+                    <DialogFooter className="justify-start gap-2">
+                        <Button onClick={() => printablePolicyRef.current?.handleExport()}>
+                            <Save className="ml-2 h-4 w-4 inline" /> طباعة PDF
+                        </Button>
+                        <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(orders.length > 0 ? orders[0] : null, 'zpl')}>
+                            <PrinterIcon className="ml-2 h-4 w-4 inline" /> طباعة ZPL
+                        </Button>
+                        <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(orders.length > 0 ? orders[0] : null, 'escpos')}>
+                            <PrinterIcon className="ml-2 h-4 w-4 inline" /> طباعة ESC/POS
+                        </Button>
+                        <DialogClose asChild><Button variant="outline" className="mr-auto">إلغاء</Button></DialogClose>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <AlertDialog open={!!templateToDelete} onOpenChange={() => setTemplateToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                        <AlertDialogDescription>هل أنت متأكد من حذف قالب "{templateToDelete?.name}"؟</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">حذف</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
-                    <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
-                    
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))}><ZoomOut className="h-5 w-5"/></Button>
-                        <span className="text-sm font-semibold w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
-                        <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.min(2, z + 0.1))}><ZoomIn className="h-5 w-5"/></Button>
-                    </div>
+            <SettingsHeader
+                icon="FileText"
+                title="محرر البوليصة"
+                description="اسحب وأفلت العناصر لتصميم البوليصة. انقر على عنصر لتعديل خصائصه"
+                color="emerald"
+            />
 
-                    <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
-
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => handleLayering('front')} disabled={selectedIds.length !== 1}><ChevronsUp /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleLayering('forward')} disabled={selectedIds.length !== 1}><ChevronUp /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleLayering('backward')} disabled={selectedIds.length !== 1}><ChevronDown /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleLayering('back')} disabled={selectedIds.length !== 1}><ChevronsDown /></Button>
-                    </div>
-                    
-                    <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
-
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" onClick={handleDuplicate} disabled={selectedIds.length === 0}><Copy /></Button>
-                        <Button variant="ghost" size="icon" onClick={handleDeleteElement} disabled={selectedIds.length === 0}><Trash /></Button>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 md:mr-auto">
-                        <Button variant="secondary" onClick={() => {setIsPrintSampleDialogOpen(true)}}> <PrinterIcon className="w-4 h-4 ml-1"/> معاينة وطباعة</Button>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            <div className="lg:col-span-3 space-y-6 lg:sticky lg:top-24">
-                 <PropertiesPanel
-                    element={selectedElement || null}
-                    onUpdate={handleUpdateElement}
-                />
-                 <PageSettingsPanel 
-                    paperSize={paperSize}
-                    customDimensions={customDimensions}
-                    margins={margins}
-                    onPaperSizeChange={setPaperSize}
-                    onDimensionChange={(dim, val) => setCustomDimensions(prev => ({...prev, [dim]: val}))}
-                    onMarginChange={(margin, val) => setMargins(prev => ({...prev, [margin]: val}))}
-                />
-                <Card>
-                    <CardHeader><CardTitle className='text-base'>إدارة القوالب</CardTitle></CardHeader>
-                    <CardContent>
-                        <div className="flex items-center gap-2 mb-4">
-                            <Button className="flex-1" size="sm" onClick={() => { setEditingTemplateId(null); setTemplateName(''); setIsSaveDialogOpen(true); }}>
-                                <PlusCircle className="w-4 h-4 ml-2"/> إنشاء قالب جديد
-                            </Button>
-                            <Button className="flex-1" size="sm" variant="secondary" onClick={() => { if(editingTemplateId){setIsSaveDialogOpen(true)} }} disabled={!editingTemplateId}>
-                                <Save className="w-4 h-4 ml-2"/> حفظ التعديل
-                            </Button>
+            <Card>
+                <CardContent className="p-2">
+                    <div className="flex items-center flex-wrap gap-x-4 gap-y-2">
+                        <div className="flex items-center gap-2">
+                            <Label className="text-sm font-medium whitespace-nowrap">إضافة:</Label>
+                            {toolboxItems.map(tool => (
+                                <Button key={tool.label} variant="outline" size="sm" className="flex items-center gap-2 h-8" onClick={() => addElement(tool)}>
+                                    <tool.icon className="h-4 w-4 text-muted-foreground" />
+                                    <span>{tool.label}</span>
+                                </Button>
+                            ))}
                         </div>
-                        <Separator />
-                        <ScrollArea className="h-48 mt-4">
-                        {templates.map(template => (
-                        <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                            <Button variant="link" className="p-0 h-auto text-right" onClick={() => handleLoadTemplate(template)}>{template.name}</Button>
-                            <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical /></Button></DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onSelect={() => {setEditingTemplateId(template.id); setTemplateName(template.name); handleLoadTemplate(template); }}>تعديل</DropdownMenuItem>
-                                {!template.isReadyMade && <DropdownMenuItem onSelect={() => setTemplateToDelete(template)} className="text-destructive">حذف</DropdownMenuItem>}
-                            </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                        ))}
-                        </ScrollArea>
-                        <Separator className="my-2"/>
-                         <Button variant="outline" size="sm" className="w-full" onClick={handleRestoreDefaults}>
-                            <Icon name="RefreshCcw" className="w-4 h-4 ml-2"/> استعادة القوالب الافتراضية
-                         </Button>
-                    </CardContent>
-                </Card>
-            </div>
 
-            <div className="lg:col-span-9 space-y-6">
-                <Card>
-                     <CardContent className="flex justify-center items-center bg-muted p-8 rounded-lg overflow-auto min-h-[70vh]">
-                        <div
-                            className="relative"
-                            style={{ 
-                                width: paperDimensions.width, 
-                                height: paperDimensions.height,
-                                transform: `scale(${zoomLevel})`, 
-                                transformOrigin: 'top center' 
-                            }}
-                        >
-                             <div 
-                                id="canvas" 
-                                ref={canvasRef} 
-                                className="absolute bg-white rounded-md shadow-inner" 
-                                style={{ 
-                                    width: paperDimensions.width, 
+                        <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
+
+                        <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))}><ZoomOut className="h-5 w-5" /></Button>
+                            <span className="text-sm font-semibold w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
+                            <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.min(2, z + 0.1))}><ZoomIn className="h-5 w-5" /></Button>
+                        </div>
+
+                        <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
+
+                        <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => handleLayering('front')} disabled={selectedIds.length !== 1}><ChevronsUp /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleLayering('forward')} disabled={selectedIds.length !== 1}><ChevronUp /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleLayering('backward')} disabled={selectedIds.length !== 1}><ChevronDown /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleLayering('back')} disabled={selectedIds.length !== 1}><ChevronsDown /></Button>
+                        </div>
+
+                        <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
+
+                        <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="icon" onClick={handleDuplicate} disabled={selectedIds.length === 0}><Copy /></Button>
+                            <Button variant="ghost" size="icon" onClick={handleDeleteElement} disabled={selectedIds.length === 0}><Trash /></Button>
+                        </div>
+
+                        <div className="flex items-center gap-2 md:mr-auto">
+                            <Button variant="secondary" onClick={() => { setIsPrintSampleDialogOpen(true) }}> <PrinterIcon className="w-4 h-4 ml-1" /> معاينة وطباعة</Button>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="lg:col-span-3 space-y-6 lg:sticky lg:top-24">
+                    <PropertiesPanel
+                        element={selectedElement || null}
+                        onUpdate={handleUpdateElement}
+                    />
+                    <PageSettingsPanel
+                        paperSize={paperSize}
+                        customDimensions={customDimensions}
+                        margins={margins}
+                        onPaperSizeChange={setPaperSize}
+                        onDimensionChange={(dim, val) => setCustomDimensions(prev => ({ ...prev, [dim]: val }))}
+                        onMarginChange={(margin, val) => setMargins(prev => ({ ...prev, [margin]: val }))}
+                    />
+                    <Card>
+                        <CardHeader><CardTitle className='text-base'>إدارة القوالب</CardTitle></CardHeader>
+                        <CardContent>
+                            <div className="flex items-center gap-2 mb-4">
+                                <Button className="flex-1" size="sm" onClick={() => { setEditingTemplateId(null); setTemplateName(''); setIsSaveDialogOpen(true); }}>
+                                    <PlusCircle className="w-4 h-4 ml-2" /> إنشاء قالب جديد
+                                </Button>
+                                <Button className="flex-1" size="sm" variant="secondary" onClick={() => { if (editingTemplateId) { setIsSaveDialogOpen(true) } }} disabled={!editingTemplateId}>
+                                    <Save className="w-4 h-4 ml-2" /> حفظ التعديل
+                                </Button>
+                            </div>
+                            <Separator />
+                            <ScrollArea className="h-48 mt-4">
+                                {templates.map(template => (
+                                    <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                        <Button variant="link" className="p-0 h-auto text-right" onClick={() => handleLoadTemplate(template)}>{template.name}</Button>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical /></Button></DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onSelect={() => { setEditingTemplateId(template.id); setTemplateName(template.name); handleLoadTemplate(template); }}>تعديل</DropdownMenuItem>
+                                                {!template.isReadyMade && <DropdownMenuItem onSelect={() => setTemplateToDelete(template)} className="text-destructive">حذف</DropdownMenuItem>}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                ))}
+                            </ScrollArea>
+                            <Separator className="my-2" />
+                            <Button variant="outline" size="sm" className="w-full" onClick={handleRestoreDefaults}>
+                                <Icon name="RefreshCcw" className="w-4 h-4 ml-2" /> استعادة القوالب الافتراضية
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="lg:col-span-9 space-y-6">
+                    <Card>
+                        <CardContent className="flex justify-center items-center bg-muted p-8 rounded-lg overflow-auto min-h-[70vh]">
+                            <div
+                                className="relative"
+                                style={{
+                                    width: paperDimensions.width,
                                     height: paperDimensions.height,
-                                }}
-                                onClick={(e) => {
-                                    if(e.target === e.currentTarget){
-                                        setSelectedIds([]);
-                                    }
+                                    transform: `scale(${zoomLevel})`,
+                                    transformOrigin: 'top center'
                                 }}
                             >
-                                <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
-                                    backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
-                                    backgroundImage: `linear-gradient(to right, #e5e5e5 1px, transparent 1px), linear-gradient(to bottom, #e5e5e5 1px, transparent 1px)`
-                                }} />
-                                {elements.map(el => (
-                                     <Rnd
-                                        key={el.id}
-                                        size={{ width: el.width, height: el.height }}
-                                        position={{ x: el.x, y: el.y }}
-                                        onDragStop={(e, d) => handleUpdateElement(el.id, { x: snapToGrid(d.x), y: snapToGrid(d.y) })}
-                                        onResizeStop={(e, direction, ref, delta, position) => {
-                                            handleUpdateElement(el.id, {
-                                                width: snapToGrid(parseInt(ref.style.width, 10)),
-                                                height: snapToGrid(parseInt(ref.style.height, 10)),
-                                                x: snapToGrid(position.x),
-                                                y: snapToGrid(position.y),
-                                            });
-                                        }}
-                                        onClick={(e) => handleSelect(el.id, e as React.MouseEvent<HTMLDivElement>)}
-                                        className={selectedIds.includes(el.id) ? 'border-2 border-dashed border-primary z-40' : 'z-30'}
-                                        bounds="parent"
-                                     >
-                                        <PolicyElementComponent element={el}/>
-                                     </Rnd>
-                                ))}
+                                <div
+                                    id="canvas"
+                                    ref={canvasRef}
+                                    className="absolute bg-white rounded-md shadow-inner"
+                                    style={{
+                                        width: paperDimensions.width,
+                                        height: paperDimensions.height,
+                                    }}
+                                    onClick={(e) => {
+                                        if (e.target === e.currentTarget) {
+                                            setSelectedIds([]);
+                                        }
+                                    }}
+                                >
+                                    <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
+                                        backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
+                                        backgroundImage: `linear-gradient(to right, #e5e5e5 1px, transparent 1px), linear-gradient(to bottom, #e5e5e5 1px, transparent 1px)`
+                                    }} />
+                                    {elements.map(el => (
+                                        <Rnd
+                                            key={el.id}
+                                            size={{ width: el.width, height: el.height }}
+                                            position={{ x: el.x, y: el.y }}
+                                            onDragStop={(e, d) => handleUpdateElement(el.id, { x: snapToGrid(d.x), y: snapToGrid(d.y) })}
+                                            onResizeStop={(e, direction, ref, delta, position) => {
+                                                handleUpdateElement(el.id, {
+                                                    width: snapToGrid(parseInt(ref.style.width, 10)),
+                                                    height: snapToGrid(parseInt(ref.style.height, 10)),
+                                                    x: snapToGrid(position.x),
+                                                    y: snapToGrid(position.y),
+                                                });
+                                            }}
+                                            onClick={(e: any) => handleSelect(el.id, e as React.MouseEvent<HTMLDivElement>)}
+                                            className={selectedIds.includes(el.id) ? 'border-2 border-dashed border-primary z-40' : 'z-30'}
+                                            bounds="parent"
+                                        >
+                                            <PolicyElementComponent element={el} />
+                                        </Rnd>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                     </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
-    </div>
-  );
+    );
 }

@@ -8,8 +8,7 @@ const router = express.Router();
 
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { roleId, search, page = 0, limit = 50 } = req.query;
-    const offset = parseInt(page) * parseInt(limit);
+    const { roleId, search, page, limit } = req.query;
 
     let whereClause = 'WHERE 1=1';
     const params = [];
@@ -28,11 +27,17 @@ router.get('/', authenticateToken, async (req, res) => {
     const countResult = await db.query(`SELECT COUNT(*) FROM users ${whereClause}`, params);
     const totalCount = parseInt(countResult.rows[0].count);
 
-    const result = await db.query(
-      `SELECT id, name, email, store_name, role_id, avatar, whatsapp, price_list_id, created_at
-       FROM users ${whereClause} ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
-      [...params, parseInt(limit), offset]
-    );
+    // Build query - only add pagination if limit is provided
+    let query = `SELECT id, name, email, store_name, role_id, avatar, whatsapp, price_list_id, created_at
+       FROM users ${whereClause} ORDER BY created_at DESC`;
+    
+    if (limit) {
+      const offset = page ? parseInt(page) * parseInt(limit) : 0;
+      query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
+      params.push(parseInt(limit), offset);
+    }
+
+    const result = await db.query(query, params);
 
     const users = result.rows.map(row => ({
       id: row.id,

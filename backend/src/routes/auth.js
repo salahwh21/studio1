@@ -8,8 +8,13 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 router.post('/login', [
-  body('email').notEmpty().withMessage('Email or phone is required'),
-  body('password').notEmpty().withMessage('Password is required')
+  body('email')
+    .notEmpty().withMessage('Email or phone is required')
+    .isLength({ min: 1, max: 100 }).withMessage('Email or phone must be between 1 and 100 characters')
+    .trim(),
+  body('password')
+    .notEmpty().withMessage('Password is required')
+    .isLength({ min: 1, max: 100 }).withMessage('Password must be between 1 and 100 characters')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -38,11 +43,19 @@ router.post('/login', [
     const token = jwt.sign(
       { id: user.id, email: user.email, roleId: user.role_id, name: user.name },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '24h' }
     );
 
+    // Set httpOnly cookie for security
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/'
+    });
+
     res.json({
-      token,
       user: {
         id: user.id,
         name: user.name,
@@ -59,10 +72,20 @@ router.post('/login', [
 });
 
 router.post('/register', [
-  body('name').notEmpty().withMessage('Name is required'),
-  body('email').notEmpty().withMessage('Email is required'),
-  body('password').isLength({ min: 3 }).withMessage('Password must be at least 3 characters'),
-  body('roleId').notEmpty().withMessage('Role is required')
+  body('name')
+    .notEmpty().withMessage('Name is required')
+    .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters')
+    .trim(),
+  body('email')
+    .notEmpty().withMessage('Email is required')
+    .isLength({ min: 1, max: 100 }).withMessage('Email must be between 1 and 100 characters')
+    .trim(),
+  body('password')
+    .isLength({ min: 8, max: 100 }).withMessage('Password must be between 8 and 100 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
+  body('roleId')
+    .notEmpty().withMessage('Role is required')
+    .isIn(['admin', 'merchant', 'driver', 'customer_service']).withMessage('Invalid role')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -90,11 +113,19 @@ router.post('/register', [
     const token = jwt.sign(
       { id: user.id, email: user.email, roleId: user.role_id, name: user.name },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '24h' }
     );
 
+    // Set httpOnly cookie for security
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/'
+    });
+
     res.status(201).json({
-      token,
       user: {
         id: user.id,
         name: user.name,
@@ -108,6 +139,16 @@ router.post('/register', [
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+router.post('/logout', (req, res) => {
+  res.clearCookie('auth_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/'
+  });
+  res.json({ message: 'Logged out successfully' });
 });
 
 router.get('/me', authenticateToken, async (req, res) => {

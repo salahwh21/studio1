@@ -23,7 +23,7 @@ export const DriverSlips = () => {
     const { settings, formatCurrency } = useSettings();
     const { driverReturnSlips, removeOrderFromDriverReturnSlip } = useReturnsStore();
     const [isPending, startTransition] = useTransition();
-    
+
     const [showDetailsDialog, setShowDetailsDialog] = useState(false);
     const [currentSlip, setCurrentSlip] = useState<DriverReturnSlip | null>(null);
 
@@ -40,11 +40,11 @@ export const DriverSlips = () => {
             try {
                 const slipDate = parseISO(slip.date);
                 matchesDate = isWithinInterval(slipDate, { start: dateRange.from, end: dateRange.to });
-            } catch(e) { matchesDate = false; }
+            } catch (e) { matchesDate = false; }
         }
         return matchesDriver && matchesDate;
     }), [driverReturnSlips, filterDriver, dateRange]);
-    
+
     const handleShowDetails = (slip: DriverReturnSlip) => {
         setCurrentSlip(slip);
         setShowDetailsDialog(true);
@@ -54,13 +54,13 @@ export const DriverSlips = () => {
         if (!currentSlip) return;
         startTransition(async () => {
             removeOrderFromDriverReturnSlip(currentSlip.id, orderId);
-            await updateOrderAction({ orderId, field: 'status', value: 'راجع' });
-            setCurrentSlip(prev => prev ? {...prev, orders: prev.orders.filter(o => o.id !== orderId), itemCount: prev.itemCount -1} : null);
+            await updateOrderAction({ orderId, field: 'status', value: 'مرتجع' });
+            setCurrentSlip(prev => prev ? { ...prev, orders: prev.orders.filter(o => o.id !== orderId), itemCount: prev.itemCount - 1 } : null);
             toast({ title: 'تمت الإزالة', description: `تمت إزالة الطلب ${orderId} من الكشف وإعادته للسائق.` });
         });
     }
 
-     const handlePrintAction = (slip: DriverReturnSlip) => {
+    const handlePrintAction = (slip: DriverReturnSlip) => {
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
             toast({ variant: "destructive", title: "فشل الطباعة", description: "يرجى السماح بفتح النوافذ المنبثقة." });
@@ -134,7 +134,7 @@ export const DriverSlips = () => {
     return (
         <div className="space-y-6">
             <Card>
-                 <CardHeader>
+                <CardHeader>
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <CardTitle>سجل كشوفات استلام المرتجعات</CardTitle>
@@ -143,8 +143,8 @@ export const DriverSlips = () => {
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                             <DateRangePicker onUpdate={(range) => setDateRange(range.range)} />
-                             <Select value={filterDriver || 'all'} onValueChange={setFilterDriver}>
+                            <DateRangePicker onUpdate={(range) => setDateRange(range.range)} />
+                            <Select value={filterDriver || 'all'} onValueChange={setFilterDriver}>
                                 <SelectTrigger className="w-[180px]">
                                     <SelectValue placeholder="فلترة حسب السائق" />
                                 </SelectTrigger>
@@ -155,16 +155,16 @@ export const DriverSlips = () => {
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4"/>تصدير Excel</Button>
+                            <Button variant="outline" size="sm"><Icon name="FileSpreadsheet" className="ml-2 h-4 w-4" />تصدير Excel</Button>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent>
-                     <Table>
+                    <Table>
                         <TableHeader><TableRow><TableHead className="border-l">رقم الكشف</TableHead><TableHead className="border-l">اسم السائق</TableHead><TableHead className="border-l">تاريخ الإنشاء</TableHead><TableHead className="border-l">عدد الشحنات</TableHead><TableHead className="border-l">الحالة</TableHead><TableHead>إجراءات</TableHead></TableRow></TableHeader>
                         <TableBody>
                             {filteredSlips.length === 0 ? (
-                                 <TableRow>
+                                <TableRow>
                                     <TableCell colSpan={6} className="text-center h-24">
                                         لم يتم العثور على أي كشوفات تطابق الفلاتر المحددة.
                                     </TableCell>
@@ -182,7 +182,7 @@ export const DriverSlips = () => {
                                     <TableCell className="border-l">
                                         <Badge className="bg-blue-100 text-blue-800">مستلم بالفرع</Badge>
                                     </TableCell>
-                                     <TableCell className="flex gap-2">
+                                    <TableCell className="flex gap-2">
                                         <Button variant="outline" size="sm" onClick={() => handlePrintAction(slip)}>
                                             <Icon name="Printer" className="ml-2 h-4 w-4" /> عرض للطباعة
                                         </Button>
@@ -199,7 +199,7 @@ export const DriverSlips = () => {
                     <DialogHeader><DialogTitle>تفاصيل كشف {currentSlip?.id}</DialogTitle></DialogHeader>
                     <div className="max-h-[60vh] overflow-y-auto">
                         <Table>
-                             <TableHeader><TableRow>
+                            <TableHeader><TableRow>
                                 <TableHead className="w-16">#</TableHead>
                                 <TableHead>رقم الطلب</TableHead>
                                 <TableHead>المستلم</TableHead>
@@ -213,8 +213,8 @@ export const DriverSlips = () => {
                                     <TableCell>{o.recipient}</TableCell>
                                     <TableCell><Badge variant="secondary">{o.previousStatus || o.status}</Badge></TableCell>
                                     <TableCell className="text-center">
-                                        <Button 
-                                            variant="ghost" 
+                                        <Button
+                                            variant="ghost"
                                             size="icon"
                                             onClick={() => handleRemoveOrderFromSlip(o.id)}
                                             disabled={isPending}

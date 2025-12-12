@@ -21,19 +21,20 @@ import { Separator } from '@/components/ui/separator';
 import Icon from '@/components/icon';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SettingsHeader } from '@/components/settings-header';
 import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
+    DndContext,
+    closestCenter,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
 } from '@dnd-kit/core';
 import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
+    arrayMove,
+    SortableContext,
+    useSortable,
+    verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -50,18 +51,18 @@ const recipientOptions: { value: Recipient; label: string }[] = [
 
 
 type FormValues = {
-  manualTemplates: NotificationTemplate[];
-  aiSettings: {
-      useAI: boolean;
-      aiTone: 'friendly' | 'formal' | 'concise';
-      rules: AiNotificationRule[];
-  };
+    manualTemplates: NotificationTemplate[];
+    aiSettings: {
+        useAI: boolean;
+        aiTone: 'friendly' | 'formal' | 'concise';
+        rules: AiNotificationRule[];
+    };
 };
 
 const SortableTemplateCard = ({ template, index, control, remove, statuses }: { template: NotificationTemplate, index: number, control: any, remove: (index: number) => void, statuses: Status[] }) => {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: template.id });
     const style = { transform: CSS.Transform.toString(transform), transition };
-    
+
     const selectedStatus = statuses.find(s => s.code === template.statusId);
 
     return (
@@ -71,8 +72,8 @@ const SortableTemplateCard = ({ template, index, control, remove, statuses }: { 
                     border-left-color: var(--status-color);
                 }
             `}</style>
-            <div style={{'--status-color': selectedStatus?.color } as React.CSSProperties}>
-                 <CardHeader className="flex flex-row items-center justify-between p-4">
+            <div style={{ '--status-color': selectedStatus?.color } as React.CSSProperties}>
+                <CardHeader className="flex flex-row items-center justify-between p-4">
                     <div className="flex items-center gap-4">
                         <div {...attributes} {...listeners} className="cursor-grab p-2 text-muted-foreground">
                             <Icon name="GripVertical" />
@@ -120,7 +121,7 @@ const SortableTemplateCard = ({ template, index, control, remove, statuses }: { 
                             control={control}
                             render={({ field }) => (
                                 <div className="space-y-2">
-                                     <Label htmlFor={`sms-${template.id}`} className="flex items-center gap-2"><Smartphone /> قالب SMS</Label>
+                                    <Label htmlFor={`sms-${template.id}`} className="flex items-center gap-2"><Smartphone /> قالب SMS</Label>
                                     <Textarea id={`sms-${template.id}`} {...field} rows={4} placeholder="مرحباً {{customerName}}، حالة طلبك..." />
                                 </div>
                             )}
@@ -128,9 +129,9 @@ const SortableTemplateCard = ({ template, index, control, remove, statuses }: { 
                     </div>
                     <div className="space-y-2 pt-2 border-t">
                         <Label>إرسال إلى:</Label>
-                         <div className="flex items-center gap-x-6 gap-y-2 flex-wrap">
+                        <div className="flex items-center gap-x-6 gap-y-2 flex-wrap">
                             {recipientOptions.map(option => (
-                                 <Controller
+                                <Controller
                                     key={option.value}
                                     name={`manualTemplates.${index}.recipients`}
                                     control={control}
@@ -160,11 +161,11 @@ const SortableTemplateCard = ({ template, index, control, remove, statuses }: { 
 
 const NotificationsForm = ({ defaultValues, onSave }: { defaultValues: FormValues, onSave: (data: FormValues) => void }) => {
     const { statuses } = useStatusesStore();
-    
+
     const { control, handleSubmit, watch, reset } = useForm<FormValues>({
         defaultValues: defaultValues
     });
-    
+
     useEffect(() => {
         reset(defaultValues);
     }, [defaultValues, reset]);
@@ -175,7 +176,7 @@ const NotificationsForm = ({ defaultValues, onSave }: { defaultValues: FormValue
     useEffect(() => {
         const allStatusIds = statuses.map(s => s.code);
         const existingRuleIds = new Set((defaultValues.aiSettings.rules || []).map(r => r.statusId));
-        
+
         const newRules = allStatusIds
             .map(statusId => {
                 const existingRule = (defaultValues.aiSettings.rules || []).find(r => r.statusId === statusId);
@@ -188,7 +189,7 @@ const NotificationsForm = ({ defaultValues, onSave }: { defaultValues: FormValue
 
 
     const sensors = useSensors(useSensor(PointerSensor));
-    
+
     const isAiEnabled = watch('aiSettings.useAI');
 
     const handleAddTemplate = () => {
@@ -200,8 +201,8 @@ const NotificationsForm = ({ defaultValues, onSave }: { defaultValues: FormValue
             sms: '',
         });
     };
-    
-     const onDragEnd = (event: DragEndEvent) => {
+
+    const onDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (over && active.id !== over.id) {
             const oldIndex = fields.findIndex((item) => item.id === active.id);
@@ -209,7 +210,7 @@ const NotificationsForm = ({ defaultValues, onSave }: { defaultValues: FormValue
             move(oldIndex, newIndex);
         }
     };
-    
+
     const statusMap = new Map(statuses.map(s => [s.code, s]));
 
 
@@ -225,9 +226,9 @@ const NotificationsForm = ({ defaultValues, onSave }: { defaultValues: FormValue
                                 <p className="text-xs text-muted-foreground">دع النظام يكتب رسائل احترافية بدلاً من القوالب اليدوية.</p>
                             </div>
                         </div>
-                            <Controller name="aiSettings.useAI" control={control} render={({ field }) => (
+                        <Controller name="aiSettings.useAI" control={control} render={({ field }) => (
                             <Switch id="useAI" checked={field.value} onCheckedChange={field.onChange} />
-                            )}/>
+                        )} />
                     </div>
                 </CardHeader>
                 {isAiEnabled && (
@@ -244,11 +245,11 @@ const NotificationsForm = ({ defaultValues, onSave }: { defaultValues: FormValue
                                         <SelectItem value="concise">مختصرة</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            )}/>
+                            )} />
                         </div>
                         <div className="space-y-2">
-                             <Label>قواعد إرسال الرسائل الذكية</Label>
-                             <Card className="overflow-hidden">
+                            <Label>قواعد إرسال الرسائل الذكية</Label>
+                            <Card className="overflow-hidden">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -263,28 +264,28 @@ const NotificationsForm = ({ defaultValues, onSave }: { defaultValues: FormValue
                                             return (
                                                 <TableRow key={rule.id}>
                                                     <TableCell>
-                                                         <div className="flex items-center gap-2">
+                                                        <div className="flex items-center gap-2">
                                                             <Icon name={statusInfo.icon as any} style={{ color: statusInfo.color }} className="h-4 w-4" />
                                                             {statusInfo.name}
                                                         </div>
                                                     </TableCell>
                                                     {recipientOptions.map(opt => (
                                                         <TableCell key={opt.value} className="text-center">
-                                                             <Controller
+                                                            <Controller
                                                                 name={`aiSettings.rules.${index}.recipients`}
                                                                 control={control}
                                                                 render={({ field }) => (
                                                                     <Checkbox
                                                                         checked={field.value?.includes(opt.value)}
                                                                         onCheckedChange={(checked) => {
-                                                                             const currentRecipients = field.value || [];
+                                                                            const currentRecipients = field.value || [];
                                                                             return checked
                                                                                 ? field.onChange([...currentRecipients, opt.value])
                                                                                 : field.onChange(currentRecipients.filter((value: Recipient) => value !== opt.value))
                                                                         }}
                                                                     />
                                                                 )}
-                                                             />
+                                                            />
                                                         </TableCell>
                                                     ))}
                                                 </TableRow>
@@ -292,19 +293,19 @@ const NotificationsForm = ({ defaultValues, onSave }: { defaultValues: FormValue
                                         })}
                                     </TableBody>
                                 </Table>
-                             </Card>
+                            </Card>
                         </div>
                     </CardContent>
                 )}
             </Card>
 
             <div className="space-y-4">
-                    <h2 className="text-xl font-semibold tracking-tight">إدارة قوالب الرسائل اليدوية</h2>
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+                <h2 className="text-xl font-semibold tracking-tight">إدارة قوالب الرسائل اليدوية</h2>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
                     <SortableContext items={fields} strategy={verticalListSortingStrategy}>
                         <div className="space-y-4">
                             {fields.map((template, index) => (
-                                <SortableTemplateCard 
+                                <SortableTemplateCard
                                     key={template.id}
                                     template={template as NotificationTemplate}
                                     index={index}
@@ -313,9 +314,9 @@ const NotificationsForm = ({ defaultValues, onSave }: { defaultValues: FormValue
                                     statuses={statuses}
                                 />
                             ))}
-                            </div>
+                        </div>
                     </SortableContext>
-                    </DndContext>
+                </DndContext>
 
                 <Button variant="outline" onClick={handleAddTemplate} className="gap-2">
                     <PlusCircle /> إضافة قالب جديد
@@ -343,11 +344,11 @@ export default function NotificationsSettingsPage() {
             });
         }
     };
-    
+
     if (!context || !context.isHydrated) {
         return (
             <div className="space-y-6">
-                 <Card>
+                <Card>
                     <CardHeader className="flex flex-row items-start justify-between">
                         <div>
                             <Skeleton className="h-8 w-64" />
@@ -361,22 +362,15 @@ export default function NotificationsSettingsPage() {
             </div>
         );
     }
-    
+
     return (
         <div className="space-y-6">
-            <Card>
-                <CardHeader className="flex flex-row items-start justify-between">
-                    <div>
-                        <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2"><Icon name="Bell" /> إعدادات الإشعارات</CardTitle>
-                        <CardDescription className="mt-1">تحكم في الرسائل التلقائية التي تصل للعملاء عند تغير حالة الطلب.</CardDescription>
-                    </div>
-                        <Button variant="outline" size="icon" asChild>
-                        <Link href="/dashboard/settings">
-                            <Icon name="ArrowLeft" className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                </CardHeader>
-            </Card>
+            <SettingsHeader
+                icon="Bell"
+                title="إعدادات الإشعارات"
+                description="تحكم في الرسائل التلقائية التي تصل للعملاء عند تغير حالة الطلب"
+                color="amber"
+            />
 
             <NotificationsForm defaultValues={context.settings.notifications} onSave={handleSave} />
         </div>

@@ -71,9 +71,9 @@ export async function getOrders(params: GetOrdersParams): Promise<{ orders: Orde
   // 3. Sorting
   if (sortConfig) {
     filteredOrders.sort((a, b) => {
-      const valA = a[sortConfig.key];
-      const valB = b[sortConfig.key];
-      
+      const valA = a[sortConfig.key] ?? '';
+      const valB = b[sortConfig.key] ?? '';
+
       if (valA < valB) return sortConfig.direction === 'ascending' ? -1 : 1;
       if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1;
       return 0;

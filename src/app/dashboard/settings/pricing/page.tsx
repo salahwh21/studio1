@@ -6,29 +6,30 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardContent,
+    Card,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+    CardContent,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/icon';
+import { SettingsHeader } from '@/components/settings-header';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogClose,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogClose,
 } from '@/components/ui/dialog';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,43 +39,43 @@ import { useUsersStore } from '@/store/user-store';
 
 // Mock data, to be replaced with a Zustand store
 type PriceList = {
-  id: string;
-  name: string;
-  description: string;
-  merchantCount: number;
+    id: string;
+    name: string;
+    description: string;
+    merchantCount: number;
 };
 
 const initialPriceLists: PriceList[] = [
-  { id: 'pl_1', name: 'الأسعار الافتراضية', description: 'قائمة الأسعار الأساسية لجميع التجار الجدد (2 دينار عمان، 3 دنانير محافظات).', merchantCount: 0 },
-  { id: 'pl_brands_of_less', name: 'Brands of less', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_soundrush', name: 'SoundRush', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_stress_killer', name: 'Stress Killer', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_brandlet_outlet', name: 'Brandlet Outlet -1', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_nl_botique', name: 'N&L Botique', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_d_boutique', name: 'D boutique -1', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_macrame', name: 'Macrame -1', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_jacks_nyc', name: 'Jacks NYC-1', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_bader', name: 'بدر', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_oud_aljadail', name: 'عود الجدايل', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_luxury_baskets', name: 'Luxury Baskets - 1', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_malek_mobile', name: 'مالك موبايل - 1', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_oceansfounds', name: 'Oceansfounds -1', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_rubber_ducky', name: 'Rubber Ducky', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_travelers_cart', name: 'Travelers Cart', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_liali', name: 'ليالي', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_alsami_jadeed', name: 'السامي جديد', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_alsami', name: 'السامي', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_nitrous', name: 'Nitrous Delivery', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_majd', name: 'ماجد', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_abu_saif', name: 'ابو سيف', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
-  { id: 'pl_2_5_3', name: 'أسعار 2.5-3', description: 'قائمة أسعار مخصصة (2.5 دينار عمان، 3 دنانير محافظات).', merchantCount: 1},
-  { id: 'pl_1-5_2', name: 'أسعار 1.5-2', description: 'قائمة أسعار مخصصة (1.5 دينار عمان، 2 دينار محافظات).', merchantCount: 1},
-  { id: 'pl_1-5_3', name: 'أسعار 1.5-3', description: 'قائمة أسعار مخصصة (1.5 دينار عمان، 3 دنانير محافظات).', merchantCount: 1},
-  { id: 'pl_2_5_3_5', name: 'أسعار 2.5-3.5', description: 'قائمة أسعار مخصصة (2.5 دينار عمان، 3.5 دنانير محافظات).', merchantCount: 1},
-  { id: 'pl_3_3_5', name: 'أسعار 3-3.5', description: 'قائمة أسعار مخصصة (3 دينار عمان، 3.5 دنانير محافظات).', merchantCount: 1},
-  { id: 'pl_2_5', name: 'أسعار 2.5', description: 'قائمة أسعار مخصصة (2.5 دينار لكل المناطق).', merchantCount: 1},
-  { id: 'pl_2_2_5', name: 'أسعار 2-2.5', description: 'قائمة أسعار مخصصة (2 دينار عمان، 2.5 دنانير محافظات).', merchantCount: 1},
-  { id: 'pl_2_3_5', name: 'أسعار 2-3.5', description: 'قائمة أسعار مخصصة (2 دينار عمان، 3.5 دنانير محافظات).', merchantCount: 1},
+    { id: 'pl_1', name: 'الأسعار الافتراضية', description: 'قائمة الأسعار الأساسية لجميع التجار الجدد (2 دينار عمان، 3 دنانير محافظات).', merchantCount: 0 },
+    { id: 'pl_brands_of_less', name: 'Brands of less', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_soundrush', name: 'SoundRush', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_stress_killer', name: 'Stress Killer', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_brandlet_outlet', name: 'Brandlet Outlet -1', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_nl_botique', name: 'N&L Botique', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_d_boutique', name: 'D boutique -1', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_macrame', name: 'Macrame -1', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_jacks_nyc', name: 'Jacks NYC-1', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_bader', name: 'بدر', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_oud_aljadail', name: 'عود الجدايل', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_luxury_baskets', name: 'Luxury Baskets - 1', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_malek_mobile', name: 'مالك موبايل - 1', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_oceansfounds', name: 'Oceansfounds -1', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_rubber_ducky', name: 'Rubber Ducky', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_travelers_cart', name: 'Travelers Cart', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_liali', name: 'ليالي', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_alsami_jadeed', name: 'السامي جديد', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_alsami', name: 'السامي', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_nitrous', name: 'Nitrous Delivery', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_majd', name: 'ماجد', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_abu_saif', name: 'ابو سيف', description: 'قائمة أسعار خاصة.', merchantCount: 1 },
+    { id: 'pl_2_5_3', name: 'أسعار 2.5-3', description: 'قائمة أسعار مخصصة (2.5 دينار عمان، 3 دنانير محافظات).', merchantCount: 1 },
+    { id: 'pl_1-5_2', name: 'أسعار 1.5-2', description: 'قائمة أسعار مخصصة (1.5 دينار عمان، 2 دينار محافظات).', merchantCount: 1 },
+    { id: 'pl_1-5_3', name: 'أسعار 1.5-3', description: 'قائمة أسعار مخصصة (1.5 دينار عمان، 3 دنانير محافظات).', merchantCount: 1 },
+    { id: 'pl_2_5_3_5', name: 'أسعار 2.5-3.5', description: 'قائمة أسعار مخصصة (2.5 دينار عمان، 3.5 دنانير محافظات).', merchantCount: 1 },
+    { id: 'pl_3_3_5', name: 'أسعار 3-3.5', description: 'قائمة أسعار مخصصة (3 دينار عمان، 3.5 دنانير محافظات).', merchantCount: 1 },
+    { id: 'pl_2_5', name: 'أسعار 2.5', description: 'قائمة أسعار مخصصة (2.5 دينار لكل المناطق).', merchantCount: 1 },
+    { id: 'pl_2_2_5', name: 'أسعار 2-2.5', description: 'قائمة أسعار مخصصة (2 دينار عمان، 2.5 دنانير محافظات).', merchantCount: 1 },
+    { id: 'pl_2_3_5', name: 'أسعار 2-3.5', description: 'قائمة أسعار مخصصة (2 دينار عمان، 3.5 دنانير محافظات).', merchantCount: 1 },
 ];
 
 const PriceListCard = ({ list, onEdit, onDelete }: { list: PriceList; onEdit: (list: PriceList) => void; onDelete: (list: PriceList) => void; }) => {
@@ -86,7 +87,7 @@ const PriceListCard = ({ list, onEdit, onDelete }: { list: PriceList; onEdit: (l
         <Card className="hover:border-primary hover:shadow-lg transition-all duration-300 ease-in-out flex flex-col">
             <CardHeader>
                 <div className="flex justify-between items-start">
-                     <div className="space-y-2 flex-1 cursor-pointer" onClick={() => router.push(`/dashboard/settings/pricing/${list.id}`)}>
+                    <div className="space-y-2 flex-1 cursor-pointer" onClick={() => router.push(`/dashboard/settings/pricing/${list.id}`)}>
                         <CardTitle className="text-xl font-bold">{list.name}</CardTitle>
                         <CardDescription className="mt-2">{list.description}</CardDescription>
                     </div>
@@ -105,10 +106,10 @@ const PriceListCard = ({ list, onEdit, onDelete }: { list: PriceList; onEdit: (l
             <CardContent className="flex-grow mt-auto">
                 <div className="flex justify-between items-center text-sm text-muted-foreground border-t pt-4">
                     <div className="flex items-center gap-2">
-                        <Icon name="Users" className="h-4 w-4"/>
+                        <Icon name="Users" className="h-4 w-4" />
                         <span>{merchantCount} تجار</span>
                     </div>
-                     <Button variant="secondary" onClick={() => router.push(`/dashboard/settings/pricing/${list.id}`)}>
+                    <Button variant="secondary" onClick={() => router.push(`/dashboard/settings/pricing/${list.id}`)}>
                         <Icon name="Settings" className="mr-2 h-4 w-4" />
                         إدارة الأسعار
                     </Button>
@@ -123,7 +124,7 @@ const PriceListDialog = ({ open, onOpenChange, onSave, list }: { open: boolean, 
     const [description, setDescription] = useState('');
 
     React.useEffect(() => {
-        if(list) {
+        if (list) {
             setName(list.name);
             setDescription(list.description);
         } else {
@@ -135,9 +136,9 @@ const PriceListDialog = ({ open, onOpenChange, onSave, list }: { open: boolean, 
     const handleSave = () => {
         onSave({ name, description });
     }
-    
+
     return (
-         <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>{list ? 'تعديل قائمة الأسعار' : 'إضافة قائمة أسعار جديدة'}</DialogTitle>
@@ -147,14 +148,14 @@ const PriceListDialog = ({ open, onOpenChange, onSave, list }: { open: boolean, 
                         <Label htmlFor="name">اسم القائمة</Label>
                         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
                     </div>
-                     <div className="space-y-2">
+                    <div className="space-y-2">
                         <Label htmlFor="description">الوصف</Label>
                         <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
                     </div>
                 </div>
                 <DialogFooter>
                     <DialogClose asChild>
-                         <Button variant="outline">إلغاء</Button>
+                        <Button variant="outline">إلغاء</Button>
                     </DialogClose>
                     <Button onClick={handleSave}>حفظ</Button>
                 </DialogFooter>
@@ -187,38 +188,42 @@ export default function PricingPage() {
     const confirmDelete = () => {
         if (listToDelete) {
             setPriceLists(prev => prev.filter(p => p.id !== listToDelete.id));
-            toast({ title: "تم الحذف", description: `تم حذف قائمة "${listToDelete.name}" بنجاح.`});
+            toast({ title: "تم الحذف", description: `تم حذف قائمة "${listToDelete.name}" بنجاح.` });
             setListToDelete(null);
         }
     };
-  
+
     const handleSave = (data: Omit<PriceList, 'id' | 'merchantCount'>) => {
         if (selectedList) {
             setPriceLists(prev => prev.map(p => p.id === selectedList.id ? { ...p, ...data } : p));
-            toast({ title: "تم التعديل", description: `تم تعديل قائمة "${data.name}" بنجاح.`});
+            toast({ title: "تم التعديل", description: `تم تعديل قائمة "${data.name}" بنجاح.` });
         } else {
             setPriceLists(prev => [...prev, { ...data, id: `pl_${Date.now()}`, merchantCount: 0 }]);
-            toast({ title: "تمت الإضافة", description: `تمت إضافة قائمة "${data.name}" بنجاح.`});
+            toast({ title: "تمت الإضافة", description: `تمت إضافة قائمة "${data.name}" بنجاح.` });
         }
         setDialogOpen(false);
     };
- 
+
     return (
         <div className="space-y-6">
+            <SettingsHeader
+                icon="DollarSign"
+                title="قوائم الأسعار"
+                description="إنشاء وتعديل قوائم أسعار التوصيل المختلفة للتحكم في تكاليف الشحن"
+                color="emerald"
+            />
+
             <Card className="shadow-sm">
                 <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                        <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                            <Icon name="DollarSign" /> قوائم الأسعار
+                        <CardTitle className="text-xl font-bold tracking-tight">
+                            جميع القوائم
                         </CardTitle>
                         <CardDescription className="mt-1">
-                            إنشاء وتعديل قوائم أسعار التوصيل المختلفة للتحكم في تكاليف الشحن.
+                            قوائم الأسعار المتاحة
                         </CardDescription>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" size="icon" asChild>
-                            <Link href="/dashboard/settings"><Icon name="ArrowLeft" className="h-4 w-4" /></Link>
-                        </Button>
                         <Button onClick={handleAddNew}>
                             <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة قائمة جديدة
                         </Button>
@@ -228,22 +233,22 @@ export default function PricingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {priceLists.map(list => (
-                    <PriceListCard 
-                        key={list.id} 
+                    <PriceListCard
+                        key={list.id}
                         list={list}
                         onEdit={handleEdit}
                         onDelete={handleDelete}
                     />
                 ))}
             </div>
-            
+
             <PriceListDialog
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 onSave={handleSave}
                 list={selectedList}
             />
-            
+
             <AlertDialog open={!!listToDelete} onOpenChange={() => setListToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -262,8 +267,7 @@ export default function PricingPage() {
     );
 }
 
-    
 
-    
 
-    
+
+

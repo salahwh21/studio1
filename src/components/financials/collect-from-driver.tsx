@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useStatusesStore } from '@/store/statuses-store';
 import { useFinancialsStore } from '@/store/financials-store';
-import * as XLSX from 'xlsx';
+import { exportToExcel } from '@/lib/export-utils';
 import { exportToPDF, type PDFExportOptions } from '@/lib/pdf-export-utils';
 import { ExportSettingsDialog, type ExportSettings, type ExportField } from '@/components/export-settings-dialog';
 
@@ -33,7 +33,7 @@ export const CollectFromDriver = () => {
     const { settings, formatCurrency } = useSettings();
     const { statuses } = useStatusesStore();
     const { addDriverPaymentSlip } = useFinancialsStore();
-    
+
     const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
     const [popoverStates, setPopoverStates] = useState<Record<string, boolean>>({});
@@ -54,8 +54,8 @@ export const CollectFromDriver = () => {
 
     const driversWithCounts = useMemo(() => {
         return drivers.map(driver => {
-            const count = orders.filter(o => 
-                o.driver === driver.name && 
+            const count = orders.filter(o =>
+                o.driver === driver.name &&
                 statusesForCollection.includes(o.status)
             ).length;
             return { ...driver, collectibleOrdersCount: count };
@@ -64,23 +64,23 @@ export const CollectFromDriver = () => {
 
     const ordersForCollection = useMemo(() => {
         if (!selectedDriver) return [];
-        
+
         const lowercasedQuery = searchQuery.toLowerCase();
 
-        return orders.filter(o => 
-            o.driver === selectedDriver.name && 
+        return orders.filter(o =>
+            o.driver === selectedDriver.name &&
             statusesForCollection.includes(o.status) &&
-            (searchQuery === '' || 
-             o.id.toLowerCase().includes(lowercasedQuery) ||
-             o.recipient.toLowerCase().includes(lowercasedQuery) ||
-             o.phone.toLowerCase().includes(lowercasedQuery)
-            ) 
+            (searchQuery === '' ||
+                o.id.toLowerCase().includes(lowercasedQuery) ||
+                o.recipient.toLowerCase().includes(lowercasedQuery) ||
+                o.phone.toLowerCase().includes(lowercasedQuery)
+            )
         );
     }, [orders, selectedDriver, searchQuery]);
-    
+
     const totals = useMemo(() => {
         const selectedOrders = ordersForCollection.filter(o => selectedOrderIds.includes(o.id));
-        
+
         return selectedOrders.reduce((acc, order) => {
             acc.totalCOD += order.cod || 0;
             acc.totalDriverFare += order.driverFee || 0;
@@ -91,12 +91,12 @@ export const CollectFromDriver = () => {
 
     const handleConfirmCollection = () => {
         if (!selectedDriver || selectedOrderIds.length === 0) {
-            toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء اختيار سائق وطلب واحد على الأقل.'});
+            toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء اختيار سائق وطلب واحد على الأقل.' });
             return;
         }
 
         const ordersToProcess = orders.filter(o => selectedOrderIds.includes(o.id));
-        
+
         // 1. Create a new financial slip
         addDriverPaymentSlip({
             driverName: selectedDriver.name,
@@ -114,7 +114,7 @@ export const CollectFromDriver = () => {
             title: 'تم تأكيد الاستلام وإنشاء كشف',
             description: `تم تسجيل استلام مبلغ ${formatCurrency(netPayable)} من السائق ${selectedDriver.name} وإضافته للسجل.`
         });
-        
+
         // 4. Clear selection
         setSelectedOrderIds([]);
     }
@@ -122,9 +122,9 @@ export const CollectFromDriver = () => {
     const handleSelectAll = (checked: boolean) => {
         setSelectedOrderIds(checked ? ordersForCollection.map(o => o.id) : []);
     };
-    
+
     const handleSelectRow = (orderId: string, isChecked: boolean) => {
-        setSelectedOrderIds(prev => 
+        setSelectedOrderIds(prev =>
             isChecked ? [...prev, orderId] : prev.filter(id => id !== orderId)
         );
     };
@@ -143,7 +143,7 @@ export const CollectFromDriver = () => {
         if (!status) return <Badge variant="outline">{statusName}</Badge>;
         return <Badge style={{ backgroundColor: `${status.color}20`, color: status.color }}>{statusName}</Badge>;
     }
-    
+
     const handlePrintClick = () => {
         const ordersToPrint = ordersForCollection.filter(o => selectedOrderIds.includes(o.id));
         if (ordersToPrint.length === 0) {
@@ -340,7 +340,7 @@ export const CollectFromDriver = () => {
         setExcelSettingsOpen(true);
     };
 
-    const handleExportExcel = (excelSettings: ExportSettings) => {
+    const handleExportExcel = async (excelSettings: ExportSettings) => {
         const ordersToExport = ordersForCollection.filter(o => selectedOrderIds.includes(o.id));
         if (ordersToExport.length === 0) {
             toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء تحديد طلب واحد على الأقل للتصدير.' });
@@ -382,31 +382,9 @@ export const CollectFromDriver = () => {
             if (excelSettings.fields.netAmount) totalRow['الصافي'] = totalNet;
             data.push(totalRow);
 
-            // إنشاء ورقة العمل
-            const ws = XLSX.utils.json_to_sheet(data);
-            
-            // تنسيق الأعمدة
-            const colWidths = [
-                { wch: 5 },   // #
-                { wch: 15 },  // رقم الطلب
-                { wch: 20 },  // التاجر
-                { wch: 15 },  // الحالة
-                { wch: 20 },  // الزبون
-                { wch: 15 },  // الهاتف
-                { wch: 15 },  // المنطقة
-                { wch: 15 },  // قيمة التحصيل
-                { wch: 15 },  // أجرة السائق
-                { wch: 15 },  // الصافي
-            ];
-            ws['!cols'] = colWidths;
-
-            // إنشاء المصنف
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'كشف التحصيل');
-
             // حفظ الملف
             const fileName = `كشف_تحصيل_${selectedDriver?.name || 'سائق'}_${new Date().toISOString().split('T')[0]}.xlsx`;
-            XLSX.writeFile(wb, fileName);
+            await exportToExcel(data, fileName, 'كشف التحصيل');
 
             toast({
                 title: 'تم التصدير بنجاح',
@@ -578,44 +556,44 @@ export const CollectFromDriver = () => {
                         </div>
                         <div className="relative w-full sm:w-auto sm:min-w-[250px]">
                             <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input 
-                                placeholder="بحث بالرقم، العميل، الهاتف..." 
+                            <Input
+                                placeholder="بحث بالرقم، العميل، الهاتف..."
                                 className="pr-10"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                         <div className="flex items-center gap-2 sm:mr-auto flex-wrap">
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={handlePrintClick} 
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handlePrintClick}
                                 disabled={selectedOrderIds.length === 0}
                                 className="gap-2"
                             >
-                                <Icon name="Printer" className="h-4 w-4"/>
+                                <Icon name="Printer" className="h-4 w-4" />
                                 <span className="hidden sm:inline">طباعة المحدد</span>
                                 <span className="sm:hidden">طباعة</span>
                             </Button>
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
+                            <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={handleExportExcelClick}
                                 disabled={selectedOrderIds.length === 0}
                                 className="gap-2"
                             >
-                                <Icon name="FileSpreadsheet" className="h-4 w-4"/>
+                                <Icon name="FileSpreadsheet" className="h-4 w-4" />
                                 <span className="hidden sm:inline">تصدير Excel</span>
                                 <span className="sm:hidden">Excel</span>
                             </Button>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={handleExportPDFClick}
                                 disabled={selectedOrderIds.length === 0}
                                 className="gap-2"
                             >
-                                <Icon name="FileText" className="h-4 w-4"/>
+                                <Icon name="FileText" className="h-4 w-4" />
                                 <span className="hidden sm:inline">تصدير PDF</span>
                                 <span className="sm:hidden">PDF</span>
                             </Button>
@@ -630,7 +608,7 @@ export const CollectFromDriver = () => {
                         <div>
                             <CardTitle className="text-lg">الطلبات المكتملة</CardTitle>
                             <CardDescription className="mt-1">
-                                {selectedDriver 
+                                {selectedDriver
                                     ? `طلبات السائق ${selectedDriver.name} - ${ordersForCollection.length} طلب`
                                     : 'اختر سائقًا لعرض الطلبات'
                                 }
@@ -646,29 +624,29 @@ export const CollectFromDriver = () => {
                 <div className="flex-1 border rounded-lg overflow-auto flex flex-col">
                     <Table>
                         <TableHeader className="sticky top-0 z-20">
-                             <TableRow className="hover:bg-transparent bg-muted/50">
+                            <TableRow className="hover:bg-transparent bg-muted/50">
                                 <TableHead className="sticky right-0 z-30 p-3 text-center border-l w-20 bg-muted">
                                     <div className="flex items-center justify-center gap-2">
-                                         <span className="text-sm font-bold">#</span>
-                                        <Checkbox 
-                                            onCheckedChange={handleSelectAll} 
-                                            checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length} 
+                                        <span className="text-sm font-bold">#</span>
+                                        <Checkbox
+                                            onCheckedChange={handleSelectAll}
+                                            checked={ordersForCollection.length > 0 && selectedOrderIds.length === ordersForCollection.length}
                                             aria-label="Select all rows"
                                         />
                                     </div>
                                 </TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '150px'}}>رقم الطلب</TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '200px'}}>التاجر</TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '150px'}}>الحالة</TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '150px'}}>الزبون</TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '150px'}}>الهاتف</TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '150px'}}>المنطقة</TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '150px'}}>قيمة التحصيل</TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '150px'}}>أجرة السائق</TableHead>
-                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{minWidth: '120px'}}>الصافي</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '150px' }}>رقم الطلب</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '200px' }}>التاجر</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '150px' }}>الحالة</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '150px' }}>الزبون</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '150px' }}>الهاتف</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '150px' }}>المنطقة</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '150px' }}>قيمة التحصيل</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '150px' }}>أجرة السائق</TableHead>
+                                <TableHead className="p-3 text-center border-l bg-muted font-semibold" style={{ minWidth: '120px' }}>الصافي</TableHead>
                             </TableRow>
                         </TableHeader>
-                         <TableBody>
+                        <TableBody>
                             {!selectedDriver ? (
                                 <TableRow><TableCell colSpan={10} className="h-24 text-center">الرجاء اختيار سائق لعرض الطلبات.</TableCell></TableRow>
                             ) : ordersForCollection.length === 0 ? (
@@ -689,31 +667,31 @@ export const CollectFromDriver = () => {
                                                 <Popover open={popoverStates[`merchant-${order.id}`]} onOpenChange={() => togglePopover(`merchant-${order.id}`)}>
                                                     <PopoverTrigger asChild>
                                                         <Button variant="outline" className="w-full h-8 justify-between bg-background hover:bg-muted font-normal">
-                                                        {order.merchant}
-                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                            {order.merchant}
+                                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                         </Button>
                                                     </PopoverTrigger>
                                                     <PopoverContent className="w-[200px] p-0">
                                                         <Command>
-                                                        <CommandInput placeholder="بحث..." />
-                                                        <CommandList>
-                                                            <CommandEmpty>لم يوجد.</CommandEmpty>
-                                                            <CommandGroup>
-                                                            {merchants.map(m => (
-                                                                <CommandItem
-                                                                key={m.id}
-                                                                value={m.storeName || m.name}
-                                                                onSelect={() => {
-                                                                    updateOrderField(order.id, 'merchant', m.storeName || m.name);
-                                                                    togglePopover(`merchant-${order.id}`);
-                                                                }}
-                                                                >
-                                                                <Check className={cn("mr-2 h-4 w-4", order.merchant === (m.storeName || m.name) ? "opacity-100" : "opacity-0")} />
-                                                                {m.storeName || m.name}
-                                                                </CommandItem>
-                                                            ))}
-                                                            </CommandGroup>
-                                                        </CommandList>
+                                                            <CommandInput placeholder="بحث..." />
+                                                            <CommandList>
+                                                                <CommandEmpty>لم يوجد.</CommandEmpty>
+                                                                <CommandGroup>
+                                                                    {merchants.map(m => (
+                                                                        <CommandItem
+                                                                            key={m.id}
+                                                                            value={m.storeName || m.name}
+                                                                            onSelect={() => {
+                                                                                updateOrderField(order.id, 'merchant', m.storeName || m.name);
+                                                                                togglePopover(`merchant-${order.id}`);
+                                                                            }}
+                                                                        >
+                                                                            <Check className={cn("mr-2 h-4 w-4", order.merchant === (m.storeName || m.name) ? "opacity-100" : "opacity-0")} />
+                                                                            {m.storeName || m.name}
+                                                                        </CommandItem>
+                                                                    ))}
+                                                                </CommandGroup>
+                                                            </CommandList>
                                                         </Command>
                                                     </PopoverContent>
                                                 </Popover>
@@ -723,8 +701,8 @@ export const CollectFromDriver = () => {
                                             <TableCell className="text-center border-l whitespace-nowrap">{order.phone}</TableCell>
                                             <TableCell className="text-center border-l whitespace-nowrap">{order.region}</TableCell>
                                             <TableCell className="text-center border-l whitespace-nowrap">
-                                                <Input 
-                                                    type="number" 
+                                                <Input
+                                                    type="number"
                                                     defaultValue={order.cod}
                                                     onBlur={(e) => handleFieldChange(order.id, 'cod', e.target.value)}
                                                     className="h-8 text-center"
@@ -755,7 +733,7 @@ export const CollectFromDriver = () => {
                                 <span className="font-bold text-lg">{formatCurrency(totals.totalCOD)}</span>
                             </div>
                         </div>
-                        <Separator orientation='vertical' className="h-8"/>
+                        <Separator orientation='vertical' className="h-8" />
                         <div className="flex items-center gap-2">
                             <Icon name="Wallet" className="h-4 w-4 text-muted-foreground" />
                             <div>
@@ -763,7 +741,7 @@ export const CollectFromDriver = () => {
                                 <span className="font-bold text-lg">{formatCurrency(totals.totalDriverFare)}</span>
                             </div>
                         </div>
-                        <Separator orientation='vertical' className="h-8"/>
+                        <Separator orientation='vertical' className="h-8" />
                         <div className="flex items-center gap-2">
                             <Icon name="TrendingUp" className="h-4 w-4 text-primary" />
                             <div>
@@ -772,9 +750,9 @@ export const CollectFromDriver = () => {
                             </div>
                         </div>
                     </div>
-                    <Button 
-                        onClick={handleConfirmCollection} 
-                        disabled={selectedOrderIds.length === 0} 
+                    <Button
+                        onClick={handleConfirmCollection}
+                        disabled={selectedOrderIds.length === 0}
                         size="lg"
                         className="gap-2 w-full sm:w-auto"
                     >

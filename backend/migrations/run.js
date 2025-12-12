@@ -1,4 +1,18 @@
+/**
+ * Migration Runner with Version Tracking
+ * 
+ * This script runs SQL migrations in order and tracks which ones have been applied.
+ * It creates a `schema_migrations` table to store applied migration versions.
+ * 
+ * Usage:
+ *   npm run migrate           - Run all pending migrations
+ *   npm run migrate:status    - Show migration status
+ *   npm run migrate:reset     - Drop all tables and re-run migrations (DANGEROUS!)
+ */
+
 const { Pool } = require('pg');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const pool = new Pool({
@@ -6,157 +20,207 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-const schema = `
--- Users table
-CREATE TABLE IF NOT EXISTS users (
-  id VARCHAR(255) PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
-  store_name VARCHAR(255),
-  role_id VARCHAR(100) NOT NULL,
-  avatar TEXT DEFAULT '',
-  whatsapp VARCHAR(50),
-  price_list_id VARCHAR(100),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+// Migration files to run in order
+const MIGRATIONS = [
+  '001_initial_schema.sql',
+  '002_seed_data.sql',
+  '003_create_admin_user.sql',
+  '004_create_settings_table.sql',
+  '005_add_orders_indexes.sql'
+];
 
--- Roles table
-CREATE TABLE IF NOT EXISTS roles (
-  id VARCHAR(100) PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  description TEXT,
-  user_count INTEGER DEFAULT 0,
-  permissions TEXT[] DEFAULT '{}'
-);
+/**
+ * Create the schema_migrations table if it doesn't exist
+ */
+async function ensureMigrationsTable(client) {
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      version VARCHAR(255) PRIMARY KEY,
+      applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      checksum VARCHAR(64)
+    );
+  `);
+}
 
--- Statuses table
-CREATE TABLE IF NOT EXISTS statuses (
-  id VARCHAR(100) PRIMARY KEY,
-  code VARCHAR(100) NOT NULL UNIQUE,
-  name VARCHAR(255) NOT NULL,
-  icon VARCHAR(100) DEFAULT 'Circle',
-  color VARCHAR(20) DEFAULT '#607D8B',
-  is_active BOOLEAN DEFAULT true,
-  reason_codes TEXT[] DEFAULT '{}',
-  set_by_roles TEXT[] DEFAULT '{}',
-  visible_to JSONB DEFAULT '{"admin": true, "driver": true, "merchant": true}',
-  permissions JSONB DEFAULT '{}',
-  flow JSONB DEFAULT '{}',
-  triggers JSONB DEFAULT '{}'
-);
+/**
+ * Get list of already applied migrations
+ */
+async function getAppliedMigrations(client) {
+  const result = await client.query('SELECT version FROM schema_migrations ORDER BY version');
+  return result.rows.map(row => row.version);
+}
 
--- Cities table
-CREATE TABLE IF NOT EXISTS cities (
-  id VARCHAR(100) PRIMARY KEY,
-  name VARCHAR(255) NOT NULL
-);
+/**
+ * Calculate simple checksum for a file
+ */
+function getFileChecksum(content) {
+  let hash = 0;
+  for (let i = 0; i < content.length; i++) {
+    const char = content.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString(16);
+}
 
--- Regions table
-CREATE TABLE IF NOT EXISTS regions (
-  id VARCHAR(100) PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  city_id VARCHAR(100) REFERENCES cities(id)
-);
+/**
+ * Run a single migration file
+ */
+async function runMigration(client, filename) {
+  const filePath = path.join(__dirname, filename);
 
--- Orders table
-CREATE TABLE IF NOT EXISTS orders (
-  id VARCHAR(100) PRIMARY KEY,
-  order_number INTEGER NOT NULL,
-  source VARCHAR(50) DEFAULT 'Manual',
-  reference_number VARCHAR(255),
-  recipient VARCHAR(255) NOT NULL,
-  phone VARCHAR(50) NOT NULL,
-  whatsapp VARCHAR(50),
-  address TEXT NOT NULL,
-  city VARCHAR(100) NOT NULL,
-  region VARCHAR(255),
-  status VARCHAR(100) DEFAULT 'بالانتظار',
-  previous_status VARCHAR(100) DEFAULT '',
-  driver VARCHAR(255),
-  merchant VARCHAR(255),
-  cod DECIMAL(10, 2) DEFAULT 0,
-  item_price DECIMAL(10, 2) DEFAULT 0,
-  delivery_fee DECIMAL(10, 2) DEFAULT 1.5,
-  additional_cost DECIMAL(10, 2) DEFAULT 0,
-  driver_fee DECIMAL(10, 2) DEFAULT 1.0,
-  driver_additional_fare DECIMAL(10, 2) DEFAULT 0,
-  date DATE,
-  notes TEXT,
-  lat DECIMAL(10, 8),
-  lng DECIMAL(11, 8),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+  if (!fs.existsSync(filePath)) {
+    console.log(`⚠️  Migration file not found: ${filename} (skipping)`);
+    return false;
+  }
 
--- Driver payment slips table
-CREATE TABLE IF NOT EXISTS driver_payment_slips (
-  id VARCHAR(100) PRIMARY KEY,
-  driver_name VARCHAR(255) NOT NULL,
-  date TIMESTAMP NOT NULL,
-  item_count INTEGER DEFAULT 0,
-  order_ids TEXT[] DEFAULT '{}',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+  const sql = fs.readFileSync(filePath, 'utf8');
+  const checksum = getFileChecksum(sql);
 
--- Merchant payment slips table
-CREATE TABLE IF NOT EXISTS merchant_payment_slips (
-  id VARCHAR(100) PRIMARY KEY,
-  merchant_name VARCHAR(255) NOT NULL,
-  date TIMESTAMP NOT NULL,
-  item_count INTEGER DEFAULT 0,
-  status VARCHAR(100) DEFAULT 'جاهز للتسليم',
-  order_ids TEXT[] DEFAULT '{}',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+  console.log(`📦 Running migration: ${filename}`);
 
--- Driver return slips table
-CREATE TABLE IF NOT EXISTS driver_return_slips (
-  id VARCHAR(100) PRIMARY KEY,
-  driver_name VARCHAR(255) NOT NULL,
-  date TIMESTAMP NOT NULL,
-  item_count INTEGER DEFAULT 0,
-  order_ids TEXT[] DEFAULT '{}',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Merchant return slips table
-CREATE TABLE IF NOT EXISTS merchant_return_slips (
-  id VARCHAR(100) PRIMARY KEY,
-  merchant VARCHAR(255) NOT NULL,
-  date TIMESTAMP NOT NULL,
-  items INTEGER DEFAULT 0,
-  status VARCHAR(100) DEFAULT 'جاهز للتسليم',
-  order_ids TEXT[] DEFAULT '{}',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
-CREATE INDEX IF NOT EXISTS idx_orders_driver ON orders(driver);
-CREATE INDEX IF NOT EXISTS idx_orders_merchant ON orders(merchant);
-CREATE INDEX IF NOT EXISTS idx_orders_date ON orders(date);
-CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
-CREATE INDEX IF NOT EXISTS idx_users_role_id ON users(role_id);
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_regions_city_id ON regions(city_id);
-`;
-
-async function runMigration() {
-  const client = await pool.connect();
-  
   try {
-    console.log('Running database migration...');
-    await client.query(schema);
-    console.log('Migration completed successfully!');
+    await client.query(sql);
+    await client.query(
+      'INSERT INTO schema_migrations (version, checksum) VALUES ($1, $2) ON CONFLICT (version) DO NOTHING',
+      [filename, checksum]
+    );
+    console.log(`✅ Migration applied: ${filename}`);
+    return true;
   } catch (error) {
-    console.error('Migration error:', error);
+    console.error(`❌ Migration failed: ${filename}`);
+    console.error(`   Error: ${error.message}`);
     throw error;
+  }
+}
+
+/**
+ * Main migration function
+ */
+async function migrate() {
+  const client = await pool.connect();
+
+  try {
+    console.log('🚀 Starting database migration...\n');
+
+    await ensureMigrationsTable(client);
+    const applied = await getAppliedMigrations(client);
+
+    console.log(`📋 Already applied: ${applied.length} migrations`);
+
+    let newMigrations = 0;
+
+    for (const migration of MIGRATIONS) {
+      if (!applied.includes(migration)) {
+        await runMigration(client, migration);
+        newMigrations++;
+      } else {
+        console.log(`⏭️  Skipping (already applied): ${migration}`);
+      }
+    }
+
+    console.log(`\n✨ Migration complete! ${newMigrations} new migrations applied.`);
+
+  } catch (error) {
+    console.error('\n💥 Migration failed:', error.message);
+    process.exit(1);
   } finally {
     client.release();
     await pool.end();
   }
 }
 
-runMigration().catch(console.error);
+/**
+ * Show migration status
+ */
+async function status() {
+  const client = await pool.connect();
+
+  try {
+    await ensureMigrationsTable(client);
+    const applied = await getAppliedMigrations(client);
+
+    console.log('\n📊 Migration Status:\n');
+    console.log('─'.repeat(60));
+
+    for (const migration of MIGRATIONS) {
+      const isApplied = applied.includes(migration);
+      const status = isApplied ? '✅ Applied' : '⏳ Pending';
+      console.log(`${status}  ${migration}`);
+    }
+
+    console.log('─'.repeat(60));
+    console.log(`\nTotal: ${applied.length}/${MIGRATIONS.length} applied\n`);
+
+  } finally {
+    client.release();
+    await pool.end();
+  }
+}
+
+/**
+ * Reset database (DANGEROUS!)
+ */
+async function reset() {
+  const client = await pool.connect();
+
+  try {
+    console.log('⚠️  WARNING: This will DROP ALL TABLES!\n');
+    console.log('Dropping all tables...');
+
+    // Drop all tables in reverse order
+    const tables = [
+      'schema_migrations',
+      'order_tracking',
+      'drivers',
+      'driver_return_slips',
+      'merchant_return_slips',
+      'driver_payment_slips',
+      'merchant_payment_slips',
+      'orders',
+      'regions',
+      'cities',
+      'statuses',
+      'settings',
+      'users',
+      'roles'
+    ];
+
+    for (const table of tables) {
+      await client.query(`DROP TABLE IF EXISTS ${table} CASCADE`);
+      console.log(`  Dropped: ${table}`);
+    }
+
+    console.log('\n🔄 Re-running all migrations...\n');
+
+    // Re-run migrations
+    await ensureMigrationsTable(client);
+
+    for (const migration of MIGRATIONS) {
+      await runMigration(client, migration);
+    }
+
+    console.log('\n✨ Database reset complete!');
+
+  } catch (error) {
+    console.error('Reset failed:', error);
+    process.exit(1);
+  } finally {
+    client.release();
+    await pool.end();
+  }
+}
+
+// Command line interface
+const command = process.argv[2];
+
+switch (command) {
+  case 'status':
+    status();
+    break;
+  case 'reset':
+    reset();
+    break;
+  default:
+    migrate();
+}

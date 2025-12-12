@@ -360,86 +360,140 @@ const SETTINGS_KEY = 'comprehensiveAppSettings';
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<ComprehensiveSettings>(defaultSettingsData);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const loadSettings = useCallback(() => {
+  const loadSettings = useCallback(async () => {
     try {
-      const item = window.localStorage.getItem(SETTINGS_KEY);
-      if (item) {
-        const savedSettings = JSON.parse(item);
-        // Deep merge to ensure new default settings are not lost
+      // Try to load from API first
+      const { default: api } = await import('@/lib/api');
+      const apiSettings = await api.getSettings();
+      
+      if (apiSettings && apiSettings.data) {
         const mergedSettings = {
           ...defaultSettingsData,
-          ...savedSettings,
-           policy: {
+          ...apiSettings.data,
+          policy: {
             ...defaultSettingsData.policy,
-            ...(savedSettings.policy || {}),
+            ...(apiSettings.data.policy || {}),
           },
           notifications: {
             ...defaultSettingsData.notifications,
-            ...(savedSettings.notifications || {}),
+            ...(apiSettings.data.notifications || {}),
           },
           orders: {
-              ...defaultSettingsData.orders,
-              ...(savedSettings.orders || {}),
+            ...defaultSettingsData.orders,
+            ...(apiSettings.data.orders || {}),
           },
           login: {
-              ...defaultSettingsData.login,
-              ...(savedSettings.login || {}),
+            ...defaultSettingsData.login,
+            ...(apiSettings.data.login || {}),
           },
           regional: {
             ...defaultSettingsData.regional,
-            ...(savedSettings.regional || {}),
+            ...(apiSettings.data.regional || {}),
           },
           ui: {
             ...defaultSettingsData.ui,
-            ...(savedSettings.ui || {}),
+            ...(apiSettings.data.ui || {}),
           },
           menuVisibility: {
             ...defaultSettingsData.menuVisibility,
-            ...(savedSettings.menuVisibility || {}),
+            ...(apiSettings.data.menuVisibility || {}),
           },
           aiAgent: {
             ...defaultSettingsData.aiAgent,
-            ...(savedSettings.aiAgent || {}),
+            ...(apiSettings.data.aiAgent || {}),
           }
         };
         setSettings(mergedSettings);
+        // Also save to localStorage as backup
+        window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(mergedSettings));
       }
     } catch (error) {
-      console.error("Failed to load settings from localStorage", error);
+      console.error("Failed to load settings from API, falling back to localStorage", error);
+      // Fallback to localStorage
+      try {
+        const item = window.localStorage.getItem(SETTINGS_KEY);
+        if (item) {
+          const savedSettings = JSON.parse(item);
+          const mergedSettings = {
+            ...defaultSettingsData,
+            ...savedSettings,
+            policy: {
+              ...defaultSettingsData.policy,
+              ...(savedSettings.policy || {}),
+            },
+            notifications: {
+              ...defaultSettingsData.notifications,
+              ...(savedSettings.notifications || {}),
+            },
+            orders: {
+              ...defaultSettingsData.orders,
+              ...(savedSettings.orders || {}),
+            },
+            login: {
+              ...defaultSettingsData.login,
+              ...(savedSettings.login || {}),
+            },
+            regional: {
+              ...defaultSettingsData.regional,
+              ...(savedSettings.regional || {}),
+            },
+            ui: {
+              ...defaultSettingsData.ui,
+              ...(savedSettings.ui || {}),
+            },
+            menuVisibility: {
+              ...defaultSettingsData.menuVisibility,
+              ...(savedSettings.menuVisibility || {}),
+            },
+            aiAgent: {
+              ...defaultSettingsData.aiAgent,
+              ...(savedSettings.aiAgent || {}),
+            }
+          };
+          setSettings(mergedSettings);
+        }
+      } catch (localError) {
+        console.error("Failed to load settings from localStorage", localError);
+      }
     } finally {
-        setIsHydrated(true);
+      setIsHydrated(true);
     }
   }, []);
 
-  // Load settings from localStorage on initial client-side render
+  // Load settings on mount
   useEffect(() => {
     loadSettings();
-
-    // Add event listener for storage changes
-    const handleStorageChange = (event: StorageEvent) => {
-        if (event.key === SETTINGS_KEY) {
-            loadSettings();
-        }
-    };
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-        window.removeEventListener('storage', handleStorageChange);
-    };
-
   }, [loadSettings]);
 
-  // Effect to save settings to localStorage whenever they change
+  // Save settings to API whenever they change (with debounce)
   useEffect(() => {
-    if (isHydrated) {
+    if (!isHydrated || isSaving) return;
+
+    const saveToApi = async () => {
+      setIsSaving(true);
+      try {
+        const { default: api } = await import('@/lib/api');
+        await api.updateSettings(settings);
+        // Also save to localStorage as backup
+        window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      } catch (error) {
+        console.error("Failed to save settings to API, saved to localStorage only", error);
+        // Fallback: save to localStorage only
         try {
-            window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-        } catch (error) {
-            console.error("Failed to save settings to localStorage", error);
+          window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        } catch (localError) {
+          console.error("Failed to save settings to localStorage", localError);
         }
-    }
-  }, [settings, isHydrated]);
+      } finally {
+        setIsSaving(false);
+      }
+    };
+
+    const timeoutId = setTimeout(saveToApi, 1000); // Debounce 1 second
+    return () => clearTimeout(timeoutId);
+  }, [settings, isHydrated, isSaving]);
 
   // Generic function to update a top-level setting
   const setSetting = <K extends keyof ComprehensiveSettings>(key: K, value: ComprehensiveSettings[K]) => {

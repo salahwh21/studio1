@@ -5,13 +5,14 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { SettingsHeader } from '@/components/settings-header';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/icon';
@@ -37,7 +38,7 @@ function PermissionGroupCard({
         group.permissions.forEach(p => {
             const isCurrentlyChecked = currentPermissions.includes(p.id) || isAllSelected;
             if (isCurrentlyChecked !== checked) {
-                 onPermissionChange(p.id, checked);
+                onPermissionChange(p.id, checked);
             }
         });
     }
@@ -46,7 +47,7 @@ function PermissionGroupCard({
         <Card>
             <CardHeader className="flex flex-row items-center justify-between p-4 bg-muted/50">
                 <CardTitle className="text-base">{group.label}</CardTitle>
-                 <div className="flex items-center space-x-2 space-x-reverse">
+                <div className="flex items-center space-x-2 space-x-reverse">
                     <Checkbox
                         id={`group-${group.id}`}
                         checked={isAllGroupSelected}
@@ -95,7 +96,7 @@ function RoleEditPageSkeleton() {
                     <Skeleton className="h-12 rounded-md" />
                 </CardContent>
             </Card>
-             <Card>
+            <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <Skeleton className="h-6 w-40" />
                     <Skeleton className="h-6 w-24" />
@@ -105,9 +106,9 @@ function RoleEditPageSkeleton() {
                     <Skeleton className="h-12 rounded-md" />
                 </CardContent>
             </Card>
-             <div className="flex justify-end pt-4">
+            <div className="flex justify-end pt-4">
                 <Skeleton className="h-10 w-32" />
-             </div>
+            </div>
         </div>
     )
 }
@@ -117,7 +118,7 @@ export default function RoleEditPage() {
     const router = useRouter();
     const params = useParams();
     const roleId = params.roleId as Role['id'];
-  
+
     const { roles, updateRolePermissions } = useRolesStore();
     const role = roles.find(r => r.id === roleId);
 
@@ -154,7 +155,7 @@ export default function RoleEditPage() {
             }
         });
     };
-    
+
     const handleSave = () => {
         if (!role) return;
         updateRolePermissions(role.id, permissions);
@@ -171,36 +172,31 @@ export default function RoleEditPage() {
 
     if (!role) {
         // This will be shown briefly before the redirect effect kicks in
-        return null; 
+        return null;
     }
 
     const isAllSelected = permissions.includes('all');
 
     return (
         <div className="space-y-6">
+            <SettingsHeader
+                icon="Shield"
+                title={`تعديل صلاحيات: ${role.name}`}
+                description={role.description}
+                backHref="/dashboard/settings/roles"
+                breadcrumbs={[
+                    { label: 'إدارة الأدوار', href: '/dashboard/settings/roles' }
+                ]}
+                color="purple"
+            />
+
             <Card>
-                <CardHeader>
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <CardTitle className="text-2xl font-bold flex items-center gap-3">
-                                <Icon name="Edit" />
-                                تعديل صلاحيات: {role.name}
-                            </CardTitle>
-                            <CardDescription className="mt-2">{role.description}</CardDescription>
-                        </div>
-                         <Button variant="outline" size="icon" asChild>
-                            <Link href="/dashboard/settings/roles">
-                                <Icon name="ArrowLeft" className="h-4 w-4" />
-                            </Link>
-                        </Button>
-                    </div>
-                </CardHeader>
-                <CardContent className="flex items-center space-x-2 space-x-reverse border-t pt-6">
-                     <Checkbox
+                <CardContent className="flex items-center space-x-2 space-x-reverse py-6">
+                    <Checkbox
                         id="select-all"
                         checked={isAllSelected}
                         onCheckedChange={(checked) => setPermissions(checked ? ['all'] : [])}
-                     />
+                    />
                     <Label htmlFor="select-all" className="text-base font-semibold cursor-pointer">
                         منح صلاحيات كاملة للنظام (Full Access)
                     </Label>

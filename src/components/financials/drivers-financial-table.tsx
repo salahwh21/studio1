@@ -15,7 +15,7 @@ import { useFinancialsStore } from '@/store/financials-store';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import * as XLSX from 'xlsx';
+import { exportToExcel } from '@/lib/export-utils';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -45,7 +45,7 @@ export const DriversFinancialTable = () => {
     const { driverPaymentSlips } = useFinancialsStore();
     const { formatCurrency } = useSettings();
     const { toast } = useToast();
-    
+
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<'name' | 'outstanding' | 'totalOrders'>('outstanding');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -57,14 +57,14 @@ export const DriversFinancialTable = () => {
             const driverOrders = orders.filter(o => o.driver === driver.name);
             const deliveredOrders = driverOrders.filter(o => o.status === 'تم التوصيل');
             const collectedOrders = driverOrders.filter(o => o.status === 'تم استلام المال في الفرع');
-            
+
             const totalCOD = deliveredOrders.reduce((sum, o) => sum + (o.cod || 0), 0);
             const totalDriverFees = deliveredOrders.reduce((sum, o) => sum + (o.driverFee || 0), 0);
             const collectedAmount = collectedOrders.reduce((sum, o) => sum + (o.cod || 0), 0);
             const outstandingAmount = totalCOD - collectedAmount;
-            
+
             const driverSlips = driverPaymentSlips.filter(slip => slip.driverName === driver.name);
-            const lastSlip = driverSlips.length > 0 
+            const lastSlip = driverSlips.length > 0
                 ? driverSlips.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
                 : null;
 
@@ -135,7 +135,7 @@ export const DriversFinancialTable = () => {
         });
     }, [driversFinancialData]);
 
-    const handleExportExcel = () => {
+    const handleExportExcel = async () => {
         try {
             const data = filteredAndSorted.map(driver => ({
                 'اسم السائق': driver.name,
@@ -150,17 +150,13 @@ export const DriversFinancialTable = () => {
                 'المبلغ المستلم': driver.collectedAmount,
                 'المبلغ المتبقي': driver.outstandingAmount,
                 'عدد الكشوفات': driver.totalSlips,
-                'تاريخ آخر تحصيل': driver.lastCollectionDate 
+                'تاريخ آخر تحصيل': driver.lastCollectionDate
                     ? new Date(driver.lastCollectionDate).toLocaleDateString('ar-EG')
                     : '-',
             }));
 
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'معلومات السائقين المالية');
-
             const fileName = `معلومات_السائقين_المالية_${new Date().toISOString().split('T')[0]}.xlsx`;
-            XLSX.writeFile(wb, fileName);
+            await exportToExcel(data, fileName, 'معلومات السائقين المالية');
 
             toast({
                 title: 'تم التصدير بنجاح',
@@ -178,10 +174,10 @@ export const DriversFinancialTable = () => {
     const handleExportPDF = () => {
         try {
             const doc = new jsPDF('l', 'mm', 'a4');
-            
+
             doc.setFontSize(18);
             doc.text('معلومات السائقين المالية', 14, 15);
-            
+
             doc.setFontSize(12);
             doc.text(`التاريخ: ${new Date().toLocaleDateString('ar-EG')}`, 14, 22);
             doc.text(`عدد السائقين: ${filteredAndSorted.length}`, 14, 28);
@@ -350,7 +346,7 @@ export const DriversFinancialTable = () => {
                                                 <Badge variant="secondary">{driver.totalSlips}</Badge>
                                             </TableCell>
                                             <TableCell className="text-center border-l text-sm text-muted-foreground">
-                                                {driver.lastCollectionDate 
+                                                {driver.lastCollectionDate
                                                     ? new Date(driver.lastCollectionDate).toLocaleDateString('ar-EG')
                                                     : '-'
                                                 }

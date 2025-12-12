@@ -19,7 +19,7 @@ const OrderDetailsSchema = z.object({
   expectedDeliveryDate: z.string().optional().describe("تاريخ التوصيل المتوقع"),
 });
 
-const GenerateResponseInputSchema = z.object({
+export const GenerateResponseInputSchema = z.object({
   orderDetails: OrderDetailsSchema,
   query: z.string().describe("استفسار العميل, مثال: 'وين طلبي؟' أو 'متى بوصل الطلب؟'"),
 });
@@ -51,7 +51,7 @@ const prompt = ai.definePrompt({
 - **If status is "تم التوصيل" (Delivered):** Confirm the delivery and thank the customer.
 - **If status is "مؤجل" (Postponed):** Inform the customer that the delivery has been postponed as requested and that they will be contacted for a new delivery time.
 - **If status is "بالانتظار" (Pending):** Inform the customer that the order has been received and is being prepared for dispatch soon.
-- **If status is "راجع" (Returned):** Inform the customer politely that the order has been returned and they can contact customer service for more details.
+- **If status is "مرتجع" (Returned):** Inform the customer politely that the order has been returned and they can contact customer service for more details.
 
 **Customer Query:**
 "{{{query}}}"

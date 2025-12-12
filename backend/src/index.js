@@ -1,10 +1,30 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
 const db = require('./config/database');
+const rateLimit = require('express-rate-limit');
+
+// Rate limiting configuration
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5000, // Increased to 5000 to prevent 429 errors during dev/testing
+  message: { error: 'Too many requests, please try again later', code: 'RATE_LIMIT_EXCEEDED' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Stricter rate limit for auth routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 login attempts per windowMs
+  message: { error: 'Too many login attempts, please try again later', code: 'AUTH_RATE_LIMIT_EXCEEDED' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 const authRoutes = require('./routes/auth');
 const ordersRoutes = require('./routes/orders');
 const usersRoutes = require('./routes/users');
@@ -15,22 +35,48 @@ const financialsRoutes = require('./routes/financials');
 const returnsRoutes = require('./routes/returns');
 const dashboardRoutes = require('./routes/dashboard');
 const driversRoutes = require('./routes/drivers');
+const settingsRoutes = require('./routes/settings');
 
 const app = express();
 const server = createServer(app);
 const io = new Server(server, {
-  cors: { 
+  cors: {
     origin: process.env.FRONTEND_URL || '*',
     credentials: true
   }
 });
 
+// Make io available to routes via app
+app.set('io', io);
+
 const PORT = process.env.PORT || 3001;
 
+// CORS configuration - allow credentials for cookies
+// SECURITY: In production, use specific origin instead of wildcard
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? (process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
+  : ['http://localhost:5000', 'http://localhost:3000', 'http://127.0.0.1:5000', 'http://127.0.0.1:3000'];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
-  credentials: true
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.) in development only
+    if (!origin && process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400 // 24 hours
 }));
+
+// Cookie parser middleware for httpOnly cookies
+app.use(cookieParser());
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -38,14 +84,14 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/api/health', async (req, res) => {
   try {
     const result = await db.query('SELECT NOW()');
-    res.json({ 
-      status: 'ok', 
+    res.json({
+      status: 'ok',
       timestamp: new Date().toISOString(),
       database: 'connected',
       query: result.rows[0]
     });
   } catch (error) {
-    res.status(500).json({ 
+    res.status(500).json({
       status: 'error',
       message: 'Database connection failed',
       error: error.message
@@ -53,20 +99,21 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api/orders', ordersRoutes);
-app.use('/api/users', usersRoutes);
-app.use('/api/roles', rolesRoutes);
-app.use('/api/statuses', statusesRoutes);
-app.use('/api/areas', areasRoutes);
-app.use('/api/financials', financialsRoutes);
-app.use('/api/returns', returnsRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/drivers', driversRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/orders', apiLimiter, ordersRoutes);
+app.use('/api/users', apiLimiter, usersRoutes);
+app.use('/api/roles', apiLimiter, rolesRoutes);
+app.use('/api/statuses', apiLimiter, statusesRoutes);
+app.use('/api/areas', apiLimiter, areasRoutes);
+app.use('/api/financials', apiLimiter, financialsRoutes);
+app.use('/api/returns', apiLimiter, returnsRoutes);
+app.use('/api/dashboard', apiLimiter, dashboardRoutes);
+app.use('/api/drivers', apiLimiter, driversRoutes);
+app.use('/api/settings', apiLimiter, settingsRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
+  res.status(500).json({
     error: 'Something went wrong!',
     message: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
@@ -101,11 +148,11 @@ io.on('connection', (socket) => {
       }
 
       // بث الموقع للعملاء المتابعين للطلبية
-      io.emit(`order_tracking_${order_id}`, { 
-        driver_id, 
-        latitude, 
-        longitude, 
-        timestamp: new Date() 
+      io.emit(`order_tracking_${order_id}`, {
+        driver_id,
+        latitude,
+        longitude,
+        timestamp: new Date()
       });
     } catch (error) {
       console.error('Driver location error:', error);

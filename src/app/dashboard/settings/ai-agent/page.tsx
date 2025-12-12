@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { SettingsHeader } from '@/components/settings-header';
 
 export default function AiAgentPage() {
     const { orders } = useOrdersStore();
@@ -30,7 +31,7 @@ export default function AiAgentPage() {
 
     if (!context || !context.isHydrated) {
         return (
-             <div className="space-y-6">
+            <div className="space-y-6">
                 <Skeleton className="h-28 w-full" />
                 <Skeleton className="h-64 w-full" />
             </div>
@@ -83,18 +84,16 @@ export default function AiAgentPage() {
 
     return (
         <div className="space-y-6">
+            <SettingsHeader
+                icon="Bot"
+                title="وكيل خدمة العملاء الذكي"
+                description="ابحث عن طلب وقم بتوليد رد احترافي لاستفسارات العملاء بنقرة زر"
+                color="indigo"
+            />
+
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                            <Icon name="Bot" />
-                            وكيل خدمة العملاء الذكي
-                        </CardTitle>
-                        <CardDescription>
-                            ابحث عن طلب وقم بتوليد رد احترافي لاستفسارات العملاء بنقرة زر.
-                        </CardDescription>
-                    </div>
-                     <div className="flex items-center space-x-2 space-x-reverse">
+                    <div className="flex items-center space-x-2 space-x-reverse">
                         <Switch
                             id="enable-agent"
                             checked={isAgentEnabled}
@@ -108,7 +107,7 @@ export default function AiAgentPage() {
             </Card>
 
             {!isAgentEnabled && (
-                 <Alert variant="destructive">
+                <Alert variant="destructive">
                     <Icon name="AlertCircle" className="h-4 w-4" />
                     <AlertTitle>الخدمة معطلة</AlertTitle>
                     <AlertDescription>
@@ -116,6 +115,22 @@ export default function AiAgentPage() {
                     </AlertDescription>
                 </Alert>
             )}
+
+            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                <Icon name="Key" className="h-4 w-4 text-blue-600" />
+                <AlertTitle className="text-blue-900 dark:text-blue-100">هل تحتاج إلى تكوين API Keys؟</AlertTitle>
+                <AlertDescription className="flex items-center justify-between">
+                    <span className="text-blue-800 dark:text-blue-200">
+                        لاستخدام الذكاء الاصطناعي، تحتاج إلى تكوين API Keys من مزودي الخدمة مثل OpenAI أو Google Gemini.
+                    </span>
+                    <Button asChild variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700 mr-4">
+                        <Link href="/dashboard/settings/ai-config">
+                            <Icon name="Settings" className="ml-2 h-4 w-4" />
+                            إعدادات AI
+                        </Link>
+                    </Button>
+                </AlertDescription>
+            </Alert>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start" style={{ opacity: isAgentEnabled ? 1 : 0.5, pointerEvents: isAgentEnabled ? 'auto' : 'none' }}>
                 <Card className="lg:col-span-1">
@@ -126,7 +141,7 @@ export default function AiAgentPage() {
                         <div className="space-y-2">
                             <Label htmlFor="search">رقم الطلب أو هاتف العميل</Label>
                             <div className="flex gap-2">
-                                <Input 
+                                <Input
                                     id="search"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -137,7 +152,7 @@ export default function AiAgentPage() {
                         </div>
 
                         {selectedOrder && (
-                             <Card className="bg-muted/50">
+                            <Card className="bg-muted/50">
                                 <CardHeader className="p-4">
                                     <CardTitle className="text-base">تفاصيل الطلب</CardTitle>
                                 </CardHeader>
@@ -167,7 +182,7 @@ export default function AiAgentPage() {
                             {isPending ? 'جاري التوليد...' : 'توليد الرد بالذكاء الاصطناعي'}
                         </Button>
 
-                         <div className="space-y-2 pt-4">
+                        <div className="space-y-2 pt-4">
                             <Label htmlFor="generatedResponse">الرد المقترح</Label>
                             {isPending ? (
                                 <Skeleton className="h-24 w-full" />

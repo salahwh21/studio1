@@ -10,13 +10,13 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Logo } from '@/components/logo';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { FacebookIcon } from '@/components/icons/facebook-icon';
 import { InstagramIcon } from '@/components/icons/instagram-icon';
 import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
 import { Skeleton } from '@/components/ui/skeleton';
+import Icon from '@/components/icon';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
-import { useUsersStore } from '@/store/user-store';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -57,11 +57,12 @@ const LoginPageSkeleton = () => (
 export default function LoginPageClient() {
   const router = useRouter();
   const context = useSettings();
-  const { users } = useUsersStore();
+  const { login, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!context || !context.isHydrated) {
     return <LoginPageSkeleton />;
@@ -79,11 +80,32 @@ export default function LoginPageClient() {
     return <Logo />;
   }
 
-  // Simplified login check for UI purposes
-  const canLogin = () => {
-    const adminUser = users.find(u => u.roleId === 'admin');
-    return adminUser && username === adminUser.email && password === adminUser.password;
-  }
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        variant: 'destructive',
+        title: "خطأ في البيانات",
+        description: "الرجاء إدخال البريد الإلكتروني وكلمة المرور.",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      await login(email, password);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: "فشل تسجيل الدخول",
+        description: error.message || "الرجاء التحقق من البريد الإلكتروني وكلمة المرور.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center p-4 bg-muted">
@@ -106,29 +128,40 @@ export default function LoginPageClient() {
           <CardDescription>نظام إدارة التوصيل</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-4">
+          <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <div className="space-y-2">
-              <Label htmlFor="username">رقم الهاتف أو البريد الإلكتروني</Label>
-              <Input id="username" type="text" placeholder="admin@alwameed.com" value={username} onChange={e => setUsername(e.target.value)} />
+              <Label htmlFor="email">رقم الهاتف أو البريد الإلكتروني</Label>
+              <Input 
+                id="email" 
+                type="text" 
+                placeholder="admin@alwameed.com" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)}
+                disabled={isSubmitting}
+                autoComplete="email"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">كلمة المرور</Label>
-              <Input id="password" type="password" placeholder="كلمة المرور" value={password} onChange={e => setPassword(e.target.value)} />
+              <Input 
+                id="password" 
+                type="password" 
+                placeholder="كلمة المرور" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)}
+                disabled={isSubmitting}
+                autoComplete="current-password"
+              />
             </div>
-            {/* Use Link for navigation */}
-            <Button size="lg" className="w-full" asChild>
-                <Link href={canLogin() ? "/dashboard" : "#"} onClick={(e) => {
-                    if (!canLogin()) {
-                        e.preventDefault();
-                        toast({
-                            variant: 'destructive',
-                            title: "فشل تسجيل الدخول",
-                            description: "الرجاء التحقق من اسم المستخدم وكلمة المرور.",
-                        });
-                    }
-                }}>تسجيل الدخول</Link>
+            <Button 
+              type="submit" 
+              size="lg" 
+              className="w-full" 
+              disabled={isSubmitting || authLoading}
+            >
+              {isSubmitting ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
             </Button>
-          </div>
+          </form>
           
           <div className="my-4 flex items-center">
             <Separator className="flex-1" />
@@ -136,13 +169,32 @@ export default function LoginPageClient() {
             <Separator className="flex-1" />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" asChild>
-              <Link href="/dashboard/merchant">دخول كتاجر</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/dashboard/driver-app">دخول كسائق</Link>
-            </Button>
+          <div className="space-y-2">
+            <p className="text-xs text-center text-muted-foreground">
+              تسجيل دخول سريع للتجار والسائقين
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setEmail('merchant@alwameed.com');
+                  setPassword('123');
+                }}
+              >
+                <Icon name="Store" className="ml-2 h-4 w-4" />
+                دخول كتاجر
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setEmail('driver@alwameed.com');
+                  setPassword('123');
+                }}
+              >
+                <Icon name="Truck" className="ml-2 h-4 w-4" />
+                دخول كسائق
+              </Button>
+            </div>
           </div>
            {loginSettings.showForgotPassword && (
               <Button variant="link" size="sm" className="mx-auto mt-4 block">

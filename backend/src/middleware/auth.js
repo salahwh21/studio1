@@ -1,8 +1,14 @@
 const jwt = require('jsonwebtoken');
 
 const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  // Try to get token from httpOnly cookie first (preferred for security)
+  let token = req.cookies?.auth_token;
+
+  // Fallback to Authorization header for API clients
+  if (!token) {
+    const authHeader = req.headers['authorization'];
+    token = authHeader && authHeader.split(' ')[1];
+  }
 
   if (!token) {
     return res.status(401).json({ error: 'Access token required' });
@@ -30,8 +36,14 @@ const authorizeRoles = (...roles) => {
 };
 
 const optionalAuth = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  // Try to get token from httpOnly cookie first
+  let token = req.cookies?.auth_token;
+
+  // Fallback to Authorization header
+  if (!token) {
+    const authHeader = req.headers['authorization'];
+    token = authHeader && authHeader.split(' ')[1];
+  }
 
   if (token) {
     jwt.verify(token, process.env.JWT_SECRET, (err, user) => {

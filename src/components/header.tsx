@@ -43,7 +43,7 @@ const allNavItems: NavItem[] = [
   { href: '/dashboard/settings', iconName: 'Settings', label: 'الإعدادات', permissionId: 'settings:view' },
   // Specific app views
   { href: '/dashboard/driver-app', iconName: 'Smartphone', label: 'تطبيق السائق', permissionId: 'driver-app:use' },
-  { href: '/dashboard/merchant', iconName: 'Store', label: 'بوابة التاجر', permissionId: 'merchant-portal:use' },
+  { href: '/merchant', iconName: 'Store', label: 'بوابة التاجر', permissionId: 'merchant-portal:use' },
 ];
 
 

@@ -28,7 +28,7 @@ export const ReceiveFromDrivers = () => {
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [receivedItems, setReceivedItems] = useState<Order[]>([]);
   const [driverPopoverOpen, setDriverPopoverOpen] = useState(false);
-  
+
   const printableRef = useRef<HTMLDivElement>(null);
 
 
@@ -38,9 +38,9 @@ export const ReceiveFromDrivers = () => {
     if (!selectedDriverId) return [];
     const driver = users.find(u => u.id === selectedDriverId);
     if (!driver) return [];
-    
+
     return orders.filter(o =>
-      o.driver === driver.name && o.status === 'راجع' &&
+      o.driver === driver.name && o.status === 'مرتجع' &&
       !receivedItems.some(ri => ri.id === o.id)
     );
   }, [selectedDriverId, users, orders, receivedItems]);
@@ -73,7 +73,7 @@ export const ReceiveFromDrivers = () => {
     if (!driver) return;
 
     receivedItems.forEach(order => {
-        updateOrderStatus(order.id, 'مرجع للفرع');
+      updateOrderStatus(order.id, 'مرجع للفرع');
     });
 
     addDriverReturnSlip({
@@ -84,19 +84,19 @@ export const ReceiveFromDrivers = () => {
     });
 
     toast({ title: 'تم إنشاء كشف الاستلام', description: `تم إنشاء كشف استلام للسائق ${driver.name} بـ ${receivedItems.length} شحنات.` });
-    
+
     setReceivedItems([]);
     setSelectedOrderIds([]);
     setSelectedDriverId(null);
   };
-  
-    const handleSelectAllDriverOrders = (checked: boolean) => {
-        if(checked) {
-            setSelectedOrderIds(driverOrders.map(o => o.id));
-        } else {
-            setSelectedOrderIds([]);
-        }
+
+  const handleSelectAllDriverOrders = (checked: boolean) => {
+    if (checked) {
+      setSelectedOrderIds(driverOrders.map(o => o.id));
+    } else {
+      setSelectedOrderIds([]);
     }
+  }
 
   const selectedDriver = drivers.find(d => d.id === selectedDriverId);
 
@@ -158,7 +158,7 @@ export const ReceiveFromDrivers = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                   <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAllDriverOrders} checked={driverOrders.length > 0 && selectedOrderIds.length === driverOrders.length} /></TableHead>
+                  <TableHead className="w-12 text-center border-l"><Checkbox onCheckedChange={handleSelectAllDriverOrders} checked={driverOrders.length > 0 && selectedOrderIds.length === driverOrders.length} /></TableHead>
                   <TableHead className="w-16 text-right border-l">#</TableHead>
                   <TableHead className="text-right border-l">العميل</TableHead>
                   <TableHead className="text-right border-l">رقم الطلب</TableHead>
@@ -173,9 +173,9 @@ export const ReceiveFromDrivers = () => {
                         onCheckedChange={(checked) => setSelectedOrderIds(p => checked ? [...p, order.id] : p.filter(id => id !== order.id))}
                       />
                     </TableCell>
-                     <TableCell className="text-right border-l">{index + 1}</TableCell>
-                     <TableCell className="text-right border-l">{order.recipient}</TableCell>
-                     <TableCell className="text-right border-l">{order.id}</TableCell>
+                    <TableCell className="text-right border-l">{index + 1}</TableCell>
+                    <TableCell className="text-right border-l">{order.recipient}</TableCell>
+                    <TableCell className="text-right border-l">{order.id}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -190,35 +190,35 @@ export const ReceiveFromDrivers = () => {
           <CardDescription>هذه هي قائمة الشحنات التي تم استلامها وجاهزة للتوثيق.</CardDescription>
         </CardHeader>
         <CardContent className="flex-grow flex flex-col gap-4">
-            <div ref={printableRef} className="flex-grow">
-                <div className='flex items-center justify-between mb-2'>
-                    <CardTitle className="text-base">شحنات تم استلامها ({receivedItems.length})</CardTitle>
-                    <Button onClick={createReceivingManifest} size="sm" disabled={receivedItems.length === 0}>
-                        <Icon name="FileCheck" className="ml-2" />
-                        إنشاء كشف الاستلام
-                    </Button>
-                </div>
-                <ScrollArea className="h-[26rem] border rounded-md">
-                    <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-16 text-right border-l">#</TableHead>
-                            <TableHead className="text-right border-l">العميل</TableHead>
-                            <TableHead className="text-right border-l">رقم الطلب</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {receivedItems.map((item, index) => (
-                        <TableRow key={item.id}>
-                            <TableCell className="text-right border-l">{index + 1}</TableCell>
-                            <TableCell className="text-right border-l">{item.recipient}</TableCell>
-                            <TableCell className="text-right border-l">{item.id}</TableCell>
-                        </TableRow>
-                        ))}
-                    </TableBody>
-                    </Table>
-                </ScrollArea>
-           </div>
+          <div ref={printableRef} className="flex-grow">
+            <div className='flex items-center justify-between mb-2'>
+              <CardTitle className="text-base">شحنات تم استلامها ({receivedItems.length})</CardTitle>
+              <Button onClick={createReceivingManifest} size="sm" disabled={receivedItems.length === 0}>
+                <Icon name="FileCheck" className="ml-2" />
+                إنشاء كشف الاستلام
+              </Button>
+            </div>
+            <ScrollArea className="h-[26rem] border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-16 text-right border-l">#</TableHead>
+                    <TableHead className="text-right border-l">العميل</TableHead>
+                    <TableHead className="text-right border-l">رقم الطلب</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {receivedItems.map((item, index) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="text-right border-l">{index + 1}</TableCell>
+                      <TableCell className="text-right border-l">{item.recipient}</TableCell>
+                      <TableCell className="text-right border-l">{item.id}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </div>
         </CardContent>
       </Card>
     </div>
