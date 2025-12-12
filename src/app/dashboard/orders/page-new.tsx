@@ -33,6 +33,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useOrdersTable } from '@/hooks/use-orders-table';
 import { useStatusesStore } from '@/store/statuses-store';
 import { useRealTimeOrders } from '@/hooks/useRealTimeOrders';
+import { useOrdersStore } from '@/store/orders-store';
 
 import { OrdersTableToolbar } from '@/components/orders/orders-table-toolbar';
 import { OrdersTableModals } from '@/components/orders/orders-table-modals';
@@ -68,6 +69,9 @@ const OrdersPageNew = () => {
 
     // Real-time updates for orders table
     useRealTimeOrders();
+
+    // Get all orders from store for totals calculation
+    const { orders: allOrders } = useOrdersStore();
 
     const {
         orders,
@@ -135,10 +139,17 @@ const OrdersPageNew = () => {
         })
     );
 
-    // Calculate footer totals
+    // Calculate footer totals - تحسب من الصفوف المحددة فقط
     const footerTotals = React.useMemo(() => {
-        if (!orders.length) return undefined;
-        return orders.reduce((acc, order) => {
+        // إذا كان هناك صفوف محددة، احسب المجاميع منها فقط
+        // استخدم allOrders من الـ store لضمان إيجاد جميع الطلبات المحددة
+        const ordersToCalculate = selectedRows.length > 0 
+            ? allOrders.filter(order => selectedRows.includes(order.id))
+            : orders; // إذا لم يكن هناك تحديد، استخدم الطلبات المرئية فقط
+        
+        if (!ordersToCalculate.length) return undefined;
+        
+        return ordersToCalculate.reduce((acc, order) => {
             acc.itemPrice += order.itemPrice || 0;
             acc.deliveryFee += order.deliveryFee || 0;
             acc.additionalCost += order.additionalCost || 0;
@@ -147,7 +158,7 @@ const OrdersPageNew = () => {
             acc.cod += order.cod || 0;
             return acc;
         }, { itemPrice: 0, deliveryFee: 0, additionalCost: 0, driverFee: 0, companyDue: 0, cod: 0 });
-    }, [orders]);
+    }, [orders, selectedRows, allOrders]);
 
     if (!isClient) {
         return null;

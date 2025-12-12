@@ -27,6 +27,14 @@ import { ModalState, OrderSource } from './types';
 import { SOURCE_ICONS } from './constants';
 import { ColumnConfig } from '@/components/export-data-dialog';
 
+// Valid sortable keys from Order type
+const SORTABLE_KEYS: (keyof Order)[] = [
+    'id', 'source', 'referenceNumber', 'recipient', 'phone', 'address',
+    'city', 'region', 'status', 'previousStatus', 'driver', 'merchant',
+    'cod', 'itemPrice', 'deliveryFee', 'additionalCost', 'driverFee',
+    'driverAdditionalFare', 'date', 'notes', 'orderNumber'
+];
+
 interface OrdersTableViewProps {
     orders: Order[];
     groupedOrders: Record<string, Order[]> | null;
@@ -106,7 +114,7 @@ export const OrdersTableView = ({
                             : 'bg-gray-50/50 dark:bg-slate-800/30'
                 }`}
             >
-                <TableCell className={`sticky right-0 z-10 p-3 text-center border-l ${
+                <TableCell className={`sticky right-0 z-10 p-2 text-center border-l ${
                     selectedRows.includes(order.id)
                         ? 'bg-orange-100 dark:bg-orange-900/30 border-l-orange-400'
                         : 'bg-white dark:bg-slate-900 border-l-gray-300 dark:border-l-slate-700'
@@ -446,7 +454,7 @@ export const OrdersTableView = ({
                     return (
                         <TableCell 
                             key={col.key} 
-                            className="h-auto p-4 text-center border-l border-gray-200 dark:border-slate-700 text-sm bg-transparent group-hover:bg-blue-50/50 dark:group-hover:bg-slate-800/50 transition-colors"
+                            className="h-auto p-2 text-center border-l border-gray-200 dark:border-slate-700 text-sm bg-transparent group-hover:bg-blue-50/50 dark:group-hover:bg-slate-800/50 transition-colors"
                         >
                             {content}
                         </TableCell>
@@ -462,8 +470,8 @@ export const OrdersTableView = ({
                 {/* رأس الجدول - ثابت في الأعلى: position: sticky; top: 0; */}
                 <TableHeader className="sticky top-0 z-20 bg-[#1a1a2e] dark:bg-[#0a0e27] shadow-lg">
                     <TableRow className="hover:bg-transparent border-none">
-                        <TableHead className="sticky right-0 z-30 p-3 text-center border-l border-white/30 w-24 bg-[#0a0e27] dark:bg-[#050710]">
-                            <div className="flex items-center justify-center gap-2">
+                        <TableHead className="sticky right-0 z-30 p-2 text-center border-l border-white/30 w-24 bg-[#0a0e27] dark:bg-[#050710]">
+                            <div className="flex items-center justify-center gap-4">
                                 <span className="text-sm font-bold text-white">#</span>
                                 <Checkbox 
                                     onCheckedChange={handleSelectAll} 
@@ -478,13 +486,22 @@ export const OrdersTableView = ({
                             return (
                                 <TableHead 
                                     key={col.key} 
-                                    className="p-4 text-center border-l border-white/30 bg-[#1a1a2e] dark:bg-[#0a0e27] text-white hover:bg-[#0f0f1e] dark:hover:bg-[#050710] transition-colors font-semibold text-sm"
+                                    className="p-2 text-center border-l border-white/30 bg-[#1a1a2e] dark:bg-[#0a0e27] text-white hover:bg-[#0f0f1e] dark:hover:bg-[#050710] transition-colors font-semibold text-sm"
                                     style={{ minWidth: '200px' }} // ← زيادة العرض من 150px إلى 200px
                                 >
                                     {col.sortable ? (
                                         <Button 
                                             variant="ghost" 
-                                            onClick={() => handleSort(col.key as unknown as keyof Order)} 
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                // Ensure col.key is a valid keyof Order before sorting
+                                                const sortKey = col.key;
+                                                if (sortKey && typeof sortKey === 'string' && SORTABLE_KEYS.includes(sortKey as keyof Order)) {
+                                                    handleSort(sortKey as keyof Order);
+                                                }
+                                            }} 
                                             className="text-white hover:bg-white/20 hover:text-white w-full p-0 h-auto font-bold"
                                         >
                                             {col.label}
@@ -550,7 +567,7 @@ export const OrdersTableView = ({
                                                 case 'cod': totalValue = formatCurrency(groupTotals.cod); break;
                                                 default: totalValue = '';
                                             }
-                                            return <TableCell key={col.key} className="p-3 text-center border-l text-sm font-semibold">{totalValue}</TableCell>
+                                            return <TableCell key={col.key} className="p-2 text-center border-l text-sm font-semibold">{totalValue}</TableCell>
                                         })}
                                     </TableRow>
                                     {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
@@ -564,7 +581,9 @@ export const OrdersTableView = ({
                     {/* سطر المجاميع - ثابت في الأسفل: position: sticky; bottom: 0; */}
                     {footerTotals && !groupedOrders && (
                         <TableRow className="sticky bottom-0 z-[99] bg-gray-100 dark:bg-slate-800 border-t-2 border-gray-400 dark:border-slate-600">
-                            <TableCell className="sticky right-0 z-[100] p-4 text-center border-l bg-gray-100 dark:bg-slate-800 border-t-2 border-gray-400 dark:border-slate-600">
+                            <TableCell 
+                                className="sticky right-0 z-[100] p-2 text-center border-l-[rgb(243,244,246)] dark:border-l-[rgb(30,41,59)] bg-gray-100 dark:bg-slate-800 border-t-2 border-gray-400 dark:border-slate-600"
+                            >
                                 {/* عمود التحديد - فارغ */}
                             </TableCell>
                             {visibleColumns.map((col) => {
@@ -598,7 +617,7 @@ export const OrdersTableView = ({
                                 return (
                                     <TableCell 
                                         key={col.key} 
-                                        className="p-4 text-center border-l border-t-2 border-gray-400 dark:border-slate-600 text-sm font-bold bg-gray-100 dark:bg-slate-800"
+                                        className="p-2 text-center border-l-[rgb(243,244,246)] dark:border-l-[rgb(30,41,59)] border-t-2 border-gray-400 dark:border-slate-600 text-sm font-bold bg-gray-100 dark:bg-slate-800"
                                     >
                                         {totalValue}
                                     </TableCell>

@@ -12,7 +12,6 @@
 | `002_seed_data.sql` | البيانات الأولية (الأدوار، الحالات، المدن) |
 | `003_create_admin_user.sql` | إنشاء المستخدم الإداري الافتراضي |
 | `004_create_settings_table.sql` | جدول الإعدادات (JSONB) |
-| `005_add_orders_indexes.sql` | فهارس إضافية لتحسين الأداء |
 | `run.js` | سكربت تشغيل الـ Migrations |
 | `seed.js` | بيانات تجريبية للتطوير |
 

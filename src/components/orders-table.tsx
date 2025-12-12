@@ -17,6 +17,7 @@ import { useSettings, SavedTemplate, readyTemplates } from '@/contexts/SettingsC
 
 import { useOrdersTable } from '@/hooks/use-orders-table';
 import { useStatusesStore } from '@/store/statuses-store';
+import { useOrdersStore } from '@/store/orders-store';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useRealTimeOrders } from '@/hooks/useRealTimeOrders';
 
@@ -58,6 +59,9 @@ const OrdersTableComponent = () => {
 
     // Real-time updates for orders table
     useRealTimeOrders();
+
+    // الحصول على جميع الطلبات من الـ store لحساب المجاميع من الصفوف المحددة
+    const { orders: allOrders } = useOrdersStore();
 
     const {
         orders,
@@ -154,9 +158,15 @@ const OrdersTableComponent = () => {
         }
     }, [visibleColumnKeys]);
 
-    // Footer Totals
+    // Footer Totals - تحسب من الصفوف المحددة فقط
     const footerTotals = React.useMemo(() => {
-        return orders.reduce((acc, order) => {
+        // إذا كان هناك صفوف محددة، احسب المجاميع منها فقط
+        // استخدم allOrders من الـ store لضمان إيجاد جميع الطلبات المحددة
+        const ordersToCalculate = selectedRows.length > 0 
+            ? allOrders.filter(order => selectedRows.includes(order.id))
+            : orders; // إذا لم يكن هناك تحديد، استخدم الطلبات المرئية فقط
+            
+        return ordersToCalculate.reduce((acc, order) => {
             acc.itemPrice += order.itemPrice || 0;
             acc.deliveryFee += order.deliveryFee || 0;
             acc.additionalCost += order.additionalCost || 0;
@@ -165,7 +175,7 @@ const OrdersTableComponent = () => {
             acc.companyDue += (order.deliveryFee || 0) + (order.additionalCost || 0) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0));
             return acc;
         }, { itemPrice: 0, deliveryFee: 0, additionalCost: 0, driverFee: 0, cod: 0, companyDue: 0 });
-    }, [orders]);
+    }, [orders, selectedRows, allOrders]);
 
     const isMobile = useMediaQuery("(max-width: 640px)");
 
@@ -219,13 +229,14 @@ const OrdersTableComponent = () => {
     if (!isClient) return <Skeleton className="w-full h-screen" />;
 
     return (
-        <TooltipProvider>
-            {/* حاوية رئيسية - بدون padding أو margins - استغلال كامل للمساحة */}
-            <div className="flex flex-col h-screen bg-white dark:bg-slate-950 overflow-hidden">
-                {/* القائمة العلوية الرئيسية */}
-                <AppHeader />
-                
-                <OrdersTableToolbar
+        <>
+            {/* القائمة العلوية الرئيسية - خارج TooltipProvider */}
+            <AppHeader />
+            
+            <TooltipProvider>
+                {/* حاوية رئيسية - بدون padding أو margins - استغلال كامل للمساحة */}
+                <div className="flex flex-col h-[calc(100vh-4rem)] bg-white dark:bg-slate-950 overflow-hidden">
+                    <OrdersTableToolbar
                     filters={filters}
                     setFilters={setFilters}
                     globalSearch={globalSearch}
@@ -289,7 +300,7 @@ const OrdersTableComponent = () => {
 
                 {/* Pagination - بدون بطاقة - استغلال كامل للمساحة */}
                 {!groupBy && (
-                    <div className="flex-none flex items-center justify-between p-2 border-t border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
+                    <div className="flex-none flex items-center justify-center gap-0 py-2 pl-[52px] pr-[52px] border-t border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900" style={{ backgroundColor: 'rgba(255, 255, 255, 1)', borderRadius: '0px', borderTopLeftRadius: '0px', borderTopRightRadius: '0px', borderBottomRightRadius: '0px', borderBottomLeftRadius: '0px' }}>
                         <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
                             <div className="flex items-center gap-2">
                                 <p className="text-sm font-medium">صفوف الصفحة:</p>
@@ -300,7 +311,7 @@ const OrdersTableComponent = () => {
                                         setPage(0);
                                     }}
                                 >
-                                    <SelectTrigger className="h-8 w-[70px]">
+                                    <SelectTrigger className="h-[33px] w-[87px]" style={{ marginLeft: '17px', marginRight: '17px', justifyContent: 'center' }}>
                                         <SelectValue placeholder={rowsPerPage} />
                                     </SelectTrigger>
                                     <SelectContent side="top">
@@ -409,7 +420,8 @@ const OrdersTableComponent = () => {
                 isClient={isClient}
             />
 
-        </TooltipProvider>
+            </TooltipProvider>
+        </>
     );
 }
 

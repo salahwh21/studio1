@@ -173,6 +173,11 @@ input[type="date"],
     @apply border-border;
   }
 
+  html {
+    padding-left: 0px;
+    padding-right: 0px;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-tajawal), sans-serif;

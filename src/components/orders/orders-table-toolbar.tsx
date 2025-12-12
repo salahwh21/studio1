@@ -100,7 +100,7 @@ export const OrdersTableToolbar = ({
     return (
         <div className="flex-none flex-col space-y-4 bg-gray-50 dark:bg-slate-900 p-5 rounded-lg border border-gray-300 dark:border-slate-700 shadow-sm">
             {/* Header Actions */}
-            <div className="flex-none flex-row items-center justify-between flex flex-wrap gap-4">
+            <div className="flex-none flex-row items-center justify-between flex flex-wrap gap-4" style={{ backgroundColor: 'rgba(255, 255, 255, 1)' }}>
                 <AdvancedSearch
                     filters={filters}
                     onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
@@ -184,8 +184,8 @@ export const OrdersTableToolbar = ({
                 </div>
             </div>
 
-            {/* Bulk Actions Bar */}
-            <div className="flex items-center gap-3 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800 shadow-sm overflow-x-auto">
+            {/* Bulk Actions Bar - سطر ثاني مكمل للشريط */}
+            <div className="flex items-center gap-3 p-4 dark:bg-orange-900/20 shadow-sm overflow-x-auto" style={{ backgroundColor: 'rgba(255, 255, 255, 1)', borderRadius: '0px', borderTopLeftRadius: '0px', borderTopRightRadius: '0px', borderBottomRightRadius: '0px', borderBottomLeftRadius: '0px' }}>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-1">
@@ -199,74 +199,85 @@ export const OrdersTableToolbar = ({
                     </DropdownMenuContent>
                 </DropdownMenu>
 
-                {selectedRows.length > 0 && (
-                    <>
-                        <Separator orientation="vertical" className="h-6" />
-                        <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">{selectedRows.length} محدد</span>
-                        <Separator orientation="vertical" className="h-6" />
+                <Separator orientation="vertical" className="h-6" />
+                <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">{selectedRows.length} محدد</span>
+                <Separator orientation="vertical" className="h-6" />
 
-                        <div className="flex items-center gap-1">
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => setShowDeleteConfirmDialog(true)} 
-                                className="text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors"
-                            >
-                                <Trash2 className="h-4 w-4 mr-1" /> حذف
+                <div className="flex items-center gap-1">
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setShowDeleteConfirmDialog(true)} 
+                        disabled={selectedRows.length === 0}
+                        className="text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Trash2 className="h-4 w-4 mr-1" /> حذف
+                    </Button>
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setShowAssignDriverDialog(true)}
+                        disabled={selectedRows.length === 0 || !canAssignDriverToSelected}
+                        title={!canAssignDriverToSelected ? 'يمكن تعيين السائق فقط للطلبات بحالة "بالانتظار" أو "تم استلام المال في الفرع"' : ''}
+                        className="hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Truck className="h-4 w-4 mr-1" /> تعيين سائق
+                    </Button>
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setShowAssignMerchantDialog(true)}
+                        disabled={selectedRows.length === 0}
+                        className="hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Store className="h-4 w-4 mr-1" /> تعيين تاجر
+                    </Button>
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setShowChangeStatusDialog(true)}
+                        disabled={selectedRows.length === 0}
+                        className="hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <ArrowRightLeft className="h-4 w-4 mr-1" /> تغيير الحالة
+                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" disabled={selectedRows.length === 0} className="disabled:opacity-50 disabled:cursor-not-allowed">
+                                <Printer className="h-4 w-4 mr-1" /> طباعة
                             </Button>
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => setShowAssignDriverDialog(true)}
-                                disabled={!canAssignDriverToSelected}
-                                title={!canAssignDriverToSelected ? 'يمكن تعيين السائق فقط للطلبات بحالة "بالانتظار" أو "تم استلام المال في الفرع"' : ''}
-                                className="hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <Truck className="h-4 w-4 mr-1" /> تعيين سائق
-                            </Button>
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => setShowAssignMerchantDialog(true)} 
-                                className="hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
-                            >
-                                <Store className="h-4 w-4 mr-1" /> تعيين تاجر
-                            </Button>
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => setShowChangeStatusDialog(true)} 
-                                className="hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
-                            >
-                                <ArrowRightLeft className="h-4 w-4 mr-1" /> تغيير الحالة
-                            </Button>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm">
-                                        <Printer className="h-4 w-4 mr-1" /> طباعة
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => setModalState({ type: 'print' })}>
-                                        <FileDown className="ml-2 h-4 w-4" /> طباعة بوالص (PDF)
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setShowModernPolicyV2Dialog(true)}>
-                                        <Printer className="ml-2 h-4 w-4" /> طباعة بوالص (ملونة)
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setShowThermalLabelOptDialog(true)}>
-                                        <Printer className="ml-2 h-4 w-4" /> طباعة حرارية (XP-301)
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <Button variant="ghost" size="sm" onClick={() => setModalState({ type: 'export' })}>
-                                <FileSpreadsheet className="h-4 w-4 mr-1" /> تصدير
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={handleExportExcel}>
-                                <FileDown className="h-4 w-4 mr-1" /> Excel
-                            </Button>
-                        </div>
-                    </>
-                )}
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => setModalState({ type: 'print' })} disabled={selectedRows.length === 0}>
+                                <FileDown className="ml-2 h-4 w-4" /> طباعة بوالص (PDF)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setShowModernPolicyV2Dialog(true)} disabled={selectedRows.length === 0}>
+                                <Printer className="ml-2 h-4 w-4" /> طباعة بوالص (ملونة)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setShowThermalLabelOptDialog(true)} disabled={selectedRows.length === 0}>
+                                <Printer className="ml-2 h-4 w-4" /> طباعة حرارية (XP-301)
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setModalState({ type: 'export' })}
+                        disabled={selectedRows.length === 0}
+                        className="disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <FileSpreadsheet className="h-4 w-4 mr-1" /> تصدير
+                    </Button>
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={handleExportExcel}
+                        disabled={selectedRows.length === 0}
+                        className="disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <FileDown className="h-4 w-4 mr-1" /> Excel
+                    </Button>
+                </div>
 
                 {groupedOrders && (
                     <Button variant="ghost" size="sm" onClick={toggleAllGroups} className="mr-auto">

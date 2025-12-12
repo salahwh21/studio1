@@ -28,7 +28,7 @@ try {
     
     // Write to JSON file
     fs.writeFileSync(
-        path.join(__dirname, 'src/areas-data.json'),
+        path.join(__dirname, 'areas-data.json'),
         JSON.stringify(data, null, 2),
         'utf8'
     );
