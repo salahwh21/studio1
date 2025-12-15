@@ -95,28 +95,32 @@ export const OrdersTableView = ({
 }: OrdersTableViewProps) => {
 
     const renderOrderRow = (order: Order, index: number) => {
+        const isSelected = selectedRows.includes(order.id);
         return (
             <TableRow 
                 key={order.id} 
-                data-state={selectedRows.includes(order.id) ? 'selected' : ''} 
-                className={`hover:bg-blue-50 dark:hover:bg-slate-800/50 transition-all duration-200 border-b border-gray-200 dark:border-slate-700 group ${
-                    selectedRows.includes(order.id) 
-                        ? 'bg-blue-100 dark:bg-blue-900/30 border-l-4 border-l-blue-500' 
+                data-state={isSelected ? 'selected' : ''} 
+                className={`hover:bg-orange-50/60 dark:hover:bg-slate-800/60 transition-all duration-150 border-b border-gray-200/80 dark:border-slate-700/80 group ${
+                    isSelected 
+                        ? 'bg-gradient-to-l from-orange-100 via-orange-50 to-white dark:from-orange-900/40 dark:via-orange-900/20 dark:to-slate-900 border-r-4 border-r-orange-500 shadow-sm' 
                         : index % 2 === 0 
                             ? 'bg-white dark:bg-slate-900' 
-                            : 'bg-gray-50/50 dark:bg-slate-800/30'
+                            : 'bg-slate-50/70 dark:bg-slate-800/40'
                 }`}
             >
                 <TableCell className={`sticky right-0 z-10 p-2 text-center border-l ${
-                    selectedRows.includes(order.id)
-                        ? 'bg-orange-100 dark:bg-orange-900/30 border-l-orange-400'
-                        : 'bg-white dark:bg-slate-900 border-l-gray-300 dark:border-l-slate-700'
+                    isSelected
+                        ? 'bg-gradient-to-l from-orange-100 to-orange-50 dark:from-orange-900/40 dark:to-orange-900/20 border-l-orange-300'
+                        : index % 2 === 0 
+                            ? 'bg-white dark:bg-slate-900 border-l-gray-200 dark:border-l-slate-700'
+                            : 'bg-slate-50/70 dark:bg-slate-800/40 border-l-gray-200 dark:border-l-slate-700'
                 }`}>
                     <div className="flex items-center justify-center gap-2">
-                        <span className="text-xs font-mono">{page * rowsPerPage + index + 1}</span>
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-400 tabular-nums">{page * rowsPerPage + index + 1}</span>
                         <Checkbox
-                            checked={selectedRows.includes(order.id)}
+                            checked={isSelected}
                             onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
+                            className="border-slate-400 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
                         />
                     </div>
                 </TableCell>
@@ -127,7 +131,12 @@ export const OrdersTableView = ({
                         case 'id':
                             content = (
                                 <CopyableCell value={value as string}>
-                                    <Link href={`/dashboard/orders/${order.id}`} className="text-primary hover:underline font-medium">{value as string}</Link>
+                                    <Link 
+                                        href={`/dashboard/orders/${order.id}`} 
+                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-semibold text-sm px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                                    >
+                                        {value as string}
+                                    </Link>
                                 </CopyableCell>
                             );
                             break;
@@ -161,14 +170,15 @@ export const OrdersTableView = ({
                                         currentDriver: order.driver
                                     })}
                                     disabled={!isEditMode}
-                                    className="inline-flex items-center justify-center gap-2 font-semibold text-sm px-4 py-2 rounded-lg w-[160px] mx-auto my-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:opacity-85 hover:-translate-y-0.5 hover:shadow-md"
+                                    className="inline-flex items-center justify-center gap-1.5 font-bold text-xs px-3 py-1.5 rounded-full w-[150px] mx-auto transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed hover:scale-105 hover:shadow-lg shadow-sm"
                                     style={{
-                                        backgroundColor: sInfo.color + '20',
+                                        background: `linear-gradient(135deg, ${sInfo.color}30 0%, ${sInfo.color}15 100%)`,
                                         color: sInfo.color,
-                                        border: `2px solid ${sInfo.color}`
+                                        border: `1.5px solid ${sInfo.color}60`,
+                                        boxShadow: `0 2px 8px ${sInfo.color}25`
                                     }}
                                 >
-                                    <Icon name={sInfo.icon as any} className="h-4 w-4" />
+                                    <Icon name={sInfo.icon as any} className="h-3.5 w-3.5" />
                                     <span>{sInfo.name}</span>
                                 </button>
                             );
@@ -229,7 +239,18 @@ export const OrdersTableView = ({
                             content = value ? <Badge variant="secondary">{value as string}</Badge> : '-';
                             break;
                         case 'companyDue':
-                            content = formatCurrency((order.deliveryFee || 0) + (order.additionalCost || 0) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0)));
+                            const companyDueVal = (order.deliveryFee || 0) + (order.additionalCost || 0) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0));
+                            const isCompanyDueNegative = companyDueVal < 0;
+                            content = (
+                                <div className={cn(
+                                    "inline-flex items-center gap-1.5 px-3 py-1 rounded-md font-bold text-sm tabular-nums",
+                                    isCompanyDueNegative 
+                                        ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" 
+                                        : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                )}>
+                                    <span>{formatCurrency(companyDueVal)}</span>
+                                </div>
+                            );
                             break;
                         case 'itemPrice':
                         case 'deliveryFee':
@@ -268,11 +289,13 @@ export const OrdersTableView = ({
                                             </>
                                         ) : (
                                             <div className={cn(
-                                                "flex items-center gap-2 px-3 py-1.5 rounded-md font-bold text-base tabular-nums",
-                                                isNegative ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"
+                                                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-semibold text-sm tabular-nums",
+                                                isNegative 
+                                                    ? "text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400" 
+                                                    : "text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-300"
                                             )}>
                                                 <span>{formatNumber(numValue)}</span>
-                                                <span className="text-sm font-medium">د.أ</span>
+                                                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">د.أ</span>
                                             </div>
                                         )}
                                     </div>
@@ -447,7 +470,7 @@ export const OrdersTableView = ({
                     return (
                         <TableCell 
                             key={col.key} 
-                            className="h-auto p-2 text-center border-l border-gray-200 dark:border-slate-700 text-sm bg-transparent group-hover:bg-blue-50/50 dark:group-hover:bg-slate-800/50 transition-colors"
+                            className="h-auto p-1.5 text-center border-l border-gray-200/80 dark:border-slate-700/80 text-sm bg-transparent group-hover:bg-orange-50/40 dark:group-hover:bg-slate-800/40 transition-colors"
                         >
                             {content}
                         </TableCell>
@@ -469,17 +492,17 @@ export const OrdersTableView = ({
         <div className="flex-1 overflow-auto flex flex-col bg-white dark:bg-slate-900" style={{ pointerEvents: 'auto' }}>
             <Table style={{ pointerEvents: 'auto' }}>
                 {/* رأس الجدول - ثابت في الأعلى: position: sticky; top: 0; */}
-                <TableHeader className="sticky top-0 z-20 bg-[#1a1a2e] dark:bg-[#0a0e27] shadow-lg" style={{ pointerEvents: 'auto' }}>
+                <TableHeader className="sticky top-0 z-20 bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 shadow-xl" style={{ pointerEvents: 'auto' }}>
                     <TableRow className="hover:bg-transparent border-none" style={{ pointerEvents: 'auto' }}>
-                        <TableHead className="sticky right-0 z-30 p-2 text-center border-l border-white/30 w-24 bg-[#0a0e27] dark:bg-[#050710]">
-                            <div className="flex items-center justify-center gap-4">
-                                <span className="text-sm font-bold text-white">#</span>
+                        <TableHead className="sticky right-0 z-30 p-2 text-center border-l border-white/20 w-24 bg-gradient-to-r from-orange-600 to-orange-500 dark:from-orange-700 dark:to-orange-600">
+                            <div className="flex items-center justify-center gap-3">
+                                <span className="text-xs font-bold text-white">#</span>
                                 <Checkbox 
                                     onCheckedChange={handleSelectAll} 
                                     checked={isAllSelected} 
                                     indeterminate={isIndeterminate} 
                                     aria-label="Select all rows" 
-                                    className='border-white data-[state=checked]:bg-white data-[state=checked]:text-orange-500' 
+                                    className='border-white/80 data-[state=checked]:bg-white data-[state=checked]:text-orange-600 data-[state=checked]:border-white' 
                                 />
                             </div>
                         </TableHead>
@@ -505,9 +528,9 @@ export const OrdersTableView = ({
                             return (
                                 <TableHead 
                                     key={col.key} 
-                                    className="p-2 text-center border-l border-white/30 bg-[#1a1a2e] dark:bg-[#0a0e27] text-white hover:bg-[#0f0f1e] dark:hover:bg-[#050710] transition-colors font-semibold text-sm"
+                                    className="p-2 text-center border-l border-white/15 bg-transparent text-white hover:bg-white/10 transition-colors font-semibold text-xs"
                                     style={{ 
-                                        minWidth: '200px', 
+                                        minWidth: '180px', 
                                         cursor: col.sortable ? 'pointer' : 'default',
                                         pointerEvents: 'auto',
                                         position: 'relative',
@@ -525,20 +548,20 @@ export const OrdersTableView = ({
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                             }}
-                                            className="text-white hover:bg-white/20 hover:text-white w-full p-0 h-auto font-bold cursor-pointer flex items-center justify-center gap-2"
+                                            className="text-white/95 hover:text-white w-full p-1 h-auto font-bold cursor-pointer flex items-center justify-center gap-1.5 rounded hover:bg-white/10 transition-all"
                                             style={{ 
                                                 pointerEvents: 'auto', 
                                                 userSelect: 'none',
                                                 position: 'relative',
                                                 zIndex: 10,
-                                                minHeight: '20px'
+                                                minHeight: '24px'
                                             }}
                                         >
                                             <span>{col.label}</span>
-                                            <ArrowUpDown className="h-3 w-3 text-white/90" />
+                                            <ArrowUpDown className="h-3 w-3 text-orange-400" />
                                         </div>
                                     ) : (
-                                        <span className='text-white font-bold'>{col.label}</span>
+                                        <span className='text-white/95 font-bold'>{col.label}</span>
                                     )}
                                 </TableHead>
                             );
@@ -610,11 +633,11 @@ export const OrdersTableView = ({
                     
                     {/* سطر المجاميع - ثابت في الأسفل: position: sticky; bottom: 0; */}
                     {footerTotals && !groupedOrders && (
-                        <TableRow className="sticky bottom-0 z-[99] bg-gray-100 dark:bg-slate-800 border-t-2 border-gray-400 dark:border-slate-600">
+                        <TableRow className="sticky bottom-0 z-[99] bg-gradient-to-r from-orange-100 via-orange-50 to-orange-100 dark:from-slate-800 dark:via-slate-800/90 dark:to-slate-800 border-t-2 border-orange-300 dark:border-orange-800 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
                             <TableCell 
-                                className="sticky right-0 z-[100] p-2 text-center border-l-[rgb(243,244,246)] dark:border-l-[rgb(30,41,59)] bg-gray-100 dark:bg-slate-800 border-t-2 border-gray-400 dark:border-slate-600"
+                                className="sticky right-0 z-[100] p-2 text-center bg-gradient-to-r from-orange-200 to-orange-100 dark:from-slate-700 dark:to-slate-800 border-l border-orange-200 dark:border-slate-600"
                             >
-                                {/* عمود التحديد - فارغ */}
+                                <span className="text-xs font-bold text-orange-700 dark:text-orange-400">المجموع</span>
                             </TableCell>
                             {visibleColumns.map((col) => {
                                 if (!footerTotals) return null;
@@ -644,12 +667,17 @@ export const OrdersTableView = ({
                                     default:
                                         totalValue = '';
                                 }
+                                const isFinancialCol = ['itemPrice', 'deliveryFee', 'additionalCost', 'driverFee', 'driverAdditionalFare', 'companyDue', 'cod'].includes(col.key);
                                 return (
                                     <TableCell 
                                         key={col.key} 
-                                        className="p-2 text-center border-l-[rgb(243,244,246)] dark:border-l-[rgb(30,41,59)] border-t-2 border-gray-400 dark:border-slate-600 text-sm font-bold bg-gray-100 dark:bg-slate-800"
+                                        className="p-2 text-center border-l border-orange-200/50 dark:border-slate-600/50 text-sm font-bold bg-transparent"
                                     >
-                                        {totalValue}
+                                        {totalValue && isFinancialCol ? (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-orange-600 text-white text-xs font-bold shadow-sm">
+                                                {totalValue}
+                                            </span>
+                                        ) : totalValue}
                                     </TableCell>
                                 );
                             })}

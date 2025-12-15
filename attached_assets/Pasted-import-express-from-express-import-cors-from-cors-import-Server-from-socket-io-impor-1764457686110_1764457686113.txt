@@ -1,0 +1,198 @@
+import express from 'express';
+import cors from 'cors';
+import { Server } from 'socket.io';
+import { createServer } from 'http';
+import pool from './db.js';
+
+const app = express();
+const server = createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*' }
+});
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// ==================== Routes ====================
+
+// 1. احصائيات Dashboard
+app.get('/api/dashboard/stats', async (req, res) => {
+  try {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [ordersToday, activeDrivers, revenueToday, pendingOrders] = await Promise.all([
+      pool.query('SELECT COUNT(*) FROM orders WHERE created_at >= $1', [todayStart]),
+      pool.query('SELECT COUNT(*) FROM drivers WHERE is_online = true'),
+      pool.query('SELECT COALESCE(SUM(delivery_fee), 0) as total FROM orders WHERE created_at >= $1 AND payment_status = $2', [todayStart, 'paid']),
+      pool.query('SELECT COUNT(*) FROM orders WHERE status = $1', ['pending'])
+    ]);
+
+    res.json({
+      ordersToday: parseInt(ordersToday.rows[0].count),
+      activeDrivers: parseInt(activeDrivers.rows[0].count),
+      revenueToday: parseFloat(revenueToday.rows[0].total),
+      pendingOrders: parseInt(pendingOrders.rows[0].count)
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 2. قائمة الطلبات
+app.get('/api/orders', async (req, res) => {
+  try {
+    const { status, merchant_id, driver_id, limit = 20, offset = 0 } = req.query;
+    
+    let query = 'SELECT o.*, m.business_name, u.full_name as driver_name FROM orders o LEFT JOIN merchants m ON o.merchant_id = m.id LEFT JOIN drivers d ON o.driver_id = d.id LEFT JOIN users u ON d.user_id = u.id WHERE 1=1';
+    const params = [];
+    let paramCount = 1;
+
+    if (status) {
+      query += ` AND o.status = $${paramCount++}`;
+      params.push(status);
+    }
+    if (merchant_id) {
+      query += ` AND o.merchant_id = $${paramCount++}`;
+      params.push(merchant_id);
+    }
+    if (driver_id) {
+      query += ` AND o.driver_id = $${paramCount++}`;
+      params.push(driver_id);
+    }
+
+    query += ` ORDER BY o.created_at DESC LIMIT $${paramCount++} OFFSET $${paramCount}`;
+    params.push(limit, offset);
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 3. إنشاء طلب جديد
+app.post('/api/orders', async (req, res) => {
+  try {
+    const {
+      merchant_id, customer_name, customer_phone,
+      pickup_address, pickup_latitude, pickup_longitude,
+      delivery_address, delivery_latitude, delivery_longitude,
+      package_description, delivery_fee
+    } = req.body;
+
+    // توليد رقم طلب فريد
+    const order_number = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    const result = await pool.query(
+      `INSERT INTO orders (
+        order_number, merchant_id, customer_name, customer_phone,
+        pickup_address, pickup_latitude, pickup_longitude,
+        delivery_address, delivery_latitude, delivery_longitude,
+        package_description, delivery_fee, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      RETURNING *`,
+      [order_number, merchant_id, customer_name, customer_phone,
+       pickup_address, pickup_latitude, pickup_longitude,
+       delivery_address, delivery_latitude, delivery_longitude,
+       package_description, delivery_fee, 'pending']
+    );
+
+    // إرسال إشعار real-time
+    io.emit('new_order', result.rows[0]);
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 4. تحديث حالة الطلب
+app.patch('/api/orders/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, driver_id } = req.body;
+
+    const updateFields = ['status = $1', 'updated_at = CURRENT_TIMESTAMP'];
+    const params = [status];
+    let paramCount = 2;
+
+    if (status === 'assigned' && driver_id) {
+      updateFields.push(`driver_id = $${paramCount++}`);
+      updateFields.push(`assigned_at = CURRENT_TIMESTAMP`);
+      params.push(driver_id);
+    } else if (status === 'picked_up') {
+      updateFields.push(`picked_up_at = CURRENT_TIMESTAMP`);
+    } else if (status === 'delivered') {
+      updateFields.push(`delivered_at = CURRENT_TIMESTAMP`);
+    }
+
+    params.push(id);
+    const result = await pool.query(
+      `UPDATE orders SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`,
+      params
+    );
+
+    // بث التحديث للعملاء المتصلين
+    io.emit('order_updated', result.rows[0]);
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 5. السائقين المتاحين
+app.get('/api/drivers/available', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT d.*, u.full_name, u.phone, u.avatar_url 
+       FROM drivers d 
+       JOIN users u ON d.user_id = u.id 
+       WHERE d.is_online = true 
+       ORDER BY d.rating DESC`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== Socket.IO (Real-time) ====================
+
+io.on('connection', (socket) => {
+  console.log('✅ Client connected:', socket.id);
+
+  // السائق يرسل موقعه
+  socket.on('driver_location', async (data) => {
+    const { driver_id, order_id, latitude, longitude } = data;
+
+    // تحديث موقع السائق
+    await pool.query(
+      'UPDATE drivers SET current_latitude = $1, current_longitude = $2 WHERE id = $3',
+      [latitude, longitude, driver_id]
+    );
+
+    // حفظ في order_tracking
+    if (order_id) {
+      await pool.query(
+        'INSERT INTO order_tracking (order_id, driver_latitude, driver_longitude, status) VALUES ($1, $2, $3, $4)',
+        [order_id, latitude, longitude, 'in_transit']
+      );
+    }
+
+    // بث الموقع للعملاء المتابعين
+    io.emit(`order_tracking_${order_id}`, { latitude, longitude });
+  });
+
+  socket.on('disconnect', () => {
+    console.log('❌ Client disconnected:', socket.id);
+  });
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});

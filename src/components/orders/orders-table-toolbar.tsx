@@ -98,60 +98,73 @@ export const OrdersTableToolbar = ({
 }: OrdersTableToolbarProps) => {
 
     return (
-        <div className="flex-none flex-col space-y-4 bg-gray-50 dark:bg-slate-900 p-5 rounded-lg border border-gray-300 dark:border-slate-700 shadow-sm">
-            {/* Header Actions */}
-            <div className="flex-none flex-row items-center justify-between flex flex-wrap gap-4" style={{ backgroundColor: 'rgba(255, 255, 255, 1)' }}>
-                <AdvancedSearch
-                    filters={filters}
-                    onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
-                    onRemoveFilter={(index) => setFilters(prev => prev.filter((_, i) => i !== index))}
-                    onGlobalSearchChange={setGlobalSearch}
-                    globalSearchTerm={globalSearch}
-                    searchableFields={searchableFields}
-                />
-                <div className="flex items-center gap-2">
-                    <Switch
-                        id="edit-mode"
-                        checked={isEditMode}
-                        onCheckedChange={setIsEditMode}
-                        className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-300"
+        <div className="flex-none flex-col space-y-2 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 px-4 py-3 border-b border-slate-200 dark:border-slate-800 shadow-sm">
+            {/* شريط البحث والفلاتر */}
+            <div className="flex flex-row items-center justify-between gap-4 flex-wrap">
+                <div className="flex-1 min-w-[300px] max-w-2xl">
+                    <AdvancedSearch
+                        filters={filters}
+                        onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
+                        onRemoveFilter={(index) => setFilters(prev => prev.filter((_, i) => i !== index))}
+                        onGlobalSearchChange={setGlobalSearch}
+                        globalSearchTerm={globalSearch}
+                        searchableFields={searchableFields}
                     />
-                    <Separator orientation="vertical" className="h-6" />
+                </div>
+                
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* وضع التحرير */}
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800">
+                        <Switch
+                            id="edit-mode"
+                            checked={isEditMode}
+                            onCheckedChange={setIsEditMode}
+                            className="data-[state=checked]:bg-orange-500 data-[state=unchecked]:bg-slate-400"
+                        />
+                        <label htmlFor="edit-mode" className="text-xs font-medium text-slate-600 dark:text-slate-400 cursor-pointer">
+                            تحرير
+                        </label>
+                    </div>
 
-                    {/* Group By Dropdown */}
+                    {/* التجميع حسب */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="gap-1">
-                                <ListTree className="h-4 w-4" />
-                                <span>التجميع حسب</span>
-                                {groupBy && <Badge variant="secondary" className='mr-1'>{GROUP_BY_OPTIONS.find(o => o.value === groupBy)?.label}</Badge>}
+                            <Button variant="outline" size="sm" className="gap-1.5 h-8 border-slate-300 hover:bg-orange-50 hover:border-orange-300 dark:border-slate-600 dark:hover:bg-orange-900/20">
+                                <ListTree className="h-3.5 w-3.5 text-orange-600" />
+                                <span className="text-xs">تجميع</span>
+                                {groupBy && <Badge variant="secondary" className='mr-1 bg-orange-100 text-orange-700 text-xs px-1.5'>{GROUP_BY_OPTIONS.find(o => o.value === groupBy)?.label}</Badge>}
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>اختر حقل للتجميع</DropdownMenuLabel>
+                        <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuLabel className="text-xs text-slate-500">اختر حقل للتجميع</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             {GROUP_BY_OPTIONS.map(option => (
-                                <DropdownMenuCheckboxItem key={option.label} checked={groupBy === option.value} onSelect={() => setGroupBy(option.value)}>
+                                <DropdownMenuCheckboxItem 
+                                    key={option.label} 
+                                    checked={groupBy === option.value} 
+                                    onSelect={() => setGroupBy(option.value)}
+                                    className="text-sm"
+                                >
                                     {option.label}
                                 </DropdownMenuCheckboxItem>
                             ))}
                         </DropdownMenuContent>
                     </DropdownMenu>
 
-                    {/* Columns Dropdown */}
+                    {/* الأعمدة */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="gap-1">
-                                <ListOrdered className="h-4 w-4" />
-                                <span>الأعمدة</span>
+                            <Button variant="outline" size="sm" className="gap-1.5 h-8 border-slate-300 hover:bg-slate-100 dark:border-slate-600">
+                                <ListOrdered className="h-3.5 w-3.5" />
+                                <span className="text-xs">الأعمدة</span>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-64 p-2 max-h-[400px] flex flex-col">
-                            <DropdownMenuLabel>إظهار/إخفاء الأعمدة</DropdownMenuLabel>
+                            <DropdownMenuLabel className="text-xs">إظهار/إخفاء الأعمدة</DropdownMenuLabel>
                             <div className='flex items-center gap-2 p-1'>
-                                <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(ALL_COLUMNS.map(c => c.key))}>إظهار الكل</Button>
+                                <Button variant="link" size="sm" className='h-auto p-1 text-xs text-orange-600' onClick={() => setVisibleColumnKeys(ALL_COLUMNS.map(c => c.key))}>إظهار الكل</Button>
                                 <Separator orientation="vertical" className="h-4" />
-                                <Button variant="link" size="sm" className='h-auto p-1' onClick={() => setVisibleColumnKeys(['id', 'recipient', 'status'])}>إخفاء الكل</Button>
+                                <Button variant="link" size="sm" className='h-auto p-1 text-xs text-slate-500' onClick={() => setVisibleColumnKeys(['id', 'recipient', 'status'])}>إخفاء الكل</Button>
                             </div>
                             <DropdownMenuSeparator />
                             <div className="flex-1 min-h-0 overflow-auto">
@@ -172,46 +185,61 @@ export const OrdersTableToolbar = ({
                         </DropdownMenuContent>
                     </DropdownMenu>
 
-                    <Separator orientation="vertical" className="h-6" />
-
-                    <Button variant="outline" size="icon" onClick={handleRefresh}>
-                        <RefreshCw className="h-4 w-4" />
+                    <Button variant="outline" size="icon" onClick={handleRefresh} className="h-8 w-8 border-slate-300 hover:bg-slate-100">
+                        <RefreshCw className="h-3.5 w-3.5" />
                     </Button>
 
-                    <Button onClick={() => window.open('/dashboard/add-order', '_blank')}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> إضافة طلب
+                    <Button 
+                        onClick={() => window.open('/dashboard/add-order', '_blank')}
+                        className="h-8 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all"
+                        size="sm"
+                    >
+                        <PlusCircle className="ml-1.5 h-3.5 w-3.5" /> إضافة طلب
                     </Button>
                 </div>
             </div>
 
-            {/* Bulk Actions Bar - سطر ثاني مكمل للشريط */}
-            <div className="flex items-center gap-3 p-4 dark:bg-orange-900/20 shadow-sm overflow-x-auto" style={{ backgroundColor: 'rgba(255, 255, 255, 1)', borderRadius: '0px', borderTopLeftRadius: '0px', borderTopRightRadius: '0px', borderBottomRightRadius: '0px', borderBottomLeftRadius: '0px' }}>
+            {/* شريط الإجراءات الجماعية */}
+            <div className="flex items-center gap-2 py-2 px-3 bg-white dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-800 overflow-x-auto">
+                {/* التحديد */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-1">
-                            {isIndeterminate ? <div className="h-2 w-2 rounded-sm bg-primary" /> : <div className={`h-4 w-4 border rounded-sm ${isAllSelected ? 'bg-primary border-primary' : 'border-slate-400'}`} />}
-                            <span>تحديد</span>
+                        <Button variant="ghost" size="sm" className="gap-1.5 h-7 hover:bg-slate-100">
+                            {isIndeterminate ? (
+                                <div className="h-3 w-3 rounded bg-orange-500" />
+                            ) : (
+                                <div className={`h-3.5 w-3.5 border-2 rounded ${isAllSelected ? 'bg-orange-500 border-orange-500' : 'border-slate-400'}`} />
+                            )}
+                            <span className="text-xs">تحديد</span>
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                        <DropdownMenuItem onSelect={() => handleSelectAll(true)}>تحديد الكل</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleSelectAll(false)}>إلغاء التحديد</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleSelectAll(true)} className="text-sm">تحديد الكل</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleSelectAll(false)} className="text-sm">إلغاء التحديد</DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
 
-                <Separator orientation="vertical" className="h-6" />
-                <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">{selectedRows.length} محدد</span>
-                <Separator orientation="vertical" className="h-6" />
+                {/* عدد المحدد */}
+                {selectedRows.length > 0 && (
+                    <>
+                        <Separator orientation="vertical" className="h-5" />
+                        <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 px-2 py-0.5 text-xs font-semibold">
+                            {selectedRows.length} محدد
+                        </Badge>
+                        <Separator orientation="vertical" className="h-5" />
+                    </>
+                )}
 
+                {/* أزرار الإجراءات */}
                 <div className="flex items-center gap-1">
                     <Button 
                         variant="ghost" 
                         size="sm" 
                         onClick={() => setShowDeleteConfirmDialog(true)} 
                         disabled={selectedRows.length === 0}
-                        className="text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-40"
                     >
-                        <Trash2 className="h-4 w-4 mr-1" /> حذف
+                        <Trash2 className="h-3.5 w-3.5 ml-1" /> حذف
                     </Button>
                     <Button 
                         variant="ghost" 
@@ -219,69 +247,79 @@ export const OrdersTableToolbar = ({
                         onClick={() => setShowAssignDriverDialog(true)}
                         disabled={selectedRows.length === 0 || !canAssignDriverToSelected}
                         title={!canAssignDriverToSelected ? 'يمكن تعيين السائق فقط للطلبات بحالة "بالانتظار" أو "تم استلام المال في الفرع"' : ''}
-                        className="hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="h-7 text-xs text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 disabled:opacity-40"
                     >
-                        <Truck className="h-4 w-4 mr-1" /> تعيين سائق
+                        <Truck className="h-3.5 w-3.5 ml-1" /> سائق
                     </Button>
                     <Button 
                         variant="ghost" 
                         size="sm" 
                         onClick={() => setShowAssignMerchantDialog(true)}
                         disabled={selectedRows.length === 0}
-                        className="hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="h-7 text-xs text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20 disabled:opacity-40"
                     >
-                        <Store className="h-4 w-4 mr-1" /> تعيين تاجر
+                        <Store className="h-3.5 w-3.5 ml-1" /> تاجر
                     </Button>
                     <Button 
                         variant="ghost" 
                         size="sm" 
                         onClick={() => setShowChangeStatusDialog(true)}
                         disabled={selectedRows.length === 0}
-                        className="hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="h-7 text-xs text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20 disabled:opacity-40"
                     >
-                        <ArrowRightLeft className="h-4 w-4 mr-1" /> تغيير الحالة
+                        <ArrowRightLeft className="h-3.5 w-3.5 ml-1" /> حالة
                     </Button>
+                    
+                    <Separator orientation="vertical" className="h-5 mx-1" />
+                    
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" disabled={selectedRows.length === 0} className="disabled:opacity-50 disabled:cursor-not-allowed">
-                                <Printer className="h-4 w-4 mr-1" /> طباعة
+                            <Button variant="ghost" size="sm" disabled={selectedRows.length === 0} className="h-7 text-xs disabled:opacity-40">
+                                <Printer className="h-3.5 w-3.5 ml-1" /> طباعة
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => setModalState({ type: 'print' })} disabled={selectedRows.length === 0}>
-                                <FileDown className="ml-2 h-4 w-4" /> طباعة بوالص (PDF)
+                            <DropdownMenuItem onClick={() => setModalState({ type: 'print' })} className="text-sm">
+                                <FileDown className="ml-2 h-4 w-4" /> PDF بوالص
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setShowModernPolicyV2Dialog(true)} disabled={selectedRows.length === 0}>
-                                <Printer className="ml-2 h-4 w-4" /> طباعة بوالص (ملونة)
+                            <DropdownMenuItem onClick={() => setShowModernPolicyV2Dialog(true)} className="text-sm">
+                                <Printer className="ml-2 h-4 w-4" /> بوالص ملونة
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setShowThermalLabelOptDialog(true)} disabled={selectedRows.length === 0}>
-                                <Printer className="ml-2 h-4 w-4" /> طباعة حرارية (XP-301)
+                            <DropdownMenuItem onClick={() => setShowThermalLabelOptDialog(true)} className="text-sm">
+                                <Printer className="ml-2 h-4 w-4" /> طباعة حرارية
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
+                    
                     <Button 
                         variant="ghost" 
                         size="sm" 
                         onClick={() => setModalState({ type: 'export' })}
                         disabled={selectedRows.length === 0}
-                        className="disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="h-7 text-xs disabled:opacity-40"
                     >
-                        <FileSpreadsheet className="h-4 w-4 mr-1" /> تصدير
+                        <FileSpreadsheet className="h-3.5 w-3.5 ml-1" /> تصدير
                     </Button>
                     <Button 
                         variant="ghost" 
                         size="sm" 
                         onClick={handleExportExcel}
                         disabled={selectedRows.length === 0}
-                        className="disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="h-7 text-xs text-green-600 hover:bg-green-50 dark:text-green-400 disabled:opacity-40"
                     >
-                        <FileDown className="h-4 w-4 mr-1" /> Excel
+                        <FileDown className="h-3.5 w-3.5 ml-1" /> Excel
                     </Button>
                 </div>
 
+                {/* زر توسيع/طي المجموعات */}
                 {groupedOrders && (
-                    <Button variant="ghost" size="sm" onClick={toggleAllGroups} className="mr-auto">
-                        {areAllGroupsOpen ? 'طي المجموعات' : 'توسيع المجموعات'}
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={toggleAllGroups} 
+                        className="mr-auto h-7 text-xs border-slate-300"
+                    >
+                        {areAllGroupsOpen ? 'طي الكل' : 'توسيع الكل'}
                     </Button>
                 )}
             </div>

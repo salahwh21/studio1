@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 // Card removed - no cards needed for better space utilization
 import { Skeleton } from '@/components/ui/skeleton';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
 import { AppHeader } from '@/components/header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -298,75 +299,75 @@ const OrdersTableComponent = () => {
                             ordersCount={orders.length}
                 />
 
-                {/* Pagination - بدون بطاقة - استغلال كامل للمساحة */}
+                {/* Pagination - شريط الترقيم المحسن */}
                 {!groupBy && (
-                    <div className="flex-none flex items-center justify-center gap-0 py-2 pl-[52px] pr-[52px] border-t border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900" style={{ backgroundColor: 'rgba(255, 255, 255, 1)', borderRadius: '0px', borderTopLeftRadius: '0px', borderTopRightRadius: '0px', borderBottomRightRadius: '0px', borderBottomLeftRadius: '0px' }}>
-                        <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-                            <div className="flex items-center gap-2">
-                                <p className="text-sm font-medium">صفوف الصفحة:</p>
-                                <Select
-                                    value={`${rowsPerPage}`}
-                                    onValueChange={(value) => {
-                                        setRowsPerPage(Number(value));
-                                        setPage(0);
-                                    }}
-                                >
-                                    <SelectTrigger className="h-[33px] w-[87px]" style={{ marginLeft: '17px', marginRight: '17px', justifyContent: 'center' }}>
-                                        <SelectValue placeholder={rowsPerPage} />
-                                    </SelectTrigger>
-                                    <SelectContent side="top">
-                                        {[100, 250, 500].map((pageSize) => (
-                                            <SelectItem key={pageSize} value={`${pageSize}`}>
-                                                {pageSize}
-                                            </SelectItem>
-                                        ))}
-                                        <SelectItem value={`${totalCount}`}>
-                                            الكل
+                    <div className="flex-none flex items-center justify-center gap-4 py-3 px-6 border-t border-slate-200 dark:border-slate-800 bg-gradient-to-r from-slate-50 via-white to-slate-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900">
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">صفوف:</span>
+                            <Select
+                                value={`${rowsPerPage}`}
+                                onValueChange={(value) => {
+                                    setRowsPerPage(Number(value));
+                                    setPage(0);
+                                }}
+                            >
+                                <SelectTrigger className="h-8 w-[80px] border-slate-300 dark:border-slate-700 text-sm">
+                                    <SelectValue placeholder={rowsPerPage} />
+                                </SelectTrigger>
+                                <SelectContent side="top">
+                                    {[100, 250, 500].map((pageSize) => (
+                                        <SelectItem key={pageSize} value={`${pageSize}`} className="text-sm">
+                                            {pageSize}
                                         </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="text-sm font-medium">
+                                    ))}
+                                    <SelectItem value={`${totalCount}`} className="text-sm">
+                                        الكل ({totalCount})
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        
+                        <Separator orientation="vertical" className="h-5" />
+                        
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
+                            <span className="text-xs font-semibold text-orange-700 dark:text-orange-400">
                                 صفحة {page + 1} من {totalPages}
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <Button
-                                    variant="outline"
-                                    className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary transition-all duration-200"
-                                    onClick={() => setPage(0)}
-                                    disabled={page === 0}
-                                >
-                                    <span className="sr-only">Go to first page</span>
-                                    <ChevronsRight className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary transition-all duration-200"
-                                    onClick={() => setPage(page - 1)}
-                                    disabled={page === 0}
-                                >
-                                    <span className="sr-only">Go to previous page</span>
-                                    <ChevronLeft className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary transition-all duration-200"
-                                    onClick={() => setPage(page + 1)}
-                                    disabled={page >= totalPages - 1}
-                                >
-                                    <span className="sr-only">Go to next page</span>
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary transition-all duration-200"
-                                    onClick={() => setPage(totalPages - 1)}
-                                    disabled={page >= totalPages - 1}
-                                >
-                                    <span className="sr-only">Go to last page</span>
-                                    <ChevronsLeft className="h-4 w-4" />
-                                </Button>
-                            </div>
+                            </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-1">
+                            <Button
+                                variant="outline"
+                                className="h-8 w-8 p-0 border-slate-300 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-all"
+                                onClick={() => setPage(0)}
+                                disabled={page === 0}
+                            >
+                                <ChevronsRight className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="h-8 w-8 p-0 border-slate-300 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-all"
+                                onClick={() => setPage(page - 1)}
+                                disabled={page === 0}
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="h-8 w-8 p-0 border-slate-300 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-all"
+                                onClick={() => setPage(page + 1)}
+                                disabled={page >= totalPages - 1}
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="h-8 w-8 p-0 border-slate-300 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-all"
+                                onClick={() => setPage(totalPages - 1)}
+                                disabled={page >= totalPages - 1}
+                            >
+                                <ChevronsLeft className="h-4 w-4" />
+                            </Button>
                         </div>
                     </div>
                 )}
