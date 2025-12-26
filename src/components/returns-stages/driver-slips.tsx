@@ -16,11 +16,12 @@ import { updateOrderAction } from '@/app/actions/update-order';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DateRangePicker } from '@/components/date-range-picker';
 import type { DateRange } from 'react-day-picker';
+import { generatePdf, downloadPdf } from '@/services/pdf-service';
 
 
 export const DriverSlips = () => {
     const { toast } = useToast();
-    const { settings, formatCurrency } = useSettings();
+    const { settings, formatCurrency, formatDate } = useSettings();
     const { driverReturnSlips, removeOrderFromDriverReturnSlip } = useReturnsStore();
     const [isPending, startTransition] = useTransition();
 
@@ -60,13 +61,7 @@ export const DriverSlips = () => {
         });
     }
 
-    const handlePrintAction = (slip: DriverReturnSlip) => {
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-            toast({ variant: "destructive", title: "فشل الطباعة", description: "يرجى السماح بفتح النوافذ المنبثقة." });
-            return;
-        }
-
+    const handlePrintAction = async (slip: DriverReturnSlip) => {
         const tableHeader = `
             <tr>
                 <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">#</th>
@@ -87,15 +82,17 @@ export const DriverSlips = () => {
             </tr>
         `).join('');
 
-        const slipDate = new Date(slip.date).toLocaleDateString('ar-EG');
+        const slipDate = formatDate(slip.date);
         const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
 
-        const content = `
-            <html>
+        const html = `
+            <!DOCTYPE html>
+            <html dir="rtl" lang="ar">
                 <head>
+                    <meta charset="UTF-8">
                     <title>كشف استلام: ${slip.id}</title>
                     <style>
-                        body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                        body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; }
                         table { width: 100%; border-collapse: collapse; }
                         th, td { padding: 8px; border: 1px solid #ddd; text-align: right; }
                         th { background-color: #f2f2f2; }
@@ -125,10 +122,14 @@ export const DriverSlips = () => {
             </html>
         `;
 
-        printWindow.document.write(content);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
+        try {
+            const blob = await generatePdf(html, { filename: `driver-slip-${slip.id}.pdf` });
+            downloadPdf(blob, `driver-slip-${slip.id}.pdf`);
+            toast({ title: "تم التصدير", description: `تم تصدير كشف ${slip.id} بنجاح` });
+        } catch (error) {
+            console.error('PDF generation error:', error);
+            toast({ variant: "destructive", title: "فشل التصدير", description: "حدث خطأ أثناء إنشاء ملف PDF" });
+        }
     };
 
     return (
@@ -177,7 +178,7 @@ export const DriverSlips = () => {
                                         </Link>
                                     </TableCell>
                                     <TableCell className="border-l">{slip.driverName}</TableCell>
-                                    <TableCell className="border-l">{new Date(slip.date).toLocaleDateString('ar-EG')}</TableCell>
+                                    <TableCell className="border-l">{formatDate(slip.date)}</TableCell>
                                     <TableCell className="border-l">{slip.itemCount}</TableCell>
                                     <TableCell className="border-l">
                                         <Badge className="bg-blue-100 text-blue-800">مستلم بالفرع</Badge>

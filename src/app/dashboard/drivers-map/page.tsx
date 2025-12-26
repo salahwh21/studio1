@@ -28,6 +28,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 
 import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore, type Order } from '@/store/orders-store';
+import { useSettings } from '@/contexts/SettingsContext';
 import { useStatusesStore } from '@/store/statuses-store';
 import { cn } from '@/lib/utils';
 
@@ -57,6 +58,7 @@ export default function DriversMapPage() {
   const { users } = useUsersStore();
   const { orders } = useOrdersStore();
   const { statuses } = useStatusesStore();
+  const { settings, formatCurrency } = useSettings();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
@@ -169,7 +171,7 @@ export default function DriversMapPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 grid-cols-1 md:grid-cols-4">
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-r-4 border-r-blue-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -183,7 +185,7 @@ export default function DriversMapPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-r-4 border-r-green-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -197,7 +199,7 @@ export default function DriversMapPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-orange-500">
+        <Card className="border-r-4 border-r-orange-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -211,12 +213,12 @@ export default function DriversMapPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-purple-500">
+        <Card className="border-r-4 border-r-purple-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">إجمالي التحصيل</p>
-                <p className="text-2xl font-bold mt-1" dir="ltr">{stats.totalCOD.toFixed(2)} <span className="text-sm">د.أ</span></p>
+                <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalCOD)}</p>
               </div>
               <div className="p-3 bg-purple-100 rounded-full dark:bg-purple-950">
                 <DollarSign className="h-6 w-6 text-purple-600 dark:text-purple-400" />
@@ -276,7 +278,7 @@ export default function DriversMapPage() {
             </div>
           </div>
 
-          <Tabs defaultValue="all" className="flex-1 flex flex-col">
+          <Tabs defaultValue="all" dir="rtl" className="flex-1 flex flex-col">
             <TabsList className="mx-4 mt-3 flex-shrink-0">
               <TabsTrigger value="all" className="text-sm">
                 الكل <Badge variant="secondary" className="mr-1 text-xs">{filteredDrivers.length}</Badge>
@@ -306,6 +308,7 @@ export default function DriversMapPage() {
                         isSelected={selectedDriverId === driver.id}
                         onSelect={() => setSelectedDriverId(driver.id)}
                         onOrderSelect={handleOrderSelect}
+                        formatCurrency={formatCurrency}
                       />
                     ))
                   )}
@@ -324,6 +327,7 @@ export default function DriversMapPage() {
                       isSelected={selectedDriverId === driver.id}
                       onSelect={() => setSelectedDriverId(driver.id)}
                       onOrderSelect={handleOrderSelect}
+                      formatCurrency={formatCurrency}
                     />
                   ))}
                 </div>
@@ -341,6 +345,7 @@ export default function DriversMapPage() {
                       isSelected={selectedDriverId === driver.id}
                       onSelect={() => setSelectedDriverId(driver.id)}
                       onOrderSelect={handleOrderSelect}
+                      formatCurrency={formatCurrency}
                     />
                   ))}
                 </div>
@@ -381,9 +386,10 @@ interface DriverCardProps {
   isSelected: boolean;
   onSelect: () => void;
   onOrderSelect: (order: Order) => void;
+  formatCurrency: (amount: number | undefined | null) => string;
 }
 
-function DriverCard({ driver, driverOrders, isSelected, onSelect, onOrderSelect }: DriverCardProps) {
+function DriverCard({ driver, driverOrders, isSelected, onSelect, onOrderSelect, formatCurrency }: DriverCardProps) {
   const outForDeliveryOrders = driverOrders.filter(o => o.status === 'جاري التوصيل');
   const totalCOD = outForDeliveryOrders.reduce((sum, order) => sum + order.cod, 0);
 
@@ -434,16 +440,16 @@ function DriverCard({ driver, driverOrders, isSelected, onSelect, onOrderSelect 
         <div className="mt-2 p-3 bg-muted/50 rounded-md space-y-3">
           <div className="grid grid-cols-3 gap-2">
             <div className="p-2 bg-background rounded text-center">
-              <p className="font-bold text-base" dir="ltr">{driverOrders.length}</p>
+              <p className="font-bold text-base">{driverOrders.length}</p>
               <p className="text-muted-foreground text-xs">الإجمالي</p>
             </div>
             <div className="p-2 bg-background rounded text-center">
-              <p className="font-bold text-base text-green-600" dir="ltr">{outForDeliveryOrders.length}</p>
+              <p className="font-bold text-base text-green-600">{outForDeliveryOrders.length}</p>
               <p className="text-muted-foreground text-xs">قيد التوصيل</p>
             </div>
             <div className="p-2 bg-background rounded text-center">
-              <p className="font-bold text-base text-purple-600" dir="ltr">{totalCOD.toFixed(2)}</p>
-              <p className="text-muted-foreground text-xs">د.أ</p>
+              <p className="font-bold text-base text-purple-600">{formatCurrency(totalCOD)}</p>
+              <p className="text-muted-foreground text-xs">المبلغ</p>
             </div>
           </div>
 
@@ -474,7 +480,7 @@ function DriverCard({ driver, driverOrders, isSelected, onSelect, onOrderSelect 
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                      <p className="font-bold text-sm" dir="ltr">{order.cod.toFixed(2)} د.أ</p>
+                      <p className="font-bold text-sm">{formatCurrency(order.cod)}</p>
                       <Button size="sm" variant="ghost" className="h-6 px-2 text-xs">
                         <Phone className="h-3 w-3" />
                         اتصال

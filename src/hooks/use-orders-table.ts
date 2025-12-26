@@ -27,7 +27,30 @@ export const useOrdersTable = () => {
     const [sortConfig, setSortConfig] = useState<OrderSortConfig | null>(null);
     const [filters, setFilters] = useState<FilterDefinition[]>([]);
     const [globalSearch, setGlobalSearch] = useState('');
-    const [groupBy, setGroupBy] = useState<GroupByOption>(null);
+    const [groupByLevels, setGroupByLevels] = useState<GroupByOption[]>([]);
+    const [dateGroupBy, setDateGroupBy] = useState<'day' | 'week' | 'month' | 'year' | null>(null);
+
+    // Helper functions for backward compatibility
+    const groupBy = groupByLevels[0] || null;
+    const setGroupBy = (option: GroupByOption) => {
+        if (option === null) {
+            setGroupByLevels([]);
+        } else {
+            setGroupByLevels([option]);
+        }
+    };
+    
+    // إضافة مستوى تجميع جديد
+    const addGroupByLevel = (option: GroupByOption) => {
+        if (option && !groupByLevels.includes(option)) {
+            setGroupByLevels(prev => [...prev, option]);
+        }
+    };
+    
+    // إزالة مستوى تجميع
+    const removeGroupByLevel = (index: number) => {
+        setGroupByLevels(prev => prev.filter((_, i) => i !== index));
+    };
 
     // Selection State
     const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -40,6 +63,10 @@ export const useOrdersTable = () => {
     const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
 
     const searchableFields = useMemo(() => {
+        // جلب أسماء المدن والمناطق (بدون تكرار)
+        const cityNames = [...new Set(cities.map(c => c.name))];
+        const regionNames = [...new Set(cities.flatMap(c => (c.regions || c.areas || []).map(r => r.name)))];
+        
         return SEARCHABLE_FIELDS.map(field => {
             if (field.key === 'merchant') {
                 return { ...field, options: merchants.map(m => m.storeName || m.name) };
@@ -50,9 +77,15 @@ export const useOrdersTable = () => {
             if (field.key === 'driver') {
                 return { ...field, options: drivers.map(d => d.name) };
             }
+            if (field.key === 'city') {
+                return { ...field, options: cityNames };
+            }
+            if (field.key === 'region') {
+                return { ...field, options: regionNames };
+            }
             return field;
         });
-    }, [merchants, statuses, drivers]);
+    }, [merchants, statuses, drivers, cities]);
 
     // Sync with store - only update loading state
     useEffect(() => {
@@ -60,9 +93,6 @@ export const useOrdersTable = () => {
     }, [storeLoading]);
 
     // Use useMemo for filtered orders instead of useState to prevent unnecessary re-renders
-    // Use a ref to store the last filtered result to prevent unnecessary updates
-    const lastFilteredRef = useRef<string>('');
-    
     const filteredOrders = useMemo(() => {
         if (storeLoading) return [];
         
@@ -82,12 +112,30 @@ export const useOrdersTable = () => {
         }
 
         // Apply custom filters
-        filters.forEach(filter => {
+        // تجميع الفلاتر حسب الحقل - الفلاتر من نفس الحقل تعمل بـ OR
+        const filtersByField = filters.reduce((acc, filter) => {
+            const field = filter.field;
+            if (!acc[field]) acc[field] = [];
+            acc[field].push(filter);
+            return acc;
+        }, {} as Record<string, typeof filters>);
+
+        // تطبيق الفلاتر: بين الحقول المختلفة AND، داخل نفس الحقل OR
+        Object.values(filtersByField).forEach(fieldFilters => {
             filtered = filtered.filter(order => {
-                const value = order[filter.field as keyof Order];
-                if (filter.operator === 'equals') return value === filter.value;
-                if (filter.operator === 'contains') return String(value).includes(String(filter.value));
-                return true;
+                // إذا أي فلتر من نفس الحقل يطابق، نُبقي السجل (OR)
+                return fieldFilters.some(filter => {
+                    // فلتر البحث الشامل - يبحث في كل الحقول
+                    if (filter.field === '_global') {
+                        return Object.values(order).some(val =>
+                            String(val).toLowerCase().includes(String(filter.value).toLowerCase())
+                        );
+                    }
+                    const value = order[filter.field as keyof Order];
+                    if (filter.operator === 'equals') return value === filter.value;
+                    if (filter.operator === 'contains') return String(value).toLowerCase().includes(String(filter.value).toLowerCase());
+                    return true;
+                });
             });
         });
 
@@ -118,6 +166,15 @@ export const useOrdersTable = () => {
                         : bValue - aValue;
                 }
 
+                // Handle id field - extract numbers for proper numeric sorting
+                if (sortConfig.key === 'id') {
+                    const aNum = parseInt(String(aValue).replace(/\D/g, ''), 10) || 0;
+                    const bNum = parseInt(String(bValue).replace(/\D/g, ''), 10) || 0;
+                    return sortConfig.direction === 'ascending'
+                        ? aNum - bNum
+                        : bNum - aNum;
+                }
+
                 // Handle strings (including dates)
                 const aStr = String(aValue).toLowerCase();
                 const bStr = String(bValue).toLowerCase();
@@ -133,27 +190,25 @@ export const useOrdersTable = () => {
         return filtered;
     }, [storeOrders, storeLoading, filters, sortConfig, searchParams, globalSearch]);
 
-    // Update orders and totalCount when filteredOrders change, but only if actually different
-    // Track both content (sorted IDs) and order (unsorted IDs + sortConfig) to detect all changes
+    // Update orders and totalCount when filteredOrders change
+    // Remove hash check - update immediately for any change
     useEffect(() => {
-        const contentHash = JSON.stringify(filteredOrders.map(o => o.id).sort());
-        const orderHash = JSON.stringify(filteredOrders.map(o => o.id));
-        const sortHash = sortConfig ? `${sortConfig.key}:${sortConfig.direction}` : 'none';
-        const combinedHash = `${contentHash}|${orderHash}|${sortHash}`;
-        
-        if (lastFilteredRef.current !== combinedHash) {
-            lastFilteredRef.current = combinedHash;
-            setOrders([...filteredOrders]); // Create new array to trigger re-render
-            setTotalCount(filteredOrders.length);
-        }
+        setOrders([...filteredOrders]); // Create new array to trigger re-render
+        setTotalCount(filteredOrders.length);
     }, [filteredOrders, sortConfig]);
 
     const fetchData = useCallback(() => {
-        // This is now just a manual refresh function
-        // The actual filtering is done in useMemo above
-        setOrders(filteredOrders);
+        // Manual refresh - force re-sync with store
+        setOrders([...filteredOrders]);
         setTotalCount(filteredOrders.length);
-    }, [filteredOrders]);
+        
+        // Show toast to confirm refresh
+        toast({ 
+            title: 'تم التحديث', 
+            description: `تم تحديث ${filteredOrders.length} طلب`,
+            duration: 2000
+        });
+    }, [filteredOrders, toast]);
 
     // Debounced effect for search and filters - removed to avoid double calls
     // Filters are now handled in the main useEffect above
@@ -189,16 +244,86 @@ export const useOrdersTable = () => {
     const isAllSelected = orders.length > 0 && selectedRows.length === orders.length;
     const isIndeterminate = selectedRows.length > 0 && selectedRows.length < orders.length;
 
-    // Grouping Logic
+    // Grouping Logic - دعم مستويات لا نهائية
     const groupedOrders = useMemo(() => {
-        if (!groupBy) return null;
-        return orders.reduce((acc, order) => {
-            const key = String(order[groupBy] || 'غير محدد');
-            if (!acc[key]) acc[key] = [];
-            acc[key].push(order);
-            return acc;
-        }, {} as Record<string, Order[]>);
-    }, [orders, groupBy]);
+        if (groupByLevels.length === 0) return null;
+        
+        // Helper function to get date group key
+        const getDateGroupKey = (dateStr: string) => {
+            if (!dateStr || !dateGroupBy) return dateStr || 'غير محدد';
+            
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime())) return dateStr;
+                
+                switch (dateGroupBy) {
+                    case 'day':
+                        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                    case 'week': {
+                        const startOfWeek = new Date(date);
+                        startOfWeek.setDate(date.getDate() - date.getDay());
+                        const endOfWeek = new Date(startOfWeek);
+                        endOfWeek.setDate(startOfWeek.getDate() + 6);
+                        return `Week ${startOfWeek.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} - ${endOfWeek.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+                    }
+                    case 'month':
+                        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+                    case 'year':
+                        return date.toLocaleDateString('en-US', { year: 'numeric' });
+                    default:
+                        return dateStr;
+                }
+            } catch {
+                return dateStr || 'غير محدد';
+            }
+        };
+
+        // Helper to get group key for any field
+        const getGroupKey = (order: Order, field: GroupByOption): string => {
+            if (!field) return 'غير محدد';
+            if (field === 'date' && dateGroupBy) {
+                return getDateGroupKey(String(order.date || ''));
+            }
+            return String(order[field] || 'غير محدد');
+        };
+        
+        // Recursive function to create nested groups
+        type NestedGroup = {
+            orders: Order[];
+            subGroups?: Record<string, NestedGroup>;
+        };
+        
+        const createNestedGroups = (ordersList: Order[], levelIndex: number): Record<string, NestedGroup> | Record<string, Order[]> => {
+            const currentField = groupByLevels[levelIndex];
+            if (!currentField) return {};
+            
+            // Group by current level
+            const grouped = ordersList.reduce((acc, order) => {
+                const key = getGroupKey(order, currentField);
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(order);
+                return acc;
+            }, {} as Record<string, Order[]>);
+            
+            // If this is the last level, return simple structure
+            if (levelIndex === groupByLevels.length - 1) {
+                return grouped;
+            }
+            
+            // Otherwise, create nested structure
+            const nestedResult: Record<string, NestedGroup> = {};
+            Object.entries(grouped).forEach(([key, groupOrders]) => {
+                nestedResult[key] = {
+                    orders: groupOrders,
+                    subGroups: createNestedGroups(groupOrders, levelIndex + 1) as Record<string, NestedGroup>
+                };
+            });
+            
+            return nestedResult;
+        };
+        
+        return createNestedGroups(orders, 0);
+    }, [orders, groupByLevels, dateGroupBy]);
 
     const areAllGroupsOpen = useMemo(() => {
         return groupedOrders && Object.keys(groupedOrders).length > 0 && Object.keys(groupedOrders).every(k => openGroups[k]);
@@ -322,6 +447,12 @@ export const useOrdersTable = () => {
         setGlobalSearch,
         groupBy,
         setGroupBy,
+        groupByLevels,
+        setGroupByLevels,
+        addGroupByLevel,
+        removeGroupByLevel,
+        dateGroupBy,
+        setDateGroupBy,
         groupedOrders,
         openGroups,
         setOpenGroups,

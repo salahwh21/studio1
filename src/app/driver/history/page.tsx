@@ -19,7 +19,7 @@ import {
 export default function DriverHistoryPage() {
   const { user } = useAuth();
   const { orders } = useOrdersStore();
-  const { formatCurrency } = useSettings();
+  const { formatCurrency, formatDate } = useSettings();
   const [period, setPeriod] = useState('week');
 
   // طلبات السائق
@@ -219,12 +219,7 @@ export default function DriverHistoryPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-lg">
-                    {new Date(date).toLocaleDateString('ar-JO', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
+                    {formatDate(date, { longFormat: true })}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
                     {delivered} من {total} طلب • {formatCurrency(cash)}

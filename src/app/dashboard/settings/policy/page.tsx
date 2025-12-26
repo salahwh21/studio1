@@ -1,736 +1,411 @@
 'use client';
 
-import React, { useState, useRef, useMemo, useCallback, useEffect, forwardRef } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
-import {
-    AlignCenter,
-    AlignLeft,
-    AlignRight,
-    Copy,
+import { 
+    ArrowLeft, 
+    FileText, 
+    Palette, 
+    Tag, 
+    Settings, 
+    Eye, 
+    Printer, 
     Download,
-    Image as ImageIcon,
-    MoreVertical,
-    PlusCircle,
-    Save,
-    ScanBarcode,
-    Shapes,
-    Type,
-    Upload,
-    ZoomIn,
-    ZoomOut,
-    Palette,
-    Bold,
-    Italic,
-    Underline,
-    AlignVerticalSpaceAround,
-    Printer as PrinterIcon,
-    LayoutGrid,
-    Trash,
-    ChevronsUp,
-    ChevronUp,
-    ChevronDown,
-    ChevronsDown,
-    ArrowLeft,
-    MousePointer,
-    RefreshCcw,
+    Sliders,
+    Zap,
+    Wand2
 } from 'lucide-react';
-import { nanoid } from 'nanoid';
-import { Rnd } from 'react-rnd';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
-import { useSettings, type PolicySettings, type PolicyElement, type SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
-import { Separator } from '@/components/ui/separator';
-import { SettingsHeader } from '@/components/settings-header';
-import { PrintablePolicy } from '@/components/printable-policy';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { useOrdersStore } from '@/store/orders-store';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import Icon from '@/components/icon';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { useSettings } from '@/contexts/SettingsContext';
+import { useToast } from '@/hooks/use-toast';
 
+// Import the existing policy components
+import { PrintablePolicy } from '@/components/printable-policy';
+import { ModernPolicyV2 } from '@/components/modern-policy-v2';
+import { ThermalLabelOptimized } from '@/components/thermal-label-optimized';
+import { SimplePolicyEditor } from '@/components/policy-editor/SimplePolicyEditor';
 
-// --- Constants & Helpers ---
+type PolicyType = 'standard' | 'colored' | 'thermal' | 'simple';
 
-const GRID_SIZE = 5;
-const SNAP_THRESHOLD = 6;
-const snapToGrid = (value: number) => Math.round(value / GRID_SIZE) * GRID_SIZE;
-const mmToPx = (mm: number) => (mm / 25.4) * 96;
-
-const paperSizes: Record<string, { width: number; height: number }> = {
-    a4: { width: 210, height: 297 },
-    a5: { width: 148, height: 210 },
-    a6: { width: 105, height: 148 },
-    '4x6': { width: 101.6, height: 152.4 },
-};
-
-const toolboxItems = [
-    { type: 'text', label: 'نص', icon: Type, content: 'نص', defaultWidth: 150, defaultHeight: 30 },
-    { type: 'barcode', label: 'باركود', icon: ScanBarcode, content: '{{orderId}}', defaultWidth: 150, defaultHeight: 50 },
-    { type: 'image', label: 'صورة/شعار', icon: ImageIcon, content: '{{company_logo}}', defaultWidth: 100, defaultHeight: 50 },
-    { type: 'shape', label: 'شكل', icon: Shapes, content: 'مربع', defaultWidth: 100, defaultHeight: 100 },
-];
-
-const dataFields = [
-    { value: '{{recipient}}', label: 'اسم المستلم' },
-    { value: '{{phone}}', label: 'هاتف المستلم' },
-    { value: '{{address}}', label: 'العنوان الكامل' },
-    { value: '{{city}}', label: 'المدينة' },
-    { value: '{{region}}', label: 'المنطقة' },
-    { value: '{{cod}}', label: 'قيمة التحصيل' },
-    { value: '{{merchant}}', label: 'اسم التاجر' },
-    { value: '{{date}}', label: 'التاريخ' },
-    { value: '{{orderId}}', label: 'رقم الطلب' },
-    { value: '{{referenceNumber}}', label: 'الرقم المرجعي' },
-    { value: '{{driver}}', label: 'اسم السائق' },
-    { value: '{{source}}', label: 'مصدر الطلب' },
-    { value: '{{items}}', label: 'المنتجات' },
-    { value: '{{notes}}', label: 'الملاحظات' },
-    { value: '{{company_logo}}', label: 'شعار الشركة' },
-];
-
-// --- Sub-components ---
-
-const PolicyElementComponent = forwardRef(({ element }: { element: PolicyElement }, ref: React.Ref<HTMLDivElement>) => {
-    const renderContent = () => {
-        switch (element.type) {
-            case 'text':
-                return <div className="p-1 w-full h-full" style={{ fontFamily: 'inherit', fontSize: `${element.fontSize}px`, fontWeight: element.fontWeight as any, color: element.color, textAlign: element.textAlign as any, fontStyle: element.fontStyle as any, textDecoration: element.textDecoration as any }}>{element.content}</div>;
-            case 'barcode':
-                return <div className="p-1 w-full h-full flex flex-col items-center justify-center text-xs"> <ScanBarcode className="w-10 h-10" /> <p className='mt-1'>باركود: {element.content}</p> </div>;
-            case 'image':
-                if (element.content) {
-                    return <img src={element.content} alt="logo" className="w-full h-full object-contain" />;
-                }
-                return <ImageIcon className="w-full h-full text-muted-foreground p-2" />;
-            case 'shape':
-                return <div className="w-full h-full" style={{ backgroundColor: element.backgroundColor, opacity: element.opacity }} />;
-            default: return null;
-        }
-    };
-
-    return (
-        <div
-            ref={ref}
-            className="w-full h-full"
-            style={{ borderColor: element.borderColor, borderWidth: `${element.borderWidth}px`, borderRadius: `${element.borderRadius}px` }}
-        >
-            {renderContent()}
-        </div>
-    );
-});
-PolicyElementComponent.displayName = 'PolicyElementComponent';
-
-
-const PropertiesPanel = ({ element, onUpdate }: {
-    element: PolicyElement | null;
-    onUpdate: (id: string, updates: Partial<PolicyElement>) => void;
-}) => {
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0] && element) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = () => {
-                onUpdate(element.id, { content: reader.result as string });
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    return (
-        <Card>
-            <CardHeader><CardTitle className='text-base'>خصائص العنصر</CardTitle></CardHeader>
-            <CardContent>
-                {!element ? (
-                    <div className="text-center text-muted-foreground py-10">
-                        <Icon name="MousePointer" className="mx-auto h-8 w-8 mb-2" />
-                        <p>حدد عنصرًا لتعديل خصائصه</p>
-                    </div>
-                ) : (
-                    <ScrollArea className="h-96 pr-3">
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-2">
-                                <div><Label>العرض (px)</Label><Input type="number" value={element.width} onChange={e => onUpdate(element.id, { width: +e.target.value })} /></div>
-                                <div><Label>الارتفاع (px)</Label><Input type="number" value={element.height} onChange={e => onUpdate(element.id, { height: +e.target.value })} /></div>
-                            </div>
-                            {element.type === 'text' && (
-                                <>
-                                    <div><Label>المحتوى</Label><Input value={element.content} onChange={e => onUpdate(element.id, { content: e.target.value })} /></div>
-                                    <div>
-                                        <Label>ربط ببيانات</Label>
-                                        <Select onValueChange={value => onUpdate(element.id, { content: value })}>
-                                            <SelectTrigger><SelectValue placeholder="اختر حقل بيانات..." /></SelectTrigger>
-                                            <SelectContent>{dataFields.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div><Label>حجم الخط (px)</Label><Input type="number" value={element.fontSize} onChange={e => onUpdate(element.id, { fontSize: +e.target.value })} /></div>
-                                    <div><Label>اللون</Label><Input type="color" value={element.color} onChange={e => onUpdate(element.id, { color: e.target.value })} className="w-full h-10" /></div>
-                                    <div className='flex items-center gap-1'>
-                                        <Label>المحاذاة والنمط</Label>
-                                        <Button variant={element.fontWeight === 'bold' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { fontWeight: element.fontWeight === 'bold' ? 'normal' : 'bold' })}><Bold /></Button>
-                                        <Button variant={element.fontStyle === 'italic' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { fontStyle: element.fontStyle === 'italic' ? 'normal' : 'italic' })}><Italic /></Button>
-                                        <Button variant={element.textAlign === 'left' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { textAlign: 'left' })}><AlignLeft /></Button>
-                                        <Button variant={element.textAlign === 'center' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { textAlign: 'center' })}><AlignCenter /></Button>
-                                        <Button variant={element.textAlign === 'right' ? 'secondary' : 'outline'} size="icon" onClick={() => onUpdate(element.id, { textAlign: 'right' })}><AlignRight /></Button>
-                                    </div>
-                                </>
-                            )}
-                            {element.type === 'barcode' && (
-                                <div>
-                                    <Label>ربط الباركود بـ</Label>
-                                    <Select value={element.content} onValueChange={value => onUpdate(element.id, { content: value })}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>{dataFields.filter(f => f.value.includes('Id') || f.value.includes('phone')).map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
-                                    </Select>
-                                </div>
-                            )}
-                            {element.type === 'image' && (
-                                <div>
-                                    <Label>رفع صورة</Label>
-                                    <Input type="file" accept="image/*" onChange={handleImageUpload} />
-                                </div>
-                            )}
-                            {element.type === 'shape' && (
-                                <>
-                                    <div><Label>لون الخلفية</Label><Input type="color" value={element.backgroundColor} onChange={e => onUpdate(element.id, { backgroundColor: e.target.value })} className="w-full h-10" /></div>
-                                    <div><Label>الشفافية</Label><Slider value={[element.opacity || 1]} onValueChange={v => onUpdate(element.id, { opacity: v[0] })} max={1} step={0.1} /></div>
-                                </>
-                            )}
-                            <div>
-                                <Label>الإطار</Label>
-                                <div className="flex gap-2">
-                                    <Input type="number" value={element.borderWidth} onChange={e => onUpdate(element.id, { borderWidth: +e.target.value })} placeholder="السماكة" />
-                                    <Input type="color" value={element.borderColor} onChange={e => onUpdate(element.id, { borderColor: e.target.value })} />
-                                </div>
-                            </div>
-                            <div><Label>استدارة الحواف (px)</Label><Input type="number" value={element.borderRadius} onChange={e => onUpdate(element.id, { borderRadius: +e.target.value })} /></div>
-                        </div>
-                    </ScrollArea>
-                )}
-            </CardContent>
-        </Card>
-    );
-};
-
-const PageSettingsPanel = ({ paperSize, customDimensions, margins, onPaperSizeChange, onDimensionChange, onMarginChange }: {
-    paperSize: PolicySettings['paperSize'];
-    customDimensions: PolicySettings['customDimensions'];
-    margins: PolicySettings['margins'];
-    onPaperSizeChange: (size: PolicySettings['paperSize']) => void;
-    onDimensionChange: (dim: 'width' | 'height', value: number) => void;
-    onMarginChange: (margin: 'top' | 'right' | 'bottom' | 'left', value: number) => void;
-}) => (
-    <Card>
-        <CardHeader><CardTitle className='text-base'>إعدادات الصفحة</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-            <div>
-                <Label htmlFor="paper-size">مقاس الورق</Label>
-                <Select value={paperSize} onValueChange={(val) => onPaperSizeChange(val as PolicySettings['paperSize'])}>
-                    <SelectTrigger id="paper-size"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                        {Object.keys(paperSizes).map(size => <SelectItem key={size} value={size}>{size.toUpperCase()}</SelectItem>)}
-                        <SelectItem value="custom">مخصص</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            {paperSize === 'custom' && (
-                <div className="grid grid-cols-2 gap-2">
-                    <div><Label>العرض (mm)</Label><Input type="number" value={customDimensions.width} onChange={e => onDimensionChange('width', +e.target.value)} /></div>
-                    <div><Label>الارتفاع (mm)</Label><Input type="number" value={customDimensions.height} onChange={e => onDimensionChange('height', +e.target.value)} /></div>
-                </div>
-            )}
-            <div>
-                <Label>الهوامش (mm)</Label>
-                <div className="grid grid-cols-2 gap-2">
-                    <div><Label className='text-xs'>الأعلى</Label><Input type="number" value={margins.top} onChange={e => onMarginChange('top', +e.target.value)} /></div>
-                    <div><Label className='text-xs'>الأسفل</Label><Input type="number" value={margins.bottom} onChange={e => onMarginChange('bottom', +e.target.value)} /></div>
-                    <div><Label className='text-xs'>اليمين</Label><Input type="number" value={margins.right} onChange={e => onMarginChange('right', +e.target.value)} /></div>
-                    <div><Label className='text-xs'>اليسار</Label><Input type="number" value={margins.left} onChange={e => onMarginChange('left', +e.target.value)} /></div>
-                </div>
-            </div>
-        </CardContent>
-    </Card>
-);
-
-// --- Main Page Component ---
-export default function PolicyEditorPage() {
-    const { toast } = useToast();
+export default function PolicySettingsPage() {
     const { orders } = useOrdersStore();
-    const context = useSettings();
+    const { settings } = useSettings();
+    const { toast } = useToast();
+    
+    const [selectedPolicy, setSelectedPolicy] = useState<PolicyType | null>(null);
+    const [isEditorOpen, setIsEditorOpen] = useState(false);
+    
+    // Refs for policy components to access their methods
+    const printablePolicyRef = useRef<{ handleExport: () => Promise<void>; handleDirectPrint: (order: any, type: 'zpl' | 'escpos') => Promise<void> }>(null);
+    const modernPolicyRef = useRef<{ handlePrint: () => void; handleExportPDF: () => Promise<void> }>(null);
+    const thermalLabelRef = useRef<{ handlePrint: () => void; handleExportPDF: () => Promise<void> }>(null);
 
-    const { settings: policySettings, isHydrated, updatePolicySetting } = context;
+    const sampleOrders = orders.length > 0 ? orders.slice(0, 3) : [{
+        id: '12345',
+        orderNumber: 12345,
+        recipient: 'أحمد محمد علي',
+        phone: '0501234567',
+        address: 'شارع الملك فهد، حي النزهة، مبنى رقم 123، الطابق الثاني',
+        city: 'الرياض',
+        region: 'منطقة الرياض',
+        cod: 150,
+        merchant: 'متجر الإلكترونيات الحديثة',
+        date: new Date().toISOString().split('T')[0],
+        notes: 'يرجى التسليم في المساء بعد الساعة 6',
+        source: 'Manual' as const,
+        referenceNumber: 'REF-001',
+        whatsapp: '',
+        status: 'Pending',
+        previousStatus: '',
+        driver: 'سائق التوصيل',
+        itemPrice: 145,
+        deliveryFee: 5,
+        additionalCost: 0,
+        driverFee: 10,
+        driverAdditionalFare: 0,
+    }];
 
-    const [elements, setElements] = useState<PolicyElement[]>([]);
-    const [paperSize, setPaperSize] = useState<PolicySettings['paperSize']>('custom');
-    const [customDimensions, setCustomDimensions] = useState({ width: 100, height: 150 });
-    const [margins, setMargins] = useState({ top: 2, right: 2, bottom: 2, left: 2 });
-    const [zoomLevel, setZoomLevel] = useState(0.8);
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
-    const canvasRef = useRef<HTMLDivElement>(null);
-
-    const [templates, setTemplates] = useState<SavedTemplate[]>([]);
-
-    const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
-    const [templateName, setTemplateName] = useState('');
-    const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
-    const [templateToDelete, setTemplateToDelete] = useState<SavedTemplate | null>(null);
-    const [isPrintSampleDialogOpen, setIsPrintSampleDialogOpen] = useState(false);
-    const printablePolicyRef = useRef<{ handleExport: () => void; handleDirectPrint: (order: any, type: 'zpl' | 'escpos') => Promise<void> }>(null);
-
-    const loadTemplatesFromStorage = useCallback(() => {
-        const savedTemplatesJson = localStorage.getItem('policyTemplates');
-        const userTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
-
-        // Check if localStorage has been initialized
-        const isInitialized = localStorage.getItem('policyTemplatesInitialized');
-
-        if (!isInitialized && userTemplates.length === 0) {
-            // First time load: initialize with ready-made templates
-            localStorage.setItem('policyTemplates', JSON.stringify(readyTemplates));
-            setTemplates(readyTemplates);
-            localStorage.setItem('policyTemplatesInitialized', 'true');
-        } else {
-            setTemplates(userTemplates);
+    const policyTypes = [
+        {
+            id: 'simple' as PolicyType,
+            title: 'المحرر البسيط',
+            description: 'محرر سهل وسريع للبوالص والملصقات الحرارية بالقياسات الصحيحة',
+            icon: Wand2,
+            color: 'emerald',
+            gradient: 'from-emerald-500 to-green-600',
+            bgGradient: 'from-emerald-50 to-green-50',
+            borderColor: 'border-emerald-500',
+            features: ['القياسات الصحيحة المستخدمة', 'محرر بسيط وسريع', '100×150، 100×100، 75×50، 60×40، 50×30', 'تصدير وطباعة مباشرة']
+        },
+        {
+            id: 'standard' as PolicyType,
+            title: 'البوالص القياسية',
+            description: 'بوليصة شحن تقليدية بتصميم بسيط وواضح مع شعار الشركة',
+            icon: FileText,
+            color: 'blue',
+            gradient: 'from-blue-500 to-blue-600',
+            bgGradient: 'from-blue-50 to-indigo-50',
+            borderColor: 'border-blue-500',
+            features: ['تصميم كلاسيكي', 'شعار الشركة تلقائياً', 'مناسب لجميع الطابعات', 'تصدير PDF + طباعة مباشرة']
+        },
+        {
+            id: 'colored' as PolicyType,
+            title: 'البوالص الملونة',
+            description: 'بوليصة حديثة بألوان جذابة وتصميم عصري مع معاينة مباشرة',
+            icon: Palette,
+            color: 'purple',
+            gradient: 'from-purple-500 to-pink-600',
+            bgGradient: 'from-purple-50 to-pink-50',
+            borderColor: 'border-purple-500',
+            features: ['تصميم ملون حديث', 'تخصيص الألوان', 'معاينة مباشرة', 'جذاب بصرياً']
+        },
+        {
+            id: 'thermal' as PolicyType,
+            title: 'الملصقات الحرارية',
+            description: 'ملصقات محسّنة للطابعات الحرارية بأحجام متعددة ومعاينة فورية',
+            icon: Tag,
+            color: 'orange',
+            gradient: 'from-orange-500 to-red-600',
+            bgGradient: 'from-orange-50 to-red-50',
+            borderColor: 'border-orange-500',
+            features: ['محسن للطابعات الحرارية', '5 أحجام مختلفة', 'طباعة سريعة', 'معاينة فورية']
         }
-    }, []);
+    ];
 
-    // Load templates from localStorage on mount and listen for changes
-    useEffect(() => {
-        loadTemplatesFromStorage();
-    }, [loadTemplatesFromStorage]);
-
-
-    const paperDimensions = useMemo(() => {
-        if (paperSize === 'custom') return { width: mmToPx(customDimensions.width), height: mmToPx(customDimensions.height) };
-        const size = paperSizes[paperSize];
-        if (!size) return { width: mmToPx(100), height: mmToPx(150) }; // Fallback
-        return { width: mmToPx(size.width), height: mmToPx(size.height) };
-    }, [paperSize, customDimensions]);
-
-    const canvasBounds = useMemo(() => {
-        return {
-            left: mmToPx(margins.left),
-            top: mmToPx(margins.top),
-            right: paperDimensions.width - mmToPx(margins.right),
-            bottom: paperDimensions.height - mmToPx(margins.bottom),
-        };
-    }, [margins, paperDimensions]);
-
-    // Keyboard movement handler
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (selectedIds.length === 0) return;
-
-            const isArrowKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
-            if (!isArrowKey) return;
-
-            e.preventDefault();
-
-            const moveAmount = e.shiftKey ? GRID_SIZE : 1;
-            let dx = 0;
-            let dy = 0;
-
-            if (e.key === 'ArrowLeft') dx = -moveAmount;
-            if (e.key === 'ArrowRight') dx = moveAmount;
-            if (e.key === 'ArrowUp') dy = -moveAmount;
-            if (e.key === 'ArrowDown') dy = moveAmount;
-
-            setElements(prevElements =>
-                prevElements.map(el => {
-                    if (selectedIds.includes(el.id)) {
-                        const newX = el.x + dx;
-                        const newY = el.y + dy;
-                        return { ...el, x: newX, y: newY };
-                    }
-                    return el;
-                })
-            );
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [selectedIds]);
-
-
-    // ----------- Element Management -----------
-    const addElement = useCallback((tool: typeof toolboxItems[0]) => {
-        if (!canvasRef.current) return;
-        const centerX = paperDimensions.width / 2;
-        const centerY = paperDimensions.height / 2;
-
-        let newElement: PolicyElement = {
-            id: nanoid(),
-            type: tool.type as any,
-            x: snapToGrid(centerX - tool.defaultWidth / 2),
-            y: snapToGrid(centerY - tool.defaultHeight / 2),
-            width: tool.defaultWidth,
-            height: tool.defaultHeight,
-            content: tool.content,
-            zIndex: elements.length,
-            fontSize: 14,
-            fontWeight: 'normal',
-            fontStyle: 'normal',
-            textDecoration: 'none',
-            color: '#000000',
-            borderColor: '#000000',
-            borderWidth: 0,
-            opacity: 1,
-            backgroundColor: '#ffffff',
-            textAlign: 'right',
-            borderRadius: 0,
-        };
-
-        setElements(prev => [...prev, newElement]);
-        setSelectedIds([newElement.id]);
-    }, [elements.length, paperDimensions]);
-
-    const handleUpdateElement = (id: string, updates: Partial<PolicyElement>) => {
-        setElements(prev => prev.map(el => el.id === id ? { ...el, ...updates } : el));
+    const handleOpenEditor = (type: PolicyType) => {
+        setSelectedPolicy(type);
+        setIsEditorOpen(true);
     };
 
-    const handleDeleteElement = () => {
-        if (selectedIds.length > 0) {
-            setElements(p => p.filter(el => !selectedIds.includes(el.id)));
-            setSelectedIds([]);
-        }
-    };
-
-    const handleDuplicate = () => {
-        if (selectedIds.length === 0) return;
-        const newElements: PolicyElement[] = [];
-        const newSelectedIds: string[] = [];
-        elements.forEach(el => {
-            if (selectedIds.includes(el.id)) {
-                const newEl: PolicyElement = {
-                    ...el,
-                    id: nanoid(),
-                    x: snapToGrid(el.x + 20),
-                    y: snapToGrid(el.y + 20),
-                    zIndex: elements.length + newElements.length,
-                };
-                newElements.push(newEl);
-                newSelectedIds.push(newEl.id);
+    const handlePrint = async () => {
+        try {
+            switch (selectedPolicy) {
+                case 'standard':
+                    await printablePolicyRef.current?.handleExport();
+                    break;
+                case 'colored':
+                    await modernPolicyRef.current?.handlePrint();
+                    break;
+                case 'thermal':
+                    await thermalLabelRef.current?.handlePrint();
+                    break;
             }
-        });
-        setElements(prev => [...prev, ...newElements]);
-        setSelectedIds(newSelectedIds);
+            toast({ title: "تم إرسال للطباعة", description: "تم إرسال البوليصة للطابعة بنجاح" });
+        } catch (error) {
+            toast({ variant: 'destructive', title: "فشل الطباعة", description: "حدث خطأ أثناء الطباعة" });
+        }
     };
 
-    const handleLayering = (type: 'front' | 'back' | 'forward' | 'backward') => {
-        if (selectedIds.length !== 1) return;
-        const selectedId = selectedIds[0];
-        setElements(prev => {
-            const sorted = [...prev].sort((a, b) => a.zIndex - b.zIndex);
-            const index = sorted.findIndex(el => el.id === selectedId);
-            if (index === -1) return prev;
-            const [item] = sorted.splice(index, 1);
-            switch (type) {
-                case 'front': sorted.push(item); break;
-                case 'back': sorted.unshift(item); break;
-                case 'forward': sorted.splice(Math.min(index + 1, sorted.length), 0, item); break;
-                case 'backward': sorted.splice(Math.max(index - 1, 0), 0, item); break;
+    const handleExportPDF = async () => {
+        try {
+            switch (selectedPolicy) {
+                case 'standard':
+                    await printablePolicyRef.current?.handleExport();
+                    break;
+                case 'colored':
+                    await modernPolicyRef.current?.handleExportPDF();
+                    break;
+                case 'thermal':
+                    await thermalLabelRef.current?.handleExportPDF();
+                    break;
             }
-            return sorted.map((el, i) => ({ ...el, zIndex: i }));
-        });
-    };
-
-    const selectedElement = useMemo(() => elements.find(el => el.id === selectedIds[0]), [elements, selectedIds]);
-
-    const handleSelect = (id: string, e: React.MouseEvent<HTMLDivElement>) => {
-        e.stopPropagation();
-        if (e.metaKey || e.ctrlKey) {
-            setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-        } else {
-            setSelectedIds([id]);
+            toast({ title: "تم التصدير", description: "تم تصدير البوليصة كملف PDF بنجاح" });
+        } catch (error) {
+            toast({ variant: 'destructive', title: "فشل التصدير", description: "حدث خطأ أثناء تصدير PDF" });
         }
     };
 
-    // --- Template Management ---
-    const saveTemplatesToStorage = (newTemplates: SavedTemplate[]) => {
-        localStorage.setItem('policyTemplates', JSON.stringify(newTemplates));
-        setTemplates(newTemplates);
-    };
+    const renderPolicyEditor = () => {
+        if (!selectedPolicy || !isEditorOpen) return null;
 
-    const handleSaveTemplate = () => {
-        if (!templateName) {
-            toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء إدخال اسم للقالب.' });
-            return;
-        }
-
-        const templateData: Omit<SavedTemplate, 'id'> = {
-            name: templateName,
-            elements, paperSize, customDimensions, margins
+        const companyInfo = {
+            name: settings.login?.companyName || 'شركة التوصيل',
+            logo: settings.login?.reportsLogo || settings.login?.headerLogo
         };
 
-        if (editingTemplateId) {
-            const newTemplates = templates.map(t => t.id === editingTemplateId ? { ...templateData, id: editingTemplateId, isReadyMade: false } : t);
-            saveTemplatesToStorage(newTemplates);
-            toast({ title: "تم حفظ التعديل", description: `تم تحديث قالب "${templateName}" بنجاح.` });
-        } else {
-            const newTemplate: SavedTemplate = { ...templateData, id: nanoid() };
-            const newTemplates = [...templates, newTemplate];
-            saveTemplatesToStorage(newTemplates);
-            toast({ title: "تم إنشاء قالب جديد", description: `تم حفظ قالب "${templateName}" بنجاح.` });
+        switch (selectedPolicy) {
+            case 'simple':
+                return (
+                    <SimplePolicyEditor
+                        onClose={() => setIsEditorOpen(false)}
+                    />
+                );
+            case 'standard':
+                return (
+                    <PrintablePolicy 
+                        ref={printablePolicyRef}
+                        orders={sampleOrders} 
+                        template={null}
+                    />
+                );
+            case 'colored':
+                return (
+                    <ModernPolicyV2 
+                        ref={modernPolicyRef}
+                        orders={sampleOrders}
+                        hideControls={false}
+                    />
+                );
+            case 'thermal':
+                return (
+                    <ThermalLabelOptimized 
+                        ref={thermalLabelRef}
+                        orders={sampleOrders}
+                        hideControls={false}
+                    />
+                );
+            default:
+                return null;
         }
-
-        setIsSaveDialogOpen(false);
-        setTemplateName('');
-        setEditingTemplateId(null);
     };
 
-    const handleLoadTemplate = (template: SavedTemplate) => {
-        setElements(template.elements);
-        setPaperSize(template.paperSize);
-        setCustomDimensions(template.customDimensions);
-        setMargins(template.margins);
-        toast({ title: 'تم التحميل', description: `تم تحميل قالب "${template.name}".` });
-    };
-
-    const handleConfirmDelete = () => {
-        if (templateToDelete) {
-            const newTemplates = templates.filter(t => t.id !== templateToDelete.id);
-            saveTemplatesToStorage(newTemplates);
-            toast({ title: "تم الحذف", description: "تم حذف القالب." });
-            setTemplateToDelete(null);
-        }
-    };
-
-    const currentTemplate: SavedTemplate = useMemo(() => ({
-        id: 'current_design',
-        name: 'Current Design',
-        elements,
-        paperSize,
-        customDimensions,
-        margins,
-    }), [elements, paperSize, customDimensions, margins]);
-
-    const handleRestoreDefaults = () => {
-        saveTemplatesToStorage(readyTemplates);
-        toast({ title: "تمت الاستعادة", description: "تمت استعادة القوالب الافتراضية بنجاح." });
-    };
+    const selectedPolicyConfig = policyTypes.find(p => p.id === selectedPolicy);
 
     return (
         <div className="space-y-6">
-            <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{editingTemplateId ? 'حفظ التعديل' : 'حفظ كقالب جديد'}</DialogTitle>
-                        <DialogDescription>أدخل اسمًا مميزًا لهذا القالب.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Label htmlFor="templateName">اسم القالب</Label>
-                        <Input id="templateName" value={templateName} onChange={(e) => setTemplateName(e.target.value)} />
-                    </div>
-                    <DialogFooter>
-                        <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
-                        <Button onClick={handleSaveTemplate}>
-                            {editingTemplateId ? 'حفظ التعديل' : 'حفظ'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            <Dialog open={isPrintSampleDialogOpen} onOpenChange={setIsPrintSampleDialogOpen}>
-                <DialogContent className="max-w-4xl">
-                    <DialogHeader>
-                        <DialogTitle>معاينة الطباعة</DialogTitle>
-                        <DialogDescription>هذه معاينة لكيف ستبدو البوليصة عند الطباعة بالبيانات الفعلية.</DialogDescription>
-                    </DialogHeader>
-                    <div className="bg-muted p-4 rounded-md flex items-center justify-center">
-                        <PrintablePolicy ref={printablePolicyRef} orders={orders.length > 0 ? [orders[0]] : []} template={currentTemplate} />
-                    </div>
-                    <DialogFooter className="justify-start gap-2">
-                        <Button onClick={() => printablePolicyRef.current?.handleExport()}>
-                            <Save className="ml-2 h-4 w-4 inline" /> طباعة PDF
-                        </Button>
-                        <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(orders.length > 0 ? orders[0] : null, 'zpl')}>
-                            <PrinterIcon className="ml-2 h-4 w-4 inline" /> طباعة ZPL
-                        </Button>
-                        <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(orders.length > 0 ? orders[0] : null, 'escpos')}>
-                            <PrinterIcon className="ml-2 h-4 w-4 inline" /> طباعة ESC/POS
-                        </Button>
-                        <DialogClose asChild><Button variant="outline" className="mr-auto">إلغاء</Button></DialogClose>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            <AlertDialog open={!!templateToDelete} onOpenChange={() => setTemplateToDelete(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-                        <AlertDialogDescription>هل أنت متأكد من حذف قالب "{templateToDelete?.name}"؟</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">حذف</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <SettingsHeader
-                icon="FileText"
-                title="محرر البوليصة"
-                description="اسحب وأفلت العناصر لتصميم البوليصة. انقر على عنصر لتعديل خصائصه"
-                color="emerald"
-            />
-
+            {/* Header */}
             <Card>
-                <CardContent className="p-2">
-                    <div className="flex items-center flex-wrap gap-x-4 gap-y-2">
-                        <div className="flex items-center gap-2">
-                            <Label className="text-sm font-medium whitespace-nowrap">إضافة:</Label>
-                            {toolboxItems.map(tool => (
-                                <Button key={tool.label} variant="outline" size="sm" className="flex items-center gap-2 h-8" onClick={() => addElement(tool)}>
-                                    <tool.icon className="h-4 w-4 text-muted-foreground" />
-                                    <span>{tool.label}</span>
-                                </Button>
-                            ))}
+                <CardHeader className="flex flex-row items-start justify-between">
+                    <div>
+                        <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                            <Settings className="h-6 w-6 text-primary" />
+                            محرر البوالص المتقدم
+                        </CardTitle>
+                        <CardDescription>
+                            اختر نوع البوليصة وقم بتخصيصها مع معاينة مباشرة وشعار الشركة
+                        </CardDescription>
+                    </div>
+                    <Button variant="outline" size="icon" asChild>
+                        <Link href="/dashboard/settings">
+                            <ArrowLeft className="h-4 w-4" />
+                        </Link>
+                    </Button>
+                </CardHeader>
+            </Card>
+
+            {/* Company Info Display */}
+            <Card className="bg-gradient-to-r from-gray-50 to-gray-100 border-2">
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                                <Zap className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-900">معلومات الشركة المطبقة</h3>
+                                <p className="text-sm text-gray-600">
+                                    <span className="font-medium">الاسم:</span> {settings.login?.companyName || 'غير محدد'} | 
+                                    <span className="font-medium"> الشعار:</span> {settings.login?.reportsLogo || settings.login?.headerLogo ? 'موجود' : 'غير محدد'}
+                                </p>
+                            </div>
                         </div>
-
-                        <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
-
-                        <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))}><ZoomOut className="h-5 w-5" /></Button>
-                            <span className="text-sm font-semibold w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
-                            <Button variant="ghost" size="icon" onClick={() => setZoomLevel(z => Math.min(2, z + 0.1))}><ZoomIn className="h-5 w-5" /></Button>
-                        </div>
-
-                        <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
-
-                        <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => handleLayering('front')} disabled={selectedIds.length !== 1}><ChevronsUp /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleLayering('forward')} disabled={selectedIds.length !== 1}><ChevronUp /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleLayering('backward')} disabled={selectedIds.length !== 1}><ChevronDown /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleLayering('back')} disabled={selectedIds.length !== 1}><ChevronsDown /></Button>
-                        </div>
-
-                        <Separator orientation='vertical' className="h-6 hidden md:block mx-2" />
-
-                        <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="icon" onClick={handleDuplicate} disabled={selectedIds.length === 0}><Copy /></Button>
-                            <Button variant="ghost" size="icon" onClick={handleDeleteElement} disabled={selectedIds.length === 0}><Trash /></Button>
-                        </div>
-
-                        <div className="flex items-center gap-2 md:mr-auto">
-                            <Button variant="secondary" onClick={() => { setIsPrintSampleDialogOpen(true) }}> <PrinterIcon className="w-4 h-4 ml-1" /> معاينة وطباعة</Button>
-                        </div>
+                        <Button variant="outline" asChild>
+                            <Link href="/dashboard/settings/policy/test-pdfmake">
+                                اختبار pdfmake الجديد
+                            </Link>
+                        </Button>
                     </div>
                 </CardContent>
             </Card>
 
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <div className="lg:col-span-3 space-y-6 lg:sticky lg:top-24">
-                    <PropertiesPanel
-                        element={selectedElement || null}
-                        onUpdate={handleUpdateElement}
-                    />
-                    <PageSettingsPanel
-                        paperSize={paperSize}
-                        customDimensions={customDimensions}
-                        margins={margins}
-                        onPaperSizeChange={setPaperSize}
-                        onDimensionChange={(dim, val) => setCustomDimensions(prev => ({ ...prev, [dim]: val }))}
-                        onMarginChange={(margin, val) => setMargins(prev => ({ ...prev, [margin]: val }))}
-                    />
-                    <Card>
-                        <CardHeader><CardTitle className='text-base'>إدارة القوالب</CardTitle></CardHeader>
-                        <CardContent>
-                            <div className="flex items-center gap-2 mb-4">
-                                <Button className="flex-1" size="sm" onClick={() => { setEditingTemplateId(null); setTemplateName(''); setIsSaveDialogOpen(true); }}>
-                                    <PlusCircle className="w-4 h-4 ml-2" /> إنشاء قالب جديد
-                                </Button>
-                                <Button className="flex-1" size="sm" variant="secondary" onClick={() => { if (editingTemplateId) { setIsSaveDialogOpen(true) } }} disabled={!editingTemplateId}>
-                                    <Save className="w-4 h-4 ml-2" /> حفظ التعديل
-                                </Button>
-                            </div>
-                            <Separator />
-                            <ScrollArea className="h-48 mt-4">
-                                {templates.map(template => (
-                                    <div key={template.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                                        <Button variant="link" className="p-0 h-auto text-right" onClick={() => handleLoadTemplate(template)}>{template.name}</Button>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical /></Button></DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onSelect={() => { setEditingTemplateId(template.id); setTemplateName(template.name); handleLoadTemplate(template); }}>تعديل</DropdownMenuItem>
-                                                {!template.isReadyMade && <DropdownMenuItem onSelect={() => setTemplateToDelete(template)} className="text-destructive">حذف</DropdownMenuItem>}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+            {/* Policy Types Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {policyTypes.map((policy) => {
+                    const Icon = policy.icon;
+                    return (
+                        <Card 
+                            key={policy.id}
+                            className={cn(
+                                "group relative overflow-hidden border-2 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl",
+                                policy.borderColor,
+                                `bg-gradient-to-br ${policy.bgGradient}`,
+                                policy.id === 'simple' ? 'md:col-span-2' : ''
+                            )}
+                            onClick={() => handleOpenEditor(policy.id)}
+                        >
+                            <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                    <div className={cn(
+                                        "w-12 h-12 rounded-xl flex items-center justify-center shadow-lg",
+                                        `bg-gradient-to-br ${policy.gradient}`
+                                    )}>
+                                        <Icon className="h-6 w-6 text-white" />
                                     </div>
-                                ))}
-                            </ScrollArea>
-                            <Separator className="my-2" />
-                            <Button variant="outline" size="sm" className="w-full" onClick={handleRestoreDefaults}>
-                                <Icon name="RefreshCcw" className="w-4 h-4 ml-2" /> استعادة القوالب الافتراضية
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </div>
+                                    <div className="flex gap-2">
+                                        {policy.id === 'simple' && (
+                                            <Badge className="bg-gradient-to-r from-emerald-500 to-green-600 text-white text-xs">
+                                                الأفضل
+                                            </Badge>
+                                        )}
+                                        <Badge variant="secondary" className="text-xs">
+                                            محرر تفاعلي
+                                        </Badge>
+                                    </div>
+                                </div>
+                                <CardTitle className={cn(
+                                    "font-bold text-gray-900",
+                                    policy.id === 'simple' ? 'text-xl' : 'text-lg'
+                                )}>
+                                    {policy.title}
+                                </CardTitle>
+                                <CardDescription className={cn(
+                                    "text-gray-600",
+                                    policy.id === 'simple' ? 'text-base' : 'text-sm'
+                                )}>
+                                    {policy.description}
+                                </CardDescription>
+                            </CardHeader>
+                            
+                            <CardContent className="pt-0">
+                                <div className="space-y-3">
+                                    <div className={cn(
+                                        "space-y-2",
+                                        policy.id === 'simple' ? 'grid grid-cols-2 gap-2 space-y-0' : ''
+                                    )}>
+                                        {policy.features.map((feature, index) => (
+                                            <div key={index} className="flex items-center gap-2 text-xs text-gray-600">
+                                                <div className={cn(
+                                                    "w-1.5 h-1.5 rounded-full",
+                                                    `bg-gradient-to-r ${policy.gradient}`
+                                                )} />
+                                                {feature}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    
+                                    <Button 
+                                        className={cn(
+                                            "w-full gap-2 text-white shadow-lg transition-all duration-300 group-hover:shadow-xl",
+                                            `bg-gradient-to-r ${policy.gradient} hover:opacity-90`,
+                                            policy.id === 'simple' ? 'h-12 text-base' : ''
+                                        )}
+                                        size={policy.id === 'simple' ? 'lg' : 'sm'}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                        {policy.id === 'simple' ? 'فتح المحرر البسيط' : 'فتح المحرر'}
+                                    </Button>
+                                </div>
+                            </CardContent>
 
-                <div className="lg:col-span-9 space-y-6">
-                    <Card>
-                        <CardContent className="flex justify-center items-center bg-muted p-8 rounded-lg overflow-auto min-h-[70vh]">
-                            <div
-                                className="relative"
-                                style={{
-                                    width: paperDimensions.width,
-                                    height: paperDimensions.height,
-                                    transform: `scale(${zoomLevel})`,
-                                    transformOrigin: 'top center'
-                                }}
-                            >
-                                <div
-                                    id="canvas"
-                                    ref={canvasRef}
-                                    className="absolute bg-white rounded-md shadow-inner"
-                                    style={{
-                                        width: paperDimensions.width,
-                                        height: paperDimensions.height,
-                                    }}
-                                    onClick={(e) => {
-                                        if (e.target === e.currentTarget) {
-                                            setSelectedIds([]);
-                                        }
-                                    }}
-                                >
-                                    <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
-                                        backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
-                                        backgroundImage: `linear-gradient(to right, #e5e5e5 1px, transparent 1px), linear-gradient(to bottom, #e5e5e5 1px, transparent 1px)`
-                                    }} />
-                                    {elements.map(el => (
-                                        <Rnd
-                                            key={el.id}
-                                            size={{ width: el.width, height: el.height }}
-                                            position={{ x: el.x, y: el.y }}
-                                            onDragStop={(e, d) => handleUpdateElement(el.id, { x: snapToGrid(d.x), y: snapToGrid(d.y) })}
-                                            onResizeStop={(e, direction, ref, delta, position) => {
-                                                handleUpdateElement(el.id, {
-                                                    width: snapToGrid(parseInt(ref.style.width, 10)),
-                                                    height: snapToGrid(parseInt(ref.style.height, 10)),
-                                                    x: snapToGrid(position.x),
-                                                    y: snapToGrid(position.y),
-                                                });
-                                            }}
-                                            onClick={(e: any) => handleSelect(el.id, e as React.MouseEvent<HTMLDivElement>)}
-                                            className={selectedIds.includes(el.id) ? 'border-2 border-dashed border-primary z-40' : 'z-30'}
-                                            bounds="parent"
-                                        >
-                                            <PolicyElementComponent element={el} />
-                                        </Rnd>
-                                    ))}
+                            {/* Decorative gradient overlay */}
+                            <div className={cn(
+                                "absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300",
+                                `bg-gradient-to-br ${policy.gradient}`
+                            )} />
+                        </Card>
+                    );
+                })}
+            </div>
+
+            {/* Policy Editor Dialog */}
+            <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
+                <DialogContent className={cn(
+                    "flex flex-col p-0 bg-gray-50",
+                    selectedPolicy === 'simple' ? "max-w-[100vw] h-[100vh] w-[100vw]" : "max-w-7xl h-[90vh]"
+                )}>
+                    {selectedPolicy === 'simple' ? (
+                        // Hidden title for accessibility
+                        <DialogHeader className="sr-only">
+                            <DialogTitle>محرر البوليصة البسيط</DialogTitle>
+                        </DialogHeader>
+                    ) : (
+                        <DialogHeader className={cn(
+                            "px-6 py-4 border-b shrink-0",
+                            selectedPolicyConfig ? `bg-gradient-to-r ${selectedPolicyConfig.gradient}` : 'bg-gray-800'
+                        )}>
+                            <DialogTitle className="text-lg font-bold text-white flex items-center gap-3">
+                                {selectedPolicyConfig && <selectedPolicyConfig.icon className="h-5 w-5" />}
+                                محرر {selectedPolicyConfig?.title}
+                                <Badge className="bg-white/20 text-white text-xs">
+                                    معاينة مباشرة
+                                </Badge>
+                            </DialogTitle>
+                        </DialogHeader>
+                    )}
+                    
+                    <div className="flex-1 overflow-hidden">
+                        {renderPolicyEditor()}
+                    </div>
+
+                    {/* Footer with action buttons - only for non-simple editors */}
+                    {selectedPolicy !== 'simple' && (
+                        <DialogFooter className="px-6 py-4 border-t bg-white shrink-0">
+                            <div className="flex items-center justify-between w-full">
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <Sliders className="h-4 w-4" />
+                                    <span>التعديلات تظهر مباشرة في المعاينة</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <Button 
+                                        variant="outline" 
+                                        onClick={handlePrint}
+                                        className="gap-2"
+                                    >
+                                        <Printer className="h-4 w-4" />
+                                        طباعة مباشرة
+                                    </Button>
+                                    <Button 
+                                        onClick={handleExportPDF}
+                                        className={cn(
+                                            "gap-2 text-white",
+                                            selectedPolicyConfig ? `bg-gradient-to-r ${selectedPolicyConfig.gradient}` : 'bg-primary'
+                                        )}
+                                    >
+                                        <Download className="h-4 w-4" />
+                                        تصدير PDF
+                                    </Button>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+                        </DialogFooter>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -1,6 +1,7 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { usersStore } from './user-store';
 import { apiSync } from '@/services/api-sync';
 import api from '@/lib/api';
@@ -133,13 +134,21 @@ const getSettings = () => {
 };
 
 
-export const ordersStore = create<OrdersState>()(immer((set, get) => {
-    // Auto-load orders on first access if empty
+export const ordersStore = create<OrdersState>()(
+    persist(
+        immer((set, get) => {
+    // Auto-load orders on first access if empty (only when backend is ready)
     const autoLoad = () => {
         const state = get();
-        if (state.orders.length === 0 && !state.isLoading && !state.error) {
+        const backendReady = typeof window !== 'undefined' && sessionStorage.getItem('backendReady') === '1';
+        // Only auto-load if no orders in localStorage and backend is ready
+        if (state.orders.length === 0 && !state.isLoading && !state.error && backendReady) {
             console.log('🔄 Auto-loading orders from API...');
             state.loadOrdersFromAPI();
+        } else if (state.orders.length > 0) {
+            console.log('📦 Orders loaded from localStorage:', state.orders.length);
+        } else if (!backendReady) {
+            console.log('ℹ️ Skipping orders auto-load (backend not ready)');
         }
     };
 
@@ -239,9 +248,19 @@ export const ordersStore = create<OrdersState>()(immer((set, get) => {
                     
                     // Success - break out of retry loop
                     return;
-                } catch (error) {
+                } catch (error: any) {
                     retryCount++;
-                    console.error(`❌ Failed to load orders from API (Attempt ${retryCount}/${maxRetries}):`, error);
+                    const msg = error?.message || String(error);
+                    const isAuthError = msg.includes('Access token') || msg.includes('401') || msg.includes('Unauthorized');
+                    if (isAuthError) {
+                        console.log('🔐 Authentication required or backend unavailable - skipping orders load');
+                        set((state) => {
+                            state.error = 'Authentication required';
+                            state.isLoading = false;
+                        });
+                        return; // Do not retry on auth errors
+                    }
+                    console.warn(`❌ Failed to load orders from API (Attempt ${retryCount}/${maxRetries}):`, msg);
                     
                     if (retryCount >= maxRetries) {
                         // Final failure after all retries
@@ -453,10 +472,9 @@ export const ordersStore = create<OrdersState>()(immer((set, get) => {
                 });
 
                 return newOrder;
-            } catch (error) {
-                console.error('Failed to create order:', error);
+            } catch {
+                // API failed, fallback to local creation silently
                 set((state) => {
-                    state.error = 'Failed to create order';
                     state.isLoading = false;
                 });
 
@@ -494,7 +512,17 @@ export const ordersStore = create<OrdersState>()(immer((set, get) => {
             }
         },
     }
-}));
+        }),
+        {
+            name: 'orders-storage',
+            storage: createJSONStorage(() => localStorage),
+            partialize: (state) => ({
+                orders: state.orders,
+                nextOrderNumber: state.nextOrderNumber,
+            }),
+        }
+    )
+);
 
 
 // Correctly define the hook for React components

@@ -28,6 +28,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { AdvancedDataTable, DataTableColumn } from '@/components/merchant/advanced-data-table';
+import { useSettings } from '@/contexts/SettingsContext';
 import { useOrdersStore } from '@/store/orders-store';
 
 interface Transaction {
@@ -53,6 +54,8 @@ interface Invoice {
 export default function MerchantFinancialsPage() {
   const [period, setPeriod] = useState('month');
   const { orders: allOrders } = useOrdersStore();
+  const { settings, formatCurrency } = useSettings();
+  const currencySymbol = settings.regional.currencySymbol;
 
   // حساب المعاملات من الطلبات الحقيقية
   const transactions: Transaction[] = useMemo(() => {
@@ -192,7 +195,7 @@ export default function MerchantFinancialsPage() {
       header: 'المبلغ',
       cell: (row) => (
         <span className={`font-bold ${row.amount > 0 ? 'text-green-600' : 'text-red-600'}`} dir="ltr">
-          {row.amount > 0 ? '+' : ''}{row.amount.toFixed(2)} د.أ
+          {row.amount > 0 ? '+' : ''}{row.amount.toFixed(2)} {currencySymbol}
         </span>
       ),
     },
@@ -234,7 +237,7 @@ export default function MerchantFinancialsPage() {
     {
       accessorKey: 'amount',
       header: 'المبلغ',
-      cell: (row) => <span className="font-bold text-green-600" dir="ltr">{row.amount.toFixed(2)} د.أ</span>,
+      cell: (row) => <span className="font-bold text-green-600" dir="ltr">{row.amount.toFixed(2)} {currencySymbol}</span>,
     },
     {
       accessorKey: 'status',
@@ -292,7 +295,7 @@ export default function MerchantFinancialsPage() {
             <Wallet className="h-5 w-5 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-900" dir="ltr">{stats.currentBalance.toFixed(2)} د.أ</div>
+            <div className="text-3xl font-bold text-green-900" dir="ltr">{stats.currentBalance.toFixed(2)} {currencySymbol}</div>
             <p className="text-xs text-green-700 mt-2 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3" />
               متاح للسحب الآن
@@ -308,7 +311,7 @@ export default function MerchantFinancialsPage() {
             <Clock className="h-5 w-5 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-yellow-900" dir="ltr">{stats.pendingBalance.toFixed(2)} د.أ</div>
+            <div className="text-3xl font-bold text-yellow-900" dir="ltr">{stats.pendingBalance.toFixed(2)} {currencySymbol}</div>
             <p className="text-xs text-yellow-700 mt-2 flex items-center gap-1">
               <Calendar className="h-3 w-3" />
               التحويل في {stats.nextPaymentDate}
@@ -324,7 +327,7 @@ export default function MerchantFinancialsPage() {
             <TrendingUp className="h-5 w-5 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-900" dir="ltr">{stats.totalEarned.toFixed(2)} د.أ</div>
+            <div className="text-3xl font-bold text-blue-900" dir="ltr">{stats.totalEarned.toFixed(2)} {currencySymbol}</div>
             <p className="text-xs text-blue-700 mt-2">
               هذا الشهر
             </p>
@@ -339,7 +342,7 @@ export default function MerchantFinancialsPage() {
             <CreditCard className="h-5 w-5 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-900" dir="ltr">{stats.platformFees.toFixed(2)} د.أ</div>
+            <div className="text-3xl font-bold text-purple-900" dir="ltr">{stats.platformFees.toFixed(2)} {currencySymbol}</div>
             <p className="text-xs text-purple-700 mt-2">
               5% من المبيعات
             </p>
@@ -356,7 +359,7 @@ export default function MerchantFinancialsPage() {
             </div>
             <div>
               <p className="font-semibold text-blue-900">الدفعة القادمة</p>
-              <p className="text-sm text-blue-700">سيتم تحويل {stats.nextPaymentAmount.toFixed(2)} د.أ في {stats.nextPaymentDate}</p>
+              <p className="text-sm text-blue-700">سيتم تحويل {stats.nextPaymentAmount.toFixed(2)} {currencySymbol} في {stats.nextPaymentDate}</p>
             </div>
           </div>
           <Button variant="outline" className="bg-white">
@@ -411,21 +414,21 @@ export default function MerchantFinancialsPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span>إجمالي الأرباح</span>
-                    <span className="font-bold text-green-600" dir="ltr">{stats.totalEarned.toFixed(2)} د.أ</span>
+                    <span className="font-bold text-green-600" dir="ltr">{stats.totalEarned.toFixed(2)} {currencySymbol}</span>
                   </div>
                   <Progress value={100} className="h-2" />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span>عمولة المنصة (5%)</span>
-                    <span className="font-bold text-orange-600" dir="ltr">-{stats.platformFees.toFixed(2)} د.أ</span>
+                    <span className="font-bold text-orange-600" dir="ltr">-{stats.platformFees.toFixed(2)} {currencySymbol}</span>
                   </div>
                   <Progress value={(stats.platformFees / stats.totalEarned) * 100} className="h-2" />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span>المسحوبات</span>
-                    <span className="font-bold text-red-600" dir="ltr">-{stats.totalWithdrawn.toFixed(2)} د.أ</span>
+                    <span className="font-bold text-red-600" dir="ltr">-{stats.totalWithdrawn.toFixed(2)} {currencySymbol}</span>
                   </div>
                   <Progress value={(stats.totalWithdrawn / stats.totalEarned) * 100} className="h-2" />
                 </div>
@@ -433,7 +436,7 @@ export default function MerchantFinancialsPage() {
                   <div className="flex items-center justify-between">
                     <span className="font-semibold">الرصيد المتبقي</span>
                     <span className="text-2xl font-bold text-green-600" dir="ltr">
-                      {(stats.totalEarned - stats.platformFees - stats.totalWithdrawn).toFixed(2)} د.أ
+                      {(stats.totalEarned - stats.platformFees - stats.totalWithdrawn).toFixed(2)} {currencySymbol}
                     </span>
                   </div>
                 </div>
@@ -447,7 +450,7 @@ export default function MerchantFinancialsPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
                   <span className="text-sm font-medium">متوسط الدفعة</span>
-                  <span className="text-xl font-bold" dir="ltr">1,125.00 د.أ</span>
+                  <span className="text-xl font-bold" dir="ltr">1,125.00 {currencySymbol}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
                   <span className="text-sm font-medium">عدد الدفعات</span>
@@ -455,7 +458,7 @@ export default function MerchantFinancialsPage() {
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
                   <span className="text-sm font-medium">آخر دفعة</span>
-                  <span className="text-xl font-bold" dir="ltr">1,250.00 د.أ</span>
+                  <span className="text-xl font-bold" dir="ltr">1,250.00 {currencySymbol}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
                   <span className="text-sm font-medium">تاريخ آخر دفعة</span>

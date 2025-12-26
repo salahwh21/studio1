@@ -8,6 +8,11 @@ export const useRealTimeOrders = () => {
   useEffect(() => {
     // Connect socket if not already connected
     const socket = connectSocket();
+    
+    // If socket is null (disabled), skip setup
+    if (!socket) {
+      return;
+    }
 
     // Subscribe to new orders
     const handleNewOrder = (data: any) => {

@@ -23,11 +23,13 @@ import { Progress } from '@/components/ui/progress';
 import { useOrdersStore } from '@/store/orders-store';
 import { useUsersStore } from '@/store/user-store';
 import { useReturnsStore } from '@/store/returns-store';
+import { useSettings } from '@/contexts/SettingsContext';
 
 export default function ReturnsPage() {
   const { orders } = useOrdersStore();
   const { users } = useUsersStore();
   const { driverReturnSlips } = useReturnsStore();
+  const { settings, formatCurrency } = useSettings();
   
   const drivers = users.filter(u => u.roleId === 'driver');
 
@@ -89,14 +91,14 @@ export default function ReturnsPage() {
 
       {/* Main Stats */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-l-4 border-l-orange-500">
+        <Card className="border-r-4 border-r-orange-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">مع السائقين</p>
-                <p className="text-3xl font-bold mt-1" dir="ltr">{stats.withDrivers}</p>
-                <p className="text-xs text-muted-foreground mt-1" dir="ltr">
-                  {stats.withDriversCOD.toFixed(2)} د.أ
+                <p className="text-3xl font-bold mt-1">{stats.withDrivers}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formatCurrency(stats.withDriversCOD)}
                 </p>
               </div>
               <div className="p-3 bg-orange-100 rounded-full dark:bg-orange-950">
@@ -106,14 +108,14 @@ export default function ReturnsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-purple-500">
+        <Card className="border-r-4 border-r-purple-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">في الفرع</p>
-                <p className="text-3xl font-bold mt-1" dir="ltr">{stats.inBranch}</p>
-                <p className="text-xs text-muted-foreground mt-1" dir="ltr">
-                  {stats.inBranchCOD.toFixed(2)} د.أ
+                <p className="text-3xl font-bold mt-1">{stats.inBranch}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formatCurrency(stats.inBranchCOD)}
                 </p>
               </div>
               <div className="p-3 bg-purple-100 rounded-full dark:bg-purple-950">
@@ -123,14 +125,14 @@ export default function ReturnsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-r-4 border-r-blue-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">مرجع للتاجر</p>
-                <p className="text-3xl font-bold mt-1" dir="ltr">{stats.returnedToMerchant}</p>
-                <p className="text-xs text-muted-foreground mt-1" dir="ltr">
-                  {stats.returnedCOD.toFixed(2)} د.أ
+                <p className="text-3xl font-bold mt-1">{stats.returnedToMerchant}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formatCurrency(stats.returnedCOD)}
                 </p>
               </div>
               <div className="p-3 bg-blue-100 rounded-full dark:bg-blue-950">
@@ -140,12 +142,12 @@ export default function ReturnsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-r-4 border-r-green-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">سندات الاستلام</p>
-                <p className="text-3xl font-bold mt-1" dir="ltr">{stats.totalSlips}</p>
+                <p className="text-3xl font-bold mt-1">{stats.totalSlips}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {stats.driversWithOrders} سائقين
                 </p>
@@ -295,8 +297,8 @@ export default function ReturnsPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">إجمالي المبالغ</span>
               </div>
-              <Badge variant="secondary" dir="ltr">
-                {(stats.withDriversCOD + stats.inBranchCOD + stats.returnedCOD).toFixed(2)} د.أ
+              <Badge variant="secondary">
+                {formatCurrency(stats.withDriversCOD + stats.inBranchCOD + stats.returnedCOD)}
               </Badge>
             </div>
           </CardContent>

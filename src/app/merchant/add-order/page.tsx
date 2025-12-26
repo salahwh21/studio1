@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/icon';
 import { useToast } from '@/hooks/use-toast';
 import { useAreas } from '@/hooks/use-areas';
+import { useSettings } from '@/contexts/SettingsContext';
 import {
   Select,
   SelectContent,
@@ -20,6 +21,8 @@ import {
 export default function MerchantAddOrderPage() {
   const { toast } = useToast();
   const { cities, getRegionsByCity, isLoading: areasLoading } = useAreas();
+  const { settings, formatCurrency } = useSettings();
+  const currencySymbol = settings.regional.currencySymbol;
   const [loading, setLoading] = useState(false);
   const [selectedCity, setSelectedCity] = useState('');
 
@@ -230,15 +233,15 @@ export default function MerchantAddOrderPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">قيمة الطلب (COD)</span>
-                    <span className="font-medium">0.00 د.أ</span>
+                    <span className="font-medium">{formatCurrency(0)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">رسوم التوصيل</span>
-                    <span className="font-medium">2.50 د.أ</span>
+                    <span className="font-medium">{formatCurrency(2.5)}</span>
                   </div>
                   <div className="border-t pt-2 flex justify-between font-bold">
                     <span>الإجمالي</span>
-                    <span>2.50 د.أ</span>
+                    <span>{formatCurrency(2.5)}</span>
                   </div>
                 </div>
 

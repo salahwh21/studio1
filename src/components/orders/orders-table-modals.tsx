@@ -148,51 +148,12 @@ export const OrdersTableModals = ({
                 </AlertDialogContent>
             </AlertDialog>
 
+            {/* Standard Policy Dialog - PDF القياسي (A4/A5) */}
             <Dialog open={modalState.type === 'print'} onOpenChange={(open) => !open && setModalState({ type: 'none' })}>
-                <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-                    <DialogHeader>
-                        <DialogTitle>طباعة البوالص</DialogTitle>
-                        <DialogDescription>اختر القالب وقم بمعاينة البوالص قبل الطباعة النهائية.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 min-h-0">
-                        <div className="md:col-span-1 flex flex-col gap-4">
-                            <Card>
-                                <CardHeader className='p-4'><CardTitle className='text-base'>1. اختر القالب</CardTitle></CardHeader>
-                                <CardContent className='p-4'>
-                                    <RadioGroup value={selectedTemplate?.id} onValueChange={(id) => setSelectedTemplate(availableTemplates.find(t => t.id === id) || null)}>
-                                        {availableTemplates.map(template => (
-                                            <div key={template.id} className="flex items-center space-x-2 space-x-reverse">
-                                                <RadioGroupItem value={template.id} id={`tpl-${template.id}`} />
-                                                <Label htmlFor={`tpl-${template.id}`}>{template.name}</Label>
-                                            </div>
-                                        ))}
-                                    </RadioGroup>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardHeader className='p-4'><CardTitle className='text-base'>2. إجراء الطباعة</CardTitle></CardHeader>
-                                <CardContent className='p-4 flex flex-col gap-2'>
-                                    <Button onClick={() => printablePolicyRef.current?.handleExport()} className="w-full">
-                                        <Icon name="Save" className="ml-2 h-4 w-4 inline" /> طباعة PDF
-                                    </Button>
-                                    <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(firstSelectedOrder, 'zpl')}>
-                                        <Icon name="Printer" className="ml-2 h-4 w-4 inline" /> طباعة ZPL (أول طلب)
-                                    </Button>
-                                    <Button variant="secondary" onClick={() => printablePolicyRef.current?.handleDirectPrint(firstSelectedOrder, 'escpos')}>
-                                        <Icon name="Printer" className="ml-2 h-4 w-4 inline" /> طباعة ESC/POS (أول طلب)
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        </div>
-                        <div className="md:col-span-3 bg-muted rounded-md flex items-center justify-center overflow-hidden">
-                            <ScrollArea className="h-full w-full">
-                                <div className="p-4 flex items-center justify-center">
-                                    {selectedTemplate && (
-                                        <PrintablePolicy ref={printablePolicyRef} orders={selectedOrders} template={selectedTemplate} />
-                                    )}
-                                </div>
-                            </ScrollArea>
-                        </div>
+                <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0 bg-gray-100">
+                    <DialogTitle className="sr-only">طباعة قياسية</DialogTitle>
+                    <div className="p-4 flex items-center justify-center h-full">
+                        <PrintablePolicy ref={printablePolicyRef} orders={selectedOrders} template={null} />
                     </div>
                 </DialogContent>
             </Dialog>
@@ -358,63 +319,71 @@ export const OrdersTableModals = ({
 
             {/* Thermal Label Optimized Dialog */}
             <Dialog open={showThermalLabelOptDialog} onOpenChange={setShowThermalLabelOptDialog}>
-                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>طباعة حرارية محسّنة</DialogTitle>
-                        <DialogDescription>
-                            تصميم مخصص لكل مقاس - مناسبة لطابعات XP-301 وغيرها
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <ThermalLabelOptimized
-                            ref={thermalLabelOptRef}
-                            orders={selectedOrders}
-                        />
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setShowThermalLabelOptDialog(false)}>
+                <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0 bg-gray-100">
+                    <DialogTitle className="sr-only">طباعة حرارية</DialogTitle>
+                    
+                    {/* أزرار الطباعة */}
+                    <div className="flex gap-2 p-4 bg-white border-b no-print">
+                        <Button 
+                            onClick={() => thermalLabelOptRef.current?.handleExportPDF()}
+                            className="flex items-center gap-2"
+                        >
+                            <Icon name="Printer" className="h-4 w-4" />
+                            طباعة PDF
+                        </Button>
+                        <Button 
+                            onClick={() => thermalLabelOptRef.current?.handlePrint()}
+                            variant="outline"
+                            className="flex items-center gap-2"
+                        >
+                            <Icon name="Eye" className="h-4 w-4" />
+                            معاينة
+                        </Button>
+                        <Button 
+                            onClick={() => setShowThermalLabelOptDialog(false)}
+                            variant="ghost"
+                            className="ml-auto"
+                        >
                             إغلاق
                         </Button>
-                        <Button onClick={() => thermalLabelOptRef.current?.handlePrint()}>
-                            <Printer className="ml-2 h-4 w-4" />
-                            طباعة
-                        </Button>
-                        <Button onClick={() => thermalLabelOptRef.current?.handleExportPDF()}>
-                            <FileDown className="ml-2 h-4 w-4" />
-                            تصدير PDF
-                        </Button>
-                    </DialogFooter>
+                    </div>
+                    
+                    <ThermalLabelOptimized ref={thermalLabelOptRef} orders={selectedOrders} />
                 </DialogContent>
             </Dialog>
 
             {/* Modern Policy V2 Dialog */}
             <Dialog open={showModernPolicyV2Dialog} onOpenChange={setShowModernPolicyV2Dialog}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>طباعة ملونة - محسّنة</DialogTitle>
-                        <DialogDescription>
-                            معاينة وطباعة {selectedRowsCount} بوليصة مع خيارات متعددة
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <ModernPolicyV2
-                            ref={modernPolicyV2Ref}
-                            orders={selectedOrders}
-                        />
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setShowModernPolicyV2Dialog(false)}>
+                <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0 bg-gray-100">
+                    <DialogTitle className="sr-only">طباعة ملونة</DialogTitle>
+                    
+                    {/* أزرار الطباعة */}
+                    <div className="flex gap-2 p-4 bg-white border-b no-print">
+                        <Button 
+                            onClick={() => modernPolicyV2Ref.current?.handleExportPDF()}
+                            className="flex items-center gap-2"
+                        >
+                            <Icon name="Printer" className="h-4 w-4" />
+                            طباعة PDF
+                        </Button>
+                        <Button 
+                            onClick={() => modernPolicyV2Ref.current?.handlePrint()}
+                            variant="outline"
+                            className="flex items-center gap-2"
+                        >
+                            <Icon name="Eye" className="h-4 w-4" />
+                            معاينة
+                        </Button>
+                        <Button 
+                            onClick={() => setShowModernPolicyV2Dialog(false)}
+                            variant="ghost"
+                            className="ml-auto"
+                        >
                             إغلاق
                         </Button>
-                        <Button onClick={() => modernPolicyV2Ref.current?.handlePrint()}>
-                            <Printer className="ml-2 h-4 w-4" />
-                            طباعة
-                        </Button>
-                        <Button onClick={() => modernPolicyV2Ref.current?.handleExportPDF()}>
-                            <FileDown className="ml-2 h-4 w-4" />
-                            تصدير PDF
-                        </Button>
-                    </DialogFooter>
+                    </div>
+                    
+                    <ModernPolicyV2 ref={modernPolicyV2Ref} orders={selectedOrders} />
                 </DialogContent>
             </Dialog>
         </>

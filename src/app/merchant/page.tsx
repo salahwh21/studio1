@@ -15,10 +15,13 @@ import {
 } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { useOrdersStore } from '@/store/orders-store';
+import { useSettings } from '@/contexts/SettingsContext';
 
 export default function MerchantDashboard() {
   const [period, setPeriod] = useState('today');
   const { orders: allOrders } = useOrdersStore();
+  const { settings, formatDate, formatCurrency } = useSettings();
+  const currencySymbol = settings.regional.currencySymbol;
 
   // حساب الإحصائيات من البيانات الحقيقية
   const stats = useMemo(() => {
@@ -64,7 +67,7 @@ export default function MerchantDashboard() {
         customer: order.recipient,
         status: order.status,
         amount: order.cod,
-        time: new Date(order.date).toLocaleDateString('ar'),
+        time: formatDate(order.date),
         priority: 'عادي',
       }));
   }, [allOrders]);
@@ -195,7 +198,7 @@ export default function MerchantDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{currentStats.revenue.toFixed(2)} د.أ</div>
+            <div className="text-3xl font-bold">{currentStats.revenue.toFixed(2)} {currencySymbol}</div>
             <div className="flex items-center gap-2 mt-2">
               <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
                 <Icon name="TrendingUp" className="h-3 w-3 ml-1" />
@@ -231,7 +234,7 @@ export default function MerchantDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{currentStats.avgOrderValue.toFixed(2)} د.أ</div>
+            <div className="text-3xl font-bold">{currentStats.avgOrderValue.toFixed(2)} {currencySymbol}</div>
             <div className="flex items-center gap-2 mt-2">
               <Badge variant="secondary" className="text-xs">
                 <Icon name="Minus" className="h-3 w-3 ml-1" />
@@ -284,7 +287,7 @@ export default function MerchantDashboard() {
                     <Badge className={getStatusColor(order.status)}>
                       {order.status}
                     </Badge>
-                    <p className="font-bold min-w-[80px] text-left">{order.amount.toFixed(2)} د.أ</p>
+                    <p className="font-bold min-w-[80px] text-left">{order.amount.toFixed(2)} {currencySymbol}</p>
                   </div>
                 </div>
               ))}
@@ -314,7 +317,7 @@ export default function MerchantDashboard() {
                   </div>
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>{product.sales} مبيعة</span>
-                    <span className="font-medium">{product.revenue.toFixed(2)} د.أ</span>
+                    <span className="font-medium">{product.revenue.toFixed(2)} {currencySymbol}</span>
                   </div>
                   <Progress value={(product.sales / 50) * 100} className="h-1" />
                 </div>

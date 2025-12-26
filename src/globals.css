@@ -3,6 +3,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Force English numerals globally */
+* {
+  font-variant-numeric: tabular-nums lining-nums !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -82,7 +87,7 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-tajawal), sans-serif;
-    font-size: 14px;
+    font-size: 16px;
   }
   .custom-table-container {
     display: flex;

@@ -16,6 +16,7 @@ import { AdvancedDataTable, DataTableColumn } from '@/components/merchant/advanc
 import { Eye, MoreHorizontal, Printer, Download, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useOrdersStore } from '@/store/orders-store';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface Order {
   id: string;
@@ -32,6 +33,8 @@ interface Order {
 
 export default function MerchantOrdersPage() {
   const { toast } = useToast();
+  const { settings, formatCurrency } = useSettings();
+  const currencySymbol = settings.regional.currencySymbol;
   
   // استخدام البيانات الحقيقية من الـ store
   const { orders: storeOrders } = useOrdersStore();
@@ -134,7 +137,7 @@ export default function MerchantOrdersPage() {
       header: 'المبلغ',
       cell: (row) => (
         <div className="font-bold text-green-600" dir="ltr">
-          {row.amount.toFixed(2)} د.أ
+          {row.amount.toFixed(2)} {currencySymbol}
         </div>
       ),
     },
@@ -221,7 +224,7 @@ export default function MerchantOrdersPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
-              <p className="text-2xl font-bold mt-1" dir="ltr">{stats.totalRevenue.toFixed(2)} د.أ</p>
+              <p className="text-2xl font-bold mt-1" dir="ltr">{stats.totalRevenue.toFixed(2)} {currencySymbol}</p>
             </div>
             <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
               <Icon name="DollarSign" className="h-6 w-6 text-green-600" />

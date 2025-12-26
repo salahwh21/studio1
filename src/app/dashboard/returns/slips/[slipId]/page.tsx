@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useOrdersStore } from '@/store/orders-store';
+import { generatePdfViaBrowserPrint } from '@/services/pdf-service';
 
 
 const SlipDetailPageSkeleton = () => (
@@ -48,7 +49,7 @@ export default function SlipDetailPage() {
 
     const { driverReturnSlips, merchantSlips, removeOrderFromDriverReturnSlip, removeOrderFromMerchantSlip } = useReturnsStore();
     const { updateOrderField } = useOrdersStore();
-    const { formatCurrency, settings } = useSettings();
+    const { formatCurrency, formatDate, settings } = useSettings();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
 
@@ -78,12 +79,6 @@ export default function SlipDetailPage() {
     const handlePrint = async () => {
         if (!slip) return;
 
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-            toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'يرجى السماح بفتح النوافذ المنبثقة.' });
-            return;
-        }
-
         const title = slipType === 'driver' ? `كشف استلام من السائق: ${(slip as DriverReturnSlip).driverName}` : `كشف إرجاع للتاجر: ${(slip as MerchantSlip).merchant}`;
         const partyType = slipType === 'driver' ? 'السائق' : 'التاجر';
 
@@ -112,12 +107,14 @@ export default function SlipDetailPage() {
 
         const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
 
-        const content = `
-            <html>
+        const html = `
+            <!DOCTYPE html>
+            <html dir="rtl" lang="ar">
                 <head>
+                    <meta charset="UTF-8">
                     <title>${title}</title>
                     <style>
-                        body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                        body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; }
                         table { width: 100%; border-collapse: collapse; }
                         th, td { padding: 8px; border: 1px solid #ddd; text-align: right; }
                         th { background-color: #f2f2f2; }
@@ -131,7 +128,7 @@ export default function SlipDetailPage() {
                         ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="height: 50px;">` : `<h1>${settings.login.companyName || 'الشركة'}</h1>`}
                         <div>
                             <h2>${title}</h2>
-                            <p>التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}</p>
+                            <p>التاريخ: ${formatDate(slip.date, { longFormat: true })}</p>
                             <p>رقم الكشف: ${slip.id}</p>
                         </div>
                     </div>
@@ -144,10 +141,14 @@ export default function SlipDetailPage() {
             </html>
         `;
 
-        printWindow.document.write(content);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
+        try {
+            await generatePdfViaBrowserPrint(html, { filename: `slip-${slip.id}.pdf` });
+            // لا حاجة لتحميل الملف لأن generatePdfViaBrowserPrint يتولى الطباعة مباشرة
+            toast({ title: "تم التصدير", description: `تم تصدير كشف ${slip.id} بنجاح` });
+        } catch (error) {
+            console.error('PDF generation error:', error);
+            toast({ variant: 'destructive', title: 'فشل التصدير', description: 'حدث خطأ أثناء إنشاء ملف PDF' });
+        }
     };
 
     const handleRemoveOrder = (orderId: string) => {
@@ -225,7 +226,7 @@ export default function SlipDetailPage() {
                         </div>
                         <div className="p-3 bg-muted rounded-md space-y-1">
                             <p className="text-muted-foreground">تاريخ الإنشاء</p>
-                            <p className="font-semibold">{new Date(slip.date).toLocaleDateString('ar-EG')}</p>
+                            <p className="font-semibold">{formatDate(slip.date)}</p>
                         </div>
                         <div className="p-3 bg-muted rounded-md space-y-1">
                             <p className="text-muted-foreground">عدد الطلبات</p>

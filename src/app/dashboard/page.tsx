@@ -113,7 +113,7 @@ const RevenueCard = ({ title, value, iconName, color = 'primary' }: { title: str
 export default function DashboardPage() {
     const [selectedDriver, setSelectedDriver] = useState('all');
     const searchParams = useSearchParams();
-    const { formatCurrency } = useSettings();
+    const { formatCurrency, formatDate } = useSettings();
     const { users } = useUsersStore();
     const { orders, isLoading: ordersLoading, error: ordersError, loadOrdersFromAPI } = useOrdersStore();
     const { statuses } = useStatusesStore();
@@ -452,7 +452,7 @@ export default function DashboardPage() {
             label: 'الإيرادات اليومية',
             current: totalRevenue,
             target: 5000,
-            unit: 'د.أ',
+            unit: 'currency',
             icon: 'TrendingUp',
         },
         {
@@ -550,7 +550,7 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-8">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
-                    <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString('ar-JO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <p className="text-sm text-muted-foreground">{formatDate(new Date(), { longFormat: true })}</p>
                 </div>
                 <div className="flex items-center justify-center py-12">
                     <div className="text-center">
@@ -568,7 +568,7 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-8">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
-                    <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString('ar-JO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <p className="text-sm text-muted-foreground">{formatDate(new Date(), { longFormat: true })}</p>
                 </div>
                 <div className="flex items-center justify-center py-12">
                     <div className="text-center">
@@ -592,7 +592,7 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-8">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
-                    <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString('ar-JO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <p className="text-sm text-muted-foreground">{formatDate(new Date(), { longFormat: true })}</p>
                 </div>
                 <div className="flex items-center justify-center py-12">
                     <div className="text-center">
@@ -623,7 +623,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-8">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
-                <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString('ar-JO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p className="text-sm text-muted-foreground">{formatDate(new Date(), { longFormat: true })}</p>
             </div>
 
             {/* إجراءات سريعة */}
@@ -792,8 +792,7 @@ export default function DashboardPage() {
                                     <XAxis
                                         dataKey="date"
                                         tickFormatter={(value) => {
-                                            const date = new Date(value);
-                                            return date.toLocaleDateString('ar-JO', { day: 'numeric', month: 'short' });
+                                            return formatDate(value);
                                         }}
                                         tickLine={false}
                                         axisLine={false}
@@ -813,12 +812,7 @@ export default function DashboardPage() {
                                                 return (
                                                     <div className="rounded-lg border bg-background p-3 shadow-lg">
                                                         <div className="font-semibold mb-2">
-                                                            {new Date(data.date).toLocaleDateString('ar-JO', {
-                                                                weekday: 'long',
-                                                                year: 'numeric',
-                                                                month: 'long',
-                                                                day: 'numeric'
-                                                            })}
+                                                            {formatDate(data.date, { longFormat: true })}
                                                         </div>
                                                         <div className="flex items-center justify-between gap-4">
                                                             <div className="flex items-center gap-2">

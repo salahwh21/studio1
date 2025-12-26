@@ -18,6 +18,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useUsersStore } from '@/store/user-store';
 import { SettingsHeader } from '@/components/settings-header';
+import { useSettings } from '@/contexts/SettingsContext';
 
 // Mock data for price lists - replace with a store later
 const mockPriceLists = [
@@ -138,6 +139,8 @@ export default function PriceListDetailPage() {
     const { priceListId } = params;
     const { cities } = useAreasStore();
     const { users } = useUsersStore();
+    const { settings } = useSettings();
+    const currencySymbol = settings.regional.currencySymbol;
 
     const [rules, setRules] = useState<PricingRule[]>([]);
 
@@ -265,7 +268,7 @@ export default function PriceListDetailPage() {
                                 <TableHead className="w-[250px] text-right">اسم البند</TableHead>
                                 <TableHead className="w-[200px] text-right">من (المدن المصدر)</TableHead>
                                 <TableHead className="w-[200px] text-right">إلى (المدن الوجهة)</TableHead>
-                                <TableHead className="w-[120px] text-right">السعر (د.أ)</TableHead>
+                                <TableHead className="w-[120px] text-right">السعر ({currencySymbol})</TableHead>
                                 <TableHead className="text-center w-[150px]">إجراءات</TableHead>
                             </TableRow>
                         </TableHeader>

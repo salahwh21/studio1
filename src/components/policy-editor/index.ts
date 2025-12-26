@@ -1,0 +1,1 @@
+export { SimplePolicyEditor } from './SimplePolicyEditor';

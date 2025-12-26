@@ -28,6 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useOrdersStore, type Order } from '@/store/orders-store';
 import { useStatusesStore } from '@/store/statuses-store';
 import { cn } from '@/lib/utils';
+import { useSettings } from '@/contexts/SettingsContext';
 
 type ActionType = 'redistribute' | 'return-merchant' | 'postpone' | 'cancel';
 
@@ -35,6 +36,7 @@ export default function ProcessReturnsPage() {
   const { toast } = useToast();
   const { orders, updateOrderField } = useOrdersStore();
   const { statuses } = useStatusesStore();
+  const { settings, formatCurrency } = useSettings();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMerchant, setSelectedMerchant] = useState<string>('all');
@@ -188,7 +190,7 @@ export default function ProcessReturnsPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="border-l-4 border-l-purple-500">
+        <Card className="border-r-4 border-r-purple-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -202,12 +204,12 @@ export default function ProcessReturnsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-r-4 border-r-green-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">إجمالي المبالغ</p>
-                <p className="text-2xl font-bold mt-1" dir="ltr">{stats.totalCOD.toFixed(2)} <span className="text-sm">د.أ</span></p>
+                <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalCOD)}</p>
               </div>
               <div className="p-3 bg-green-100 rounded-full dark:bg-green-950">
                 <Package className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -216,7 +218,7 @@ export default function ProcessReturnsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-r-4 border-r-blue-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -316,7 +318,7 @@ export default function ProcessReturnsPage() {
                             </div>
                             <div>
                               <span className="text-muted-foreground">المبلغ:</span>
-                              <p className="font-bold" dir="ltr">{order.cod.toFixed(2)} د.أ</p>
+                              <p className="font-bold">{formatCurrency(order.cod)}</p>
                             </div>
                             <div>
                               <span className="text-muted-foreground">الحالة السابقة:</span>
@@ -402,7 +404,7 @@ export default function ProcessReturnsPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">المبلغ:</span>
-                  <span className="font-bold" dir="ltr">{selectedOrder.cod.toFixed(2)} د.أ</span>
+                  <span className="font-bold">{formatCurrency(selectedOrder.cod)}</span>
                 </div>
               </div>
             )}

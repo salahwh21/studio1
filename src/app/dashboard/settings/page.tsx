@@ -34,6 +34,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { settingsDocs } from './settings-docs';
 
 type SettingItem = {
   href: string;
@@ -58,32 +60,32 @@ const settingsSections: SettingsSection[] = [
   {
     id: 'company',
     title: 'إعدادات الشركة',
-    description: 'الهوية والمظهر والإعدادات العامة',
+    description: 'معلومات الشركة والهوية والمظهر والإعدادات الإقليمية',
     icon: Building2,
     bgColor: 'bg-blue-500/10 dark:bg-blue-500/20',
     iconBg: 'bg-blue-500',
     borderColor: 'border-blue-500/30',
     items: [
       {
-        href: '/dashboard/settings/general',
-        icon: LayoutGrid,
-        title: 'الإعدادات العامة',
-        description: 'هوية الشركة والميزات الرئيسية'
-      },
-      {
         href: '/dashboard/settings/company',
         icon: Building2,
         title: 'معلومات الشركة',
-        description: 'الاسم والشعار والعنوان'
+        description: 'الاسم والعنوان والبيانات القانونية'
       },
       {
-        href: '/dashboard/settings/ui-customization',
+        href: '/dashboard/settings/company/identity',
+        icon: LayoutGrid,
+        title: 'الهوية والشعارات',
+        description: 'إدارة الشعارات وأيقونة المتصفح'
+      },
+      {
+        href: '/dashboard/settings/company/appearance',
         icon: Palette,
         title: 'تخصيص المظهر',
         description: 'الألوان والخطوط والثيم'
       },
       {
-        href: '/dashboard/settings/regional',
+        href: '/dashboard/settings/company/regional',
         icon: Globe,
         title: 'الإعدادات الإقليمية',
         description: 'اللغة والمنطقة الزمنية والعملة'
@@ -198,7 +200,8 @@ const settingsSections: SettingsSection[] = [
         href: '/dashboard/settings/integrations',
         icon: Share2,
         title: 'التكاملات',
-        description: 'ربط مع Shopify وWooCommerce'
+        description: 'ربط مع Shopify وWooCommerce',
+        badge: 'قريباً'
       },
     ]
   },
@@ -215,13 +218,15 @@ const settingsSections: SettingsSection[] = [
         href: '/dashboard/settings/ai-config',
         icon: Wand2,
         title: 'إعدادات AI',
-        description: 'تكوين API Keys والموديلات'
+        description: 'تكوين API Keys والموديلات',
+        badge: 'قريباً'
       },
       {
         href: '/dashboard/settings/ai-agent',
         icon: Bot,
         title: 'وكيل خدمة العملاء',
-        description: 'توليد ردود احترافية تلقائياً'
+        description: 'توليد ردود احترافية تلقائياً',
+        badge: 'قريباً'
       },
     ]
   },
@@ -335,65 +340,74 @@ export default function SettingsPage() {
 
         {/* Settings Sections */}
         {!searchQuery && (
-          <div className="space-y-8">
-            {settingsSections.map((section) => (
-              <div
-                key={section.id}
-                className={`rounded-2xl border-2 ${section.borderColor} ${section.bgColor} p-6`}
-              >
-                {/* Section Header */}
-                <div className="flex items-center gap-4 mb-6">
-                  <div className={`p-3 rounded-xl ${section.iconBg} shadow-lg`}>
-                    <section.icon className="h-6 w-6 text-white" />
+          <TooltipProvider>
+            <div className="space-y-8">
+              {settingsSections.map((section) => (
+                <div
+                  key={section.id}
+                  className={`rounded-2xl border-2 ${section.borderColor} ${section.bgColor} p-6`}
+                >
+                  {/* Section Header */}
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className={`p-3 rounded-xl ${section.iconBg} shadow-lg`}>
+                      <section.icon className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-xl font-bold">
+                        {section.title}
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        {section.description}
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="text-sm px-3 py-1">
+                      {section.items.length} إعداد
+                    </Badge>
                   </div>
-                  <div className="flex-1">
-                    <h2 className="text-xl font-bold">
-                      {section.title}
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      {section.description}
-                    </p>
-                  </div>
-                  <Badge variant="secondary" className="text-sm px-3 py-1">
-                    {section.items.length} إعداد
-                  </Badge>
-                </div>
 
-                {/* Section Items Grid */}
-                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {section.items.map((item) => (
-                    <Link key={item.href} href={item.href}>
-                      <Card className="h-full bg-background/80 backdrop-blur-sm hover:bg-background hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group border-2 hover:border-primary">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div className={`p-2.5 rounded-lg ${section.iconBg}/20 group-hover:${section.iconBg} transition-colors`}>
-                              <item.icon className={`h-5 w-5 text-${section.iconBg.replace('bg-', '')} group-hover:text-white transition-colors`} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">
-                                  {item.title}
-                                </h3>
-                                {item.badge && (
-                                  <Badge className="text-[10px] px-1.5 py-0 bg-emerald-500">
-                                    {item.badge}
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                                {item.description}
-                              </p>
-                            </div>
-                            <ChevronLeft className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  ))}
+                  {/* Section Items Grid */}
+                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {section.items.map((item) => (
+                      <Tooltip key={item.href} delayDuration={200}>
+                        <TooltipTrigger asChild>
+                          <Link href={item.href}>
+                            <Card className="h-full bg-background/80 backdrop-blur-sm hover:bg-background hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group border-2 hover:border-primary">
+                              <CardContent className="p-4">
+                                <div className="flex items-start gap-3">
+                                  <div className={`p-2.5 rounded-lg ${section.iconBg}/20 group-hover:${section.iconBg} transition-colors`}>
+                                    <item.icon className={`h-5 w-5 text-${section.iconBg.replace('bg-', '')} group-hover:text-white transition-colors`} />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">
+                                        {item.title}
+                                      </h3>
+                                      {item.badge && (
+                                        <Badge className="text-[10px] px-1.5 py-0 bg-emerald-500">
+                                          {item.badge}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                      {item.description}
+                                    </p>
+                                  </div>
+                                  <ChevronLeft className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100" />
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs text-right">
+                          {settingsDocs[item.href] || item.description}
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </TooltipProvider>
         )}
 
         {/* Help Card */}

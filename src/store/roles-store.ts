@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type Role = {
   id: string;
@@ -140,6 +141,7 @@ type RolesState = {
   roles: Role[];
   isLoading: boolean;
   error: string | null;
+  isFromAPI: boolean;
   loadRolesFromAPI: () => Promise<void>;
   addRole: (newRole: Omit<Role, 'id' | 'permissions' | 'userCount'>) => Promise<void>;
   updateRole: (roleId: string, updatedRole: Omit<Role, 'id' | 'permissions' | 'userCount'>) => Promise<void>;
@@ -149,149 +151,158 @@ type RolesState = {
   decrementUserCount: (roleId: string) => void;
 };
 
-export const useRolesStore = create<RolesState>()(immer((set, get) => {
-  // Auto-load on first access
-  const autoLoad = () => {
-    const state = get();
-    if (state.roles.length === 0 && !state.isLoading && !state.error) {
-      state.loadRolesFromAPI();
+export const useRolesStore = create<RolesState>()(
+  persist(
+    immer((set, get) => {
+      // Auto-load on first access
+      const autoLoad = () => {
+        const state = get();
+        const backendReady =
+          typeof window !== 'undefined' &&
+          sessionStorage.getItem('backendReady') === '1';
+        
+        if (!state.isLoading && backendReady) {
+          state.loadRolesFromAPI();
+        }
+      };
+
+      if (typeof window !== 'undefined') {
+        setTimeout(autoLoad, 1300);
+      }
+
+      return {
+        roles: initialRoles,
+        isLoading: false,
+        error: null,
+        isFromAPI: false,
+
+        loadRolesFromAPI: async () => {
+          try {
+            set(state => { state.isLoading = true; state.error = null; });
+            const { default: api } = await import('@/lib/api');
+            const roles = await api.getRoles();
+            
+            if (roles && roles.length > 0) {
+              set(state => {
+                state.roles = roles;
+                state.isLoading = false;
+                state.isFromAPI = true;
+              });
+              console.log('✅ Roles loaded from database:', roles.length);
+            } else {
+              set(state => {
+                state.isLoading = false;
+              });
+            }
+          } catch {
+            console.warn('⚠️ Could not load roles from API, using local data');
+            set(state => {
+              state.isLoading = false;
+              state.error = 'Using local data';
+              state.isFromAPI = false;
+            });
+          }
+        },
+
+        addRole: async (newRole) => {
+          try {
+            const { default: api } = await import('@/lib/api');
+            const createdRole = await api.createRole(newRole);
+            set(state => {
+              state.roles.push({
+                ...createdRole,
+                permissions: createdRole.permissions || [],
+              });
+            });
+            console.log('✅ Role created in database:', createdRole.id);
+          } catch {
+            // Fallback to local
+            set(state => {
+              state.roles.push({
+                ...newRole,
+                id: newRole.name.toLowerCase().replace(/\s+/g, '-'),
+                userCount: 0,
+                permissions: [],
+              });
+            });
+          }
+        },
+
+        updateRole: async (roleId, updatedRole) => {
+          try {
+            const { default: api } = await import('@/lib/api');
+            await api.updateRole(roleId, updatedRole);
+            console.log('✅ Role updated in database:', roleId);
+          } catch {
+            // API failed, update locally only
+          }
+          
+          set(state => {
+            const role = state.roles.find(r => r.id === roleId);
+            if (role) {
+              role.name = updatedRole.name;
+              role.description = updatedRole.description;
+            }
+          });
+        },
+
+        updateRolePermissions: async (roleId, permissions) => {
+          try {
+            const { default: api } = await import('@/lib/api');
+            await api.updateRolePermissions(roleId, permissions);
+            console.log('✅ Role permissions updated in database:', roleId);
+          } catch {
+            // API failed, update locally only
+          }
+          
+          set((state) => {
+            const role = state.roles.find(r => r.id === roleId);
+            if (role) {
+              role.permissions = permissions;
+            }
+          });
+        },
+
+        deleteRole: async (roleId) => {
+          try {
+            const { default: api } = await import('@/lib/api');
+            await api.deleteRole(roleId);
+            console.log('✅ Role deleted from database:', roleId);
+          } catch {
+            // API failed, delete locally only
+          }
+          
+          set(state => {
+            state.roles = state.roles.filter(r => r.id !== roleId);
+          });
+        },
+
+        incrementUserCount: (roleId) => {
+          set(state => {
+            const role = state.roles.find(r => r.id === roleId);
+            if (role) {
+              role.userCount++;
+            }
+          });
+        },
+
+        decrementUserCount: (roleId) => {
+          set(state => {
+            const role = state.roles.find(r => r.id === roleId);
+            if (role) {
+              role.userCount--;
+            }
+          });
+        },
+      };
+    }),
+    {
+      name: 'roles-storage',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ 
+        roles: state.roles,
+        isFromAPI: state.isFromAPI 
+      }),
     }
-  };
-
-  if (typeof window !== 'undefined') {
-    setTimeout(autoLoad, 1300);
-  }
-
-  return {
-    roles: initialRoles,
-    isLoading: false,
-    error: null,
-
-    loadRolesFromAPI: async () => {
-      try {
-        set(state => { state.isLoading = true; state.error = null; });
-        const { default: api } = await import('@/lib/api');
-        const roles = await api.getRoles();
-        set(state => {
-          state.roles = roles;
-          state.isLoading = false;
-        });
-        console.log('✅ Roles loaded from API:', roles.length);
-      } catch (error) {
-        console.error('❌ Failed to load roles from API:', error);
-        set(state => {
-          state.isLoading = false;
-          state.error = 'Failed to load roles';
-        });
-      }
-    },
-
-    addRole: async (newRole) => {
-      try {
-        const { default: api } = await import('@/lib/api');
-        const createdRole = await api.createRole(newRole);
-        set(state => {
-          state.roles.push({
-            ...createdRole,
-            permissions: createdRole.permissions || [],
-          });
-        });
-        console.log('✅ Role created in database:', createdRole.id);
-      } catch (error) {
-        console.error('❌ Failed to create role:', error);
-        // Fallback to local
-        set(state => {
-          state.roles.push({
-            ...newRole,
-            id: newRole.name.toLowerCase().replace(/\s+/g, '-'),
-            userCount: 0,
-            permissions: [],
-          });
-        });
-      }
-    },
-
-    updateRole: async (roleId, updatedRole) => {
-      try {
-        const { default: api } = await import('@/lib/api');
-        await api.updateRole(roleId, updatedRole);
-        set(state => {
-          const role = state.roles.find(r => r.id === roleId);
-          if (role) {
-            role.name = updatedRole.name;
-            role.description = updatedRole.description;
-          }
-        });
-        console.log('✅ Role updated in database:', roleId);
-      } catch (error) {
-        console.error('❌ Failed to update role:', error);
-        // Still update locally
-        set(state => {
-          const role = state.roles.find(r => r.id === roleId);
-          if (role) {
-            role.name = updatedRole.name;
-            role.description = updatedRole.description;
-          }
-        });
-      }
-    },
-
-    updateRolePermissions: async (roleId, permissions) => {
-      try {
-        const { default: api } = await import('@/lib/api');
-        await api.updateRolePermissions(roleId, permissions);
-        set((state) => {
-          const role = state.roles.find(r => r.id === roleId);
-          if (role) {
-            role.permissions = permissions;
-          }
-        });
-        console.log('✅ Role permissions updated in database:', roleId);
-      } catch (error) {
-        console.error('❌ Failed to update role permissions:', error);
-        // Still update locally
-        set((state) => {
-          const role = state.roles.find(r => r.id === roleId);
-          if (role) {
-            role.permissions = permissions;
-          }
-        });
-      }
-    },
-
-    deleteRole: async (roleId) => {
-      try {
-        const { default: api } = await import('@/lib/api');
-        await api.deleteRole(roleId);
-        set(state => {
-          state.roles = state.roles.filter(r => r.id !== roleId);
-        });
-        console.log('✅ Role deleted from database:', roleId);
-      } catch (error) {
-        console.error('❌ Failed to delete role:', error);
-        // Still delete locally
-        set(state => {
-          state.roles = state.roles.filter(r => r.id !== roleId);
-        });
-      }
-    },
-
-    incrementUserCount: (roleId) => {
-      set(state => {
-        const role = state.roles.find(r => r.id === roleId);
-        if (role) {
-          role.userCount++;
-        }
-      });
-    },
-
-    decrementUserCount: (roleId) => {
-      set(state => {
-        const role = state.roles.find(r => r.id === roleId);
-        if (role) {
-          role.userCount--;
-        }
-      });
-    },
-  };
-}));
+  )
+);

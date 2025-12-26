@@ -45,7 +45,7 @@ export function GoalsSection({ goals = [] }: GoalsSectionProps) {
   const { formatCurrency } = useSettings();
 
   const formatValue = (value: number, unit?: string) => {
-    if (unit === 'د.أ') {
+    if (unit === 'currency') {
       return formatCurrency(value);
     }
     return `${value}${unit || ''}`;

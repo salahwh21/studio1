@@ -31,6 +31,7 @@ interface OrdersTableRowProps {
   merchants: Array<{ id: string; name: string; storeName?: string }>;
   cities: Array<{ name: string; areas: Array<{ id: string; name: string }> }>;
   formatCurrency: (amount: number) => string;
+  currencySymbol?: string;
 }
 
 export function OrdersTableRow({
@@ -49,6 +50,7 @@ export function OrdersTableRow({
   merchants,
   cities,
   formatCurrency,
+  currencySymbol = 'د.أ',
 }: OrdersTableRowProps) {
   const renderCellContent = (col: ColumnConfig) => {
     const value = order[col.key as keyof Order];
@@ -195,7 +197,7 @@ export function OrdersTableRow({
                     )}
                     style={{ direction: 'ltr', width: 'auto', minWidth: '120px' }}
                   />
-                  <span className="text-sm font-medium text-slate-600">د.أ</span>
+                  <span className="text-sm font-medium text-slate-600">{currencySymbol}</span>
                 </>
               ) : (
                 <div className={cn(
@@ -203,7 +205,7 @@ export function OrdersTableRow({
                   isNegative ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"
                 )}>
                   <span>{formatNumber(numValue)}</span>
-                  <span className="text-sm font-medium">د.أ</span>
+                  <span className="text-sm font-medium">{currencySymbol}</span>
                 </div>
               )}
             </div>
@@ -351,8 +353,7 @@ export function OrdersTableRow({
                 defaultValue={displayValue}
                 onBlur={(e) => onUpdateField(order.id, col.key, convertToEnglishNumbers(e.target.value))}
                 className={cn(
-                  "h-10 text-center border-2 border-slate-300 rounded-lg focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-blue-500 bg-white hover:border-blue-400 mx-4 my-2",
-                  isPhoneField && "font-mono text-base"
+                  "h-10 text-center border-2 border-slate-300 rounded-lg focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-blue-500 bg-white hover:border-blue-400 mx-4 my-2"
                 )}
                 dir={isPhoneField ? "ltr" : "auto"}
                 style={isPhoneField ? { direction: 'ltr', width: 'calc(100% - 2rem)' } : { width: 'calc(100% - 2rem)' }}
@@ -360,10 +361,7 @@ export function OrdersTableRow({
               />
             ) : (
               <div
-                className={cn(
-                  "px-3 py-1.5 text-sm",
-                  isPhoneField && "font-mono text-base"
-                )}
+                className="px-3 py-1.5 text-sm"
                 dir={isPhoneField ? "ltr" : "auto"}
                 style={{ fontVariantNumeric: 'lining-nums', fontFeatureSettings: '"lnum" 1' }}
               >

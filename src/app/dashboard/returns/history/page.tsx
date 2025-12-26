@@ -28,11 +28,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 import { useReturnsStore } from '@/store/returns-store';
 import { useStatusesStore } from '@/store/statuses-store';
+import { useSettings } from '@/contexts/SettingsContext';
 import { cn } from '@/lib/utils';
 
 export default function ReturnsHistoryPage() {
   const { driverReturnSlips } = useReturnsStore();
   const { statuses } = useStatusesStore();
+  const { settings, formatCurrency } = useSettings();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDriver, setSelectedDriver] = useState<string>('');
@@ -116,7 +118,7 @@ export default function ReturnsHistoryPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-r-4 border-r-blue-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -130,7 +132,7 @@ export default function ReturnsHistoryPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-purple-500">
+        <Card className="border-r-4 border-r-purple-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -144,12 +146,12 @@ export default function ReturnsHistoryPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-r-4 border-r-green-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">إجمالي المبالغ</p>
-                <p className="text-2xl font-bold mt-1" dir="ltr">{stats.totalCOD.toFixed(2)} <span className="text-sm">د.أ</span></p>
+                <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalCOD)}</p>
               </div>
               <div className="p-3 bg-green-100 rounded-full dark:bg-green-950">
                 <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -250,7 +252,7 @@ export default function ReturnsHistoryPage() {
                                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                                 <div>
                                   <p className="text-xs text-muted-foreground">إجمالي المبلغ</p>
-                                  <p className="font-bold" dir="ltr">{totalCOD.toFixed(2)} د.أ</p>
+                                  <p className="font-bold">{formatCurrency(totalCOD)}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
@@ -335,7 +337,7 @@ export default function ReturnsHistoryPage() {
                                                   <p className="text-sm text-muted-foreground">#{order.id}</p>
                                                   <p className="text-sm text-muted-foreground mt-1">{order.phone}</p>
                                                 </div>
-                                                <p className="font-bold" dir="ltr">{order.cod.toFixed(2)} د.أ</p>
+                                                <p className="font-bold">{formatCurrency(order.cod)}</p>
                                               </div>
                                             </div>
                                           ))}
@@ -349,8 +351,8 @@ export default function ReturnsHistoryPage() {
                                     <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
                                       <div className="flex items-center justify-between">
                                         <span className="font-semibold">الإجمالي:</span>
-                                        <span className="text-2xl font-bold" dir="ltr">
-                                          {totalCOD.toFixed(2)} د.أ
+                                        <span className="text-2xl font-bold">
+                                          {formatCurrency(totalCOD)}
                                         </span>
                                       </div>
                                     </div>

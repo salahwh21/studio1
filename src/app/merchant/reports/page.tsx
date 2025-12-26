@@ -28,6 +28,7 @@ import {
   FileSpreadsheet,
   FileText,
 } from 'lucide-react';
+import { useSettings } from '@/contexts/SettingsContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +40,8 @@ import { useOrdersStore } from '@/store/orders-store';
 export default function MerchantReportsPage() {
   const [period, setPeriod] = useState('month');
   const { orders: allOrders } = useOrdersStore();
+  const { settings, formatCurrency } = useSettings();
+  const currencySymbol = settings.regional.currencySymbol;
 
   // حساب البيانات من الطلبات الحقيقية
   const data = useMemo(() => {
@@ -313,7 +316,7 @@ export default function MerchantReportsPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" dir="ltr">{currentData.revenue.toFixed(2)} د.أ</div>
+            <div className="text-2xl font-bold" dir="ltr">{currentData.revenue.toFixed(2)} {currencySymbol}</div>
             <div className="flex items-center gap-2 mt-2">
               <TrendBadge value={currentData.trend.revenue} />
               <span className="text-xs text-muted-foreground">من الفترة السابقة</span>
@@ -346,7 +349,7 @@ export default function MerchantReportsPage() {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" dir="ltr">{currentData.avgOrderValue.toFixed(2)} د.أ</div>
+            <div className="text-2xl font-bold" dir="ltr">{currentData.avgOrderValue.toFixed(2)} {currencySymbol}</div>
             <div className="flex items-center gap-2 mt-2">
               <Badge variant="secondary" className="text-xs">
                 معدل الإلغاء: {currentData.cancellationRate}%
@@ -377,7 +380,7 @@ export default function MerchantReportsPage() {
                       <span className="font-medium">{item.month}</span>
                       <div className="flex items-center gap-4">
                         <span className="text-muted-foreground">{item.orders} طلب</span>
-                        <span className="font-bold text-green-600" dir="ltr">{item.revenue.toFixed(2)} د.أ</span>
+                        <span className="font-bold text-green-600" dir="ltr">{item.revenue.toFixed(2)} {currencySymbol}</span>
                       </div>
                     </div>
                     <Progress value={(item.revenue / 10000) * 100} className="h-2" />
@@ -459,7 +462,7 @@ export default function MerchantReportsPage() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">إجمالي الإنفاق</p>
-                      <p className="text-2xl font-bold" dir="ltr">{customerInsights.topCustomer.revenue.toFixed(2)} د.أ</p>
+                      <p className="text-2xl font-bold" dir="ltr">{customerInsights.topCustomer.revenue.toFixed(2)} {currencySymbol}</p>
                     </div>
                   </div>
                 </div>
@@ -493,7 +496,7 @@ export default function MerchantReportsPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold" dir="ltr">{product.revenue.toFixed(2)} د.أ</p>
+                    <p className="font-bold" dir="ltr">{product.revenue.toFixed(2)} {currencySymbol}</p>
                     <TrendBadge value={product.trend} />
                   </div>
                 </div>
@@ -518,7 +521,7 @@ export default function MerchantReportsPage() {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-muted-foreground">{city.orders} طلب</span>
-                      <span className="font-bold text-green-600" dir="ltr">{city.revenue.toFixed(2)} د.أ</span>
+                      <span className="font-bold text-green-600" dir="ltr">{city.revenue.toFixed(2)} {currencySymbol}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

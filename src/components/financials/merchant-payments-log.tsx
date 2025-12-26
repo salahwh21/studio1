@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -11,25 +11,28 @@ import { useFinancialsStore, type MerchantPaymentSlip } from '@/store/financials
 import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { flushSync } from 'react-dom';
-import { exportToPDF, type PDFExportOptions } from '@/lib/pdf-export-utils';
 import { exportToExcel } from '@/lib/export-utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import { useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
+import { SlipTemplates } from '@/lib/unified-slip-templates';
+import { exportSlipToPDF, printSlip } from '@/lib/unified-print-export';
 
 
 export const MerchantPaymentsLog = () => {
     const { merchantPaymentSlips, setMerchantPaymentSlips } = useFinancialsStore();
-    const { settings, formatCurrency } = useSettings();
+    const { settings, formatCurrency, formatDate } = useSettings();
     const { toast } = useToast();
     const [isExporting, setIsExporting] = useState<string | null>(null);
-    const slipPrintRef = useRef<HTMLDivElement>(null);
-    const [slipToPrint, setSlipToPrint] = useState<MerchantPaymentSlip | null>(null);
     const [filterMerchant, setFilterMerchant] = useState<string>('all');
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
+
+    // PDF Preview states
+    const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
 
     useEffect(() => {
         const fetchSlips = async () => {
@@ -61,27 +64,32 @@ export const MerchantPaymentsLog = () => {
         }
     };
 
-    const handlePrint = (slip: MerchantPaymentSlip) => {
+    const handlePrint = async (slip: MerchantPaymentSlip) => {
         if (!slip) return;
-        flushSync(() => {
-            setSlipToPrint(slip);
-        });
 
-        if (!slipPrintRef.current) {
-            toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'لم يتم العثور على محتوى للطباعة.' });
-            return;
-        }
+        try {
+            const slipData = SlipTemplates.merchantPayment(
+                slip.merchantName,
+                slip.orders,
+                {}, // No adjustments for this case
+                formatCurrency,
+                formatDate,
+                {
+                    name: settings.login?.companyName || 'الشركة',
+                    logo: settings.login?.reportsLogo || settings.login?.headerLogo
+                }
+            );
 
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-            toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'يرجى السماح بفتح النوافذ المنبثقة.' });
-            return;
+            await printSlip(slipData, {
+                orientation: 'portrait',
+                showSignatures: true
+            });
+
+            toast({ title: 'تم إرسال للطباعة', description: 'تم إرسال الكشف للطباعة بنجاح.' });
+        } catch (error) {
+            console.error('Print error:', error);
+            toast({ variant: 'destructive', title: 'فشل الطباعة', description: 'حدث خطأ أثناء الطباعة.' });
         }
-        printWindow.document.write('<html><head><title>كشف دفع</title></head><body>' + slipPrintRef.current.innerHTML + '</body></html>');
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        setSlipToPrint(null);
     };
 
     const handleDownloadPdf = async (slip: MerchantPaymentSlip) => {
@@ -89,47 +97,25 @@ export const MerchantPaymentsLog = () => {
         setIsExporting(slip.id);
 
         try {
-            const totalCod = slip.orders.reduce((sum, o) => sum + (o.cod || 0), 0);
-            const totalDelivery = slip.orders.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
-            const totalNet = slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
-            const slipDate = new Date(slip.date).toLocaleDateString('ar-EG', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-            const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
+            const slipData = SlipTemplates.merchantPayment(
+                slip.merchantName,
+                slip.orders,
+                {}, // No adjustments for this case
+                formatCurrency,
+                formatDate,
+                {
+                    name: settings.login?.companyName || 'الشركة',
+                    logo: settings.login?.reportsLogo || settings.login?.headerLogo
+                }
+            );
 
-            const headers = ['#', 'رقم الطلب', 'المستلم', 'قيمة التحصيل', 'أجور التوصيل', 'الصافي المستحق'];
-
-            const rows = slip.orders.map((o, i) => [
-                (i + 1).toString(),
-                o.id,
-                o.recipient,
-                formatCurrency(o.cod || 0),
-                formatCurrency(o.deliveryFee || 0),
-                formatCurrency(o.itemPrice || 0),
-            ]);
-
-            const footerRow = ['الإجمالي', '', '', formatCurrency(totalCod), formatCurrency(totalDelivery), formatCurrency(totalNet)];
-
-            const pdfOptions: PDFExportOptions = {
-                title: `كشف دفع للتاجر: ${slip.merchantName}`,
-                subtitle: `رقم الكشف: ${slip.id}`,
-                logoUrl,
-                companyName: settings.login.companyName || 'الشركة',
-                date: slipDate,
-                tableHeaders: headers,
-                tableRows: rows,
-                footerRow,
+            await exportSlipToPDF(slipData, {
+                orientation: 'portrait',
                 showSignatures: true,
-                signatureLabels: ['توقيع المستلم (التاجر)', 'توقيع الموظف المالي'],
-                orientation: 'portrait' // Use portrait for single slip
-            };
+                filename: `كشف_دفع_${slip.merchantName}_${new Date().toISOString().split('T')[0]}`
+            });
 
-            const today = new Date().toISOString().split('T')[0];
-            const fileName = `${slip.merchantName}_${today}.pdf`;
-            await exportToPDF(pdfOptions, fileName);
-
+            toast({ title: 'تم التصدير بنجاح', description: `تم تحميل كشف ${slip.merchantName}.` });
         } catch (error) {
             console.error('PDF export error:', error);
             toast({ variant: 'destructive', title: 'خطأ', description: 'حدث خطأ أثناء إنشاء ملف PDF.' });
@@ -144,7 +130,7 @@ export const MerchantPaymentsLog = () => {
         const totalCod = slip.orders.reduce((sum, o) => sum + (o.cod || 0), 0);
         const totalDelivery = slip.orders.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
         const totalNet = slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
-        const slipDate = new Date(slip.date).toLocaleDateString('ar-EG');
+        const slipDate = formatDate(slip.date);
         const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
 
         return (
@@ -248,7 +234,7 @@ export const MerchantPaymentsLog = () => {
                 return {
                     'رقم الكشف': slip.id,
                     'اسم التاجر': slip.merchantName,
-                    'تاريخ الإنشاء': new Date(slip.date).toLocaleDateString('ar-EG'),
+                    'تاريخ الإنشاء': formatDate(slip.date),
                     'عدد الطلبات': slip.itemCount,
                     'المبلغ الإجمالي': totalAmount,
                     'الحالة': slip.status,
@@ -271,57 +257,57 @@ export const MerchantPaymentsLog = () => {
         }
     };
 
-    const handleExportPDF = () => {
-        if (filteredSlips.length === 0) {
-            toast({ variant: 'destructive', title: 'خطأ', description: 'لا توجد كشوفات للتصدير.' });
-            return;
-        }
-
+    const handleDownloadPDF = async () => {
         try {
-            const doc = new jsPDF('l', 'mm', 'a4');
+            setIsGeneratingPreview(true);
 
-            doc.setFontSize(18);
-            doc.text('سجل دفعات التجار', 14, 15);
-
-            doc.setFontSize(12);
-            doc.text(`التاريخ: ${new Date().toLocaleDateString('ar-EG')}`, 14, 22);
-            doc.text(`عدد الكشوفات: ${filteredSlips.length}`, 14, 28);
-
-            const tableData = filteredSlips.map(slip => {
-                const totalAmount = slip.orders.reduce((sum, o) => sum + (o.itemPrice || 0), 0);
-                return [
-                    slip.id,
+            // Create a simple slip data for merchant payments log
+            const slipData = {
+                title: 'سجل دفعات التجار',
+                subtitle: `عدد الكشوفات: ${filteredSlips.length}`,
+                date: formatDate(new Date()),
+                headers: ['التاجر', 'التاريخ', 'عدد الطلبات', 'الحالة', 'المبلغ الإجمالي'],
+                rows: filteredSlips.map(slip => [
                     slip.merchantName,
-                    new Date(slip.date).toLocaleDateString('ar-EG'),
+                    formatDate(slip.date),
                     slip.itemCount.toString(),
-                    formatCurrency(totalAmount),
                     slip.status,
-                ];
-            });
+                    formatCurrency(slip.orders.reduce((sum, order) => sum + (order.itemPrice || 0), 0))
+                ]),
+                totalsRow: [
+                    'الإجمالي',
+                    '',
+                    filteredSlips.reduce((sum, slip) => sum + slip.itemCount, 0).toString(),
+                    '',
+                    formatCurrency(filteredSlips.reduce((sum, slip) =>
+                        sum + slip.orders.reduce((orderSum, order) => orderSum + (order.itemPrice || 0), 0), 0
+                    ))
+                ],
+                companyInfo: {
+                    name: settings.login?.companyName || 'الشركة',
+                    logo: settings.login?.reportsLogo || settings.login?.headerLogo || undefined
+                }
+            };
 
-            (doc as any).autoTable({
-                head: [['رقم الكشف', 'اسم التاجر', 'تاريخ الإنشاء', 'عدد الطلبات', 'المبلغ الإجمالي', 'الحالة']],
-                body: tableData,
-                startY: 35,
-                styles: { font: 'Arial', fontSize: 9, halign: 'right' },
-                headStyles: { fillColor: [66, 139, 202], textColor: 255, fontStyle: 'bold' },
-                alternateRowStyles: { fillColor: [245, 245, 245] },
-                margin: { top: 35 },
+            await exportSlipToPDF(slipData, {
+                orientation: 'landscape',
+                showSignatures: false,
+                filename: `سجل_دفعات_التجار_${new Date().toISOString().split('T')[0]}`
             });
-
-            const fileName = `دفعات_التجار_${new Date().toISOString().split('T')[0]}.pdf`;
-            doc.save(fileName);
 
             toast({
-                title: 'تم التصدير بنجاح',
-                description: `تم تصدير ${filteredSlips.length} كشف إلى ملف PDF.`
+                title: 'تم التحميل بنجاح',
+                description: `تم تحميل سجل ${filteredSlips.length} كشف دفع.`
             });
         } catch (error) {
+            console.error('PDF export error:', error);
             toast({
                 variant: 'destructive',
                 title: 'خطأ في التصدير',
-                description: 'حدث خطأ أثناء تصدير البيانات.'
+                description: 'حدث خطأ أثناء تصدير PDF'
             });
+        } finally {
+            setIsGeneratingPreview(false);
         }
     };
 
@@ -374,26 +360,23 @@ export const MerchantPaymentsLog = () => {
                                 </SelectContent>
                             </Select>
                             <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
+                                className="h-7 text-xs disabled:opacity-40 text-green-600 hover:bg-green-50 hover:text-green-700 transition-all hover:scale-105"
                                 onClick={handleExportExcel}
-                                className="gap-2"
                                 disabled={filteredSlips.length === 0}
                             >
-                                <Icon name="FileSpreadsheet" className="h-4 w-4" />
-                                <span className="hidden sm:inline">تصدير Excel</span>
-                                <span className="sm:hidden">Excel</span>
+                                <Icon name="FileSpreadsheet" className="h-4 w-4 ml-1" /> تصدير
                             </Button>
+
                             <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
-                                onClick={handleExportPDF}
-                                className="gap-2"
-                                disabled={filteredSlips.length === 0}
+                                className="h-7 text-xs disabled:opacity-40 text-red-600 hover:bg-red-50 hover:text-red-700 transition-all hover:scale-105"
+                                onClick={handleDownloadPDF}
+                                disabled={filteredSlips.length === 0 || isGeneratingPreview}
                             >
-                                <Icon name="FileText" className="h-4 w-4" />
-                                <span className="hidden sm:inline">تصدير PDF</span>
-                                <span className="sm:hidden">PDF</span>
+                                <Icon name={isGeneratingPreview ? "Loader2" : "Download"} className={cn("h-4 w-4 ml-1", { "animate-spin": isGeneratingPreview })} /> PDF
                             </Button>
                         </div>
                     </div>
@@ -471,7 +454,7 @@ export const MerchantPaymentsLog = () => {
                                                 <TableCell className="text-center border-l font-semibold">{payment.merchantName}</TableCell>
                                                 <TableCell className="text-center border-l">
                                                     <div className="flex flex-col">
-                                                        <span>{new Date(payment.date).toLocaleDateString('ar-EG')}</span>
+                                                        <span>{formatDate(payment.date)}</span>
                                                         <span className="text-xs text-muted-foreground">
                                                             {new Date(payment.date).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
                                                         </span>
@@ -544,12 +527,6 @@ export const MerchantPaymentsLog = () => {
                     </div>
                 </CardContent>
             </Card>
-            {/* Hidden div for printing/exporting, positioned off-screen */}
-            <div style={{ position: 'absolute', right: '-9999px', top: '-9999px' }}>
-                <div ref={slipPrintRef}>
-                    {slipToPrint && <SlipHTML slip={slipToPrint} />}
-                </div>
-            </div>
         </div>
     );
 }

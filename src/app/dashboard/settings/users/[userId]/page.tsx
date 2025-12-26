@@ -1,14 +1,15 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { useUsersStore } from '@/store/user-store';
-import { useRolesStore } from '@/store/roles-store';
+import { useRolesStore, allPermissionGroups } from '@/store/roles-store';
 import { useAreasStore, type City } from '@/store/areas-store';
 import { useToast } from '@/hooks/use-toast';
+import { useSettings } from '@/contexts/SettingsContext';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -19,10 +20,28 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/icon';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SettingsHeader } from '@/components/settings-header';
+import { 
+    User, 
+    Shield, 
+    Package, 
+    Clock, 
+    Calendar, 
+    Activity,
+    CheckCircle2,
+    XCircle,
+    AlertCircle,
+    Truck,
+    Store,
+    Settings,
+    History
+} from 'lucide-react';
 
 // This is now defined in the pricing page, but we'll keep a local copy for now
 // In a real app, this would be a shared resource.
@@ -61,17 +80,49 @@ const mockPriceLists = [
 
 function UserEditPageSkeleton() {
     return (
-        <div className="space-y-6">
+        <div className="space-y-6" dir="rtl">
             <Skeleton className="h-12 w-1/2" />
+            
+            {/* Stats Cards Skeleton */}
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+                {[1, 2, 3, 4].map(i => (
+                    <Card key={i} className="border-r-4 border-r-muted">
+                        <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-2">
+                                    <Skeleton className="h-4 w-20" />
+                                    <Skeleton className="h-8 w-16" />
+                                </div>
+                                <Skeleton className="h-10 w-10 rounded-lg" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+
+            {/* Tabs Skeleton */}
+            <Skeleton className="h-10 w-full" />
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1 space-y-4">
+                <div className="lg:col-span-1 space-y-6">
                     <Card>
                         <CardHeader className="items-center">
                             <Skeleton className="h-24 w-24 rounded-full" />
                             <Skeleton className="h-6 w-32 mt-4" />
                             <Skeleton className="h-4 w-24 mt-2" />
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-4">
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <Skeleton className="h-6 w-32" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-2 w-full" />
                             <Skeleton className="h-10 w-full" />
                         </CardContent>
                     </Card>
@@ -82,11 +133,23 @@ function UserEditPageSkeleton() {
                             <Skeleton className="h-6 w-40" />
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <Skeleton className="h-4 w-20" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <Skeleton className="h-10 w-full" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
                             <Skeleton className="h-10 w-full" />
-                            <Skeleton className="h-4 w-20 mt-2" />
                             <Skeleton className="h-10 w-full" />
-                            <Skeleton className="h-10 w-24 mt-4" />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <Skeleton className="h-6 w-40" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <Skeleton className="h-10 w-full" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -98,7 +161,10 @@ function UserEditPageSkeleton() {
 const PricingPanel = ({ title, priceListId, onPriceListChange }: { title: string, priceListId: string | undefined, onPriceListChange: (id: string) => void }) => (
     <Card>
         <CardHeader>
-            <CardTitle>{title}</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+                <Icon name="DollarSign" className="h-5 w-5 text-primary" />
+                {title}
+            </CardTitle>
             <CardDescription>اختر طريقة حساب الأجور لطلبات هذا المستخدم.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -131,6 +197,8 @@ type FareAdjustmentRule = {
 const FareAdjustmentPanel = () => {
     const { users } = useUsersStore();
     const { cities } = useAreasStore();
+    const { settings } = useSettings();
+    const currencySymbol = settings.regional.currencySymbol;
     const [rules, setRules] = useState<FareAdjustmentRule[]>([]);
 
     const merchants = users.filter(u => u.roleId === 'merchant');
@@ -150,7 +218,10 @@ const FareAdjustmentPanel = () => {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>تعديلات أجرة السائق الخاصة</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                    <Icon name="Calculator" className="h-5 w-5 text-primary" />
+                    تعديلات أجرة السائق الخاصة
+                </CardTitle>
                 <CardDescription>إضافة أو خصم مبلغ على أجرة السائق لتاجر أو وجهة معينة.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -159,7 +230,7 @@ const FareAdjustmentPanel = () => {
                         <TableRow>
                             <TableHead>التاجر</TableHead>
                             <TableHead>الوجهة (المدينة)</TableHead>
-                            <TableHead>قيمة التعديل (د.أ)</TableHead>
+                            <TableHead>قيمة التعديل ({currencySymbol})</TableHead>
                             <TableHead>إجراء</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -197,7 +268,174 @@ const FareAdjustmentPanel = () => {
                     </TableBody>
                 </Table>
                 <Button variant="outline" onClick={handleAddRule} className="mt-4 w-full">
-                    <Icon name="PlusCircle" className="mr-2 h-4 w-4" /> إضافة تعديل جديد
+                    <Icon name="PlusCircle" className="ml-2 h-4 w-4" /> إضافة تعديل جديد
+                </Button>
+            </CardContent>
+        </Card>
+    );
+};
+
+// Mock activity data for demonstration
+const mockActivityLog = [
+    { id: 1, action: 'تسجيل دخول', timestamp: '2025-12-20 10:30', status: 'success' },
+    { id: 2, action: 'تعديل طلب #1234', timestamp: '2025-12-20 09:15', status: 'success' },
+    { id: 3, action: 'محاولة حذف طلب', timestamp: '2025-12-19 16:45', status: 'failed' },
+    { id: 4, action: 'إنشاء طلب جديد', timestamp: '2025-12-19 14:20', status: 'success' },
+    { id: 5, action: 'تغيير كلمة المرور', timestamp: '2025-12-18 11:00', status: 'success' },
+];
+
+const ActivityLogPanel = () => {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <History className="h-5 w-5 text-primary" />
+                    سجل النشاط
+                </CardTitle>
+                <CardDescription>آخر الأنشطة والعمليات التي قام بها المستخدم</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-3">
+                    {mockActivityLog.map((activity) => (
+                        <div key={activity.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                            <div className="flex items-center gap-3">
+                                {activity.status === 'success' ? (
+                                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                ) : (
+                                    <XCircle className="h-4 w-4 text-red-500" />
+                                )}
+                                <span className="font-medium">{activity.action}</span>
+                            </div>
+                            <span className="text-sm text-muted-foreground">{activity.timestamp}</span>
+                        </div>
+                    ))}
+                </div>
+                <Button variant="outline" className="w-full mt-4">
+                    <Icon name="ChevronDown" className="ml-2 h-4 w-4" />
+                    عرض المزيد
+                </Button>
+            </CardContent>
+        </Card>
+    );
+};
+
+// User Stats Component
+const UserStatsCards = ({ user, role }: { user: any; role: any }) => {
+    // Mock stats - in real app these would come from API
+    const stats = {
+        totalOrders: user.roleId === 'merchant' ? 156 : user.roleId === 'driver' ? 423 : 0,
+        completedOrders: user.roleId === 'merchant' ? 142 : user.roleId === 'driver' ? 398 : 0,
+        lastActive: '2025-12-20 10:30',
+        joinDate: '2024-06-15',
+    };
+
+    const completionRate = stats.totalOrders > 0 
+        ? Math.round((stats.completedOrders / stats.totalOrders) * 100) 
+        : 0;
+
+    const roleIcon = user.roleId === 'merchant' ? Store : user.roleId === 'driver' ? Truck : User;
+    const RoleIcon = roleIcon;
+
+    return (
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            <Card className="border-r-4 border-r-blue-500">
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-muted-foreground">إجمالي الطلبات</p>
+                            <p className="text-2xl font-bold mt-1">{stats.totalOrders}</p>
+                        </div>
+                        <div className="p-2 bg-blue-100 rounded-lg dark:bg-blue-950">
+                            <Package className="h-5 w-5 text-blue-600" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="border-r-4 border-r-green-500">
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-muted-foreground">نسبة الإنجاز</p>
+                            <p className="text-2xl font-bold mt-1">{completionRate}%</p>
+                        </div>
+                        <div className="p-2 bg-green-100 rounded-lg dark:bg-green-950">
+                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="border-r-4 border-r-purple-500">
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-muted-foreground">آخر نشاط</p>
+                            <p className="text-sm font-bold mt-1">{stats.lastActive}</p>
+                        </div>
+                        <div className="p-2 bg-purple-100 rounded-lg dark:bg-purple-950">
+                            <Activity className="h-5 w-5 text-purple-600" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="border-r-4 border-r-orange-500">
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-muted-foreground">تاريخ الانضمام</p>
+                            <p className="text-sm font-bold mt-1">{stats.joinDate}</p>
+                        </div>
+                        <div className="p-2 bg-orange-100 rounded-lg dark:bg-orange-950">
+                            <Calendar className="h-5 w-5 text-orange-600" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+};
+
+// Permissions Summary Component
+const PermissionsSummary = ({ role }: { role: any }) => {
+    const totalPermissions = allPermissionGroups.flatMap(g => g.permissions).length;
+    const hasAllPermissions = role?.permissions?.includes('all');
+    const permissionCount = hasAllPermissions ? totalPermissions : (role?.permissions?.length || 0);
+    const percentage = Math.round((permissionCount / totalPermissions) * 100);
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-primary" />
+                    ملخص الصلاحيات
+                </CardTitle>
+                <CardDescription>صلاحيات المستخدم بناءً على دوره في النظام</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">الدور الحالي</span>
+                    <Badge variant="secondary" className="text-sm">
+                        {role?.name || 'غير محدد'}
+                    </Badge>
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">الصلاحيات المفعلة</span>
+                        <span className="font-medium">{permissionCount} / {totalPermissions}</span>
+                    </div>
+                    <Progress value={percentage} className="h-2" />
+                    <p className="text-xs text-muted-foreground text-center">
+                        {hasAllPermissions ? 'صلاحيات كاملة للنظام' : `${percentage}% من إجمالي الصلاحيات`}
+                    </p>
+                </div>
+                <Button asChild variant="outline" className="w-full">
+                    <Link href={`/dashboard/settings/roles/${role?.id}`}>
+                        <Settings className="ml-2 h-4 w-4" />
+                        إدارة صلاحيات الدور
+                    </Link>
                 </Button>
             </CardContent>
         </Card>
@@ -217,6 +455,7 @@ export default function UserEditPage() {
     const user = users.find(u => u.id === userId);
 
     const [name, setName] = useState('');
+    const [storeName, setStoreName] = useState('');
     const [email, setEmail] = useState('');
     const [userRoleId, setUserRoleId] = useState('');
     const [priceListId, setPriceListId] = useState<string | undefined>(undefined);
@@ -228,12 +467,14 @@ export default function UserEditPage() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const [isLoading, setIsLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('info');
 
     const role = roles.find(r => r.id === user?.roleId);
 
     useEffect(() => {
         if (user) {
             setName(user.name);
+            setStoreName(user.storeName || '');
             setEmail(user.email);
             setUserRoleId(user.roleId);
             setPriceListId(user.priceListId);
@@ -258,6 +499,7 @@ export default function UserEditPage() {
 
         updateUser(user.id, {
             name,
+            storeName,
             email,
             roleId: userRoleId,
             avatar: user.avatar,
@@ -278,14 +520,15 @@ export default function UserEditPage() {
         return null; // or a not-found component
     }
 
-
+    const isMerchant = role?.id === 'merchant';
+    const isDriver = role?.id === 'driver';
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6" dir="rtl">
             <SettingsHeader
                 icon="UserCog"
-                title={`تعديل المستخدم: ${name}`}
-                description="تعديل بيانات وصلاحيات المستخدم"
+                title={`تعديل المستخدم: ${user.storeName || name}`}
+                description={`${role?.name || 'بدون دور'} - ${email}`}
                 backHref="/dashboard/settings/users"
                 breadcrumbs={[
                     { label: 'إدارة المستخدمين', href: '/dashboard/settings/users' }
@@ -293,91 +536,164 @@ export default function UserEditPage() {
                 color="purple"
             />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                {/* Left Column: Profile Card */}
-                <div className="lg:col-span-1 space-y-6">
-                    <Card>
-                        <CardHeader className="items-center text-center">
-                            <Avatar className="h-24 w-24 border-2 border-primary">
-                                <AvatarImage src={user.avatar} alt={user.name} />
-                                <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            <div className="pt-2">
-                                <CardTitle>{name}</CardTitle>
-                                <CardDescription>{role?.name || 'بدون دور'}</CardDescription>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex items-center justify-between rounded-lg border p-3">
-                                <Label htmlFor="user-status" className="font-medium flex items-center gap-2">
-                                    <Badge variant={isActive ? 'default' : 'destructive'} className={isActive ? "bg-green-500" : ""}>
-                                        {isActive ? 'نشط' : 'غير نشط'}
-                                    </Badge>
-                                    <span>حالة الحساب</span>
-                                </Label>
-                                <Switch id="user-status" checked={isActive} onCheckedChange={setIsActive} />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+            {/* Stats Cards */}
+            <UserStatsCards user={user} role={role} />
 
-                {/* Right Column: Edit Forms */}
-                <div className="lg:col-span-2 space-y-6">
-                    <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><Icon name="User" /> معلومات الحساب</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="name">الاسم</Label>
-                                <Input id="name" value={name} onChange={e => setName(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="email">البريد الإلكتروني / رقم الهاتف</Label>
-                                <Input id="email" value={email} onChange={e => setEmail(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="role">الدور</Label>
-                                <Select value={userRoleId} onValueChange={setUserRoleId}>
-                                    <SelectTrigger id="role"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        {roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </CardContent>
-                    </Card>
+            {/* Main Content with Tabs */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="info" className="gap-2">
+                        <User className="h-4 w-4" />
+                        المعلومات الأساسية
+                    </TabsTrigger>
+                    <TabsTrigger value="settings" className="gap-2">
+                        <Settings className="h-4 w-4" />
+                        الإعدادات
+                    </TabsTrigger>
+                    <TabsTrigger value="activity" className="gap-2">
+                        <History className="h-4 w-4" />
+                        سجل النشاط
+                    </TabsTrigger>
+                </TabsList>
 
-                    {role?.id === 'merchant' && <PricingPanel title="تسعير التوصيل للتاجر" priceListId={priceListId} onPriceListChange={setPriceListId} />}
-                    {role?.id === 'driver' && <PricingPanel title="تسعير أجور السائق" priceListId={priceListId} onPriceListChange={setPriceListId} />}
-                    {role?.id === 'driver' && <FareAdjustmentPanel />}
-
-                    <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><Icon name="KeyRound" /> تغيير كلمة المرور</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="new-password">كلمة المرور الجديدة</Label>
-                                <div className="relative">
-                                    <Input id="new-password" type={showNewPassword ? 'text' : 'password'} placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-                                    <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowNewPassword(prev => !prev)}>
-                                        <Icon name={showNewPassword ? 'EyeOff' : 'Eye'} className="h-4 w-4" />
+                <TabsContent value="info" className="mt-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                        {/* Left Column: Profile Card */}
+                        <div className="lg:col-span-1 space-y-6">
+                            <Card>
+                                <CardHeader className="items-center text-center">
+                                    <Avatar className="h-24 w-24 border-2 border-primary">
+                                        <AvatarImage src={user.avatar} alt={user.name} />
+                                        <AvatarFallback className="text-2xl">{(user.storeName || user.name).slice(0, 2).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="pt-2">
+                                        <CardTitle>{user.storeName || name}</CardTitle>
+                                        <CardDescription>{role?.name || 'بدون دور'}</CardDescription>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex items-center justify-between rounded-lg border p-3">
+                                        <Label htmlFor="user-status" className="font-medium flex items-center gap-2">
+                                            <Badge variant={isActive ? 'default' : 'destructive'} className={isActive ? "bg-green-500" : ""}>
+                                                {isActive ? 'نشط' : 'غير نشط'}
+                                            </Badge>
+                                            <span>حالة الحساب</span>
+                                        </Label>
+                                        <Switch id="user-status" checked={isActive} onCheckedChange={setIsActive} />
+                                    </div>
+                                    <Button variant="outline" className="w-full" onClick={() => {
+                                        navigator.clipboard.writeText(user.id);
+                                        toast({ title: 'تم النسخ', description: 'تم نسخ معرف المستخدم' });
+                                    }}>
+                                        <Icon name="Copy" className="ml-2 h-4 w-4" />
+                                        نسخ معرف المستخدم
                                     </Button>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="confirm-password">تأكيد كلمة المرور</Label>
-                                <div className="relative">
-                                    <Input id="confirm-password" type={showConfirmPassword ? 'text' : 'password'} placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                                    <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowConfirmPassword(prev => !prev)}>
-                                        <Icon name={showConfirmPassword ? 'EyeOff' : 'Eye'} className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                </CardContent>
+                            </Card>
 
-                    <div className="flex justify-end">
-                        <Button onClick={handleSaveChanges}><Icon name="Save" className="mr-2" /> حفظ التغييرات</Button>
+                            <PermissionsSummary role={role} />
+                        </div>
+
+                        {/* Right Column: Edit Forms */}
+                        <div className="lg:col-span-2 space-y-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <User className="h-5 w-5 text-primary" />
+                                        معلومات الحساب
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="name">الاسم</Label>
+                                            <Input id="name" value={name} onChange={e => setName(e.target.value)} />
+                                        </div>
+                                        {isMerchant && (
+                                            <div className="space-y-2">
+                                                <Label htmlFor="storeName">اسم المتجر</Label>
+                                                <Input id="storeName" value={storeName} onChange={e => setStoreName(e.target.value)} />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email">البريد الإلكتروني / رقم الهاتف</Label>
+                                        <Input id="email" value={email} onChange={e => setEmail(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="role">الدور</Label>
+                                        <Select value={userRoleId} onValueChange={setUserRoleId}>
+                                            <SelectTrigger id="role"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                {roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Icon name="KeyRound" className="h-5 w-5 text-primary" />
+                                        تغيير كلمة المرور
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="new-password">كلمة المرور الجديدة</Label>
+                                            <div className="relative">
+                                                <Input id="new-password" type={showNewPassword ? 'text' : 'password'} placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                                                <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowNewPassword(prev => !prev)}>
+                                                    <Icon name={showNewPassword ? 'EyeOff' : 'Eye'} className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="confirm-password">تأكيد كلمة المرور</Label>
+                                            <div className="relative">
+                                                <Input id="confirm-password" type={showConfirmPassword ? 'text' : 'password'} placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                                                <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowConfirmPassword(prev => !prev)}>
+                                                    <Icon name={showConfirmPassword ? 'EyeOff' : 'Eye'} className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
-                </div>
+                </TabsContent>
+
+                <TabsContent value="settings" className="mt-6">
+                    <div className="space-y-6">
+                        {isMerchant && <PricingPanel title="تسعير التوصيل للتاجر" priceListId={priceListId} onPriceListChange={setPriceListId} />}
+                        {isDriver && <PricingPanel title="تسعير أجور السائق" priceListId={priceListId} onPriceListChange={setPriceListId} />}
+                        {isDriver && <FareAdjustmentPanel />}
+                        
+                        {!isMerchant && !isDriver && (
+                            <Card>
+                                <CardContent className="p-12 text-center">
+                                    <Settings className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                                    <p className="text-muted-foreground">لا توجد إعدادات إضافية لهذا النوع من المستخدمين</p>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="activity" className="mt-6">
+                    <ActivityLogPanel />
+                </TabsContent>
+            </Tabs>
+
+            {/* Sticky Save Button */}
+            <div className="sticky bottom-4 flex justify-end">
+                <Button size="lg" onClick={handleSaveChanges} className="shadow-lg">
+                    <Icon name="Save" className="ml-2 h-4 w-4" />
+                    حفظ التغييرات
+                </Button>
             </div>
         </div>
     );

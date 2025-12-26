@@ -15,8 +15,9 @@ import { useOrdersStore } from '@/store/orders-store';
 const driverNavItems = [
   { href: '/driver', icon: 'Home', label: 'الرئيسية', exact: true },
   { href: '/driver/orders', icon: 'Package', label: 'طلباتي', badge: true },
-  { href: '/driver/map', icon: 'Map', label: 'الخريطة' },
-  { href: '/driver/history', icon: 'History', label: 'السجل' },
+  { href: '/driver/scan', icon: 'ScanBarcode', label: 'مسح', isCenter: true },
+  { href: '/driver/records', icon: 'ClipboardList', label: 'السجلات' },
+  { href: '/driver/settings', icon: 'Settings', label: 'الإعدادات' },
 ];
 
 export default function DriverLayout({
@@ -65,18 +66,33 @@ export default function DriverLayout({
               </div>
             </div>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsOnline(!isOnline)}
-              className={cn(
-                "gap-2",
-                isOnline ? "text-green-600" : "text-gray-400"
-              )}
-            >
-              <Icon name={isOnline ? "Wifi" : "WifiOff"} className="h-4 w-4" />
-              {isOnline ? 'متصل' : 'غير متصل'}
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Notifications Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+              >
+                <Icon name="Bell" className="h-5 w-5" />
+                {/* Notification Badge */}
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                  3
+                </span>
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsOnline(!isOnline)}
+                className={cn(
+                  "gap-2",
+                  isOnline ? "text-green-600" : "text-gray-400"
+                )}
+              >
+                <Icon name={isOnline ? "Wifi" : "WifiOff"} className="h-4 w-4" />
+                {isOnline ? 'متصل' : 'غير متصل'}
+              </Button>
+            </div>
           </div>
         </header>
 
@@ -171,18 +187,44 @@ export default function DriverLayout({
 
         {/* Mobile Bottom Navigation */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background">
-          <div className="grid grid-cols-4 gap-1 p-2">
+          <div className="grid grid-cols-5 gap-1 p-2 relative">
             {driverNavItems.map((item) => {
               const isActive = item.exact
                 ? pathname === item.href
                 : pathname.startsWith(item.href);
+
+              // زر الباركود في الوسط بتصميم مميز
+              if (item.isCenter) {
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex flex-col items-center justify-center -mt-6"
+                  >
+                    <div className={cn(
+                      "h-14 w-14 rounded-full flex items-center justify-center shadow-lg border-4 border-background transition-transform active:scale-95",
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                    )}>
+                      <Icon name={item.icon as any} className="h-7 w-7" />
+                    </div>
+                    <span className={cn(
+                      "text-xs font-medium mt-1",
+                      isActive ? "text-primary" : "text-muted-foreground"
+                    )}>
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              }
 
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors relative',
+                    'flex flex-col items-center gap-1 rounded-lg px-2 py-2 text-xs font-medium transition-colors relative',
                     isActive
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground'

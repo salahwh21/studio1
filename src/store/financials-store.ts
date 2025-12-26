@@ -2,6 +2,7 @@
 'use client';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { persist } from 'zustand/middleware';
 import type { Order } from './orders-store';
 
 export type DriverPaymentSlip = {
@@ -33,77 +34,85 @@ type FinancialsState = {
   updateOrderInMerchantPaymentSlip: (slipId: string, orderId: string, updatedOrder: Order) => void;
 };
 
-export const useFinancialsStore = create<FinancialsState>()(immer((set) => ({
-  driverPaymentSlips: [],
-  merchantPaymentSlips: [],
+export const useFinancialsStore = create<FinancialsState>()(
+  persist(
+    immer((set) => ({
+      driverPaymentSlips: [],
+      merchantPaymentSlips: [],
 
-  setMerchantPaymentSlips: (slips) => {
-    set(state => {
-      state.merchantPaymentSlips = slips;
-    });
-  },
+      setMerchantPaymentSlips: (slips) => {
+        set(state => {
+          state.merchantPaymentSlips = slips;
+        });
+      },
 
-  addDriverPaymentSlip: (slipData) => {
-    set(state => {
-      const newSlip: DriverPaymentSlip = {
-        ...slipData,
-        id: `PAY-${Date.now()}`
-      };
-      state.driverPaymentSlips.unshift(newSlip);
-    });
-  },
+      addDriverPaymentSlip: (slipData) => {
+        set(state => {
+          const newSlip: DriverPaymentSlip = {
+            ...slipData,
+            id: `PAY-${Date.now()}`
+          };
+          state.driverPaymentSlips.unshift(newSlip);
+        });
+      },
 
-  removeOrderFromDriverPaymentSlip: (slipId, orderId) => {
-    set(state => {
-      const slip = state.driverPaymentSlips.find(s => s.id === slipId);
-      if (slip) {
-        slip.orders = slip.orders.filter(o => o.id !== orderId);
-        slip.itemCount = slip.orders.length;
-      }
-    });
-  },
+      removeOrderFromDriverPaymentSlip: (slipId, orderId) => {
+        set(state => {
+          const slip = state.driverPaymentSlips.find(s => s.id === slipId);
+          if (slip) {
+            slip.orders = slip.orders.filter(o => o.id !== orderId);
+            slip.itemCount = slip.orders.length;
+          }
+        });
+      },
 
-  updateOrderInDriverPaymentSlip: (slipId, orderId, updatedOrder) => {
-    set(state => {
-      const slip = state.driverPaymentSlips.find(s => s.id === slipId);
-      if (slip) {
-        const orderIndex = slip.orders.findIndex(o => o.id === orderId);
-        if (orderIndex !== -1) {
-          slip.orders[orderIndex] = updatedOrder;
-        }
-      }
-    });
-  },
+      updateOrderInDriverPaymentSlip: (slipId, orderId, updatedOrder) => {
+        set(state => {
+          const slip = state.driverPaymentSlips.find(s => s.id === slipId);
+          if (slip) {
+            const orderIndex = slip.orders.findIndex(o => o.id === orderId);
+            if (orderIndex !== -1) {
+              slip.orders[orderIndex] = updatedOrder;
+            }
+          }
+        });
+      },
 
-  addMerchantPaymentSlip: (slipData) => {
-    set(state => {
-      const newSlip: MerchantPaymentSlip = {
-        ...slipData,
-        id: `MPAY-${Date.now()}`
-      };
-      state.merchantPaymentSlips.unshift(newSlip);
-    });
-  },
+      addMerchantPaymentSlip: (slipData) => {
+        set(state => {
+          const newSlip: MerchantPaymentSlip = {
+            ...slipData,
+            id: `MPAY-${Date.now()}`
+          };
+          state.merchantPaymentSlips.unshift(newSlip);
+        });
+      },
 
-  removeOrderFromMerchantPaymentSlip: (slipId, orderId) => {
-    set(state => {
-      const slip = state.merchantPaymentSlips.find(s => s.id === slipId);
-      if (slip) {
-        slip.orders = slip.orders.filter(o => o.id !== orderId);
-        slip.itemCount = slip.orders.length;
-      }
-    });
-  },
+      removeOrderFromMerchantPaymentSlip: (slipId, orderId) => {
+        set(state => {
+          const slip = state.merchantPaymentSlips.find(s => s.id === slipId);
+          if (slip) {
+            slip.orders = slip.orders.filter(o => o.id !== orderId);
+            slip.itemCount = slip.orders.length;
+          }
+        });
+      },
 
-  updateOrderInMerchantPaymentSlip: (slipId, orderId, updatedOrder) => {
-    set(state => {
-      const slip = state.merchantPaymentSlips.find(s => s.id === slipId);
-      if (slip) {
-        const orderIndex = slip.orders.findIndex(o => o.id === orderId);
-        if (orderIndex !== -1) {
-          slip.orders[orderIndex] = updatedOrder;
-        }
-      }
-    });
-  },
-})));
+      updateOrderInMerchantPaymentSlip: (slipId, orderId, updatedOrder) => {
+        set(state => {
+          const slip = state.merchantPaymentSlips.find(s => s.id === slipId);
+          if (slip) {
+            const orderIndex = slip.orders.findIndex(o => o.id === orderId);
+            if (orderIndex !== -1) {
+              slip.orders[orderIndex] = updatedOrder;
+            }
+          }
+        });
+      },
+    })),
+    {
+      name: 'financials-storage',
+      version: 1,
+    }
+  )
+);

@@ -24,6 +24,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import Icon from '@/components/icon';
 import { useRolesStore } from '@/store/roles-store';
 import { Skeleton } from './ui/skeleton';
+import { useAuth } from '@/contexts/AuthContext';
 
 type NavItem = {
   href: string;
@@ -41,9 +42,6 @@ const allNavItems: NavItem[] = [
   { href: '/dashboard/returns', iconName: 'Undo2', label: 'إدارة المرتجعات', permissionId: 'returns:view' },
   { href: '/dashboard/financials', iconName: 'Calculator', label: 'المحاسبة', permissionId: 'financials:view' },
   { href: '/dashboard/settings', iconName: 'Settings', label: 'الإعدادات', permissionId: 'settings:view' },
-  // Specific app views
-  { href: '/dashboard/driver-app', iconName: 'Smartphone', label: 'تطبيق السائق', permissionId: 'driver-app:use' },
-  { href: '/merchant', iconName: 'Store', label: 'بوابة التاجر', permissionId: 'merchant-portal:use' },
 ];
 
 
@@ -51,11 +49,12 @@ export function AppHeader() {
   const { setTheme, theme } = useTheme();
   const pathname = usePathname();
   const context = useSettings();
+  const { user, logout } = useAuth();
   
   // --- RBAC Logic ---
   const { roles } = useRolesStore();
-  // Simulate a logged-in user. In a real app, this would come from an auth context.
-  const currentUserRole = 'admin'; 
+  // Get actual user role from AuthContext
+  const currentUserRole = user?.roleId || 'admin'; 
   const userRole = roles.find(r => r.id === currentUserRole);
   const userPermissions = userRole?.permissions || [];
   
@@ -66,6 +65,10 @@ export function AppHeader() {
       const [group] = permissionId.split(':');
       if (userPermissions.includes(`${group}:*`)) return true;
       return userPermissions.includes(permissionId);
+  };
+
+  const handleLogout = async () => {
+    await logout();
   };
   // --- End RBAC Logic ---
 
@@ -97,7 +100,19 @@ export function AppHeader() {
   
   const HeaderLogo = () => {
     if (headerLogo) {
-      return <Image src={headerLogo} alt={settings.login.companyName || "Company Logo"} width={120} height={32} style={{objectFit: 'contain'}} />
+      return (
+        <img 
+          src={headerLogo} 
+          alt={settings.login.companyName || "Company Logo"} 
+          style={{
+            maxWidth: 120,
+            maxHeight: 40,
+            width: 'auto',
+            height: 'auto',
+            objectFit: 'contain'
+          }} 
+        />
+      );
     }
     return <Logo />;
   }
@@ -187,11 +202,9 @@ export function AppHeader() {
                     </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                    <Link href="/">
-                        <Icon name="LogOut" className="mr-2 h-4 w-4" />
-                        <span>تسجيل الخروج</span>
-                    </Link>
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
+                    <Icon name="LogOut" className="mr-2 h-4 w-4" />
+                    <span>تسجيل الخروج</span>
                 </DropdownMenuItem>
             </DropdownMenuContent>
             </DropdownMenu>

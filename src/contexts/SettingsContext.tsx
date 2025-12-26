@@ -127,6 +127,201 @@ export type SavedTemplate = PolicySettings & { id: string; name: string; isReady
 
 // Re-defining the ready-made templates
 export const readyTemplates: SavedTemplate[] = [
+    // ========== قالب حراري 100×150 عمودي (من ThermalLabelOptimized) ==========
+    {
+        id: 'thermal-100x150-portrait', name: '🏷️ حراري 100×150 عمودي', isReadyMade: true,
+        paperSize: 'custom', customDimensions: { width: 100, height: 150 }, margins: { top: 0, right: 0, bottom: 0, left: 0 },
+        elements: [
+            // الباركود في الأعلى
+            { id: 'th1-1', type: 'barcode', x: 40, y: 10, width: 300, height: 65, content: '{{orderId}}', zIndex: 1, fontSize: 14, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0 },
+            // خلفية المبلغ
+            { id: 'th1-2', type: 'shape', x: 10, y: 85, width: 358, height: 70, content: '', zIndex: 2, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 8 },
+            // عنوان المبلغ
+            { id: 'th1-3', type: 'text', x: 15, y: 90, width: 348, height: 20, content: 'المبلغ المطلوب (COD)', zIndex: 3, fontSize: 12, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'center', borderRadius: 0 },
+            // قيمة المبلغ
+            { id: 'th1-4', type: 'text', x: 15, y: 110, width: 348, height: 40, content: '{{cod}} ر.س', zIndex: 4, fontSize: 36, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'center', borderRadius: 0 },
+            // رقم الطلب
+            { id: 'th1-5', type: 'text', x: 10, y: 165, width: 358, height: 30, content: '#{{orderId}}', zIndex: 5, fontSize: 18, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 6 },
+            // خلفية المستلم
+            { id: 'th1-6', type: 'shape', x: 10, y: 205, width: 358, height: 75, content: '', zIndex: 6, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 8 },
+            // عنوان المستلم
+            { id: 'th1-7', type: 'text', x: 15, y: 210, width: 100, height: 15, content: 'المستلم', zIndex: 7, fontSize: 10, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            // اسم المستلم
+            { id: 'th1-8', type: 'text', x: 15, y: 225, width: 348, height: 25, content: '{{recipient}}', zIndex: 8, fontSize: 16, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            // رقم الهاتف
+            { id: 'th1-9', type: 'text', x: 15, y: 250, width: 348, height: 25, content: '{{phone}}', zIndex: 9, fontSize: 14, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'left', borderRadius: 0 },
+            // خلفية العنوان
+            { id: 'th1-10', type: 'shape', x: 10, y: 290, width: 358, height: 100, content: '', zIndex: 10, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 8 },
+            // عنوان العنوان
+            { id: 'th1-11', type: 'text', x: 15, y: 295, width: 100, height: 15, content: 'العنوان', zIndex: 11, fontSize: 10, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            // نص العنوان
+            { id: 'th1-12', type: 'text', x: 15, y: 310, width: 348, height: 45, content: '{{address}}', zIndex: 12, fontSize: 13, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            // المدينة
+            { id: 'th1-13', type: 'text', x: 15, y: 360, width: 100, height: 25, content: '{{city}}', zIndex: 13, fontSize: 11, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 4 },
+            // المنطقة
+            { id: 'th1-14', type: 'text', x: 120, y: 360, width: 100, height: 25, content: '{{region}}', zIndex: 14, fontSize: 11, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 4 },
+            // التاجر
+            { id: 'th1-15', type: 'shape', x: 10, y: 400, width: 175, height: 45, content: '', zIndex: 15, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 6 },
+            { id: 'th1-16', type: 'text', x: 15, y: 405, width: 165, height: 15, content: 'التاجر', zIndex: 16, fontSize: 9, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#666666', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'center', borderRadius: 0 },
+            { id: 'th1-17', type: 'text', x: 15, y: 420, width: 165, height: 20, content: '{{merchant}}', zIndex: 17, fontSize: 11, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'center', borderRadius: 0 },
+            // التاريخ
+            { id: 'th1-18', type: 'shape', x: 193, y: 400, width: 175, height: 45, content: '', zIndex: 18, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 6 },
+            { id: 'th1-19', type: 'text', x: 198, y: 405, width: 165, height: 15, content: 'التاريخ', zIndex: 19, fontSize: 9, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#666666', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'center', borderRadius: 0 },
+            { id: 'th1-20', type: 'text', x: 198, y: 420, width: 165, height: 20, content: '{{date}}', zIndex: 20, fontSize: 11, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'center', borderRadius: 0 },
+        ]
+    },
+    // ========== قالب حراري 100×150 أفقي (من ThermalLabelOptimized) ==========
+    {
+        id: 'thermal-100x150-landscape', name: '🏷️ حراري 100×150 أفقي', isReadyMade: true,
+        paperSize: 'custom', customDimensions: { width: 150, height: 100 }, margins: { top: 0, right: 0, bottom: 0, left: 0 },
+        elements: [
+            // الجانب الأيسر - الباركود
+            { id: 'th2-1', type: 'shape', x: 0, y: 0, width: 225, height: 378, content: '', zIndex: 1, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0 },
+            { id: 'th2-2', type: 'barcode', x: 15, y: 15, width: 195, height: 55, content: '{{orderId}}', zIndex: 2, fontSize: 11, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0 },
+            // المبلغ في الجانب الأيسر
+            { id: 'th2-3', type: 'shape', x: 15, y: 80, width: 195, height: 70, content: '', zIndex: 3, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 6 },
+            { id: 'th2-4', type: 'text', x: 20, y: 85, width: 185, height: 15, content: 'COD', zIndex: 4, fontSize: 10, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'center', borderRadius: 0 },
+            { id: 'th2-5', type: 'text', x: 20, y: 100, width: 185, height: 45, content: '{{cod}} ر.س', zIndex: 5, fontSize: 28, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'center', borderRadius: 0 },
+            // الجانب الأيمن - المعلومات
+            { id: 'th2-6', type: 'text', x: 235, y: 15, width: 320, height: 30, content: '#{{orderId}}', zIndex: 6, fontSize: 14, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 6 },
+            // المستلم
+            { id: 'th2-7', type: 'shape', x: 235, y: 55, width: 320, height: 55, content: '', zIndex: 7, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 8 },
+            { id: 'th2-8', type: 'text', x: 240, y: 60, width: 310, height: 22, content: '{{recipient}}', zIndex: 8, fontSize: 14, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            { id: 'th2-9', type: 'text', x: 240, y: 82, width: 310, height: 22, content: '{{phone}}', zIndex: 9, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'left', borderRadius: 0 },
+            // العنوان
+            { id: 'th2-10', type: 'shape', x: 235, y: 120, width: 320, height: 55, content: '', zIndex: 10, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 8 },
+            { id: 'th2-11', type: 'text', x: 240, y: 125, width: 310, height: 30, content: '{{address}}', zIndex: 11, fontSize: 11, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            { id: 'th2-12', type: 'text', x: 240, y: 155, width: 150, height: 18, content: '{{city}} • {{region}}', zIndex: 12, fontSize: 10, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            // التاجر
+            { id: 'th2-13', type: 'text', x: 235, y: 185, width: 320, height: 25, content: '{{merchant}}', zIndex: 13, fontSize: 11, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 6 },
+        ]
+    },
+    // ========== قالب حراري 100×100 مربع (من ThermalLabelOptimized) ==========
+    {
+        id: 'thermal-100x100-square', name: '🏷️ حراري 100×100 مربع', isReadyMade: true,
+        paperSize: 'custom', customDimensions: { width: 100, height: 100 }, margins: { top: 0, right: 0, bottom: 0, left: 0 },
+        elements: [
+            // الباركود في الأعلى
+            { id: 'th3-1', type: 'barcode', x: 50, y: 8, width: 280, height: 55, content: '{{orderId}}', zIndex: 1, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0 },
+            // المبلغ
+            { id: 'th3-2', type: 'shape', x: 10, y: 70, width: 358, height: 55, content: '', zIndex: 2, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 6 },
+            { id: 'th3-3', type: 'text', x: 15, y: 75, width: 348, height: 15, content: 'COD', zIndex: 3, fontSize: 10, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'center', borderRadius: 0 },
+            { id: 'th3-4', type: 'text', x: 15, y: 90, width: 348, height: 30, content: '{{cod}} ر.س', zIndex: 4, fontSize: 24, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'center', borderRadius: 0 },
+            // رقم الطلب
+            { id: 'th3-5', type: 'text', x: 10, y: 135, width: 358, height: 25, content: '#{{orderId}}', zIndex: 5, fontSize: 14, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 4 },
+            // المستلم
+            { id: 'th3-6', type: 'shape', x: 10, y: 168, width: 358, height: 55, content: '', zIndex: 6, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 6 },
+            { id: 'th3-7', type: 'text', x: 15, y: 173, width: 348, height: 22, content: '{{recipient}}', zIndex: 7, fontSize: 14, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            { id: 'th3-8', type: 'text', x: 15, y: 195, width: 348, height: 22, content: '{{phone}}', zIndex: 8, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'left', borderRadius: 0 },
+            // العنوان
+            { id: 'th3-9', type: 'shape', x: 10, y: 230, width: 358, height: 65, content: '', zIndex: 9, fontSize: 12, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 6 },
+            { id: 'th3-10', type: 'text', x: 15, y: 235, width: 348, height: 35, content: '{{address}}', zIndex: 10, fontSize: 11, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            { id: 'th3-11', type: 'text', x: 15, y: 270, width: 170, height: 20, content: '{{city}} • {{region}}', zIndex: 11, fontSize: 10, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            // التاجر والتاريخ
+            { id: 'th3-12', type: 'text', x: 10, y: 305, width: 175, height: 35, content: '{{merchant}}', zIndex: 12, fontSize: 10, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 4 },
+            { id: 'th3-13', type: 'text', x: 193, y: 305, width: 175, height: 35, content: '{{date}}', zIndex: 13, fontSize: 10, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 4 },
+        ]
+    },
+    // ========== قالب حراري 75×50 عمودي (من ThermalLabelOptimized) ==========
+    {
+        id: 'thermal-75x50-portrait', name: '🏷️ حراري 75×50 عمودي', isReadyMade: true,
+        paperSize: 'custom', customDimensions: { width: 50, height: 75 }, margins: { top: 0, right: 0, bottom: 0, left: 0 },
+        elements: [
+            // الباركود
+            { id: 'th4-1', type: 'barcode', x: 30, y: 5, width: 220, height: 40, content: '{{orderId}}', zIndex: 1, fontSize: 10, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0 },
+            // المبلغ
+            { id: 'th4-2', type: 'text', x: 5, y: 50, width: 273, height: 30, content: '{{cod}} ر.س', zIndex: 2, fontSize: 20, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 4 },
+            // المستلم
+            { id: 'th4-3', type: 'text', x: 5, y: 85, width: 273, height: 20, content: '{{recipient}}', zIndex: 3, fontSize: 12, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            { id: 'th4-4', type: 'text', x: 5, y: 105, width: 273, height: 18, content: '{{phone}}', zIndex: 4, fontSize: 11, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'left', borderRadius: 0 },
+            // العنوان
+            { id: 'th4-5', type: 'text', x: 5, y: 125, width: 273, height: 30, content: '{{city}} - {{region}}', zIndex: 5, fontSize: 10, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 4 },
+            // التاجر
+            { id: 'th4-6', type: 'text', x: 5, y: 160, width: 273, height: 20, content: '{{merchant}}', zIndex: 6, fontSize: 9, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#666666', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'center', borderRadius: 0 },
+        ]
+    },
+    // ========== قالب حراري 75×50 أفقي (من ThermalLabelOptimized) ==========
+    {
+        id: 'thermal-75x50-landscape', name: '🏷️ حراري 75×50 أفقي', isReadyMade: true,
+        paperSize: 'custom', customDimensions: { width: 75, height: 50 }, margins: { top: 0, right: 0, bottom: 0, left: 0 },
+        elements: [
+            // الباركود على اليسار
+            { id: 'th5-1', type: 'barcode', x: 5, y: 5, width: 80, height: 35, content: '{{orderId}}', zIndex: 1, fontSize: 8, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0 },
+            // المبلغ
+            { id: 'th5-2', type: 'text', x: 90, y: 5, width: 95, height: 35, content: '{{cod}}', zIndex: 2, fontSize: 16, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 4 },
+            // المستلم
+            { id: 'th5-3', type: 'text', x: 5, y: 45, width: 180, height: 18, content: '{{recipient}}', zIndex: 3, fontSize: 11, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            { id: 'th5-4', type: 'text', x: 5, y: 63, width: 180, height: 16, content: '{{phone}}', zIndex: 4, fontSize: 10, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'left', borderRadius: 0 },
+            // المدينة والمنطقة
+            { id: 'th5-5', type: 'text', x: 5, y: 82, width: 180, height: 18, content: '{{city}} • {{region}}', zIndex: 5, fontSize: 9, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 3 },
+        ]
+    },
+    // ========== قالب حراري 60×40 عمودي (من ThermalLabelOptimized) ==========
+    {
+        id: 'thermal-60x40-portrait', name: '🏷️ حراري 60×40 عمودي', isReadyMade: true,
+        paperSize: 'custom', customDimensions: { width: 40, height: 60 }, margins: { top: 0, right: 0, bottom: 0, left: 0 },
+        elements: [
+            // الباركود
+            { id: 'th6-1', type: 'barcode', x: 20, y: 3, width: 185, height: 35, content: '{{orderId}}', zIndex: 1, fontSize: 9, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0 },
+            // المبلغ
+            { id: 'th6-2', type: 'text', x: 3, y: 42, width: 220, height: 25, content: '{{cod}} ر.س', zIndex: 2, fontSize: 16, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 3 },
+            // المستلم
+            { id: 'th6-3', type: 'text', x: 3, y: 70, width: 220, height: 16, content: '{{recipient}}', zIndex: 3, fontSize: 10, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            { id: 'th6-4', type: 'text', x: 3, y: 86, width: 220, height: 14, content: '{{phone}}', zIndex: 4, fontSize: 9, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'left', borderRadius: 0 },
+            // المدينة
+            { id: 'th6-5', type: 'text', x: 3, y: 102, width: 220, height: 16, content: '{{city}} - {{region}}', zIndex: 5, fontSize: 9, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 3 },
+            // التاجر
+            { id: 'th6-6', type: 'text', x: 3, y: 122, width: 220, height: 14, content: '{{merchant}}', zIndex: 6, fontSize: 8, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#666666', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'center', borderRadius: 0 },
+        ]
+    },
+    // ========== قالب حراري 60×40 أفقي (من ThermalLabelOptimized) ==========
+    {
+        id: 'thermal-60x40-landscape', name: '🏷️ حراري 60×40 أفقي', isReadyMade: true,
+        paperSize: 'custom', customDimensions: { width: 60, height: 40 }, margins: { top: 0, right: 0, bottom: 0, left: 0 },
+        elements: [
+            // الباركود
+            { id: 'th7-1', type: 'barcode', x: 3, y: 3, width: 70, height: 30, content: '{{orderId}}', zIndex: 1, fontSize: 7, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0 },
+            // المبلغ
+            { id: 'th7-2', type: 'text', x: 78, y: 3, width: 70, height: 30, content: '{{cod}}', zIndex: 2, fontSize: 14, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 3 },
+            // المستلم
+            { id: 'th7-3', type: 'text', x: 3, y: 38, width: 145, height: 15, content: '{{recipient}}', zIndex: 3, fontSize: 9, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            { id: 'th7-4', type: 'text', x: 3, y: 53, width: 145, height: 13, content: '{{phone}}', zIndex: 4, fontSize: 8, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'left', borderRadius: 0 },
+            // المدينة
+            { id: 'th7-5', type: 'text', x: 3, y: 68, width: 145, height: 14, content: '{{city}} • {{region}}', zIndex: 5, fontSize: 8, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 2 },
+        ]
+    },
+    // ========== قالب حراري 50×30 عمودي (من ThermalLabelOptimized) ==========
+    {
+        id: 'thermal-50x30-portrait', name: '🏷️ حراري 50×30 عمودي', isReadyMade: true,
+        paperSize: 'custom', customDimensions: { width: 30, height: 50 }, margins: { top: 0, right: 0, bottom: 0, left: 0 },
+        elements: [
+            // الباركود
+            { id: 'th8-1', type: 'barcode', x: 15, y: 2, width: 155, height: 28, content: '{{orderId}}', zIndex: 1, fontSize: 8, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0 },
+            // المبلغ
+            { id: 'th8-2', type: 'text', x: 2, y: 33, width: 185, height: 22, content: '{{cod}} ر.س', zIndex: 2, fontSize: 14, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 2 },
+            // المستلم
+            { id: 'th8-3', type: 'text', x: 2, y: 58, width: 185, height: 14, content: '{{recipient}}', zIndex: 3, fontSize: 9, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            { id: 'th8-4', type: 'text', x: 2, y: 72, width: 185, height: 12, content: '{{phone}}', zIndex: 4, fontSize: 8, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'left', borderRadius: 0 },
+            // المدينة
+            { id: 'th8-5', type: 'text', x: 2, y: 86, width: 185, height: 14, content: '{{city}}', zIndex: 5, fontSize: 8, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 2 },
+        ]
+    },
+    // ========== قالب حراري 50×30 أفقي (من ThermalLabelOptimized) ==========
+    {
+        id: 'thermal-50x30-landscape', name: '🏷️ حراري 50×30 أفقي', isReadyMade: true,
+        paperSize: 'custom', customDimensions: { width: 50, height: 30 }, margins: { top: 0, right: 0, bottom: 0, left: 0 },
+        elements: [
+            // الباركود
+            { id: 'th9-1', type: 'barcode', x: 2, y: 2, width: 55, height: 25, content: '{{orderId}}', zIndex: 1, fontSize: 6, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 0 },
+            // المبلغ
+            { id: 'th9-2', type: 'text', x: 60, y: 2, width: 50, height: 25, content: '{{cod}}', zIndex: 2, fontSize: 12, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 2, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 2 },
+            // المستلم
+            { id: 'th9-3', type: 'text', x: 2, y: 30, width: 108, height: 13, content: '{{recipient}}', zIndex: 3, fontSize: 8, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'right', borderRadius: 0 },
+            { id: 'th9-4', type: 'text', x: 2, y: 43, width: 108, height: 11, content: '{{phone}}', zIndex: 4, fontSize: 7, fontWeight: 'normal', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 0, opacity: 1, backgroundColor: 'transparent', textAlign: 'left', borderRadius: 0 },
+            // المدينة
+            { id: 'th9-5', type: 'text', x: 2, y: 56, width: 108, height: 12, content: '{{city}}', zIndex: 5, fontSize: 7, fontWeight: 'bold', fontStyle: 'normal', textDecoration: 'none', color: '#000000', borderColor: '#000000', borderWidth: 1, opacity: 1, backgroundColor: '#ffffff', textAlign: 'center', borderRadius: 2 },
+        ]
+    },
     {
         id: 'ready-7545-1', name: 'قالب عرضي 75x45 (رسمي)', isReadyMade: true,
         paperSize: 'custom', customDimensions: { width: 75, height: 45 }, margins: { top: 2, right: 2, bottom: 2, left: 2 },
@@ -275,6 +470,7 @@ interface SettingsContextType {
   updateMenuVisibility: (roleId: string, permissionId: string, checked: boolean) => void;
   updateAiAgentSetting: <K extends keyof AiAgentSettings>(key: K, value: AiAgentSettings[K]) => void;
   formatCurrency: (amount: number | undefined | null) => string;
+  formatDate: (date: Date | string | number, options?: { longFormat?: boolean }) => string;
   isHydrated: boolean;
 }
 
@@ -569,7 +765,40 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     return `${formattedNumber} ${currencySymbol}`;
   }, [settings.regional]);
 
-  const value = { settings, setSetting, updateOrderSetting, updateLoginSetting, updateSocialLink, updateRegionalSetting, updateUiSetting, formatCurrency, isHydrated, updatePolicySetting, updateMenuVisibility, updateAiAgentSetting };
+  const formatDate = useCallback((date: Date | string | number, options?: { longFormat?: boolean }): string => {
+    try {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return '';
+      
+      const { dateFormat, language } = settings.regional;
+      const locale = language === 'ar' ? 'ar-SA' : 'en-US';
+      
+      if (options?.longFormat) {
+        return d.toLocaleDateString(locale, {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+      }
+      
+      // تنسيق التاريخ حسب الإعداد
+      const day = d.getDate().toString().padStart(2, '0');
+      const month = (d.getMonth() + 1).toString().padStart(2, '0');
+      const year = d.getFullYear();
+      
+      switch (dateFormat) {
+        case 'DD/MM/YYYY': return `${day}/${month}/${year}`;
+        case 'MM/DD/YYYY': return `${month}/${day}/${year}`;
+        case 'YYYY-MM-DD': return `${year}-${month}-${day}`;
+        default: return `${day}/${month}/${year}`;
+      }
+    } catch {
+      return '';
+    }
+  }, [settings.regional]);
+
+  const value = { settings, setSetting, updateOrderSetting, updateLoginSetting, updateSocialLink, updateRegionalSetting, updateUiSetting, formatCurrency, formatDate, isHydrated, updatePolicySetting, updateMenuVisibility, updateAiAgentSetting };
 
   return (
     <SettingsContext.Provider value={value}>

@@ -30,7 +30,7 @@ import { ColumnConfig } from '@/components/export-data-dialog';
 
 interface OrdersTableViewProps {
     orders: Order[];
-    groupedOrders: Record<string, Order[]> | null;
+    groupedOrders: Record<string, Order[]> | Record<string, { orders: Order[], subGroups: Record<string, Order[]> }> | null;
     openGroups: Record<string, boolean>;
     setOpenGroups: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 
@@ -55,6 +55,7 @@ interface OrdersTableViewProps {
 
     setModalState: (state: ModalState) => void;
     formatCurrency: (value: number) => string;
+    currencySymbol?: string;
     footerTotals?: {
         itemPrice: number;
         deliveryFee: number;
@@ -89,6 +90,7 @@ export const OrdersTableView = ({
     rowsPerPage,
     setModalState,
     formatCurrency,
+    currencySymbol = 'د.أ',
     footerTotals,
     selectedRowsCount,
     ordersCount
@@ -110,10 +112,10 @@ export const OrdersTableView = ({
             >
                 <TableCell className={`sticky right-0 z-10 p-2 text-center border-l ${
                     isSelected
-                        ? 'bg-gradient-to-l from-orange-100 to-orange-50 dark:from-orange-900/40 dark:to-orange-900/20 border-l-orange-300'
+                        ? 'bg-orange-100 dark:bg-orange-900/60 border-l-orange-300'
                         : index % 2 === 0 
                             ? 'bg-white dark:bg-slate-900 border-l-gray-200 dark:border-l-slate-700'
-                            : 'bg-slate-50/70 dark:bg-slate-800/40 border-l-gray-200 dark:border-l-slate-700'
+                            : 'bg-slate-50 dark:bg-slate-800 border-l-gray-200 dark:border-l-slate-700'
                 }`}>
                     <div className="flex items-center justify-center gap-2">
                         <span className="text-xs font-medium text-slate-600 dark:text-slate-400 tabular-nums">{page * rowsPerPage + index + 1}</span>
@@ -279,13 +281,20 @@ export const OrdersTableView = ({
                                                         const cleanValue = e.target.value.replace(/[^\d.-]/g, '');
                                                         handleUpdateField(order.id, col.key as unknown as keyof Order, parseFloat(cleanValue) || 0);
                                                     }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            const cleanValue = (e.target as HTMLInputElement).value.replace(/[^\d.-]/g, '');
+                                                            handleUpdateField(order.id, col.key as unknown as keyof Order, parseFloat(cleanValue) || 0);
+                                                        }
+                                                    }}
                                                     className={cn(
                                                         "h-10 text-center border-2 border-slate-300 rounded-lg focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-blue-500 bg-white hover:border-blue-400 font-semibold tabular-nums text-base mx-2",
                                                         isNegative ? "text-red-600" : "text-green-600"
                                                     )}
                                                     style={{ direction: 'ltr', width: 'auto', minWidth: '120px' }}
                                                 />
-                                                <span className="text-sm font-medium text-slate-600">د.أ</span>
+                                                <span className="text-sm font-medium text-slate-600">{currencySymbol}</span>
                                             </>
                                         ) : (
                                             <div className={cn(
@@ -295,7 +304,7 @@ export const OrdersTableView = ({
                                                     : "text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-300"
                                             )}>
                                                 <span>{formatNumber(numValue)}</span>
-                                                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">د.أ</span>
+                                                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{currencySymbol}</span>
                                             </div>
                                         )}
                                     </div>
@@ -403,22 +412,36 @@ export const OrdersTableView = ({
                             );
                             break;
                         case 'date':
+                            // تنسيق التاريخ بالعربية
+                            const formatArabicDate = (dateStr: string) => {
+                                if (!dateStr) return '';
+                                try {
+                                    const date = new Date(dateStr);
+                                    if (isNaN(date.getTime())) return dateStr;
+                                    
+                                    const monthsAr = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+                                    const monthsEn = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'];
+                                    
+                                    const day = date.getDate();
+                                    const month = date.getMonth();
+                                    const year = date.getFullYear();
+                                    const hours = date.getHours().toString().padStart(2, '0');
+                                    const minutes = date.getMinutes().toString().padStart(2, '0');
+                                    const seconds = date.getSeconds().toString().padStart(2, '0');
+                                    
+                                    return `${day} ${monthsAr[month]}/ ${monthsEn[month]}، ${year} ${hours}:${minutes}:${seconds}`;
+                                } catch {
+                                    return dateStr;
+                                }
+                            };
+                            
                             content = (
                                 <CopyableCell value={value as string}>
-                                    {isEditMode ? (
-                                        <Input
-                                            type="date"
-                                            defaultValue={value as string}
-                                            onChange={(e) => handleUpdateField(order.id, 'date', e.target.value)}
-                                            className="h-10 text-center border-2 border-slate-300 rounded-lg focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-blue-500 bg-white hover:border-blue-400 mx-4 my-2 font-mono"
-                                            dir="ltr"
-                                            style={{ direction: 'ltr', width: 'calc(100% - 2rem)' }}
-                                        />
-                                    ) : (
-                                        <div className="px-3 py-1.5 text-sm font-mono" dir="ltr" style={{ fontVariantNumeric: 'lining-nums', fontFeatureSettings: '"lnum" 1' }}>
-                                            {value as string}
-                                        </div>
-                                    )}
+                                    <div className="px-3 py-1.5 text-sm" dir="rtl">
+                                        <span className="text-slate-700 dark:text-slate-300">
+                                            {formatArabicDate(value as string)}
+                                        </span>
+                                    </div>
                                 </CopyableCell>
                             );
                             break;
@@ -443,6 +466,12 @@ export const OrdersTableView = ({
                                         <Input
                                             defaultValue={displayValue}
                                             onBlur={(e) => handleUpdateField(order.id, col.key as unknown as keyof Order, convertToEnglishNumbers(e.target.value))}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleUpdateField(order.id, col.key as unknown as keyof Order, convertToEnglishNumbers((e.target as HTMLInputElement).value));
+                                                }
+                                            }}
                                             className={cn(
                                                 "h-10 text-center border-2 border-slate-300 rounded-lg focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-blue-500 bg-white hover:border-blue-400 mx-4 my-2",
                                                 isPhoneField && "font-mono text-base"
@@ -578,66 +607,204 @@ export const OrdersTableView = ({
                             </TableRow>
                         ))
                     ) : groupedOrders ? (
-                        Object.entries(groupedOrders || {}).map(([groupKey, groupOrders], groupIndex) => {
-                            const isGroupOpen = openGroups[groupKey] ?? false;
-                            const groupTotals = groupOrders.reduce((acc, order) => {
+                        // دالة تكرارية لعرض المجموعات المتداخلة بلا حدود
+                        (() => {
+                            type NestedGroup = {
+                                orders: Order[];
+                                subGroups?: Record<string, NestedGroup>;
+                            };
+                            
+                            // ألوان مختلفة لكل مستوى
+                            const levelColors = [
+                                { bg: 'bg-blue-100 dark:bg-blue-900/30', hover: 'hover:bg-blue-200 dark:hover:bg-blue-900/50' },
+                                { bg: 'bg-orange-50 dark:bg-orange-900/20', hover: 'hover:bg-orange-100 dark:hover:bg-orange-900/30' },
+                                { bg: 'bg-green-50 dark:bg-green-900/20', hover: 'hover:bg-green-100 dark:hover:bg-green-900/30' },
+                                { bg: 'bg-purple-50 dark:bg-purple-900/20', hover: 'hover:bg-purple-100 dark:hover:bg-purple-900/30' },
+                                { bg: 'bg-pink-50 dark:bg-pink-900/20', hover: 'hover:bg-pink-100 dark:hover:bg-pink-900/30' },
+                            ];
+                            
+                            const renderNestedGroups = (
+                                groups: Record<string, NestedGroup | Order[]>, 
+                                level: number = 0, 
+                                parentKey: string = ''
+                            ): React.ReactNode[] => {
+                                const firstFinancialIndex = visibleColumns.findIndex(c => c.type && c.type.includes('financial'));
+                                const colSpan = firstFinancialIndex !== -1 ? firstFinancialIndex : visibleColumns.length;
+                                const colorIndex = level % levelColors.length;
+                                const paddingLeft = 16 + (level * 24); // زيادة المسافة مع كل مستوى
+                                
+                                return Object.entries(groups).map(([groupKey, groupData], groupIndex) => {
+                                    const isNestedGroup = groupData && typeof groupData === 'object' && 'subGroups' in groupData;
+                                    const groupOrders = isNestedGroup 
+                                        ? (groupData as NestedGroup).orders 
+                                        : (groupData as Order[]);
+                                    const subGroups = isNestedGroup 
+                                        ? (groupData as NestedGroup).subGroups 
+                                        : null;
+                                    
+                                    const fullKey = parentKey ? `${parentKey}_${groupKey}` : groupKey;
+                                    const isGroupOpen = openGroups[fullKey] ?? false;
+                                    
+                                    const groupTotals = groupOrders.reduce((acc, order) => {
+                                        acc.itemPrice += order.itemPrice || 0;
+                                        acc.deliveryFee += (order.deliveryFee || 0) + (order.additionalCost || 0);
+                                        acc.cod += order.cod || 0;
+                                        acc.companyDue += (order.deliveryFee || 0) + (order.additionalCost || 0) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0));
+                                        return acc;
+                                    }, { itemPrice: 0, deliveryFee: 0, cod: 0, companyDue: 0 });
+                                    
+                                    return (
+                                        <React.Fragment key={fullKey}>
+                                            <TableRow 
+                                                onClick={() => setOpenGroups(prev => ({ ...prev, [fullKey]: !isGroupOpen }))} 
+                                                className={cn(
+                                                    "cursor-pointer font-semibold transition-colors border-b border-gray-200 dark:border-slate-600",
+                                                    levelColors[colorIndex].bg,
+                                                    levelColors[colorIndex].hover,
+                                                    "text-gray-900 dark:text-gray-100"
+                                                )}
+                                            >
+                                                <TableCell className="p-0 border-l" colSpan={colSpan + 1}>
+                                                    <div 
+                                                        className="flex items-center py-2"
+                                                        style={{ paddingRight: `${paddingLeft}px` }}
+                                                    >
+                                                        <ChevronDown className={cn(
+                                                            "transition-transform ml-2",
+                                                            level === 0 ? "h-5 w-5" : "h-4 w-4",
+                                                            !isGroupOpen && "-rotate-90"
+                                                        )} />
+                                                        <span className={level === 0 ? "text-base" : "text-sm"}>
+                                                            {groupKey || 'غير محدد'}
+                                                        </span>
+                                                        <span className={cn(
+                                                            "opacity-75 mr-1",
+                                                            level === 0 ? "text-sm" : "text-xs"
+                                                        )}>
+                                                            ({groupOrders.length})
+                                                        </span>
+                                                    </div>
+                                                </TableCell>
+                                                {visibleColumns.slice(colSpan).map(col => {
+                                                    let totalValue = '';
+                                                    switch (col.key) {
+                                                        case 'itemPrice': totalValue = formatCurrency(groupTotals.itemPrice); break;
+                                                        case 'deliveryFee': totalValue = formatCurrency(groupOrders.reduce((s, o) => s + (o.deliveryFee || 0), 0)); break;
+                                                        case 'additionalCost': totalValue = formatCurrency(groupOrders.reduce((s, o) => s + (o.additionalCost || 0), 0)); break;
+                                                        case 'driverFee': totalValue = formatCurrency(groupOrders.reduce((s, o) => s + (o.driverFee || 0), 0)); break;
+                                                        case 'driverAdditionalFare': totalValue = formatCurrency(groupOrders.reduce((s, o) => s + (o.driverAdditionalFare || 0), 0)); break;
+                                                        case 'companyDue': totalValue = formatCurrency(groupTotals.companyDue); break;
+                                                        case 'cod': totalValue = formatCurrency(groupTotals.cod); break;
+                                                        default: totalValue = '';
+                                                    }
+                                                    return (
+                                                        <TableCell 
+                                                            key={col.key} 
+                                                            className={cn(
+                                                                "p-2 text-center border-l font-semibold",
+                                                                level === 0 ? "text-sm" : "text-xs"
+                                                            )}
+                                                        >
+                                                            {totalValue}
+                                                        </TableCell>
+                                                    );
+                                                })}
+                                            </TableRow>
+                                            
+                                            {isGroupOpen && (
+                                                subGroups && Object.keys(subGroups).length > 0
+                                                    ? renderNestedGroups(subGroups as Record<string, NestedGroup>, level + 1, fullKey)
+                                                    : groupOrders.map((order, index) => renderOrderRow(order, index))
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                });
+                            };
+                            
+                            // حساب المجاميع الكلية للمجموعات - إذا كان هناك تحديد نحسب منه فقط
+                            const allGroupOrders = Object.values(groupedOrders as Record<string, NestedGroup | Order[]>).flatMap(group => {
+                                if ('orders' in group) return (group as NestedGroup).orders;
+                                return group as Order[];
+                            });
+                            
+                            // إذا كان هناك صفوف محددة نحسب منها، وإلا نحسب من كل الطلبات
+                            const ordersForTotal = selectedRows.length > 0 
+                                ? allGroupOrders.filter(order => selectedRows.includes(order.id))
+                                : allGroupOrders;
+                            
+                            const totalGroupTotals = ordersForTotal.reduce((acc, order) => {
                                 acc.itemPrice += order.itemPrice || 0;
-                                acc.deliveryFee += (order.deliveryFee || 0) + (order.additionalCost || 0);
+                                acc.deliveryFee += order.deliveryFee || 0;
+                                acc.additionalCost += order.additionalCost || 0;
+                                acc.driverFee += order.driverFee || 0;
+                                acc.driverAdditionalFare += order.driverAdditionalFare || 0;
                                 acc.cod += order.cod || 0;
                                 acc.companyDue += (order.deliveryFee || 0) + (order.additionalCost || 0) - ((order.driverFee || 0) + (order.driverAdditionalFare || 0));
                                 return acc;
-                            }, { itemPrice: 0, deliveryFee: 0, cod: 0, companyDue: 0 });
-
-                            const firstFinancialIndex = visibleColumns.findIndex(c => c.type && c.type.includes('financial'));
-                            const colSpan = firstFinancialIndex !== -1 ? firstFinancialIndex : visibleColumns.length;
-
+                            }, { itemPrice: 0, deliveryFee: 0, additionalCost: 0, driverFee: 0, driverAdditionalFare: 0, cod: 0, companyDue: 0 });
+                            
                             return (
-                                <React.Fragment key={groupKey}>
-                                    <TableRow 
-                                        onClick={() => setOpenGroups(prev => ({ ...prev, [groupKey]: !isGroupOpen }))} 
-                                        className={cn(
-                                            "cursor-pointer font-semibold transition-colors border-b-2 border-gray-300 dark:border-slate-700",
-                                            groupIndex % 2 === 0 
-                                                ? "bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-gray-900 dark:text-gray-100" 
-                                                : "bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-900 dark:text-gray-100"
-                                        )}
-                                    >
-                                        <TableCell className="p-0 border-l" colSpan={colSpan + 1}>
-                                            <div className="flex items-center px-4 py-3">
-                                                <ChevronDown className={cn("h-5 w-5 transition-transform ml-2", !isGroupOpen && "-rotate-90")} />
-                                                <span>{groupKey || 'غير محدد'}</span><span className="text-sm opacity-90 mr-1">({groupOrders.length})</span>
-                                            </div>
+                                <>
+                                    {renderNestedGroups(groupedOrders as Record<string, NestedGroup | Order[]>)}
+                                    {/* سطر المجاميع الكلية للمجموعات */}
+                                    <TableRow className="bg-gradient-to-r from-slate-700 via-slate-800 to-slate-700 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 border-t-2 border-slate-500 dark:border-slate-600">
+                                        <TableCell 
+                                            className="sticky right-0 z-10 p-3 text-center bg-gradient-to-r from-orange-600 to-orange-500 dark:from-orange-700 dark:to-orange-600 border-l border-white/20"
+                                        >
+                                            <span className="text-sm font-bold text-white">
+                                                {selectedRows.length > 0 ? `المحدد (${selectedRows.length})` : 'المجموع الكلي'}
+                                            </span>
                                         </TableCell>
-                                        {visibleColumns.slice(colSpan).map(col => {
+                                        {visibleColumns.map((col, colIndex) => {
                                             let totalValue = '';
                                             switch (col.key) {
-                                                case 'itemPrice': totalValue = formatCurrency(groupTotals.itemPrice); break;
-                                                case 'deliveryFee': totalValue = formatCurrency(groupOrders.reduce((s, o) => s + (o.deliveryFee || 0), 0)); break;
-                                                case 'additionalCost': totalValue = formatCurrency(groupOrders.reduce((s, o) => s + (o.additionalCost || 0), 0)); break;
-                                                case 'driverFee': totalValue = formatCurrency(groupOrders.reduce((s, o) => s + (o.driverFee || 0), 0)); break;
-                                                case 'driverAdditionalFare': totalValue = formatCurrency(groupOrders.reduce((s, o) => s + (o.driverAdditionalFare || 0), 0)); break;
-                                                case 'companyDue': totalValue = formatCurrency(groupTotals.companyDue); break;
-                                                case 'cod': totalValue = formatCurrency(groupTotals.cod); break;
+                                                case 'itemPrice': totalValue = formatCurrency(totalGroupTotals.itemPrice); break;
+                                                case 'deliveryFee': totalValue = formatCurrency(totalGroupTotals.deliveryFee); break;
+                                                case 'additionalCost': totalValue = formatCurrency(totalGroupTotals.additionalCost); break;
+                                                case 'driverFee': totalValue = formatCurrency(totalGroupTotals.driverFee); break;
+                                                case 'driverAdditionalFare': totalValue = formatCurrency(totalGroupTotals.driverAdditionalFare); break;
+                                                case 'companyDue': totalValue = formatCurrency(totalGroupTotals.companyDue); break;
+                                                case 'cod': totalValue = formatCurrency(totalGroupTotals.cod); break;
                                                 default: totalValue = '';
                                             }
-                                            return <TableCell key={col.key} className="p-2 text-center border-l text-sm font-semibold">{totalValue}</TableCell>
+                                            const isFinancialCol = ['itemPrice', 'deliveryFee', 'additionalCost', 'driverFee', 'driverAdditionalFare', 'companyDue', 'cod'].includes(col.key);
+                                            return (
+                                                <TableCell 
+                                                    key={col.key} 
+                                                    className={cn(
+                                                        "p-3 text-center border-l border-white/10 text-sm font-bold",
+                                                        colIndex % 2 === 0 
+                                                            ? "bg-slate-700/50 dark:bg-slate-800/50" 
+                                                            : "bg-slate-600/50 dark:bg-slate-700/50"
+                                                    )}
+                                                >
+                                                    {totalValue && isFinancialCol ? (
+                                                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-orange-500 text-white text-sm font-bold shadow-md">
+                                                            {totalValue}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-slate-300">{totalValue}</span>
+                                                    )}
+                                                </TableCell>
+                                            );
                                         })}
                                     </TableRow>
-                                    {isGroupOpen && groupOrders.map((order, index) => renderOrderRow(order, index))}
-                                </React.Fragment>
+                                </>
                             );
-                        })
+                        })()
                     ) : (
                         orders.map((order, index) => renderOrderRow(order, index))
                     )}
                     
                     {/* سطر المجاميع - ثابت في الأسفل: position: sticky; bottom: 0; */}
                     {footerTotals && !groupedOrders && (
-                        <TableRow className="sticky bottom-0 z-[99] bg-gradient-to-r from-orange-100 via-orange-50 to-orange-100 dark:from-slate-800 dark:via-slate-800/90 dark:to-slate-800 border-t-2 border-orange-300 dark:border-orange-800 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
+                        <TableRow className="sticky bottom-0 z-10 bg-gradient-to-r from-slate-700 via-slate-800 to-slate-700 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 border-t-2 border-slate-500 dark:border-slate-600 shadow-[0_-4px_12px_rgba(0,0,0,0.15)]">
                             <TableCell 
-                                className="sticky right-0 z-[100] p-2 text-center bg-gradient-to-r from-orange-200 to-orange-100 dark:from-slate-700 dark:to-slate-800 border-l border-orange-200 dark:border-slate-600"
+                                className="sticky right-0 z-10 py-2 px-3 text-center bg-gradient-to-r from-orange-600 to-orange-500 dark:from-orange-700 dark:to-orange-600"
                             >
-                                <span className="text-xs font-bold text-orange-700 dark:text-orange-400">المجموع</span>
+                                <span className="text-sm font-bold text-white">
+                                    {selectedRowsCount && selectedRowsCount > 0 ? `المحدد (${selectedRowsCount})` : 'المجموع الكلي'}
+                                </span>
                             </TableCell>
                             {visibleColumns.map((col) => {
                                 if (!footerTotals) return null;
@@ -671,13 +838,15 @@ export const OrdersTableView = ({
                                 return (
                                     <TableCell 
                                         key={col.key} 
-                                        className="p-2 text-center border-l border-orange-200/50 dark:border-slate-600/50 text-sm font-bold bg-transparent"
+                                        className="py-2 px-3 text-center text-sm font-bold bg-slate-700/50 dark:bg-slate-800/50"
                                     >
                                         {totalValue && isFinancialCol ? (
-                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-orange-600 text-white text-xs font-bold shadow-sm">
+                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-orange-500 text-white text-sm font-bold shadow-md">
                                                 {totalValue}
                                             </span>
-                                        ) : totalValue}
+                                        ) : (
+                                            <span className="text-slate-300">{totalValue}</span>
+                                        )}
                                     </TableCell>
                                 );
                             })}

@@ -262,13 +262,13 @@ const UserDialog = ({
 
 const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; role?: Role; isSelected: boolean; onSelectionChange: (id: string, checked: boolean) => void; }) => {
     // Determine distinct color based on role group
-    const roleColorClass = user.roleId === 'merchant' ? 'border-l-blue-500'
-        : user.roleId === 'driver' ? 'border-l-emerald-500'
-            : 'border-l-purple-500';
+    const roleColorClass = user.roleId === 'merchant' ? 'border-r-blue-500'
+        : user.roleId === 'driver' ? 'border-r-emerald-500'
+            : 'border-r-purple-500';
 
     return (
         <Card
-            className={`hover:border-primary transition-all duration-200 border-l-4 ${roleColorClass} data-[state=checked]:border-primary data-[state=checked]:ring-2 data-[state=checked]:ring-primary`}
+            className={`hover:border-primary transition-all duration-200 border-r-4 ${roleColorClass} data-[state=checked]:border-primary data-[state=checked]:ring-2 data-[state=checked]:ring-primary`}
             data-state={isSelected ? 'checked' : 'unchecked'}
         >
             <CardContent className="p-3 flex justify-between items-center">
@@ -534,8 +534,11 @@ export default function UsersPage() {
         setDialogOpen(false);
     }
 
-    const handleImport = (data: any[]) => {
+    const handleImport = async (data: any[]) => {
         let addedCount = 0;
+        const validItems: any[] = [];
+        
+        // First, collect all valid items
         data.forEach(item => {
             if (item.name && item.email) {
                 let roleId = item.roleId;
@@ -543,16 +546,26 @@ export default function UsersPage() {
                 if (activeTab === 'merchants') roleId = 'merchant';
                 if (!roleId) return;
 
-                addUser({
+                validItems.push({
                     name: item.name,
                     storeName: item.storeName || item.name,
                     email: item.email,
                     roleId: roleId,
                     avatar: '',
                 });
-                addedCount++;
             }
         });
+
+        // Then add them one by one with await
+        for (const item of validItems) {
+            try {
+                await addUser(item);
+                addedCount++;
+            } catch (error) {
+                console.error('Failed to add user:', item.name, error);
+            }
+        }
+
         if (addedCount > 0) {
             toast({ title: "تم الاستيراد", description: `تمت إضافة ${addedCount} مستخدمين بنجاح.` });
         } else {
@@ -569,7 +582,7 @@ export default function UsersPage() {
                 color="purple"
             />
 
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="merchants">التجار ({merchants.length})</TabsTrigger>
                     <TabsTrigger value="drivers">السائقين ({drivers.length})</TabsTrigger>

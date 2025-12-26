@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 import Icon from '@/components/icon';
 import { useUsersStore } from '@/store/user-store';
 import { useOrdersStore } from '@/store/orders-store';
@@ -16,8 +18,8 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { exportToExcel } from '@/lib/export-utils';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { SlipTemplates } from '@/lib/unified-slip-templates-clean';
+import { printSlip, exportSlipToPDF, previewSlipPDF } from '@/lib/unified-print-export';
 
 interface DriverFinancialInfo {
     id: string;
@@ -43,12 +45,15 @@ export const DriversFinancialTable = () => {
     const { users } = useUsersStore();
     const { orders } = useOrdersStore();
     const { driverPaymentSlips } = useFinancialsStore();
-    const { formatCurrency } = useSettings();
+    const { formatCurrency, formatDate, settings } = useSettings();
     const { toast } = useToast();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<'name' | 'outstanding' | 'totalOrders'>('outstanding');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [showPdfPreview, setShowPdfPreview] = useState(false);
+    const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+    const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
 
     const drivers = useMemo(() => users.filter(u => u.roleId === 'driver'), [users]);
 
@@ -72,7 +77,7 @@ export const DriversFinancialTable = () => {
                 id: driver.id,
                 name: driver.name,
                 avatar: driver.avatar,
-                phone: driver.email || driver.phone || '',
+                phone: driver.email || driver.name || '',
                 status: driverOrders.length > 0 ? 'نشط' as const : 'غير نشط' as const,
                 totalOrders: driverOrders.length,
                 deliveredOrders: deliveredOrders.length,
@@ -151,7 +156,7 @@ export const DriversFinancialTable = () => {
                 'المبلغ المتبقي': driver.outstandingAmount,
                 'عدد الكشوفات': driver.totalSlips,
                 'تاريخ آخر تحصيل': driver.lastCollectionDate
-                    ? new Date(driver.lastCollectionDate).toLocaleDateString('ar-EG')
+                    ? formatDate(driver.lastCollectionDate)
                     : '-',
             }));
 
@@ -171,235 +176,356 @@ export const DriversFinancialTable = () => {
         }
     };
 
-    const handleExportPDF = () => {
+    const handlePrintPDF = async () => {
         try {
-            const doc = new jsPDF('l', 'mm', 'a4');
+            const slipData = SlipTemplates.driversFinancial(
+                filteredAndSorted,
+                formatCurrency,
+                formatDate,
+                {
+                    name: settings.login?.companyName || 'الشركة',
+                    logo: settings.login?.reportsLogo || settings.login?.headerLogo
+                }
+            );
 
-            doc.setFontSize(18);
-            doc.text('معلومات السائقين المالية', 14, 15);
-
-            doc.setFontSize(12);
-            doc.text(`التاريخ: ${new Date().toLocaleDateString('ar-EG')}`, 14, 22);
-            doc.text(`عدد السائقين: ${filteredAndSorted.length}`, 14, 28);
-
-            const tableData = filteredAndSorted.map(driver => [
-                driver.name,
-                driver.status,
-                driver.totalOrders.toString(),
-                driver.deliveredOrders.toString(),
-                formatCurrency(driver.totalCOD),
-                formatCurrency(driver.totalDriverFees),
-                formatCurrency(driver.netPayable),
-                formatCurrency(driver.collectedAmount),
-                formatCurrency(driver.outstandingAmount),
-                driver.totalSlips.toString(),
-            ]);
-
-            (doc as any).autoTable({
-                head: [['اسم السائق', 'الحالة', 'إجمالي الطلبات', 'مكتملة', 'إجمالي التحصيل', 'أجور السائق', 'الصافي', 'مستلم', 'متبقي', 'كشوفات']],
-                body: tableData,
-                startY: 35,
-                styles: { font: 'Arial', fontSize: 8, halign: 'right' },
-                headStyles: { fillColor: [66, 139, 202], textColor: 255, fontStyle: 'bold' },
-                alternateRowStyles: { fillColor: [245, 245, 245] },
-                margin: { top: 35 },
+            await printSlip(slipData, {
+                orientation: 'landscape',
+                showSignatures: false
             });
 
-            const fileName = `معلومات_السائقين_المالية_${new Date().toISOString().split('T')[0]}.pdf`;
-            doc.save(fileName);
+            toast({
+                title: 'تم إرسال للطباعة',
+                description: `تم إرسال معلومات ${filteredAndSorted.length} سائق للطباعة.`
+            });
+        } catch (error: unknown) {
+            console.error('[Drivers Print] Error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير معروف';
+            toast({
+                variant: 'destructive',
+                title: 'خطأ في الطباعة',
+                description: errorMessage
+            });
+        }
+    };
+
+    const handlePreviewPDF = async () => {
+        try {
+            setIsGeneratingPreview(true);
+            console.log('[Drivers PDF Preview] Starting preview...');
+
+            const slipData = SlipTemplates.driversFinancial(
+                filteredAndSorted,
+                formatCurrency,
+                formatDate,
+                {
+                    name: settings.login?.companyName || 'الشركة',
+                    logo: settings.login?.reportsLogo || settings.login?.headerLogo
+                }
+            );
+
+            const dataUrl = await previewSlipPDF(slipData, {
+                orientation: 'landscape',
+                showSignatures: false
+            });
+
+            setPdfPreviewUrl(dataUrl);
+            setShowPdfPreview(true);
+
+            console.log('[Drivers PDF Preview] Success!');
+        } catch (error: unknown) {
+            console.error('[Drivers PDF Preview] Error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير معروف';
+            toast({
+                variant: 'destructive',
+                title: 'خطأ في المعاينة',
+                description: errorMessage
+            });
+        } finally {
+            setIsGeneratingPreview(false);
+        }
+    };
+
+    const handleExportPDF = async () => {
+        try {
+            console.log('[Drivers PDF] Starting export...');
+
+            const slipData = SlipTemplates.driversFinancial(
+                filteredAndSorted,
+                formatCurrency,
+                formatDate,
+                {
+                    name: settings.login?.companyName || 'الشركة',
+                    logo: settings.login?.reportsLogo || settings.login?.headerLogo
+                }
+            );
+
+            await exportSlipToPDF(slipData, {
+                orientation: 'landscape',
+                showSignatures: false,
+                filename: `معلومات_السائقين_المالية_${new Date().toISOString().split('T')[0]}`
+            });
+
+            console.log('[Drivers PDF] Success!');
 
             toast({
                 title: 'تم التصدير بنجاح',
                 description: `تم تصدير معلومات ${filteredAndSorted.length} سائق إلى ملف PDF.`
             });
-        } catch (error) {
+        } catch (error: unknown) {
+            console.error('[Drivers PDF] Error:', error);
+
+            const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير معروف';
+
             toast({
                 variant: 'destructive',
                 title: 'خطأ في التصدير',
-                description: 'حدث خطأ أثناء تصدير البيانات.'
+                description: errorMessage
             });
         }
     };
 
     return (
-        <Card className="border-2 shadow-sm">
-            <CardHeader className="pb-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2 mb-2">
-                            <div className="p-2 rounded-lg bg-primary/10">
-                                <Icon name="Users" className="h-5 w-5 text-primary" />
+        <>
+            <Card className="border-2 shadow-sm">
+                <CardHeader className="pb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="p-2 rounded-lg bg-primary/10">
+                                    <Icon name="Users" className="h-5 w-5 text-primary" />
+                                </div>
+                                <CardTitle>معلومات السائقين المالية</CardTitle>
                             </div>
-                            <CardTitle>معلومات السائقين المالية</CardTitle>
+                            <CardDescription>
+                                عرض شامل للمعلومات المالية لكل سائق مع إمكانية التصدير والطباعة
+                            </CardDescription>
                         </div>
-                        <CardDescription>
-                            عرض شامل للمعلومات المالية لكل سائق مع إمكانية التصدير والطباعة
-                        </CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="relative w-full max-w-xs">
-                            <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                                placeholder="بحث بالاسم أو الهاتف..."
-                                className="pr-10"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
+                        <div className="flex items-center gap-2">
+                            <div className="relative w-full max-w-xs">
+                                <Icon name="Search" className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    placeholder="بحث بالاسم أو الهاتف..."
+                                    className="pr-10"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                            <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="ترتيب حسب" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="outstanding">المبلغ المتبقي</SelectItem>
+                                    <SelectItem value="totalOrders">عدد الطلبات</SelectItem>
+                                    <SelectItem value="name">الاسم</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button variant="outline" size="sm" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}>
+                                <Icon name={sortOrder === 'asc' ? 'ArrowUp' : 'ArrowDown'} className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-xs text-orange-600 hover:bg-orange-50 hover:text-orange-700 transition-all hover:scale-105"
+                                onClick={handlePrintPDF}
+                            >
+                                <Icon name="Printer" className="h-4 w-4 ml-1" /> طباعة
+                            </Button>
+
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-xs text-green-600 hover:bg-green-50 hover:text-green-700 transition-all hover:scale-105"
+                                onClick={handleExportExcel}
+                            >
+                                <Icon name="FileSpreadsheet" className="h-4 w-4 ml-1" /> تصدير
+                            </Button>
+
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-xs text-blue-600 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-40 transition-all hover:scale-105"
+                                onClick={handlePreviewPDF}
+                                disabled={isGeneratingPreview}
+                            >
+                                <Icon name={isGeneratingPreview ? "Loader2" : "Eye"} className={cn("h-4 w-4 ml-1", { "animate-spin": isGeneratingPreview })} /> معاينة
+                            </Button>
+
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 transition-all hover:scale-105"
+                                onClick={handleExportPDF}
+                            >
+                                <Icon name="Download" className="h-4 w-4 ml-1" /> PDF
+                            </Button>
                         </div>
-                        <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="ترتيب حسب" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="outstanding">المبلغ المتبقي</SelectItem>
-                                <SelectItem value="totalOrders">عدد الطلبات</SelectItem>
-                                <SelectItem value="name">الاسم</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Button variant="outline" size="sm" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}>
-                            <Icon name={sortOrder === 'asc' ? 'ArrowUp' : 'ArrowDown'} className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-2">
-                            <Icon name="FileSpreadsheet" className="h-4 w-4" />
-                            <span className="hidden sm:inline">Excel</span>
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-2">
-                            <Icon name="FileText" className="h-4 w-4" />
-                            <span className="hidden sm:inline">PDF</span>
-                        </Button>
                     </div>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <div className="overflow-x-auto rounded-lg border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="bg-muted/50">
-                                <TableHead className="text-center border-l">السائق</TableHead>
-                                <TableHead className="text-center border-l">الحالة</TableHead>
-                                <TableHead className="text-center border-l">إجمالي الطلبات</TableHead>
-                                <TableHead className="text-center border-l">مكتملة</TableHead>
-                                <TableHead className="text-center border-l">قيد التحصيل</TableHead>
-                                <TableHead className="text-center border-l">إجمالي التحصيل</TableHead>
-                                <TableHead className="text-center border-l">أجور السائق</TableHead>
-                                <TableHead className="text-center border-l">الصافي المستحق</TableHead>
-                                <TableHead className="text-center border-l">المبلغ المستلم</TableHead>
-                                <TableHead className="text-center border-l">المبلغ المتبقي</TableHead>
-                                <TableHead className="text-center border-l">الكشوفات</TableHead>
-                                <TableHead className="text-center border-l">آخر تحصيل</TableHead>
-                                <TableHead className="text-center">الإجراءات</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredAndSorted.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={13} className="text-center h-24">
-                                        لا توجد بيانات لعرضها
-                                    </TableCell>
+                </CardHeader>
+                <CardContent>
+                    <div className="overflow-x-auto rounded-lg border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="bg-muted/50">
+                                    <TableHead className="text-center border-l">السائق</TableHead>
+                                    <TableHead className="text-center border-l">الحالة</TableHead>
+                                    <TableHead className="text-center border-l">إجمالي الطلبات</TableHead>
+                                    <TableHead className="text-center border-l">مكتملة</TableHead>
+                                    <TableHead className="text-center border-l">قيد التحصيل</TableHead>
+                                    <TableHead className="text-center border-l">إجمالي التحصيل</TableHead>
+                                    <TableHead className="text-center border-l">أجور السائق</TableHead>
+                                    <TableHead className="text-center border-l">الصافي المستحق</TableHead>
+                                    <TableHead className="text-center border-l">المبلغ المستلم</TableHead>
+                                    <TableHead className="text-center border-l">المبلغ المتبقي</TableHead>
+                                    <TableHead className="text-center border-l">الكشوفات</TableHead>
+                                    <TableHead className="text-center border-l">آخر تحصيل</TableHead>
+                                    <TableHead className="text-center">الإجراءات</TableHead>
                                 </TableRow>
-                            ) : (
-                                <>
-                                    {filteredAndSorted.map((driver) => (
-                                        <TableRow key={driver.id} className="hover:bg-muted/30">
-                                            <TableCell className="border-l">
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar className="h-10 w-10 border-2 border-background">
-                                                        <AvatarImage src={driver.avatar} alt={driver.name} />
-                                                        <AvatarFallback className="font-semibold">
-                                                            {driver.name.charAt(0)}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <div>
-                                                        <div className="font-semibold">{driver.name}</div>
-                                                        <div className="text-xs text-muted-foreground">{driver.phone}</div>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-center border-l">
-                                                <Badge variant={driver.status === 'نشط' ? 'default' : 'secondary'}>
-                                                    {driver.status}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-center border-l font-bold">{driver.totalOrders}</TableCell>
-                                            <TableCell className="text-center border-l">
-                                                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
-                                                    {driver.deliveredOrders}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-center border-l">
-                                                <Badge variant="outline" className="bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
-                                                    {driver.pendingCollection}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-center border-l font-semibold">{formatCurrency(driver.totalCOD)}</TableCell>
-                                            <TableCell className="text-center border-l">{formatCurrency(driver.totalDriverFees)}</TableCell>
-                                            <TableCell className="text-center border-l font-bold text-primary">
-                                                {formatCurrency(driver.netPayable)}
-                                            </TableCell>
-                                            <TableCell className="text-center border-l font-semibold text-emerald-600 dark:text-emerald-400">
-                                                {formatCurrency(driver.collectedAmount)}
-                                            </TableCell>
-                                            <TableCell className="text-center border-l font-bold text-red-600 dark:text-red-400">
-                                                {formatCurrency(driver.outstandingAmount)}
-                                            </TableCell>
-                                            <TableCell className="text-center border-l">
-                                                <Badge variant="secondary">{driver.totalSlips}</Badge>
-                                            </TableCell>
-                                            <TableCell className="text-center border-l text-sm text-muted-foreground">
-                                                {driver.lastCollectionDate
-                                                    ? new Date(driver.lastCollectionDate).toLocaleDateString('ar-EG')
-                                                    : '-'
-                                                }
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        asChild
-                                                        className="h-8 w-8 p-0"
-                                                    >
-                                                        <Link href={`/dashboard/financials?tab=collect-from-driver&driver=${encodeURIComponent(driver.name)}`}>
-                                                            <Icon name="Wallet" className="h-4 w-4" />
-                                                        </Link>
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        asChild
-                                                        className="h-8 w-8 p-0"
-                                                    >
-                                                        <Link href={`/dashboard/orders?driver=${encodeURIComponent(driver.name)}`}>
-                                                            <Icon name="Eye" className="h-4 w-4" />
-                                                        </Link>
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                    {/* صف الإجمالي */}
-                                    <TableRow className="bg-muted/50 font-bold">
-                                        <TableCell colSpan={5} className="text-center border-l">
-                                            الإجمالي
+                            </TableHeader>
+                            <TableBody>
+                                {filteredAndSorted.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={13} className="text-center h-24">
+                                            لا توجد بيانات لعرضها
                                         </TableCell>
-                                        <TableCell className="text-center border-l">{formatCurrency(totals.totalCOD)}</TableCell>
-                                        <TableCell className="text-center border-l">{formatCurrency(totals.totalDriverFees)}</TableCell>
-                                        <TableCell className="text-center border-l text-primary">{formatCurrency(totals.totalNetPayable)}</TableCell>
-                                        <TableCell className="text-center border-l text-emerald-600 dark:text-emerald-400">
-                                            {formatCurrency(totals.totalCollected)}
-                                        </TableCell>
-                                        <TableCell className="text-center border-l text-red-600 dark:text-red-400">
-                                            {formatCurrency(totals.totalOutstanding)}
-                                        </TableCell>
-                                        <TableCell colSpan={3}></TableCell>
                                     </TableRow>
-                                </>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-            </CardContent>
-        </Card>
+                                ) : (
+                                    <>
+                                        {filteredAndSorted.map((driver) => (
+                                            <TableRow key={driver.id} className="hover:bg-muted/30">
+                                                <TableCell className="border-l">
+                                                    <div className="flex items-center gap-3">
+                                                        <Avatar className="h-10 w-10 border-2 border-background">
+                                                            <AvatarImage src={driver.avatar} alt={driver.name} />
+                                                            <AvatarFallback className="font-semibold">
+                                                                {driver.name.charAt(0)}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div>
+                                                            <div className="font-semibold">{driver.name}</div>
+                                                            <div className="text-xs text-muted-foreground">{driver.phone}</div>
+                                                        </div>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-center border-l">
+                                                    <Badge variant={driver.status === 'نشط' ? 'default' : 'secondary'}>
+                                                        {driver.status}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-center border-l font-bold">{driver.totalOrders}</TableCell>
+                                                <TableCell className="text-center border-l">
+                                                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
+                                                        {driver.deliveredOrders}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-center border-l">
+                                                    <Badge variant="outline" className="bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
+                                                        {driver.pendingCollection}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-center border-l font-semibold">{formatCurrency(driver.totalCOD)}</TableCell>
+                                                <TableCell className="text-center border-l">{formatCurrency(driver.totalDriverFees)}</TableCell>
+                                                <TableCell className="text-center border-l font-bold text-primary">
+                                                    {formatCurrency(driver.netPayable)}
+                                                </TableCell>
+                                                <TableCell className="text-center border-l font-semibold text-emerald-600 dark:text-emerald-400">
+                                                    {formatCurrency(driver.collectedAmount)}
+                                                </TableCell>
+                                                <TableCell className="text-center border-l font-bold text-red-600 dark:text-red-400">
+                                                    {formatCurrency(driver.outstandingAmount)}
+                                                </TableCell>
+                                                <TableCell className="text-center border-l">
+                                                    <Badge variant="secondary">{driver.totalSlips}</Badge>
+                                                </TableCell>
+                                                <TableCell className="text-center border-l text-sm text-muted-foreground">
+                                                    {driver.lastCollectionDate
+                                                        ? formatDate(driver.lastCollectionDate)
+                                                        : '-'
+                                                    }
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            asChild
+                                                            className="h-8 w-8 p-0"
+                                                        >
+                                                            <Link href={`/dashboard/financials?tab=collect-from-driver&driver=${encodeURIComponent(driver.name)}`}>
+                                                                <Icon name="Wallet" className="h-4 w-4" />
+                                                            </Link>
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            asChild
+                                                            className="h-8 w-8 p-0"
+                                                        >
+                                                            <Link href={`/dashboard/orders?driver=${encodeURIComponent(driver.name)}`}>
+                                                                <Icon name="Eye" className="h-4 w-4" />
+                                                            </Link>
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                        {/* صف الإجمالي */}
+                                        <TableRow className="bg-muted/50 font-bold">
+                                            <TableCell colSpan={5} className="text-center border-l">
+                                                الإجمالي
+                                            </TableCell>
+                                            <TableCell className="text-center border-l">{formatCurrency(totals.totalCOD)}</TableCell>
+                                            <TableCell className="text-center border-l">{formatCurrency(totals.totalDriverFees)}</TableCell>
+                                            <TableCell className="text-center border-l text-primary">{formatCurrency(totals.totalNetPayable)}</TableCell>
+                                            <TableCell className="text-center border-l text-emerald-600 dark:text-emerald-400">
+                                                {formatCurrency(totals.totalCollected)}
+                                            </TableCell>
+                                            <TableCell className="text-center border-l text-red-600 dark:text-red-400">
+                                                {formatCurrency(totals.totalOutstanding)}
+                                            </TableCell>
+                                            <TableCell colSpan={3}></TableCell>
+                                        </TableRow>
+                                    </>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* PDF Preview Dialog */}
+            <Dialog open={showPdfPreview} onOpenChange={setShowPdfPreview}>
+                <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+                    <DialogHeader className="p-6 pb-2">
+                        <DialogTitle>معاينة PDF - معلومات السائقين المالية</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 p-6 pt-2">
+                        {pdfPreviewUrl ? (
+                            <iframe
+                                src={pdfPreviewUrl}
+                                className="w-full h-[70vh] border rounded"
+                                title="PDF Preview"
+                            />
+                        ) : (
+                            <div className="flex items-center justify-center h-[70vh]">
+                                <div className="text-center">
+                                    <Icon name="Loader2" className="h-8 w-8 animate-spin mx-auto mb-4" />
+                                    <p>جاري تحميل المعاينة...</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex justify-end gap-2 p-6 pt-2 border-t">
+                        <Button variant="outline" onClick={() => setShowPdfPreview(false)}>
+                            إغلاق
+                        </Button>
+                        <Button onClick={handleExportPDF}>
+                            <Icon name="Download" className="h-4 w-4 mr-2" />
+                            تحميل PDF
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 };
-

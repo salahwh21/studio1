@@ -53,6 +53,7 @@ const OrdersTableComponent = () => {
     const { formatCurrency, settings } = context;
     const availableTemplates = readyTemplates;
     const printablePolicyRef = useRef<any>(null);
+    const standardPolicyRef = useRef<any>(null);
 
     useEffect(() => {
         setIsClient(true);
@@ -79,6 +80,11 @@ const OrdersTableComponent = () => {
         setFilters,
         groupBy,
         setGroupBy,
+        groupByLevels,
+        addGroupByLevel,
+        removeGroupByLevel,
+        dateGroupBy,
+        setDateGroupBy,
         groupedOrders,
         openGroups,
         setOpenGroups,
@@ -247,6 +253,11 @@ const OrdersTableComponent = () => {
                     setIsEditMode={setIsEditMode}
                     groupBy={groupBy}
                     setGroupBy={setGroupBy}
+                    groupByLevels={groupByLevels}
+                    addGroupByLevel={addGroupByLevel}
+                    removeGroupByLevel={removeGroupByLevel}
+                    dateGroupBy={dateGroupBy}
+                    setDateGroupBy={setDateGroupBy}
                     columns={visibleColumns}
                     visibleColumnKeys={visibleColumnKeys}
                     setVisibleColumnKeys={setVisibleColumnKeys}
@@ -270,6 +281,7 @@ const OrdersTableComponent = () => {
                     toggleAllGroups={toggleAllGroups}
                     areAllGroupsOpen={!!areAllGroupsOpen}
                     groupedOrders={groupedOrders}
+                    orders={orders}
                 />
 
                 <OrdersTableView
@@ -294,6 +306,7 @@ const OrdersTableComponent = () => {
                             rowsPerPage={rowsPerPage}
                             setModalState={setModalState}
                             formatCurrency={formatCurrency}
+                            currencySymbol={settings.regional.currencySymbol}
                             footerTotals={footerTotals}
                             selectedRowsCount={selectedRows.length}
                             ordersCount={orders.length}
@@ -386,6 +399,7 @@ const OrdersTableComponent = () => {
                 selectedTemplate={selectedTemplate}
                 setSelectedTemplate={setSelectedTemplate}
                 printablePolicyRef={printablePolicyRef}
+                standardPolicyRef={standardPolicyRef}
                 modernPolicyV2Ref={modernPolicyV2Ref}
                 thermalLabelOptRef={thermalLabelOptRef}
                 showDeleteConfirmDialog={showDeleteConfirmDialog}

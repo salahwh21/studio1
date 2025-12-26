@@ -329,11 +329,11 @@ export function AdvancedDataTable<TData extends Record<string, any>>({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExportExcel}>
+              <DropdownMenuItem onClick={handleExportExcel} className="text-green-600 hover:text-green-700">
                 <FileSpreadsheet className="ml-2 h-4 w-4" />
                 تصدير Excel
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportCSV}>
+              <DropdownMenuItem onClick={handleExportCSV} className="text-blue-600 hover:text-blue-700">
                 <Download className="ml-2 h-4 w-4" />
                 تصدير CSV
               </DropdownMenuItem>

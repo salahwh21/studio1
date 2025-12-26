@@ -12,7 +12,6 @@ const generalSettingsItems: {
   title: string;
   description: string;
 }[] = [
-    { href: '/dashboard/settings/company/identity', iconName: 'Building', title: 'هوية الشركة والشعارات', description: 'إدارة اسم الشركة والشعارات المستخدمة في النظام' },
     { href: '/dashboard/settings/login-experience', iconName: 'LogIn', title: 'تجربة تسجيل الدخول', description: 'تخصيص صفحة تسجيل الدخول للمستخدمين' },
     { href: '/dashboard/settings/fonts-colors', iconName: 'Palette', title: 'الألوان والخطوط', description: 'تغيير الألوان والخطوط لتناسب هويتك' },
     { href: '/dashboard/settings/ui-customization', iconName: 'Brush', title: 'تخصيص الواجهة', description: 'تعديل شكل الواجهة وكثافة العرض' },

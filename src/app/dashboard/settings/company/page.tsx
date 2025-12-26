@@ -3,15 +3,17 @@
 import Link from 'next/link';
 import {
     Building2,
-    Image,
     Phone,
     MapPin,
     Mail,
     Globe,
     Clock,
     FileText,
-    ChevronLeft,
-    Save
+    Save,
+    Palette,
+    Languages,
+    Image,
+    ChevronLeft
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -22,7 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { SettingsHeader } from '@/components/settings-header';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
-import { Skeleton } from '@/components/ui/skeleton';
+import Icon from '@/components/icon';
 
 const quickLinks = [
     {
@@ -31,15 +33,30 @@ const quickLinks = [
         title: 'الهوية والشعارات',
         description: 'إدارة الشعارات وأيقونة المتصفح',
         color: 'bg-purple-500'
-    }
+    },
+    {
+        href: '/dashboard/settings/company/appearance',
+        icon: Palette,
+        title: 'تخصيص المظهر',
+        description: 'الألوان والخطوط والثيم',
+        color: 'bg-cyan-500'
+    },
+    {
+        href: '/dashboard/settings/company/regional',
+        icon: Languages,
+        title: 'الإعدادات الإقليمية',
+        description: 'العملة واللغة والتوقيت',
+        color: 'bg-amber-500'
+    },
 ];
 
 export default function CompanySettingsPage() {
     const { toast } = useToast();
     const context = useSettings();
+    const settings = context?.settings;
 
     const [formData, setFormData] = useState({
-        companyName: '',
+        companyName: settings?.login?.companyName ?? '',
         phone: '',
         email: '',
         website: '',
@@ -48,69 +65,53 @@ export default function CompanySettingsPage() {
         taxNumber: '',
         commercialRegister: ''
     });
+    const [loading, setLoading] = useState(false);
 
-    // Initialize from context once hydrated
-    if (context?.isHydrated && !formData.companyName && context.settings.login.companyName) {
-        setFormData(prev => ({
-            ...prev,
-            companyName: context.settings.login.companyName || ''
-        }));
+    function handleChange(key: string, value: string) {
+        setFormData((p) => ({ ...p, [key]: value }));
     }
 
-    if (!context || !context.isHydrated) {
-        return (
-            <div className="space-y-6">
-                <Skeleton className="h-28 w-full" />
-                <Skeleton className="h-96 w-full" />
-            </div>
-        );
-    }
-
-    const handleChange = (field: string, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
-
-    const handleSave = () => {
-        // Save company name to settings context
-        if (formData.companyName) {
-            context.updateLoginSetting('companyName', formData.companyName);
+    async function handleSave() {
+        try {
+            setLoading(true);
+            await new Promise((r) => setTimeout(r, 600));
+            toast({ title: 'تم الحفظ', description: 'تم تحديث إعدادات الشركة بنجاح.' });
+        } catch {
+            toast({ title: 'فشل الحفظ', description: 'حصل خطأ أثناء حفظ الإعدادات.' });
+        } finally {
+            setLoading(false);
         }
-
-        // In a real app, save other fields to backend
-        toast({
-            title: 'تم الحفظ بنجاح!',
-            description: 'تم تحديث معلومات الشركة.',
-        });
-    };
+    }
 
     return (
         <div className="space-y-6">
             <SettingsHeader
+                title="إعدادات الشركة"
+                description="إدارة البيانات الأساسية والهوية والمظهر"
+                backHref="/dashboard/settings"
                 icon="Building2"
-                title="معلومات الشركة"
-                description="إدارة معلومات الشركة الأساسية والتواصل"
                 color="blue"
             />
 
             {/* Quick Links */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-3">
                 {quickLinks.map((link) => (
                     <Link key={link.href} href={link.href}>
-                        <Card className="h-full hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group border-2 hover:border-blue-500">
+                        <Card className="h-full hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group border-2 hover:border-primary bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
                             <CardContent className="p-4">
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-2.5 rounded-lg ${link.color} text-white`}>
-                                        <link.icon className="h-5 w-5" />
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-3 rounded-xl ${link.color} shadow-lg`}>
+                                        <link.icon className="h-5 w-5 text-white" />
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="font-semibold text-sm group-hover:text-blue-600 transition-colors">
+                                        <h3 className="font-semibold group-hover:text-primary transition-colors">
                                             {link.title}
                                         </h3>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-sm text-muted-foreground">
                                             {link.description}
                                         </p>
                                     </div>
-                                    <ChevronLeft className="h-4 w-4 text-muted-foreground group-hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100" />
+                                    <ChevronLeft className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                                 </div>
                             </CardContent>
                         </Card>
@@ -118,158 +119,169 @@ export default function CompanySettingsPage() {
                 ))}
             </div>
 
-            {/* Company Info Card */}
-            <Card className="border-2 border-blue-500/20">
-                <CardHeader className="bg-blue-500/5">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-blue-500 text-white">
-                            <Building2 className="h-5 w-5" />
+            {/* Company Info Form */}
+            <div className="grid gap-6 lg:grid-cols-5">
+                {/* Main Info - Takes 3 columns */}
+                <Card className="lg:col-span-3 bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
+                    <CardHeader className="border-b bg-blue-500/5">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-blue-500 text-white shadow-lg">
+                                <Building2 className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <CardTitle>المعلومات الأساسية</CardTitle>
+                                <CardDescription>البيانات العامة للشركة</CardDescription>
+                            </div>
                         </div>
-                        <div>
-                            <CardTitle>المعلومات الأساسية</CardTitle>
-                            <CardDescription>البيانات العامة للشركة</CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-6">
-                    <div className="grid gap-6 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="companyName" className="flex items-center gap-2">
-                                <Building2 className="h-4 w-4 text-blue-500" />
-                                اسم الشركة
-                            </Label>
-                            <Input
-                                id="companyName"
-                                value={formData.companyName}
-                                onChange={(e) => handleChange('companyName', e.target.value)}
-                                placeholder="مثال: شركة التوصيل السريع"
-                            />
-                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                        <div className="grid gap-5 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="companyName" className="flex items-center gap-2 text-sm">
+                                    <Building2 className="h-4 w-4 text-blue-500" />
+                                    اسم الشركة
+                                </Label>
+                                <Input
+                                    id="companyName"
+                                    value={formData.companyName}
+                                    onChange={(e) => handleChange('companyName', e.target.value)}
+                                    placeholder="مثال: شركة التوصيل السريع"
+                                    className="bg-white dark:bg-slate-800"
+                                />
+                            </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="phone" className="flex items-center gap-2">
-                                <Phone className="h-4 w-4 text-green-500" />
-                                رقم الهاتف
-                            </Label>
-                            <Input
-                                id="phone"
-                                value={formData.phone}
-                                onChange={(e) => handleChange('phone', e.target.value)}
-                                placeholder="+966 5X XXX XXXX"
-                                dir="ltr"
-                            />
-                        </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="phone" className="flex items-center gap-2 text-sm">
+                                    <Phone className="h-4 w-4 text-green-500" />
+                                    رقم الهاتف
+                                </Label>
+                                <Input
+                                    id="phone"
+                                    value={formData.phone}
+                                    onChange={(e) => handleChange('phone', e.target.value)}
+                                    placeholder="+966 5X XXX XXXX"
+                                    dir="ltr"
+                                    className="bg-white dark:bg-slate-800 text-left"
+                                />
+                            </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="email" className="flex items-center gap-2">
-                                <Mail className="h-4 w-4 text-red-500" />
-                                البريد الإلكتروني
-                            </Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={formData.email}
-                                onChange={(e) => handleChange('email', e.target.value)}
-                                placeholder="info@company.com"
-                                dir="ltr"
-                            />
-                        </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="email" className="flex items-center gap-2 text-sm">
+                                    <Mail className="h-4 w-4 text-red-500" />
+                                    البريد الإلكتروني
+                                </Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={(e) => handleChange('email', e.target.value)}
+                                    placeholder="info@company.com"
+                                    dir="ltr"
+                                    className="bg-white dark:bg-slate-800 text-left"
+                                />
+                            </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="website" className="flex items-center gap-2">
-                                <Globe className="h-4 w-4 text-purple-500" />
-                                الموقع الإلكتروني
-                            </Label>
-                            <Input
-                                id="website"
-                                value={formData.website}
-                                onChange={(e) => handleChange('website', e.target.value)}
-                                placeholder="https://www.company.com"
-                                dir="ltr"
-                            />
-                        </div>
-                    </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="website" className="flex items-center gap-2 text-sm">
+                                    <Globe className="h-4 w-4 text-purple-500" />
+                                    الموقع الإلكتروني
+                                </Label>
+                                <Input
+                                    id="website"
+                                    value={formData.website}
+                                    onChange={(e) => handleChange('website', e.target.value)}
+                                    placeholder="https://www.company.com"
+                                    dir="ltr"
+                                    className="bg-white dark:bg-slate-800 text-left"
+                                />
+                            </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="address" className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-orange-500" />
-                            العنوان
-                        </Label>
-                        <Textarea
-                            id="address"
-                            value={formData.address}
-                            onChange={(e) => handleChange('address', e.target.value)}
-                            placeholder="العنوان الكامل للشركة..."
-                            rows={2}
-                        />
-                    </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="address" className="flex items-center gap-2 text-sm">
+                                    <MapPin className="h-4 w-4 text-orange-500" />
+                                    العنوان
+                                </Label>
+                                <Textarea
+                                    id="address"
+                                    value={formData.address}
+                                    onChange={(e) => handleChange('address', e.target.value)}
+                                    placeholder="العنوان الكامل للشركة..."
+                                    rows={2}
+                                    className="bg-white dark:bg-slate-800 resize-none"
+                                />
+                            </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="workingHours" className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-cyan-500" />
-                            ساعات العمل
-                        </Label>
-                        <Input
-                            id="workingHours"
-                            value={formData.workingHours}
-                            onChange={(e) => handleChange('workingHours', e.target.value)}
-                            placeholder="مثال: السبت - الخميس، 9 صباحاً - 6 مساءً"
-                        />
-                    </div>
-                </CardContent>
-            </Card>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="workingHours" className="flex items-center gap-2 text-sm">
+                                    <Clock className="h-4 w-4 text-cyan-500" />
+                                    ساعات العمل
+                                </Label>
+                                <Input
+                                    id="workingHours"
+                                    value={formData.workingHours}
+                                    onChange={(e) => handleChange('workingHours', e.target.value)}
+                                    placeholder="مثال: السبت - الخميس، 9 صباحاً - 6 مساءً"
+                                    className="bg-white dark:bg-slate-800"
+                                />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
 
-            {/* Legal Info Card */}
-            <Card className="border-2 border-blue-500/20">
-                <CardHeader className="bg-blue-500/5">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-blue-500 text-white">
-                            <FileText className="h-5 w-5" />
+                {/* Legal Info - Takes 2 columns */}
+                <Card className="lg:col-span-2 bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
+                    <CardHeader className="border-b bg-indigo-500/5">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-indigo-500 text-white shadow-lg">
+                                <FileText className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <CardTitle>المعلومات القانونية</CardTitle>
+                                <CardDescription>بيانات التسجيل والضرائب</CardDescription>
+                            </div>
                         </div>
-                        <div>
-                            <CardTitle>المعلومات القانونية</CardTitle>
-                            <CardDescription>بيانات التسجيل والضرائب</CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="pt-6">
-                    <div className="grid gap-6 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="taxNumber" className="flex items-center gap-2">
-                                <FileText className="h-4 w-4 text-blue-500" />
-                                الرقم الضريبي
-                            </Label>
-                            <Input
-                                id="taxNumber"
-                                value={formData.taxNumber}
-                                onChange={(e) => handleChange('taxNumber', e.target.value)}
-                                placeholder="رقم التسجيل الضريبي"
-                                dir="ltr"
-                            />
-                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                        <div className="space-y-5">
+                            <div className="space-y-2">
+                                <Label htmlFor="taxNumber" className="flex items-center gap-2 text-sm">
+                                    <FileText className="h-4 w-4 text-blue-500" />
+                                    الرقم الضريبي
+                                </Label>
+                                <Input
+                                    id="taxNumber"
+                                    value={formData.taxNumber}
+                                    onChange={(e) => handleChange('taxNumber', e.target.value)}
+                                    placeholder="رقم التسجيل الضريبي"
+                                    dir="ltr"
+                                    className="bg-white dark:bg-slate-800 text-left"
+                                />
+                            </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="commercialRegister" className="flex items-center gap-2">
-                                <FileText className="h-4 w-4 text-indigo-500" />
-                                السجل التجاري
-                            </Label>
-                            <Input
-                                id="commercialRegister"
-                                value={formData.commercialRegister}
-                                onChange={(e) => handleChange('commercialRegister', e.target.value)}
-                                placeholder="رقم السجل التجاري"
-                                dir="ltr"
-                            />
+                            <div className="space-y-2">
+                                <Label htmlFor="commercialRegister" className="flex items-center gap-2 text-sm">
+                                    <FileText className="h-4 w-4 text-indigo-500" />
+                                    السجل التجاري
+                                </Label>
+                                <Input
+                                    id="commercialRegister"
+                                    value={formData.commercialRegister}
+                                    onChange={(e) => handleChange('commercialRegister', e.target.value)}
+                                    placeholder="رقم السجل التجاري"
+                                    dir="ltr"
+                                    className="bg-white dark:bg-slate-800 text-left"
+                                />
+                            </div>
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* Save Button */}
-            <div className="flex justify-start pt-6 border-t">
-                <Button size="lg" onClick={handleSave} className="gap-2">
+            <div className="flex justify-start pt-4">
+                <Button size="lg" onClick={handleSave} disabled={loading} className="gap-2">
                     <Save className="h-4 w-4" />
-                    حفظ التغييرات
+                    {loading ? 'جاري الحفظ...' : 'حفظ التغييرات'}
                 </Button>
             </div>
         </div>

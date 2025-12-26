@@ -28,6 +28,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 
 import { useReturnsStore, type ReturnRecord, type Condition } from '@/store/returns-store';
+import { useSettings } from '@/contexts/SettingsContext';
 import { useOrdersStore } from '@/store/orders-store';
 import { cn } from '@/lib/utils';
 
@@ -35,6 +36,7 @@ export default function InspectionPage() {
   const { toast } = useToast();
   const { returns, updateReturnStatus, addInspection } = useReturnsStore();
   const { orders } = useOrdersStore();
+  const { settings, formatCurrency } = useSettings();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReturn, setSelectedReturn] = useState<ReturnRecord | null>(null);
@@ -173,7 +175,7 @@ export default function InspectionPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-r-4 border-r-blue-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -187,7 +189,7 @@ export default function InspectionPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-orange-500">
+        <Card className="border-r-4 border-r-orange-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -201,12 +203,12 @@ export default function InspectionPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-r-4 border-r-green-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">إجمالي القيمة</p>
-                <p className="text-2xl font-bold mt-1" dir="ltr">{stats.totalValue.toFixed(2)} <span className="text-sm">د.أ</span></p>
+                <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalValue)}</p>
               </div>
               <div className="p-3 bg-green-100 rounded-full dark:bg-green-950">
                 <FileText className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -289,7 +291,7 @@ export default function InspectionPage() {
                             </div>
                             <div>
                               <span className="text-muted-foreground">المبلغ:</span>
-                              <p className="font-bold" dir="ltr">{returnRecord.order_data.cod.toFixed(2)} د.أ</p>
+                              <p className="font-bold">{formatCurrency(returnRecord.order_data.cod)}</p>
                             </div>
                             <div>
                               <span className="text-muted-foreground">السبب:</span>
@@ -352,7 +354,7 @@ export default function InspectionPage() {
                   </div>
                   <div>
                     <span className="text-muted-foreground">المبلغ:</span>
-                    <p className="font-bold" dir="ltr">{selectedReturn.order_data.cod.toFixed(2)} د.أ</p>
+                    <p className="font-bold">{formatCurrency(selectedReturn.order_data.cod)}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">السبب:</span>

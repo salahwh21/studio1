@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { getStatusColor, formatToEnglishNumber } from '@/lib/table-utils';
 import Icon from '@/components/icon';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface StatusBadgeProps {
   status: string;
@@ -128,8 +129,11 @@ interface FinancialCellProps {
 }
 
 export function FinancialCell({ value, currency = true, className }: FinancialCellProps) {
+  const { settings } = useSettings();
   const isNegative = value < 0;
   const formatted = formatToEnglishNumber(Math.abs(value));
+  const symbol = settings.regional.currencySymbol;
+  const position = settings.regional.currencySymbolPosition;
   
   return (
     <div
@@ -141,8 +145,9 @@ export function FinancialCell({ value, currency = true, className }: FinancialCe
       dir="ltr"
     >
       {isNegative && '-'}
+      {currency && position === 'before' && `${symbol} `}
       {formatted}
-      {currency && ' د.أ'}
+      {currency && position === 'after' && ` ${symbol}`}
     </div>
   );
 }

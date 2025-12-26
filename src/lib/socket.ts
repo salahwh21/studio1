@@ -7,6 +7,12 @@ let socket: Socket | null = null;
 export const initSocket = () => {
   if (socket) return socket;
   
+  // Disable Socket.IO if backend is not available
+  if (!SOCKET_URL || SOCKET_URL.includes('localhost')) {
+    console.warn('⚠️ Socket.IO disabled - backend server not available');
+    return null;
+  }
+  
   socket = io(SOCKET_URL, {
     autoConnect: false,
     reconnection: true,
@@ -38,7 +44,7 @@ export const getSocket = () => {
 
 export const connectSocket = () => {
   const sock = getSocket();
-  if (!sock.connected) {
+  if (sock && !sock.connected) {
     sock.connect();
   }
   return sock;
@@ -53,24 +59,28 @@ export const disconnectSocket = () => {
 // Real-time event listeners
 export const onNewOrder = (callback: (data: any) => void) => {
   const sock = getSocket();
+  if (!sock) return () => {};
   sock.on('new_order_created', callback);
   return () => sock.off('new_order_created', callback);
 };
 
 export const onOrderStatusChanged = (orderId: string, callback: (data: any) => void) => {
   const sock = getSocket();
+  if (!sock) return () => {};
   sock.on(`order_status_${orderId}`, callback);
   return () => sock.off(`order_status_${orderId}`, callback);
 };
 
 export const onDriverLocationUpdate = (orderId: string, callback: (data: any) => void) => {
   const sock = getSocket();
+  if (!sock) return () => {};
   sock.on(`order_tracking_${orderId}`, callback);
   return () => sock.off(`order_tracking_${orderId}`, callback);
 };
 
 export const onDriverStatusUpdate = (callback: (data: any) => void) => {
   const sock = getSocket();
+  if (!sock) return () => {};
   sock.on('driver_status_update', callback);
   return () => sock.off('driver_status_update', callback);
 };
@@ -78,11 +88,13 @@ export const onDriverStatusUpdate = (callback: (data: any) => void) => {
 // Emit events
 export const emitNewOrder = (orderData: any) => {
   const sock = getSocket();
+  if (!sock) return;
   sock.emit('new_order', orderData);
 };
 
 export const emitOrderStatusChange = (data: { order_id: string; status: string }) => {
   const sock = getSocket();
+  if (!sock) return;
   sock.emit('order_status_changed', data);
 };
 
@@ -93,10 +105,12 @@ export const emitDriverLocation = (data: {
   longitude: number;
 }) => {
   const sock = getSocket();
+  if (!sock) return;
   sock.emit('driver_location', data);
 };
 
 export const emitDriverStatus = (data: { driver_id: string; is_online: boolean }) => {
   const sock = getSocket();
+  if (!sock) return;
   sock.emit('driver_status_changed', data);
 };

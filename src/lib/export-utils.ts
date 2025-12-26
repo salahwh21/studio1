@@ -44,57 +44,50 @@ export async function exportToPDF(
     orientation?: 'portrait' | 'landscape';
   }
 ) {
-  const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
-
-  const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([595, 842]); // A4 size
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-
-  const { width, height } = page.getSize();
-  const fontSize = 12;
-
-  // Add title
-  if (options?.title) {
-    page.drawText(options.title, {
-      x: 50,
-      y: height - 50,
-      size: 18,
-      font,
-      color: rgb(0, 0, 0),
-    });
-  }
-
-  // Add headers
-  let yPosition = height - 100;
-  headers.forEach((header, index) => {
-    page.drawText(header, {
-      x: 50 + (index * 100),
-      y: yPosition,
-      size: fontSize,
-      font,
-      color: rgb(0, 0, 0),
-    });
+  const { generatePdf, downloadPdf } = await import('@/services/pdf-service');
+  
+  const orientation = options?.orientation || 'portrait';
+  const pageWidth = orientation === 'portrait' ? '210mm' : '297mm';
+  const pageHeight = orientation === 'portrait' ? '297mm' : '210mm';
+  
+  // Build HTML table
+  const html = `
+    <!DOCTYPE html>
+    <html dir="rtl" lang="ar">
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        @page { size: ${pageWidth} ${pageHeight}; margin: 15mm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, Tahoma, sans-serif; padding: 10mm; background: white; }
+        h1 { font-size: 18px; margin-bottom: 15px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th { background: #f3f4f6; padding: 8px; border: 1px solid #d1d5db; text-align: center; font-weight: bold; }
+        td { padding: 6px 8px; border: 1px solid #d1d5db; text-align: right; }
+        tr:nth-child(even) { background: #fafafa; }
+      </style>
+    </head>
+    <body>
+      ${options?.title ? `<h1>${options.title}</h1>` : ''}
+      <table>
+        <thead>
+          <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+        </thead>
+        <tbody>
+          ${data.map(row => `<tr>${Object.values(row).map(v => `<td>${String(v || '')}</td>`).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+  
+  const blob = await generatePdf(html, {
+    width: pageWidth,
+    height: pageHeight,
+    filename: filename.replace('.pdf', ''),
   });
-
-  // Add data rows (simplified - you can enhance this)
-  yPosition -= 20;
-  data.slice(0, 20).forEach((row) => {
-    Object.values(row).forEach((value: any, index) => {
-      page.drawText(String(value).substring(0, 15), {
-        x: 50 + (index * 100),
-        y: yPosition,
-        size: fontSize - 2,
-        font,
-        color: rgb(0, 0, 0),
-      });
-    });
-    yPosition -= 15;
-    if (yPosition < 50) return; // Stop if page is full
-  });
-
-  const pdfBytes = await pdfDoc.save();
-  const blob = new Blob([pdfBytes as BlobPart], { type: 'application/pdf' });
-  downloadBlob(blob, filename);
+  
+  downloadPdf(blob, filename);
 }
 
 // Helper function to download blob

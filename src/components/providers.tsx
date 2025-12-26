@@ -19,7 +19,29 @@ function DataLoader({ children }: { children: React.ReactNode }) {
       // Load data from API when user is authenticated
       const loadData = async () => {
         try {
-          console.log('🔄 Loading data from API for user:', user.name);
+          console.log('🔄 Preparing to load data from API for user:', user.name);
+
+          // Preflight: verify backend auth is actually available (skip if mock/dev without cookie)
+          const { default: api } = await import('@/lib/api');
+          let backendReady = true;
+          try {
+            await api.getCurrentUser();
+          } catch (e: any) {
+            backendReady = false;
+          }
+
+          if (!backendReady) {
+            // Mark for other stores to avoid auto-loading
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('backendReady', '0');
+            }
+            console.log('ℹ️ Backend auth not available; skipping API preloads.');
+            return;
+          } else {
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('backendReady', '1');
+            }
+          }
           
           // Load areas (cities and regions) first
           const { useAreasStore } = await import('@/store/areas-store');
@@ -47,7 +69,6 @@ function DataLoader({ children }: { children: React.ReactNode }) {
             });
           }
         } catch (error: any) {
-          console.error('Failed to load data:', error);
           
           // Don't show error toast for authentication issues
           const isAuthError = error.message?.includes('Access token') || 
@@ -55,13 +76,14 @@ function DataLoader({ children }: { children: React.ReactNode }) {
                              error.message?.includes('Unauthorized');
           
           if (!isAuthError) {
+            console.warn('Failed to load data:', error?.message || error);
             toast({
               variant: 'destructive',
               title: 'خطأ في تحميل البيانات',
               description: 'تأكد من تشغيل Backend',
             });
           } else {
-            console.log('ℹ️ Backend not available - please start backend server');
+            console.log('ℹ️ Backend not available or unauthenticated - skipping data load');
           }
         }
       };

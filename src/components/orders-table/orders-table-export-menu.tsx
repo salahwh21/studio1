@@ -25,28 +25,48 @@ export function OrdersTableExportMenu({
   onExportData,
   onExportExcel,
 }: OrdersTableExportMenuProps) {
+  const hasSelection = selectedRows.length > 0;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1">
+        <Button variant="outline" size="sm" className="gap-2 hover:bg-blue-50 transition-all">
           <Printer className="h-4 w-4" />
           <span>طباعة / تصدير</span>
+          {hasSelection && (
+            <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+              {selectedRows.length}
+            </span>
+          )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onSelect={onThermalPrint} disabled={selectedRows.length === 0}>
-          <Printer className="ml-2 h-4 w-4" /> طباعة حرارية
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuItem
+          onSelect={onThermalPrint}
+          disabled={!hasSelection}
+          className="gap-2 cursor-pointer"
+        >
+          <Printer className="ml-2 h-4 w-4 text-orange-600" />
+          <span>طباعة حرارية</span>
+          {hasSelection && <span className="mr-auto text-xs text-muted-foreground">{selectedRows.length}</span>}
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onColorPrint} disabled={selectedRows.length === 0}>
-          <Printer className="ml-2 h-4 w-4" /> طباعة ملونة
+        <DropdownMenuItem
+          onSelect={onColorPrint}
+          disabled={!hasSelection}
+          className="gap-2 cursor-pointer"
+        >
+          <Printer className="ml-2 h-4 w-4 text-purple-600" />
+          <span>طباعة ملونة</span>
+          {hasSelection && <span className="mr-auto text-xs text-muted-foreground">{selectedRows.length}</span>}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={onExportData}>
-          <FileDown className="ml-2 h-4 w-4" />
-          تصدير البيانات
+        <DropdownMenuItem onSelect={onExportData} className="gap-2 cursor-pointer">
+          <FileDown className="ml-2 h-4 w-4 text-blue-600" />
+          <span>تصدير البيانات</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onExportExcel}>
-          <FileSpreadsheet className="ml-2 h-4 w-4" /> تصدير Excel
+        <DropdownMenuItem onSelect={onExportExcel} className="gap-2 cursor-pointer">
+          <FileSpreadsheet className="ml-2 h-4 w-4 text-green-600" />
+          <span>تصدير Excel</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

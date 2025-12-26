@@ -1,5 +1,6 @@
 
 import * as React from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
@@ -15,12 +16,14 @@ import {
 import {
     SortableContext, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { AdvancedSearch } from './advanced-search';
+import { AdvancedSearch, DateGroupOption } from './advanced-search';
 import { SortableColumn } from './cells/sortable-column';
 import { FilterDefinition } from '@/app/actions/get-orders';
 import { GroupByOption, ModalState } from './types';
 import { GROUP_BY_OPTIONS, ALL_COLUMNS } from './constants';
 import { ColumnConfig } from '@/components/export-data-dialog';
+import { PrintDialogUnified } from '@/components/print-dialog-unified';
+import { useToast } from '@/hooks/use-toast';
 
 interface OrdersTableToolbarProps {
     filters: FilterDefinition[];
@@ -34,6 +37,11 @@ interface OrdersTableToolbarProps {
 
     groupBy: GroupByOption;
     setGroupBy: (option: GroupByOption) => void;
+    groupByLevels: GroupByOption[];
+    addGroupByLevel: (option: GroupByOption) => void;
+    removeGroupByLevel: (index: number) => void;
+    dateGroupBy: DateGroupOption | null;
+    setDateGroupBy: (option: DateGroupOption | null) => void;
 
     columns: ColumnConfig[];
     visibleColumnKeys: string[];
@@ -60,6 +68,7 @@ interface OrdersTableToolbarProps {
     areAllGroupsOpen: boolean;
     groupedOrders: any;
     canAssignDriverToSelected: boolean;
+    orders: any[]; // Add orders prop for bulk printing
 }
 
 export const OrdersTableToolbar = ({
@@ -72,6 +81,11 @@ export const OrdersTableToolbar = ({
     setIsEditMode,
     groupBy,
     setGroupBy,
+    groupByLevels,
+    addGroupByLevel,
+    removeGroupByLevel,
+    dateGroupBy,
+    setDateGroupBy,
     columns,
     visibleColumnKeys,
     setVisibleColumnKeys,
@@ -94,235 +108,186 @@ export const OrdersTableToolbar = ({
     toggleAllGroups,
     areAllGroupsOpen,
     groupedOrders,
-    canAssignDriverToSelected
+    canAssignDriverToSelected,
+    orders
 }: OrdersTableToolbarProps) => {
+    const [showPrintDialog, setShowPrintDialog] = useState(false);
+    const { toast } = useToast();
+
+    // الحصول على الطلبات المحددة للطباعة
+    const selectedOrders = orders.filter(order => selectedRows.includes(order.id));
 
     return (
-        <div className="flex-none flex-col space-y-2 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 px-4 py-3 border-b border-slate-200 dark:border-slate-800 shadow-sm">
-            {/* شريط البحث والفلاتر */}
-            <div className="flex flex-row items-center justify-between gap-4 flex-wrap">
-                <div className="flex-1 min-w-[300px] max-w-2xl">
-                    <AdvancedSearch
-                        filters={filters}
-                        onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
-                        onRemoveFilter={(index) => setFilters(prev => prev.filter((_, i) => i !== index))}
-                        onGlobalSearchChange={setGlobalSearch}
-                        globalSearchTerm={globalSearch}
-                        searchableFields={searchableFields}
-                    />
-                </div>
-                
-                <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* وضع التحرير */}
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800">
-                        <Switch
-                            id="edit-mode"
-                            checked={isEditMode}
-                            onCheckedChange={setIsEditMode}
-                            className="data-[state=checked]:bg-orange-500 data-[state=unchecked]:bg-slate-400"
-                        />
-                        <label htmlFor="edit-mode" className="text-xs font-medium text-slate-600 dark:text-slate-400 cursor-pointer">
-                            تحرير
-                        </label>
-                    </div>
-
-                    {/* التجميع حسب */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="gap-1.5 h-8 border-slate-300 hover:bg-orange-50 hover:border-orange-300 dark:border-slate-600 dark:hover:bg-orange-900/20">
-                                <ListTree className="h-3.5 w-3.5 text-orange-600" />
-                                <span className="text-xs">تجميع</span>
-                                {groupBy && <Badge variant="secondary" className='mr-1 bg-orange-100 text-orange-700 text-xs px-1.5'>{GROUP_BY_OPTIONS.find(o => o.value === groupBy)?.label}</Badge>}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuLabel className="text-xs text-slate-500">اختر حقل للتجميع</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            {GROUP_BY_OPTIONS.map(option => (
-                                <DropdownMenuCheckboxItem 
-                                    key={option.label} 
-                                    checked={groupBy === option.value} 
-                                    onSelect={() => setGroupBy(option.value)}
-                                    className="text-sm"
-                                >
-                                    {option.label}
-                                </DropdownMenuCheckboxItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    {/* الأعمدة */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="gap-1.5 h-8 border-slate-300 hover:bg-slate-100 dark:border-slate-600">
-                                <ListOrdered className="h-3.5 w-3.5" />
-                                <span className="text-xs">الأعمدة</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-64 p-2 max-h-[400px] flex flex-col">
-                            <DropdownMenuLabel className="text-xs">إظهار/إخفاء الأعمدة</DropdownMenuLabel>
-                            <div className='flex items-center gap-2 p-1'>
-                                <Button variant="link" size="sm" className='h-auto p-1 text-xs text-orange-600' onClick={() => setVisibleColumnKeys(ALL_COLUMNS.map(c => c.key))}>إظهار الكل</Button>
-                                <Separator orientation="vertical" className="h-4" />
-                                <Button variant="link" size="sm" className='h-auto p-1 text-xs text-slate-500' onClick={() => setVisibleColumnKeys(['id', 'recipient', 'status'])}>إخفاء الكل</Button>
-                            </div>
-                            <DropdownMenuSeparator />
-                            <div className="flex-1 min-h-0 overflow-auto">
-                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
-                                    <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
-                                        {ALL_COLUMNS.map((column) => (
-                                            <SortableColumn
-                                                key={column.key}
-                                                id={column.key}
-                                                label={column.label}
-                                                isVisible={visibleColumnKeys.includes(column.key)}
-                                                onToggle={handleColumnVisibilityChange}
-                                            />
-                                        ))}
-                                    </SortableContext>
-                                </DndContext>
-                            </div>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <Button variant="outline" size="icon" onClick={handleRefresh} className="h-8 w-8 border-slate-300 hover:bg-slate-100">
-                        <RefreshCw className="h-3.5 w-3.5" />
-                    </Button>
-
-                    <Button 
-                        onClick={() => window.open('/dashboard/add-order', '_blank')}
-                        className="h-8 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all"
-                        size="sm"
-                    >
-                        <PlusCircle className="ml-1.5 h-3.5 w-3.5" /> إضافة طلب
-                    </Button>
-                </div>
+        <div className="flex-none flex-col space-y-3 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 px-4 py-4 border-b border-slate-200 dark:border-slate-800 shadow-sm">
+            {/* صندوق البحث الشامل - عرض كامل */}
+            <div className="w-full">
+                <AdvancedSearch
+                    filters={filters}
+                    onAddFilter={(filter) => setFilters(prev => [...prev, filter])}
+                    onRemoveFilter={(index) => setFilters(prev => prev.filter((_, i) => i !== index))}
+                    onGlobalSearchChange={setGlobalSearch}
+                    globalSearchTerm={globalSearch}
+                    searchableFields={searchableFields}
+                    groupBy={groupBy}
+                    onGroupByChange={setGroupBy}
+                    groupByLevels={groupByLevels}
+                    onAddGroupByLevel={addGroupByLevel}
+                    onRemoveGroupByLevel={removeGroupByLevel}
+                    dateGroupBy={dateGroupBy || undefined}
+                    onDateGroupByChange={setDateGroupBy}
+                />
             </div>
 
-            {/* شريط الإجراءات الجماعية */}
-            <div className="flex items-center gap-2 py-2 px-3 bg-white dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-800 overflow-x-auto">
-                {/* التحديد */}
+            {/* شريط الأدوات - كل العناصر في سطر واحد */}
+            <div className="flex flex-row items-center gap-2 flex-wrap py-2 px-3 bg-white dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-800">
+                {/* وضع التحرير */}
+                <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800">
+                    <Switch
+                        id="edit-mode"
+                        checked={isEditMode}
+                        onCheckedChange={setIsEditMode}
+                        className="data-[state=checked]:bg-orange-500 data-[state=unchecked]:bg-slate-400"
+                    />
+                    <label htmlFor="edit-mode" className="text-xs font-medium text-slate-600 dark:text-slate-400 cursor-pointer">
+                        تحرير
+                    </label>
+                </div>
+
+                {/* الأعمدة */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="gap-1.5 h-7 hover:bg-slate-100">
-                            {isIndeterminate ? (
-                                <div className="h-3 w-3 rounded bg-orange-500" />
-                            ) : (
-                                <div className={`h-3.5 w-3.5 border-2 rounded ${isAllSelected ? 'bg-orange-500 border-orange-500' : 'border-slate-400'}`} />
-                            )}
-                            <span className="text-xs">تحديد</span>
+                        <Button variant="outline" size="sm" className="gap-1 h-7 text-xs border-slate-300 hover:bg-slate-100 dark:border-slate-600">
+                            <ListOrdered className="h-3.5 w-3.5" />
+                            الأعمدة
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <DropdownMenuItem onSelect={() => handleSelectAll(true)} className="text-sm">تحديد الكل</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleSelectAll(false)} className="text-sm">إلغاء التحديد</DropdownMenuItem>
+                    <DropdownMenuContent align="end" className="w-64 p-2 max-h-[400px] flex flex-col">
+                        <DropdownMenuLabel className="text-xs">إظهار/إخفاء الأعمدة</DropdownMenuLabel>
+                        <div className='flex items-center gap-2 p-1'>
+                            <Button variant="link" size="sm" className='h-auto p-1 text-xs text-orange-600' onClick={() => setVisibleColumnKeys(ALL_COLUMNS.map(c => c.key))}>إظهار الكل</Button>
+                            <Separator orientation="vertical" className="h-4" />
+                            <Button variant="link" size="sm" className='h-auto p-1 text-xs text-slate-500' onClick={() => setVisibleColumnKeys(['id', 'recipient', 'status'])}>إخفاء الكل</Button>
+                        </div>
+                        <DropdownMenuSeparator />
+                        <div className="flex-1 min-h-0 overflow-auto">
+                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
+                                <SortableContext items={columns.map(c => c.key)} strategy={verticalListSortingStrategy}>
+                                    {ALL_COLUMNS.map((column) => (
+                                        <SortableColumn
+                                            key={column.key}
+                                            id={column.key}
+                                            label={column.label}
+                                            isVisible={visibleColumnKeys.includes(column.key)}
+                                            onToggle={handleColumnVisibilityChange}
+                                        />
+                                    ))}
+                                </SortableContext>
+                            </DndContext>
+                        </div>
                     </DropdownMenuContent>
                 </DropdownMenu>
 
+                <Button variant="outline" size="icon" onClick={handleRefresh} className="h-7 w-7 border-slate-300 hover:bg-slate-100">
+                    <RefreshCw className="h-3.5 w-3.5" />
+                </Button>
+
+                <Button
+                    onClick={() => window.open('/dashboard/add-order', '_blank')}
+                    className="h-7 text-xs bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm"
+                    size="sm"
+                >
+                    <PlusCircle className="ml-1 h-3.5 w-3.5" /> إضافة
+                </Button>
+
+                <Separator orientation="vertical" className="h-5" />
+
                 {/* عدد المحدد */}
                 {selectedRows.length > 0 && (
-                    <>
-                        <Separator orientation="vertical" className="h-5" />
-                        <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 px-2 py-0.5 text-xs font-semibold">
-                            {selectedRows.length} محدد
-                        </Badge>
-                        <Separator orientation="vertical" className="h-5" />
-                    </>
+                    <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 px-2 py-0.5 text-xs font-semibold">
+                        {selectedRows.length} محدد
+                    </Badge>
                 )}
 
                 {/* أزرار الإجراءات */}
-                <div className="flex items-center gap-1">
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => setShowDeleteConfirmDialog(true)} 
-                        disabled={selectedRows.length === 0}
-                        className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-40"
-                    >
-                        <Trash2 className="h-3.5 w-3.5 ml-1" /> حذف
-                    </Button>
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => setShowAssignDriverDialog(true)}
-                        disabled={selectedRows.length === 0 || !canAssignDriverToSelected}
-                        title={!canAssignDriverToSelected ? 'يمكن تعيين السائق فقط للطلبات بحالة "بالانتظار" أو "تم استلام المال في الفرع"' : ''}
-                        className="h-7 text-xs text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 disabled:opacity-40"
-                    >
-                        <Truck className="h-3.5 w-3.5 ml-1" /> سائق
-                    </Button>
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => setShowAssignMerchantDialog(true)}
-                        disabled={selectedRows.length === 0}
-                        className="h-7 text-xs text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20 disabled:opacity-40"
-                    >
-                        <Store className="h-3.5 w-3.5 ml-1" /> تاجر
-                    </Button>
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => setShowChangeStatusDialog(true)}
-                        disabled={selectedRows.length === 0}
-                        className="h-7 text-xs text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20 disabled:opacity-40"
-                    >
-                        <ArrowRightLeft className="h-3.5 w-3.5 ml-1" /> حالة
-                    </Button>
-                    
-                    <Separator orientation="vertical" className="h-5 mx-1" />
-                    
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" disabled={selectedRows.length === 0} className="h-7 text-xs disabled:opacity-40">
-                                <Printer className="h-3.5 w-3.5 ml-1" /> طباعة
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => setModalState({ type: 'print' })} className="text-sm">
-                                <FileDown className="ml-2 h-4 w-4" /> PDF بوالص
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setShowModernPolicyV2Dialog(true)} className="text-sm">
-                                <Printer className="ml-2 h-4 w-4" /> بوالص ملونة
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setShowThermalLabelOptDialog(true)} className="text-sm">
-                                <Printer className="ml-2 h-4 w-4" /> طباعة حرارية
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => setModalState({ type: 'export' })}
-                        disabled={selectedRows.length === 0}
-                        className="h-7 text-xs disabled:opacity-40"
-                    >
-                        <FileSpreadsheet className="h-3.5 w-3.5 ml-1" /> تصدير
-                    </Button>
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={handleExportExcel}
-                        disabled={selectedRows.length === 0}
-                        className="h-7 text-xs text-green-600 hover:bg-green-50 dark:text-green-400 disabled:opacity-40"
-                    >
-                        <FileDown className="h-3.5 w-3.5 ml-1" /> Excel
-                    </Button>
-                </div>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowDeleteConfirmDialog(true)}
+                    disabled={selectedRows.length === 0}
+                    className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-40"
+                >
+                    <Trash2 className="h-3.5 w-3.5 ml-1" /> حذف
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAssignDriverDialog(true)}
+                    disabled={selectedRows.length === 0 || !canAssignDriverToSelected}
+                    title={!canAssignDriverToSelected ? 'يمكن تعيين السائق فقط للطلبات بحالة "بالانتظار" أو "تم استلام المال في الفرع"' : ''}
+                    className="h-7 text-xs text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 disabled:opacity-40"
+                >
+                    <Truck className="h-3.5 w-3.5 ml-1" /> سائق
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAssignMerchantDialog(true)}
+                    disabled={selectedRows.length === 0}
+                    className="h-7 text-xs text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20 disabled:opacity-40"
+                >
+                    <Store className="h-3.5 w-3.5 ml-1" /> تاجر
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowChangeStatusDialog(true)}
+                    disabled={selectedRows.length === 0}
+                    className="h-7 text-xs text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20 disabled:opacity-40"
+                >
+                    <ArrowRightLeft className="h-3.5 w-3.5 ml-1" /> حالة
+                </Button>
+
+                <Separator orientation="vertical" className="h-5" />
+
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={selectedRows.length === 0}
+                    className="h-7 text-xs disabled:opacity-40 text-orange-600 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20 transition-all hover:scale-105"
+                    onClick={() => setShowPrintDialog(true)}
+                >
+                    <Printer className="h-4 w-4 ml-1" /> طباعة
+                </Button>
+
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={selectedRows.length === 0}
+                    className="h-7 text-xs disabled:opacity-40 text-green-600 hover:bg-green-50 hover:text-green-700 dark:text-green-400 dark:hover:bg-green-900/20 transition-all hover:scale-105"
+                    onClick={() => setModalState({ type: 'export' })}
+                >
+                    <FileSpreadsheet className="h-4 w-4 ml-1" /> تصدير
+                </Button>
 
                 {/* زر توسيع/طي المجموعات */}
                 {groupedOrders && (
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={toggleAllGroups} 
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleAllGroups}
                         className="mr-auto h-7 text-xs border-slate-300"
                     >
                         {areAllGroupsOpen ? 'طي الكل' : 'توسيع الكل'}
                     </Button>
                 )}
             </div>
+
+            {/* Print Dialog - Unified */}
+            <PrintDialogUnified
+                open={showPrintDialog}
+                onOpenChange={setShowPrintDialog}
+                orders={selectedOrders}
+            />
         </div>
     );
 };

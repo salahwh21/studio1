@@ -31,10 +31,12 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStatusesStore } from '@/store/statuses-store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useSettings, SavedTemplate, readyTemplates } from '@/contexts/SettingsContext';
+import { useSettings } from '@/contexts/SettingsContext';
+import type { SavedTemplate } from '@/contexts/SettingsContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { PrintButton } from '@/components/print-button';
 import { PrintablePolicy } from '@/components/printable-policy';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -50,7 +52,7 @@ const orderSchema = z.object({
   whatsapp: z.string().regex(/^07\d{8}$/, "رقم الواتساب يجب أن يكون 10 أرقام ويبدأ بـ 07.").optional().or(z.literal('')),
   region: z.string({ required_error: "الرجاء اختيار المنطقة." }).min(1, "الرجاء اختيار المنطقة."),
   city: z.string().min(2, "اسم المدينة يجب أن يكون حرفين على الأقل."),
-  address: z.string().min(5, "العنوان يجب أن يكون 5 أحرف على الأقل."),
+  address: z.string().optional(),
   cod: z.coerce.number().min(0, "المبلغ يجب أن يكون أكبر من أو يساوي 0."),
   notes: z.string().max(1000, "الملاحظات يجب أن تكون أقل من 1000 حرف.").optional(),
   referenceNumber: z.string().optional(),
@@ -78,6 +80,7 @@ const AddOrderPage = () => {
   const { statuses } = useStatusesStore();
   const context = useSettings();
   const { settings, formatCurrency, isHydrated: settingsHydrated } = context;
+  const currencySymbol = settings.regional.currencySymbol;
 
   const [selectedMerchantId, setSelectedMerchantId] = useState<string>('');
 
@@ -98,6 +101,8 @@ const AddOrderPage = () => {
 
   const [isPrepaid, setIsPrepaid] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<SavedTemplate | null>(null);
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
@@ -115,28 +120,12 @@ const AddOrderPage = () => {
   const merchantOptions = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
   const allRegions = useMemo(() => cities.flatMap(c => (c.areas || []).map(a => ({ ...a, cityName: c.name }))).sort((a, b) => a.name.localeCompare(b.name)), [cities]);
 
+  // Print-related refs and computed values
+  const printablePolicyRef = useRef<{ handleExport: () => Promise<void> } | null>(null);
+  const availableTemplates = settings.templates || [];
 
-  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
-  const [availableTemplates, setAvailableTemplates] = useState<SavedTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<SavedTemplate | null>(null);
-  const printablePolicyRef = useRef<{ handleExport: () => void; handleDirectPrint: (order: any, type: 'zpl' | 'escpos') => Promise<void> }>(null);
 
-  useEffect(() => {
-    try {
-      const savedTemplatesJson = localStorage.getItem('policyTemplates');
-      const userTemplates = savedTemplatesJson ? JSON.parse(savedTemplatesJson) : [];
-      const uniqueTemplates = [...readyTemplates];
-      const readyIds = new Set(readyTemplates.map(t => t.id));
-      userTemplates.forEach((t: SavedTemplate) => {
-        if (!readyIds.has(t.id)) {
-          uniqueTemplates.push(t);
-        }
-      });
-      setAvailableTemplates(uniqueTemplates);
-    } catch (e) {
-      setAvailableTemplates(readyTemplates);
-    }
-  }, []);
+
 
   useEffect(() => {
     if (selectedRegionValue) {
@@ -572,7 +561,7 @@ const AddOrderPage = () => {
                   <FormField control={form.control} name="cod" render={({ field }) => (
                     <FormItem className="md:col-span-1">
                       <FormLabel className="flex items-center gap-2 font-medium">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold">د.أ</span>
+                        <span className="text-orange-600 dark:text-orange-400 font-bold">{currencySymbol}</span>
                         قيمة التحصيل (COD)
                       </FormLabel>
                       <FormControl>

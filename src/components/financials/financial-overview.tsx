@@ -48,7 +48,7 @@ export function FinancialOverview() {
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState<Period>('month');
     const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-    const { formatCurrency } = useSettings();
+    const { formatCurrency, formatDate } = useSettings();
 
     const fetchData = async () => {
         setLoading(true);
@@ -101,11 +101,7 @@ export function FinancialOverview() {
         }
 
         try {
-            const today = new Date().toLocaleDateString('ar-EG', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
+            const today = formatDate(new Date(), { longFormat: true });
 
             const pdfOptions: PDFExportOptions = {
                 title: 'الملخص المالي',

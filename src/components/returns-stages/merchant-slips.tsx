@@ -1,7 +1,5 @@
 'use client';
 import React, { useState, useMemo, useTransition } from 'react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { useReturnsStore, type MerchantSlip } from '@/store/returns-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -20,16 +18,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useUsersStore } from '@/store/user-store';
-
-declare module 'jspdf' {
-    interface jsPDF {
-        autoTable: (options: any) => jsPDF;
-    }
-}
+import { generatePdf, downloadPdf } from '@/services/pdf-service';
 
 export const MerchantSlips = () => {
     const { toast } = useToast();
-    const { settings, formatCurrency } = useSettings();
+    const { settings, formatCurrency, formatDate } = useSettings();
     const { users } = useUsersStore();
     const { merchantSlips, updateMerchantSlipStatus } = useReturnsStore();
     const [isPending, startTransition] = useTransition();
@@ -72,19 +65,12 @@ export const MerchantSlips = () => {
         });
     }
 
-    const handlePrintAction = (slipsToPrint: MerchantSlip[]) => {
+    const handlePrintAction = async (slipsToPrint: MerchantSlip[]) => {
         if (slipsToPrint.length === 0) {
             toast({ variant: 'destructive', title: 'خطأ', description: 'لم يتم تحديد كشوفات للطباعة.' });
             return;
         }
 
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-            toast({ variant: "destructive", title: "فشل الطباعة", description: "يرجى السماح بفتح النوافذ المنبثقة." });
-            return;
-        }
-
-        const slipDate = new Date().toLocaleDateString('ar-EG');
         const logoUrl = settings.login.reportsLogo || settings.login.headerLogo;
         
         let slipsContent = '';
@@ -114,7 +100,7 @@ export const MerchantSlips = () => {
                         ${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="height: 50px;">` : `<h1>${settings.login.companyName || 'الشركة'}</h1>`}
                         <div>
                             <h2>كشف إرجاع بضاعة: ${slip.merchant}</h2>
-                            <p>التاريخ: ${new Date(slip.date).toLocaleDateString('ar-EG')}</p>
+                            <p>التاريخ: ${formatDate(slip.date)}</p>
                             <p>رقم الكشف: ${slip.id}</p>
                         </div>
                     </div>
@@ -130,12 +116,14 @@ export const MerchantSlips = () => {
             `;
         });
         
-        const fullContent = `
-            <html>
+        const html = `
+            <!DOCTYPE html>
+            <html dir="rtl" lang="ar">
                 <head>
+                    <meta charset="UTF-8">
                     <title>كشوفات إرجاع للتجار</title>
                     <style>
-                        body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                        body { direction: rtl; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; }
                         .slip-container { page-break-after: always; margin-bottom: 40px; }
                         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
                         th, td { padding: 8px; border: 1px solid #ddd; text-align: right; }
@@ -152,10 +140,14 @@ export const MerchantSlips = () => {
             </html>
         `;
 
-        printWindow.document.write(fullContent);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
+        try {
+            const blob = await generatePdf(html, { filename: `merchant-slips.pdf` });
+            downloadPdf(blob, `merchant-slips-${new Date().toISOString().split('T')[0]}.pdf`);
+            toast({ title: "تم التصدير", description: `تم تصدير ${slipsToPrint.length} كشف بنجاح` });
+        } catch (error) {
+            console.error('PDF generation error:', error);
+            toast({ variant: "destructive", title: "فشل التصدير", description: "حدث خطأ أثناء إنشاء ملف PDF" });
+        }
     };
     
     const handleSendWhatsApp = () => {
@@ -268,7 +260,7 @@ export const MerchantSlips = () => {
                                         <Link href={`/dashboard/returns/slips/${slip.id}`} className="text-primary hover:underline">{slip.id}</Link>
                                     </TableCell>
                                     <TableCell className="border-l text-center whitespace-nowrap">{slip.merchant}</TableCell>
-                                    <TableCell className="border-l text-center whitespace-nowrap">{new Date(slip.date).toLocaleDateString('ar-EG')}</TableCell>
+                                    <TableCell className="border-l text-center whitespace-nowrap">{formatDate(slip.date)}</TableCell>
                                     <TableCell className="border-l text-center whitespace-nowrap">{slip.items}</TableCell>
                                     <TableCell className="border-l text-center whitespace-nowrap">
                                         <Badge variant={slip.status === 'تم التسليم' ? 'default' : 'outline'} className={slip.status === 'تم التسليم' ? 'bg-green-100 text-green-800' : ''}>

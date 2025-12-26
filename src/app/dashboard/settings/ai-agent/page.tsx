@@ -38,7 +38,7 @@ export default function AiAgentPage() {
         )
     }
 
-    const { settings, updateAiAgentSetting } = context;
+    const { settings, updateAiAgentSetting, formatCurrency } = context;
     const isAgentEnabled = settings.aiAgent.enabled;
 
     const handleSearch = () => {
@@ -161,7 +161,7 @@ export default function AiAgentPage() {
                                     <p><strong>الهاتف:</strong> {selectedOrder.phone}</p>
                                     <p><strong>الحالة:</strong> <Badge>{selectedOrder.status}</Badge></p>
                                     <p><strong>السائق:</strong> {selectedOrder.driver}</p>
-                                    <p><strong>المبلغ:</strong> {selectedOrder.cod} د.أ</p>
+                                    <p><strong>المبلغ:</strong> {formatCurrency(selectedOrder.cod)}</p>
                                 </CardContent>
                             </Card>
                         )}

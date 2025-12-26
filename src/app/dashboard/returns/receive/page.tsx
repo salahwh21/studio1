@@ -27,6 +27,7 @@ import { useUsersStore } from '@/store/user-store';
 import { useReturnsStore } from '@/store/returns-store';
 import { useStatusesStore } from '@/store/statuses-store';
 import { cn } from '@/lib/utils';
+import { useSettings } from '@/contexts/SettingsContext';
 
 type Step = 'select-driver' | 'review-orders' | 'confirm';
 
@@ -36,6 +37,7 @@ export default function ReceiveReturnsPage() {
   const { users } = useUsersStore();
   const { statuses } = useStatusesStore();
   const { addDriverReturnSlip } = useReturnsStore();
+  const { settings, formatCurrency } = useSettings();
   
   const drivers = users.filter(u => u.roleId === 'driver');
   
@@ -256,7 +258,7 @@ export default function ReceiveReturnsPage() {
                                 </div>
                                 <div className="flex items-center justify-between text-sm">
                                   <span className="text-muted-foreground">المبلغ:</span>
-                                  <span className="font-bold" dir="ltr">{stats.cod.toFixed(2)} د.أ</span>
+                                  <span className="font-bold">{formatCurrency(stats.cod)}</span>
                                 </div>
                               </div>
                             </div>
@@ -337,7 +339,7 @@ export default function ReceiveReturnsPage() {
                             </div>
                             <div>
                               <span className="text-muted-foreground">المبلغ:</span>
-                              <p className="font-bold" dir="ltr">{order.cod.toFixed(2)} د.أ</p>
+                              <p className="font-bold">{formatCurrency(order.cod)}</p>
                             </div>
                             <div className="col-span-2">
                               <span className="text-muted-foreground">العنوان:</span>
@@ -366,7 +368,7 @@ export default function ReceiveReturnsPage() {
                 </div>
                 <div className="text-left">
                   <p className="text-sm text-muted-foreground">إجمالي المبلغ</p>
-                  <p className="text-2xl font-bold" dir="ltr">{totalSelectedCOD.toFixed(2)} د.أ</p>
+                  <p className="text-2xl font-bold">{formatCurrency(totalSelectedCOD)}</p>
                 </div>
               </div>
 
@@ -408,7 +410,7 @@ export default function ReceiveReturnsPage() {
             <CardContent className="space-y-6">
               {/* Summary */}
               <div className="grid gap-4 md:grid-cols-3">
-                <Card className="border-l-4 border-l-blue-500">
+                <Card className="border-r-4 border-r-blue-500">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -420,7 +422,7 @@ export default function ReceiveReturnsPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-l-4 border-l-purple-500">
+                <Card className="border-r-4 border-r-purple-500">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -432,12 +434,12 @@ export default function ReceiveReturnsPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-l-4 border-l-green-500">
+                <Card className="border-r-4 border-r-green-500">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-muted-foreground">إجمالي المبلغ</p>
-                        <p className="text-lg font-bold" dir="ltr">{totalSelectedCOD.toFixed(2)} د.أ</p>
+                        <p className="text-lg font-bold">{formatCurrency(totalSelectedCOD)}</p>
                       </div>
                       <DollarSign className="h-8 w-8 text-green-600" />
                     </div>

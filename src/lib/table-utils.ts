@@ -89,11 +89,17 @@ export function formatToEnglishNumber(value: number | string): string {
 }
 
 /**
- * Format currency in Jordanian Dinar
+ * Format currency with configurable symbol and position
  */
-export function formatCurrency(value: number): string {
+export function formatCurrency(
+  value: number, 
+  currencySymbol: string = 'د.أ', 
+  position: 'before' | 'after' = 'after'
+): string {
   const formatted = formatToEnglishNumber(value);
-  return `${formatted} د.أ`;
+  return position === 'before' 
+    ? `${currencySymbol} ${formatted}` 
+    : `${formatted} ${currencySymbol}`;
 }
 
 /**
