@@ -9,9 +9,8 @@ echo "[1/4] Waiting for PostgreSQL to be ready..."
 # The Postgres feature starts the service in the background, we just wait a bit to ensure it's up
 sleep 3
 
-# Create the specific delivery_db using the default postgres user
-# Using || true so it doesn't fail if the db already exists (e.g. on rebuilds)
-sudo -u postgres createdb delivery_db || true
+# Create the specific delivery_db using the password directly to avoid sudo prompts
+PGPASSWORD="Sbreen$1967" createdb -h localhost -U postgres delivery_db || true
 echo "✅ Database 'delivery_db' created."
 
 echo "[2/4] Setting up Backend environment..."
