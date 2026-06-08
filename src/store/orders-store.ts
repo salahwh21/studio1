@@ -138,22 +138,8 @@ const getSettings = () => {
 export const ordersStore = create<OrdersState>()(
     persist(
         immer((set, get) => {
-            // Auto-load orders on first access
-            const autoLoad = () => {
-                const state = get();
-                const backendReady = typeof window !== 'undefined' && sessionStorage.getItem('backendReady') === '1';
-
-                // Auto-load orders - ALWAYS sync with DB now that we are online
-                if (!state.isLoading && backendReady) {
-                    console.log('🔄 Auto-loading orders from API (Database as Source of Truth)...');
-                    state.loadOrdersFromAPI();
-                }
-            };
-
-            // Trigger auto-load after a short delay to allow store initialization
-            if (typeof window !== 'undefined') {
-                setTimeout(autoLoad, 1000);
-            }
+            // Auto-loading is now handled by DataLoader in providers.tsx
+            // Removed duplicate auto-load to prevent double API calls
 
             return {
                 orders: [],

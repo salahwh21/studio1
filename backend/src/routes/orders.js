@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const db = require('../config/database');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const { getCache, setCache, invalidateCache } = require('../utils/cache');
 
 const router = express.Router();
 
@@ -86,6 +87,12 @@ function checkActionAllowed(req, action, currentStatus, newStatus, driverName) {
 
 router.get('/', authenticateToken, async (req, res) => {
   try {
+    const cacheKey = `orders:list:${JSON.stringify(req.query)}:role:${req.user?.roleId || 'admin'}:name:${req.user?.name || 'unknown'}`;
+    const cachedData = await getCache(cacheKey);
+    if (cachedData) {
+      return res.json(cachedData);
+    }
+
     const {
       page = 0,
       limit = 1000, // Increased default limit for dashboard
@@ -197,7 +204,9 @@ router.get('/', authenticateToken, async (req, res) => {
       updatedAt: row.updated_at
     }));
 
-    res.json({ orders, totalCount });
+    const responseData = { orders, totalCount };
+    await setCache(cacheKey, responseData, 300); // Cache for 5 minutes
+    res.json(responseData);
   } catch (error) {
     console.error('Get orders error:', error);
     res.status(500).json({ error: 'Server error', code: 'SERVER_ERROR', details: error.message });
@@ -340,6 +349,7 @@ router.post('/', authenticateToken, [
     );
 
     const row = result.rows[0];
+    await invalidateCache('orders:list:*');
     // Return full object to allow frontend to update state immediately without re-fetching
     res.status(201).json({
       id: row.id,
@@ -491,6 +501,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     
     // Log Success
     await logAudit(id, req, action, current.status, row.status, 'success');
+    await invalidateCache('orders:list:*');
     
     res.json({
       id: row.id,
@@ -568,6 +579,7 @@ router.patch('/:id/status', authenticateToken, [
     }
 
     await logAudit(id, req, action, previousStatus, updatedOrder.status, 'success');
+    await invalidateCache('orders:list:*');
 
     res.json({ id: updatedOrder.id, status: updatedOrder.status, previousStatus });
   } catch (error) {
@@ -617,6 +629,7 @@ router.post('/bulk-status', authenticateToken, [
     }
 
     await db.query('COMMIT');
+    await invalidateCache('orders:list:*');
     res.json({ updated: orderIds.length });
   } catch (error) {
     await db.query('ROLLBACK');
@@ -641,6 +654,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       });
     }
 
+    await invalidateCache('orders:list:*');
     res.json({ deleted: req.params.id });
   } catch (error) {
     console.error('Delete order error:', error);
@@ -669,6 +683,7 @@ router.post('/bulk-delete', authenticateToken, [
       });
     }
 
+    await invalidateCache('orders:list:*');
     res.json({ deleted: result.rows.length });
   } catch (error) {
     console.error('Bulk delete error:', error);

@@ -5,6 +5,7 @@ const compression = require('compression');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
+// Redis caching enabled - v3 (fixed TLS)
 
 const db = require('./config/database');
 const rateLimit = require('express-rate-limit');

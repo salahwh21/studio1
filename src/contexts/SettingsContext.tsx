@@ -557,6 +557,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<ComprehensiveSettings>(defaultSettingsData);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const hasUserChangedSettings = React.useRef(false);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -664,8 +665,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   }, [loadSettings]);
 
   // Save settings to API whenever they change (with debounce)
+  // Only save when user actually changes settings, not on initial hydration
   useEffect(() => {
-    if (!isHydrated || isSaving) return;
+    if (!isHydrated || isSaving || !hasUserChangedSettings.current) return;
 
     const saveToApi = async () => {
       setIsSaving(true);
@@ -693,6 +695,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
   // Generic function to update a top-level setting
   const setSetting = <K extends keyof ComprehensiveSettings>(key: K, value: ComprehensiveSettings[K]) => {
+    hasUserChangedSettings.current = true;
     setSettings(prevSettings => ({
       ...prevSettings,
       [key]: value,
@@ -704,6 +707,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       nestedKey: K,
       value: ComprehensiveSettings[T][K]
   ) => {
+       hasUserChangedSettings.current = true;
        setSettings(prev => ({
           ...prev,
           [topLevelKey]: {
@@ -721,6 +725,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const updateAiAgentSetting = (key: keyof AiAgentSettings, value: any) => updateNestedSetting('aiAgent', key, value);
 
   const updateSocialLink = (key: keyof SocialLinks, value: string) => {
+      hasUserChangedSettings.current = true;
       setSettings(prev => ({
           ...prev,
           login: {
@@ -734,6 +739,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const updateMenuVisibility = (roleId: string, permissionId: string, checked: boolean) => {
+    hasUserChangedSettings.current = true;
     setSettings(prev => {
         const currentVisibility = prev.menuVisibility[roleId] || [];
         const newVisibility = checked

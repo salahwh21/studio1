@@ -2,11 +2,18 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const { getCache, setCache, invalidateCache } = require('../utils/cache');
 
 // Get all settings (optional auth for development)
 router.get('/', optionalAuth, async (req, res) => {
   try {
     const companyId = req.user?.company_id || 1; // Default to company 1
+    
+    const cacheKey = `settings:company:${companyId}`;
+    const cachedData = await getCache(cacheKey);
+    if (cachedData) {
+      return res.json(cachedData);
+    }
     
     const result = await pool.query(
       'SELECT settings_data, updated_at FROM settings WHERE company_id = $1',
@@ -76,18 +83,22 @@ router.get('/', optionalAuth, async (req, res) => {
         [companyId, JSON.stringify(defaultSettings), req.user?.email || 'system']
       );
 
-      return res.json({
+      const responseData = {
         success: true,
         data: insertResult.rows[0].settings_data,
         updated_at: insertResult.rows[0].updated_at
-      });
+      };
+      await setCache(cacheKey, responseData, 3600); // 1 hour cache
+      return res.json(responseData);
     }
 
-    res.json({
+    const responseData = {
       success: true,
       data: result.rows[0].settings_data,
       updated_at: result.rows[0].updated_at
-    });
+    };
+    await setCache(cacheKey, responseData, 3600);
+    res.json(responseData);
   } catch (error) {
     console.error('Error fetching settings:', error);
     res.status(500).json({
@@ -114,6 +125,8 @@ router.put('/', optionalAuth, async (req, res) => {
        RETURNING settings_data, updated_at`,
       [companyId, JSON.stringify(settingsData), req.user?.email || 'system']
     );
+
+    await invalidateCache(`settings:company:${companyId}`);
 
     res.json({
       success: true,
@@ -164,6 +177,8 @@ router.patch('/:section', optionalAuth, async (req, res) => {
       [JSON.stringify(currentSettings), req.user?.email || 'system', companyId]
     );
 
+    await invalidateCache(`settings:company:${companyId}`);
+
     res.json({
       success: true,
       data: result.rows[0].settings_data,
@@ -188,6 +203,8 @@ router.post('/reset', optionalAuth, async (req, res) => {
       'DELETE FROM settings WHERE company_id = $1',
       [companyId]
     );
+
+    await invalidateCache(`settings:company:${companyId}`);
 
     res.json({
       success: true,

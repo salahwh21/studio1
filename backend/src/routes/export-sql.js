@@ -42,20 +42,23 @@ router.get('/', async (req, res) => {
         const users = await db.query('SELECT * FROM users');
         sqlDump += generateInsert('users', users.rows);
 
-        // 2. Settings & Templates
+        // 2. Settings & Statuses
         const settings = await db.query('SELECT * FROM settings');
         sqlDump += generateInsert('settings', settings.rows);
 
-        const templates = await db.query('SELECT * FROM templates');
-        sqlDump += generateInsert('templates', templates.rows);
+        const statuses = await db.query('SELECT * FROM statuses');
+        sqlDump += generateInsert('statuses', statuses.rows);
 
         // 3. Orders (The Core Data)
         const orders = await db.query('SELECT * FROM orders ORDER BY created_at ASC');
         sqlDump += generateInsert('orders', orders.rows);
 
-        // 4. Areas (If customized)
-        const areas = await db.query('SELECT * FROM areas');
-        sqlDump += generateInsert('areas', areas.rows);
+        // 4. Areas (cities and regions)
+        const cities = await db.query('SELECT * FROM cities');
+        sqlDump += generateInsert('cities', cities.rows);
+
+        const regions = await db.query('SELECT * FROM regions');
+        sqlDump += generateInsert('regions', regions.rows);
 
         // Set Headers for Download
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
