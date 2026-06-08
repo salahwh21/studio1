@@ -69,7 +69,7 @@ const nextConfig = {
       }
     ];
   },
-  
+  serverExternalPackages: ['genkit', 'handlebars'],
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },

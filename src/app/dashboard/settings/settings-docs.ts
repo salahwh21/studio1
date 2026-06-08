@@ -15,7 +15,7 @@ export const settingsDocs: Record<string, string> = {
   '/dashboard/settings/statuses': 'تخصيص حالات الطلبات ومراحل دورة حياة الشحنة.',
   '/dashboard/settings/orders': 'ضبط خيارات الطلبات الافتراضية وسلوك النظام عند إنشاء الطلبات.',
   '/dashboard/settings/returns': 'أتمتة عمليات المرتجعات وتخصيص سياسات الإرجاع.',
-  '/dashboard/settings/policy': 'تصميم قوالب بوليصة الشحن وتخصيص شكل الوثائق المطبوعة.',
+  '/dashboard/reports/control-panel': 'إدارة مركزية لجميع تصاميم PDF والتقارير والبوالص.',
   '/dashboard/settings/notifications': 'إدارة قوالب الرسائل والتنبيهات المرسلة للعملاء والمستخدمين.',
   '/dashboard/settings/integrations': 'ربط النظام مع منصات خارجية مثل Shopify وWooCommerce (ميزة تجريبية).',
   '/dashboard/settings/ai-config': 'إعداد مفاتيح API وخيارات الذكاء الاصطناعي (ميزة تجريبية).',

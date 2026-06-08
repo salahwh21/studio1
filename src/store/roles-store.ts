@@ -154,21 +154,8 @@ type RolesState = {
 export const useRolesStore = create<RolesState>()(
   persist(
     immer((set, get) => {
-      // Auto-load on first access
-      const autoLoad = () => {
-        const state = get();
-        const backendReady =
-          typeof window !== 'undefined' &&
-          sessionStorage.getItem('backendReady') === '1';
-        
-        if (!state.isLoading && backendReady) {
-          state.loadRolesFromAPI();
-        }
-      };
-
-      if (typeof window !== 'undefined') {
-        setTimeout(autoLoad, 1300);
-      }
+      // Remove immediate autoLoad call from here to prevent 'state' undefined access
+      // state will be loaded via onRehydrateStorage or manual useEffect in component
 
       return {
         roles: initialRoles,
@@ -181,7 +168,7 @@ export const useRolesStore = create<RolesState>()(
             set(state => { state.isLoading = true; state.error = null; });
             const { default: api } = await import('@/lib/api');
             const roles = await api.getRoles();
-            
+
             if (roles && roles.length > 0) {
               set(state => {
                 state.roles = roles;
@@ -236,7 +223,7 @@ export const useRolesStore = create<RolesState>()(
           } catch {
             // API failed, update locally only
           }
-          
+
           set(state => {
             const role = state.roles.find(r => r.id === roleId);
             if (role) {
@@ -254,7 +241,7 @@ export const useRolesStore = create<RolesState>()(
           } catch {
             // API failed, update locally only
           }
-          
+
           set((state) => {
             const role = state.roles.find(r => r.id === roleId);
             if (role) {
@@ -271,7 +258,7 @@ export const useRolesStore = create<RolesState>()(
           } catch {
             // API failed, delete locally only
           }
-          
+
           set(state => {
             state.roles = state.roles.filter(r => r.id !== roleId);
           });
@@ -299,10 +286,18 @@ export const useRolesStore = create<RolesState>()(
     {
       name: 'roles-storage',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ 
+      partialize: (state) => ({
         roles: state.roles,
-        isFromAPI: state.isFromAPI 
+        isFromAPI: state.isFromAPI
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          const backendReady = typeof window !== 'undefined' && sessionStorage.getItem('backendReady') === '1';
+          if (backendReady && !state.isLoading) {
+            state.loadRolesFromAPI();
+          }
+        }
+      },
     }
   )
 );

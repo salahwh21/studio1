@@ -12,12 +12,12 @@ export function middleware(request: NextRequest) {
   const isPublicRoute = publicRoutes.includes(pathname);
 
   if (!isPublicRoute && !token) {
-    const loginUrl = new URL('/', request.url);
+    const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isPublicRoute && token && pathname === '/') {
+  if (isPublicRoute && token && (pathname === '/' || pathname === '/login')) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 

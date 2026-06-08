@@ -1,19 +1,7 @@
-
-
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useUsersStore } from '@/store/user-store';
-import { useOrdersStore, Order } from '@/store/orders-store';
-import { useAreas } from '@/hooks/use-areas';
-import { useToast } from '@/hooks/use-toast';
-import { Check, ChevronsUpDown, Printer, Trash2, Package, Clock, MessageSquareWarning, MapPin } from 'lucide-react';
-import { useActionState } from 'react';
-import { parseOrderFromRequest } from '@/app/actions/parse-order';
 import dynamic from 'next/dynamic';
+import { Check, ChevronsUpDown, Printer, Trash2, Package, Clock, MessageSquareWarning, MapPin } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,291 +17,62 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useStatusesStore } from '@/store/statuses-store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useSettings } from '@/contexts/SettingsContext';
-import type { SavedTemplate } from '@/contexts/SettingsContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { PrintButton } from '@/components/print-button';
-import { PrintablePolicy } from '@/components/printable-policy';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { SimplePrintDialog } from '@/components/simple-print-dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+
+import { useOrderForm, predefinedNotes } from '@/hooks/use-order-form';
 
 const LocationPickerMap = dynamic(() => import('@/components/location-picker-map'), {
   ssr: false,
   loading: () => <Skeleton className="h-full w-full rounded-lg" />,
 });
 
-
-const orderSchema = z.object({
-  recipientName: z.string().min(2, "اسم المستلم يجب أن يكون حرفين على الأقل."),
-  phone: z.string().regex(/^07\d{8}$/, "رقم الهاتف يجب أن يكون 10 أرقام ويبدأ بـ 07."),
-  whatsapp: z.string().regex(/^07\d{8}$/, "رقم الواتساب يجب أن يكون 10 أرقام ويبدأ بـ 07.").optional().or(z.literal('')),
-  region: z.string({ required_error: "الرجاء اختيار المنطقة." }).min(1, "الرجاء اختيار المنطقة."),
-  city: z.string().min(2, "اسم المدينة يجب أن يكون حرفين على الأقل."),
-  address: z.string().optional(),
-  cod: z.coerce.number().min(0, "المبلغ يجب أن يكون أكبر من أو يساوي 0."),
-  notes: z.string().max(1000, "الملاحظات يجب أن تكون أقل من 1000 حرف.").optional(),
-  referenceNumber: z.string().optional(),
-  parcelCount: z.coerce.number().min(1, "يجب أن يكون طرد واحد على الأقل."),
-  deliveryTimeType: z.enum(['any', 'fixed', 'before', 'after']).optional(),
-  deliveryTime: z.string().optional(),
-  lat: z.number().optional().nullable(),
-  lng: z.number().optional().nullable(),
-});
-
-type OrderFormValues = z.infer<typeof orderSchema>;
-
-const predefinedNotes = [
-  { text: 'قابل للكسر', icon: 'GlassWater' as const },
-  { text: 'يرجى التواصل باكرًا', icon: 'Sunrise' as const },
-  { text: 'توصيل في الفترة المسائية', icon: 'Sunset' as const },
-  { text: 'هدية، يرجى عدم إظهار السعر', icon: 'Gift' as const },
-];
-
 const AddOrderPage = () => {
-  const { toast } = useToast();
-  const { users } = useUsersStore();
-  const { addOrder, deleteOrders, updateOrderField } = useOrdersStore();
-  const { cities, isLoading: areasLoading } = useAreas();
-  const { statuses } = useStatusesStore();
-  const context = useSettings();
-  const { settings, formatCurrency, isHydrated: settingsHydrated } = context;
-  const currencySymbol = settings.regional.currencySymbol;
+  const {
+    form,
+    selectedRegionValue,
+    codValue,
+    selectedCity,
+    deliveryTimeType,
+    lat, lng,
+    calculatedFees,
 
-  const [selectedMerchantId, setSelectedMerchantId] = useState<string>('');
+    selectedMerchantId, setSelectedMerchantId,
+    merchantPopoverOpen, setMerchantPopoverOpen,
+    regionPopoverOpen, setRegionPopoverOpen,
+    popoverStates, togglePopover,
+    recentlyAdded,
+    selectedRecent,
+    isPrepaid, setIsPrepaid,
+    isMapOpen, setIsMapOpen,
 
-  const [merchantPopoverOpen, setMerchantPopoverOpen] = useState(false);
-  const [regionPopoverOpen, setRegionPopoverOpen] = useState(false);
-  const [popoverStates, setPopoverStates] = useState<Record<string, boolean>>({});
+    aiState, formAction, isAiPending,
 
-  const togglePopover = (id: string) => {
-    setPopoverStates(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+    merchantOptions,
+    allRegions,
+    statuses,
+    formatCurrency, currencySymbol,
+    availableTemplates,
+    printablePolicyRef,
 
-  const [recentlyAdded, setRecentlyAdded] = useState<Order[]>([]);
-  const [selectedRecent, setSelectedRecent] = useState<string[]>([]);
+    handleAddOrder,
+    handleUpdateRecentlyAdded,
+    handleSelectRecent,
+    handleSelectAllRecent,
+    handleDeleteSelected,
+    handleAddPredefinedNote,
+    handleLocationSelect,
 
-  const [aiState, formAction, isAiPending] = useActionState(parseOrderFromRequest, {
-    data: null, error: null, message: ''
-  });
-
-  const [isPrepaid, setIsPrepaid] = useState(false);
-  const [isMapOpen, setIsMapOpen] = useState(false);
-  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<SavedTemplate | null>(null);
-
-  const form = useForm<OrderFormValues>({
-    resolver: zodResolver(orderSchema),
-    defaultValues: { recipientName: '', phone: '', whatsapp: '', city: '', region: '', address: '', cod: 0, notes: '', referenceNumber: '', parcelCount: 1, deliveryTimeType: 'any', lat: null, lng: null },
-  });
-
-  const { watch, setValue, getValues, reset } = form;
-  const selectedRegionValue = watch('region');
-  const codValue = watch('cod');
-  const selectedCity = watch('city');
-  const deliveryTimeType = watch('deliveryTimeType');
-  const lat = watch('lat');
-  const lng = watch('lng');
-
-  const merchantOptions = useMemo(() => users.filter(u => u.roleId === 'merchant'), [users]);
-  const allRegions = useMemo(() => cities.flatMap(c => (c.areas || []).map(a => ({ ...a, cityName: c.name }))).sort((a, b) => a.name.localeCompare(b.name)), [cities]);
-
-  // Print-related refs and computed values
-  const printablePolicyRef = useRef<{ handleExport: () => Promise<void> } | null>(null);
-  const availableTemplates = settings.templates || [];
-
-
-
-
-  useEffect(() => {
-    if (selectedRegionValue) {
-      const [regionName, cityName] = selectedRegionValue.split('_');
-      const regionData = allRegions.find(r => r.name === regionName && r.cityName === cityName);
-      if (regionData) {
-        setValue('city', regionData.cityName, { shouldValidate: true });
-      }
-    }
-  }, [selectedRegionValue, allRegions, setValue]);
-
-  useEffect(() => {
-    if (isPrepaid) {
-      setValue('cod', 0);
-    }
-  }, [isPrepaid, setValue]);
-
-
-  const calculatedFees = useMemo(() => {
-    const safeCodValue = codValue || 0;
-    if (!selectedCity) {
-      return { deliveryFee: 0, itemPrice: 0 };
-    }
-    const deliveryFee = selectedCity === 'عمان' ? 2.5 : 3.5;
-    const itemPrice = isPrepaid ? 0 : (safeCodValue - deliveryFee);
-    return { deliveryFee, itemPrice };
-  }, [codValue, selectedCity, isPrepaid]);
-
-  // --- AI Logic ---
-  useEffect(() => {
-    if (aiState.data) {
-      const { customerName, phone, city, region, addressDetails, cod } = aiState.data;
-
-      form.reset({
-        ...form.getValues(),
-        recipientName: customerName || '',
-        phone: phone || '',
-        address: addressDetails || '',
-        cod: cod || 0,
-      });
-
-      if (region) {
-        const bestMatch = allRegions.find(r => r.name.includes(region) || region.includes(r.name));
-        if (bestMatch) {
-          setValue('region', `${bestMatch.name}_${bestMatch.cityName}`, { shouldValidate: true });
-          setValue('city', bestMatch.cityName, { shouldValidate: true });
-        }
-      } else if (city) {
-        const cityMatch = cities.find(c => c.name.includes(city));
-        if (cityMatch && cityMatch.areas && cityMatch.areas.length > 0) {
-          setValue('region', `${cityMatch.areas[0].name}_${cityMatch.name}`, { shouldValidate: true });
-          setValue('city', cityMatch.name, { shouldValidate: true });
-        }
-      }
-
-      toast({ title: 'تم تحليل الطلب', description: 'تم ملء الحقول بنجاح. يرجى المراجعة والإضافة.' });
-    }
-    if (aiState.error) {
-      toast({
-        variant: 'destructive',
-        title: 'خطأ في التحليل',
-        description: aiState.error,
-      });
-    }
-  }, [aiState, allRegions, cities, form, setValue, toast])
-
-
-  const handleUpdateRecentlyAdded = (orderId: string, field: keyof Order, value: any) => {
-    if (field === 'region') {
-      const [regionName, cityName] = value.split('_');
-      updateOrderField(orderId, 'region', regionName);
-      updateOrderField(orderId, 'city', cityName);
-      setRecentlyAdded(prev => prev.map(o => o.id === orderId ? { ...o, region: regionName, city: cityName } : o));
-    } else {
-      updateOrderField(orderId, field, value);
-      setRecentlyAdded(prev => prev.map(o => o.id === orderId ? { ...o, [field]: value } : o));
-    }
-  };
-
-  const handleAddPredefinedNote = (note: string) => {
-    const currentNotes = getValues('notes');
-    setValue('notes', currentNotes ? `${currentNotes}\n- ${note}` : `- ${note}`);
-  };
-
-  const handleLocationSelect = ({ lat, lng }: { lat: number; lng: number }) => {
-    setValue('lat', lat);
-    setValue('lng', lng);
-    setValue('address', `[GEO] ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-    setIsMapOpen(false);
-    toast({ title: 'تم تحديد الموقع', description: 'تم حفظ الإحداثيات.' });
-  };
-
-  const handleAddOrder = async (data: OrderFormValues) => {
-    const merchant = users.find(u => u.id === selectedMerchantId);
-    if (!merchant) {
-      toast({ variant: 'destructive', title: 'خطأ', description: 'الرجاء اختيار متجر أولاً.' });
-      return;
-    }
-
-    const [regionName] = data.region.split('_');
-
-    if (!settingsHydrated) {
-      toast({ variant: 'destructive', title: 'خطأ', description: 'الإعدادات لم تحمل بعد، يرجى المحاولة بعد لحظات.' });
-      return;
-    }
-
-    let finalNotes = data.notes || '';
-    if (isPrepaid) {
-      finalNotes = `الطلب مدفوع مسبقًا.\n${finalNotes}`.trim();
-    }
-    if (data.deliveryTimeType && data.deliveryTimeType !== 'any' && data.deliveryTime) {
-      let timeNote = '';
-      try {
-        const timeString = new Date(`1970-01-01T${data.deliveryTime}`).toLocaleTimeString('ar-JO', { hour: 'numeric', minute: 'numeric', hour12: true });
-        if (data.deliveryTimeType === 'fixed') timeNote = `التوصيل الساعة ${timeString} تمامًا.`;
-        if (data.deliveryTimeType === 'before') timeNote = `التوصيل قبل الساعة ${timeString}.`;
-        if (data.deliveryTimeType === 'after') timeNote = `التوصيل بعد الساعة ${timeString}.`;
-      } catch (e) { /* ignore invalid time */ }
-      finalNotes = `${timeNote}\n${finalNotes}`.trim();
-    }
-    finalNotes = `${finalNotes}\n(عدد الطرود: ${data.parcelCount})`.trim();
-
-    const newOrder: Omit<Order, 'id' | 'orderNumber'> = {
-      source: 'Manual',
-      referenceNumber: data.referenceNumber || '',
-      recipient: data.recipientName || 'زبون غير مسمى',
-      phone: data.phone || '',
-      whatsapp: data.whatsapp || '',
-      address: `${data.address ? `${data.address}, ` : ''}${regionName}, ${data.city}`,
-      city: data.city || '',
-      region: regionName,
-      status: 'بالانتظار', // Always start with pending status
-      driver: 'غير معين',
-      merchant: merchant.storeName || merchant.name,
-      cod: isPrepaid ? 0 : data.cod,
-      itemPrice: calculatedFees.itemPrice,
-      deliveryFee: calculatedFees.deliveryFee,
-      date: new Date().toISOString().split('T')[0],
-      notes: finalNotes,
-      // @ts-ignore
-      parcelCount: data.parcelCount,
-      lat: data.lat ?? undefined,
-      lng: data.lng ?? undefined,
-    };
-
-    try {
-      const addedOrder = await addOrder(newOrder);
-      if (addedOrder) {
-        setRecentlyAdded(prev => [addedOrder, ...prev]);
-        toast({
-          title: 'تمت الإضافة',
-          description: `تمت إضافة طلب "${data.recipientName}" بنجاح. الطلب متاح الآن في جدول الطلبات.`
-        });
-        reset({ ...getValues(), recipientName: '', phone: '', whatsapp: '', cod: 0, notes: '', referenceNumber: '', address: '', parcelCount: 1, deliveryTimeType: 'any', deliveryTime: '', lat: null, lng: null });
-        setIsPrepaid(false);
-      }
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'خطأ', description: 'فشل في إضافة الطلب. يرجى المحاولة مرة أخرى.' });
-    }
-  };
-
-  const handleSelectRecent = (id: string) => {
-    setSelectedRecent(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-  };
-
-  const handleSelectAllRecent = (checked: boolean) => {
-    setSelectedRecent(checked ? recentlyAdded.map(o => o.id) : []);
-  };
-
-  const handleDeleteSelected = () => {
-    deleteOrders(selectedRecent);
-    setRecentlyAdded(prev => prev.filter(o => !selectedRecent.includes(o.id)));
-    toast({ title: "تم الحذف", description: `تم حذف ${selectedRecent.length} طلبات.` });
-    setSelectedRecent([]);
-  }
-
-  const handlePrintClick = () => {
-    if (selectedRecent.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "لم يتم تحديد طلبات",
-        description: "الرجاء تحديد طلب واحد على الأقل للطباعة."
-      });
-      return;
-    }
-    setSelectedTemplate(availableTemplates.length > 0 ? availableTemplates[0] : null);
-    setIsPrintDialogOpen(true);
-  };
+    isPrintDialogOpen, setIsPrintDialogOpen,
+    showEnhancedPrintDialog, setShowEnhancedPrintDialog,
+    selectedTemplate, setSelectedTemplate,
+    handlePrintClick,
+    handleEnhancedPrint,
+  } = useOrderForm();
 
   return (
     <>
@@ -330,9 +89,9 @@ const AddOrderPage = () => {
                 <CardContent className='p-4'>
                   <RadioGroup
                     value={selectedTemplate?.id}
-                    onValueChange={(id) => setSelectedTemplate(availableTemplates.find(t => t.id === id) || null)}
+                    onValueChange={(id) => setSelectedTemplate(availableTemplates.find((t: any) => t.id === id) || null)}
                   >
-                    {availableTemplates.map(template => (
+                    {availableTemplates.map((template: any) => (
                       <div key={template.id} className="flex items-center space-x-2 space-x-reverse">
                         <RadioGroupItem value={template.id} id={template.id} />
                         <Label htmlFor={template.id}>{template.name}</Label>
@@ -353,9 +112,9 @@ const AddOrderPage = () => {
             <div className="md:col-span-3 bg-muted rounded-md flex items-center justify-center overflow-hidden">
               <ScrollArea className="h-full w-full">
                 <div className="p-4 flex items-center justify-center">
-                  {selectedTemplate && (
-                    <PrintablePolicy ref={printablePolicyRef} orders={recentlyAdded.filter(o => selectedRecent.includes(o.id))} template={selectedTemplate} />
-                  )}
+                  <div className="text-center text-gray-500">
+                    <p>استخدم SimplePrintDialog للطباعة</p>
+                  </div>
                 </div>
               </ScrollArea>
             </div>
@@ -373,294 +132,335 @@ const AddOrderPage = () => {
         </DialogContent>
       </Dialog>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
 
-        <Card className="rounded-lg border-2 bg-amber-50 dark:bg-amber-950/30 border-amber-400 dark:border-amber-700 shadow-lg">
-          <CardHeader className='p-4 pb-3'>
-            <CardTitle className="font-bold flex items-center gap-2 text-xl">
-              <Icon name="Sparkles" className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              الإدخال السريع بالذكاء الاصطناعي
-            </CardTitle>
-            <CardDescription className="text-sm">الصق النص الكامل للطلب هنا (مثلاً من رسالة واتساب) وسيقوم النظام بتحليله وتعبئة الحقول تلقائيًا.</CardDescription>
-          </CardHeader>
-          <CardContent className='p-4 pt-0'>
-            <form action={formAction} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Textarea
-                name="request"
-                placeholder="مثال: مرحبا بدي اوردر باسم احمد علي، تلفون 0791234567، العنوان ماركا الشمالية، والسعر الكلي 15 دينار شامل توصيل"
-                className="md:col-span-2 min-h-[100px] bg-white dark:bg-gray-950 border-2 border-amber-300 dark:border-amber-700"
-              />
-              <Button
-                type="submit"
-                className="h-full text-base md:col-span-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700"
-                disabled={isAiPending || !selectedMerchantId}
-              >
-                {isAiPending ? <Icon name="Loader2" className="animate-spin mr-2" /> : <Icon name="Bot" className="mr-2" />}
-                {isAiPending ? 'جاري التحليل...' : 'تحليل وتعبئة'}
-              </Button>
-            </form>
-            {aiState.error && (
-              <Alert variant="destructive" className="mt-4">
-                <Icon name="AlertCircle" className="h-4 w-4" />
-                <AlertTitle>خطأ في التحليل</AlertTitle>
-                <AlertDescription>{aiState.error}</AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
+        {/* AI Quick Add - Enhanced Presence & Subtle Contrast */}
+        <div className="rounded-xl border border-amber-200/70 dark:border-amber-700/30 bg-gradient-to-r from-amber-100/60 via-amber-50/40 to-orange-100/50 dark:from-amber-900/30 dark:via-slate-900 dark:to-orange-900/20 p-4 shadow-md transition-all duration-300 hover:shadow-lg">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <div className="flex items-center gap-3 md:w-56 shrink-0">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
+                <Icon name="Sparkles" className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-sm text-amber-900 dark:text-amber-200">الإدخال السريع الذكي</span>
+                <span className="text-[11px] text-amber-700/80 dark:text-amber-400/80 font-medium">لصق نص الطلب للتعبئة التلقائية</span>
+              </div>
+            </div>
+            <div className="flex-1 w-full">
+              <form action={formAction} className="flex gap-2 w-full">
+                <Textarea
+                  name="request"
+                  placeholder="مثال: اوردر باسم احمد، هاتف 0791234567، عمان، 15 دينار..."
+                  className="flex-1 min-h-[48px] h-[48px] text-sm bg-white dark:bg-slate-950 border-amber-300/50 focus-visible:ring-amber-500/50 resize-none py-3 shadow-inner"
+                />
+                <Button
+                  type="submit"
+                  className="h-[48px] px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md transition-all font-bold gap-2"
+                  disabled={isAiPending || !selectedMerchantId}
+                >
+                  {isAiPending ? <Icon name="Loader2" className="animate-spin h-4 w-4" /> : <Icon name="Bot" className="h-4 w-4" />}
+                  <span className="hidden sm:inline">{isAiPending ? 'تحليل...' : 'تعبئة'}</span>
+                </Button>
+              </form>
+              {aiState.error && (
+                <div className="mt-2 text-xs text-red-500 flex items-center gap-1">
+                  <Icon name="AlertCircle" className="h-3 w-3" />
+                  {aiState.error}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleAddOrder)} className="space-y-6">
-            <Card className="border-2 border-gray-300 dark:border-gray-700 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border-b-2 border-gray-300 dark:border-gray-700">
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Icon name="PackagePlus" className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                  إضافة طلب جديد
-                </CardTitle>
-                <CardDescription>املأ بيانات الطلب بسرعة وسهولة</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6 pt-6 bg-white dark:bg-slate-950">
-                {/* Row 1: Merchant, Recipient, Phone */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border-2 border-slate-200 dark:border-slate-800">
-                  <div className="flex flex-col space-y-2">
-                    <Label htmlFor="merchant-select" className="flex items-center gap-2 font-medium">
-                      <Icon name="Store" className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                      المتجر *
-                    </Label>
-                    <Popover open={merchantPopoverOpen} onOpenChange={setMerchantPopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          id="merchant-select"
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={merchantPopoverOpen}
-                          className={cn(
-                            "w-full justify-between h-11 border-2",
-                            selectedMerchantId && "border-purple-400 bg-purple-50 dark:bg-purple-950 dark:border-purple-600"
-                          )}
-                        >
-                          {selectedMerchantId ? (merchantOptions.find(m => m.id === selectedMerchantId)?.storeName || merchantOptions.find(m => m.id === selectedMerchantId)?.name) : "اختر متجرًا..."}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                        <Command>
-                          <CommandInput placeholder="بحث عن متجر..." />
-                          <CommandList>
-                            <CommandEmpty>لم يتم العثور على متجر.</CommandEmpty>
-                            <CommandGroup>
-                              {merchantOptions.map(m => (
-                                <CommandItem
-                                  key={m.id}
-                                  value={m.storeName || m.name}
-                                  onSelect={() => {
-                                    setSelectedMerchantId(m.id);
-                                    setMerchantPopoverOpen(false);
-                                  }}
-                                >
-                                  <Check className={cn("mr-2 h-4 w-4", selectedMerchantId === m.id ? "opacity-100" : "opacity-0")} />
-                                  {m.storeName || m.name}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <FormField control={form.control} name="recipientName" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2 font-medium">
-                        <Icon name="User" className="h-4 w-4 text-green-600 dark:text-green-400" />
-                        المستلم
-                      </FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="اسم المستلم" className="h-11 border-2" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="phone" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2 font-medium">
-                        <Icon name="Phone" className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        الهاتف
-                      </FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="07xxxxxxxx" className="h-11 border-2" dir="ltr" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-
-                {/* Row 2: Region, City, Address - will be filled below */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField control={form.control} name="region" render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>المنطقة</FormLabel>
-                      <Popover open={regionPopoverOpen} onOpenChange={setRegionPopoverOpen}>
-                        <PopoverTrigger asChild>
-                          <FormControl>
+          <form onSubmit={form.handleSubmit(handleAddOrder)} className="space-y-4">
+            <Card className="border-0 shadow-none bg-transparent">
+              <CardContent className="space-y-3 p-0">
+                {/* ── Form Sections ── */}
+                <div className="space-y-3">
+                  {/* Section 1: Customer Data */}
+                  <div className="rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-slate-100/60 dark:bg-slate-900/60 p-4 shadow-sm transition-shadow hover:shadow-md">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                      <div className="flex flex-col space-y-2">
+                        <Label htmlFor="merchant-select" className="font-semibold text-slate-700 dark:text-slate-300">
+                          المتجر <span className="text-red-500">*</span>
+                        </Label>
+                        <Popover open={merchantPopoverOpen} onOpenChange={setMerchantPopoverOpen}>
+                          <PopoverTrigger asChild>
                             <Button
+                              id="merchant-select"
                               variant="outline"
                               role="combobox"
-                              className={cn("w-full justify-between", !field.value && "text-muted-foreground")}
+                              aria-expanded={merchantPopoverOpen}
+                              className={cn(
+                                "w-full justify-between h-10 font-normal",
+                                selectedMerchantId ? "border-blue-400 bg-blue-50 dark:bg-blue-950/20" : "text-muted-foreground"
+                              )}
                             >
-                              {field.value
-                                ? allRegions.find(r => `${r.name}_${r.cityName}` === field.value)?.name
-                                : "اختر منطقة..."}
+                              {selectedMerchantId ? (merchantOptions.find(m => m.id === selectedMerchantId)?.storeName || merchantOptions.find(m => m.id === selectedMerchantId)?.name) : "اختر متجرًا..."}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                          <Command>
-                            <CommandInput placeholder="بحث عن منطقة..." />
-                            <CommandList>
-                              <CommandEmpty>لم يتم العثور على المنطقة.</CommandEmpty>
-                              <CommandGroup>
-                                {allRegions.map(r => (
-                                  <CommandItem
-                                    value={`${r.name} ${r.cityName}`}
-                                    key={`${r.id}-${r.cityName}`}
-                                    onSelect={() => {
-                                      form.setValue("region", `${r.name}_${r.cityName}`);
-                                      setRegionPopoverOpen(false);
-                                    }}
-                                  >
-                                    <Check className={cn("mr-2 h-4 w-4", `${r.name}_${r.cityName}` === field.value ? "opacity-100" : "opacity-0")} />
-                                    {r.name} ({r.cityName})
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="city" render={({ field }) => (<FormItem><FormLabel>المدينة</FormLabel><FormControl><Input {...field} readOnly className="bg-muted" placeholder="سيتم تحديدها تلقائياً" /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="address" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>العنوان (اختياري)</FormLabel>
-                      <div className="flex items-center gap-2">
-                        <FormControl>
-                          <Input {...field} placeholder={lat && lng ? `تم تحديد الموقع على الخريطة` : "اسم الشارع، رقم البناية..."} />
-                        </FormControl>
-                        <Button type="button" variant="outline" size="icon" onClick={() => setIsMapOpen(true)} className={cn(lat && lng && 'bg-green-100 border-green-400 text-green-700')}>
-                          <MapPin className="h-4 w-4" />
-                        </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                            <Command>
+                              <CommandInput placeholder="بحث عن متجر..." />
+                              <CommandList>
+                                <CommandEmpty>لم يتم العثور على متجر.</CommandEmpty>
+                                <CommandGroup>
+                                  {merchantOptions.map(m => (
+                                    <CommandItem
+                                      key={m.id}
+                                      value={m.storeName || m.name}
+                                      onSelect={() => {
+                                        setSelectedMerchantId(m.id);
+                                        setMerchantPopoverOpen(false);
+                                      }}
+                                    >
+                                      <Check className={cn("mr-2 h-4 w-4", selectedMerchantId === m.id ? "opacity-100" : "opacity-0")} />
+                                      {m.storeName || m.name}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       </div>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                  <FormField control={form.control} name="cod" render={({ field }) => (
-                    <FormItem className="md:col-span-1">
-                      <FormLabel className="flex items-center gap-2 font-medium">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold">{currencySymbol}</span>
-                        قيمة التحصيل (COD)
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          {...field}
-                          onChange={(e) => {
-                            // Force Western numerals only
-                            const value = e.target.value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString()).replace(/[^\d.]/g, '');
-                            field.onChange(value ? parseFloat(value) : 0);
-                          }}
-                          value={field.value || ''}
-                          disabled={isPrepaid}
-                          className="h-11 text-lg font-mono border-2 border-orange-300 dark:border-orange-700 focus:border-orange-500"
-                          style={{ unicodeBidi: 'plaintext' }}
-                          placeholder="0.00"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <div className="md:col-span-2 grid grid-cols-2 gap-4 rounded-lg border p-3 bg-muted h-fit">
-                    <div>
-                      <p className="text-xs text-muted-foreground">المستحق للتاجر</p>
-                      <p className="font-bold text-primary">{formatCurrency(calculatedFees.itemPrice)}</p>
-                    </div>
-                    <Separator orientation="vertical" className="h-auto" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">أجور التوصيل</p>
-                      <p className="font-bold text-primary">{formatCurrency(calculatedFees.deliveryFee)}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <Checkbox id="isPrepaid" checked={isPrepaid} onCheckedChange={(checked) => setIsPrepaid(!!checked)} />
-                  <Label htmlFor="isPrepaid" className="font-medium cursor-pointer">
-                    الطلب مدفوع مسبقًا (أجور التوصيل تم دفعها من قبل التاجر)
-                  </Label>
-                </div>
-
-
-                {/* Delivery Time Scheduling */}
-                <div className="space-y-4 rounded-lg border p-4">
-                  <Label className="flex items-center gap-2 font-semibold"><Clock className="h-5 w-5" /> تفضيلات وقت التوصيل</Label>
-                  <FormField
-                    control={form.control}
-                    name="deliveryTimeType"
-                    render={({ field }) => (
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2"
-                      >
-                        <FormItem className="flex items-center space-x-2 space-x-reverse"><FormControl><RadioGroupItem value="any" /></FormControl><FormLabel className="font-normal">أي وقت</FormLabel></FormItem>
-                        <FormItem className="flex items-center space-x-2 space-x-reverse"><FormControl><RadioGroupItem value="fixed" /></FormControl><FormLabel className="font-normal">وقت محدد</FormLabel></FormItem>
-                        <FormItem className="flex items-center space-x-2 space-x-reverse"><FormControl><RadioGroupItem value="before" /></FormControl><FormLabel className="font-normal">قبل الساعة</FormLabel></FormItem>
-                        <FormItem className="flex items-center space-x-2 space-x-reverse"><FormControl><RadioGroupItem value="after" /></FormControl><FormLabel className="font-normal">بعد الساعة</FormLabel></FormItem>
-                      </RadioGroup>
-                    )}
-                  />
-                  {deliveryTimeType !== 'any' && (
-                    <FormField
-                      control={form.control}
-                      name="deliveryTime"
-                      render={({ field }) => (
-                        <FormItem className="animate-in fade-in">
-                          <FormControl><Input type="time" {...field} className="max-w-xs" /></FormControl>
+                      <FormField control={form.control} name="recipientName" render={({ field }) => (
+                        <FormItem className="flex flex-col space-y-2">
+                          <FormLabel className="font-semibold text-slate-700 dark:text-slate-300">اسم المستلم</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="أدخل اسم المستلم" className="h-10" />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
-                      )}
-                    />
-                  )}
-                </div>
-
-                {/* Notes */}
-                <div className="space-y-4">
-                  <Label className="flex items-center gap-2 font-semibold"><MessageSquareWarning className="h-5 w-5" /> ملاحظات الطلب</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {predefinedNotes.map(note => (
-                      <Button key={note.text} type="button" variant="outline" size="sm" className="gap-2" onClick={() => handleAddPredefinedNote(note.text)}>
-                        <Icon name={note.icon} className="h-4 w-4" />
-                        {note.text}
-                      </Button>
-                    ))}
+                      )} />
+                      <FormField control={form.control} name="phone" render={({ field }) => (
+                        <FormItem className="flex flex-col space-y-2">
+                          <FormLabel className="font-semibold text-slate-700 dark:text-slate-300">رقم الهاتف</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="07xxxxxxxx" className="h-10" dir="ltr" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
                   </div>
-                  <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormControl><Textarea {...field} placeholder="أضف ملاحظات إضافية هنا..." /></FormControl><FormMessage /></FormItem>)} />
+
+                  {/* Section 2: Delivery Address */}
+                  <div className="rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-slate-100/60 dark:bg-slate-900/60 p-4 shadow-sm transition-shadow hover:shadow-md">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                      <FormField control={form.control} name="region" render={({ field }) => (
+                        <FormItem className="flex flex-col space-y-2">
+                          <FormLabel className="font-semibold text-slate-700 dark:text-slate-300">المنطقة <span className="text-red-500">*</span></FormLabel>
+                          <Popover open={regionPopoverOpen} onOpenChange={setRegionPopoverOpen}>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className={cn("w-full justify-between h-10 font-normal", field.value ? "border-blue-400 bg-blue-50 dark:bg-blue-950/20" : "text-muted-foreground")}
+                                >
+                                  {field.value
+                                    ? allRegions.find(r => `${r.name}_${r.cityName}` === field.value)?.name
+                                    : "اختر منطقة..."}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                              <Command>
+                                <CommandInput placeholder="بحث عن منطقة..." />
+                                <CommandList>
+                                  <CommandEmpty>لم يتم العثور على المنطقة.</CommandEmpty>
+                                  <CommandGroup>
+                                    {allRegions.map(r => (
+                                      <CommandItem
+                                        value={`${r.name} ${r.cityName}`}
+                                        key={`${r.id}-${r.cityName}`}
+                                        onSelect={() => {
+                                          form.setValue("region", `${r.name}_${r.cityName}`);
+                                          setRegionPopoverOpen(false);
+                                        }}
+                                      >
+                                        <Check className={cn("mr-2 h-4 w-4", `${r.name}_${r.cityName}` === field.value ? "opacity-100" : "opacity-0")} />
+                                        {r.name} ({r.cityName})
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="city" render={({ field }) => (
+                        <FormItem className="flex flex-col space-y-2">
+                          <FormLabel className="font-semibold text-slate-700 dark:text-slate-300">المدينة</FormLabel>
+                          <FormControl>
+                            <Input {...field} readOnly className="h-10 bg-muted" placeholder="تلقائي" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="address" render={({ field }) => (
+                        <FormItem className="flex flex-col space-y-2">
+                          <FormLabel className="font-semibold text-slate-700 dark:text-slate-300">العنوان التفصيلي (اختياري)</FormLabel>
+                          <div className="flex items-center gap-2">
+                            <FormControl>
+                              <Input {...field} className="h-10" placeholder={lat && lng ? "تم التحديد على الخريطة" : "الشارع، البناية..."} />
+                            </FormControl>
+                            <Button type="button" variant="outline" size="icon" onClick={() => setIsMapOpen(true)} className={cn("h-10 w-10 shrink-0", lat && lng && 'bg-green-100 border-green-400 text-green-700')}>
+                              <MapPin className="h-5 w-5" />
+                            </Button>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+                  </div>
+
+                  {/* Section 3: Payment Details */}
+                  <div className="rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-slate-100/60 dark:bg-slate-900/60 p-4 shadow-sm transition-shadow hover:shadow-md">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                      <FormField control={form.control} name="cod" render={({ field }) => (
+                        <FormItem className="flex flex-col space-y-2">
+                          <FormLabel className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                            قيمة التحصيل (COD) <span className="text-orange-600 dark:text-orange-400 font-bold ml-1">({currencySymbol})</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="text"
+                              inputMode="decimal"
+                              {...field}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString()).replace(/[^\d.]/g, '');
+                                field.onChange(value ? parseFloat(value) : 0);
+                              }}
+                              value={field.value || ''}
+                              disabled={isPrepaid}
+                              className="h-10 text-base font-mono"
+                              style={{ unicodeBidi: 'plaintext' }}
+                              placeholder="0.00"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      
+                      <div className="flex flex-col space-y-2">
+                        <Label className="font-semibold text-slate-700 dark:text-slate-300 opacity-0 select-none hidden md:block">Spacer</Label>
+                        <div className="flex items-center space-x-2 space-x-reverse bg-card px-4 h-10 rounded-md border border-input hover:border-blue-400 transition-colors cursor-pointer" onClick={() => setIsPrepaid(!isPrepaid)}>
+                          <Checkbox id="isPrepaid" checked={isPrepaid} onCheckedChange={(checked) => setIsPrepaid(!!checked)} className="h-4 w-4 rounded" />
+                          <Label htmlFor="isPrepaid" className="font-medium cursor-pointer text-slate-700 dark:text-slate-300 w-full select-none">
+                            الطلب مدفوع مسبقًا
+                          </Label>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col space-y-2">
+                        <Label className="font-semibold text-slate-700 dark:text-slate-300">تفاصيل الرسوم</Label>
+                        <div className="flex gap-4 rounded-md border border-border px-3 bg-muted/20 h-10 items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">التاجر:</span>
+                            <span className="font-medium text-sm text-foreground">{formatCurrency(calculatedFees.itemPrice)}</span>
+                          </div>
+                          <Separator orientation="vertical" className="h-5 bg-border" />
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">التوصيل:</span>
+                            <span className="font-medium text-sm text-foreground">{formatCurrency(calculatedFees.deliveryFee)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 4: Extra Options (Unified Time and Notes) */}
+                  <div className="rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-slate-100/60 dark:bg-slate-900/60 p-4 shadow-sm transition-shadow hover:shadow-md">
+                    <div className="flex flex-col space-y-4">
+                      
+                      {/* Unified Time Controls & Predefined Notes */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Time Control Toggle */}
+                        <FormField
+                          control={form.control}
+                          name="deliveryTimeType"
+                          render={({ field }) => (
+                            <div className="flex bg-background p-1 rounded-md gap-1 border border-border shadow-sm shrink-0 items-center">
+                              <div className="flex items-center px-2 text-xs font-semibold text-muted-foreground border-l border-border ml-1">
+                                <Clock className="h-3.5 w-3.5 ml-1 text-orange-500" /> التوصيل
+                              </div>
+                              {[
+                                { id: 'any', label: 'أي وقت' },
+                                { id: 'fixed', label: 'محدد' },
+                                { id: 'before', label: 'قبل' },
+                                { id: 'after', label: 'بعد' }
+                              ].map(option => (
+                                <button
+                                  key={option.id}
+                                  type="button"
+                                  onClick={() => field.onChange(option.id)}
+                                  className={cn(
+                                    "text-xs font-medium px-3 py-1.5 rounded-sm transition-all duration-200",
+                                    field.value === option.id
+                                      ? "bg-primary text-primary-foreground shadow"
+                                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                  )}
+                                >
+                                  {option.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        />
+
+                        {/* Predefined Notes */}
+                        {predefinedNotes.map(note => (
+                          <Button key={note.text} type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-xs border-dashed" onClick={() => handleAddPredefinedNote(note.text)}>
+                            <Icon name={note.icon} className="h-3.5 w-3.5 text-slate-500" />
+                            {note.text}
+                          </Button>
+                        ))}
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-3 items-start">
+                        {/* Optional Time Input */}
+                        {deliveryTimeType !== 'any' && (
+                          <FormField
+                            control={form.control}
+                            name="deliveryTime"
+                            render={({ field }) => (
+                              <FormItem className="animate-in fade-in zoom-in duration-200 shrink-0 w-full sm:w-auto">
+                                <FormControl><Input type="time" {...field} className="h-10 w-full sm:w-[150px]" /></FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+
+                        {/* Textarea for Notes */}
+                        <FormField control={form.control} name="notes" render={({ field }) => (
+                          <FormItem className="flex-1 w-full">
+                            <FormControl><Textarea {...field} placeholder="أضف ملاحظات إضافية للسائق هنا..." className="min-h-[40px] resize-y" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+
+                    </div>
+                  </div>
                 </div>
               </CardContent>
-              <CardFooter className="bg-slate-100 dark:bg-slate-900 border-t-2 border-gray-300 dark:border-gray-700">
+              <CardFooter className="bg-muted/10 border-t border-border p-6">
                 <Button
                   type="submit"
                   size="lg"
                   disabled={!selectedMerchantId}
-                  className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 border-2 border-green-700 dark:border-green-500"
+                  className="w-full h-11 text-base font-medium shadow-sm"
                 >
-                  <Icon name="PlusCircle" className="mr-2 h-5 w-5" />
-                  {selectedMerchantId ? 'إضافة الطلب' : 'الرجاء اختيار متجر أولاً'}
+                  <Icon name="Plus" className="mr-2 h-4 w-4" />
+                  {selectedMerchantId ? 'تأكيد وإضافة الطلب' : 'الرجاء اختيار متجر أولاً'}
                 </Button>
               </CardFooter>
             </Card>
@@ -817,9 +617,17 @@ const AddOrderPage = () => {
           </Card>
         )}
       </div>
+
+      {/* Simple Print Dialog */}
+      <SimplePrintDialog
+        open={showEnhancedPrintDialog}
+        onOpenChange={setShowEnhancedPrintDialog}
+        selectedCount={selectedRecent.length}
+        onPrint={handleEnhancedPrint}
+        orders={recentlyAdded.filter(order => selectedRecent.includes(order.id))}
+      />
     </>
   );
 };
 
 export default AddOrderPage;
-

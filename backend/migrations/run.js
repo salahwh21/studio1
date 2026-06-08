@@ -25,7 +25,8 @@ const MIGRATIONS = [
   '001_initial_schema.sql',
   '002_seed_data.sql',
   '003_create_admin_user.sql',
-  '004_create_settings_table.sql'
+  '004_create_settings_table.sql',
+  '009_create_templates_table.sql'
 ];
 
 /**
@@ -73,12 +74,12 @@ function splitSQLStatements(sql) {
   let stringChar = null;
   let inComment = false;
   let commentType = null; // '--' or '/*'
-  
+
   for (let i = 0; i < sql.length; i++) {
     const char = sql[i];
     const nextChar = sql[i + 1] || '';
     const prevChar = sql[i - 1] || '';
-    
+
     // Handle string literals
     if (!inComment && (char === "'" || char === '"')) {
       if (!inString) {
@@ -91,7 +92,7 @@ function splitSQLStatements(sql) {
       currentStatement += char;
       continue;
     }
-    
+
     // Handle comments
     if (!inString) {
       // Single-line comment
@@ -101,7 +102,7 @@ function splitSQLStatements(sql) {
         currentStatement += char;
         continue;
       }
-      
+
       // Multi-line comment start
       if (char === '/' && nextChar === '*') {
         inComment = true;
@@ -109,7 +110,7 @@ function splitSQLStatements(sql) {
         currentStatement += char;
         continue;
       }
-      
+
       // Multi-line comment end
       if (inComment && commentType === '/*' && char === '*' && nextChar === '/') {
         inComment = false;
@@ -117,20 +118,20 @@ function splitSQLStatements(sql) {
         currentStatement += char;
         continue;
       }
-      
+
       // End of single-line comment (newline)
       if (inComment && commentType === '--' && char === '\n') {
         inComment = false;
         commentType = null;
       }
     }
-    
+
     // If we're in a comment, just add the character
     if (inComment) {
       currentStatement += char;
       continue;
     }
-    
+
     // Check for statement delimiter (semicolon not in string or comment)
     if (!inString && !inComment && char === ';') {
       currentStatement += char;
@@ -141,16 +142,16 @@ function splitSQLStatements(sql) {
       currentStatement = '';
       continue;
     }
-    
+
     currentStatement += char;
   }
-  
+
   // Add remaining statement if any
   const trimmed = currentStatement.trim();
   if (trimmed && trimmed !== ';') {
     statements.push(trimmed);
   }
-  
+
   return statements.filter(stmt => stmt.length > 0);
 }
 
@@ -172,18 +173,18 @@ async function runMigration(client, filename) {
 
   console.log(`📦 Running migration: ${filename}`);
 
-    try {
+  try {
     // Split SQL into individual statements
     const statements = splitSQLStatements(sql);
-    
+
     if (statements.length === 0) {
       console.warn(`⚠️  No SQL statements found in ${filename}`);
       return true;
     }
-    
+
     // Execute each statement individually within a transaction
     await client.query('BEGIN');
-    
+
     try {
       for (let i = 0; i < statements.length; i++) {
         const statement = statements[i].trim();
@@ -192,13 +193,13 @@ async function runMigration(client, filename) {
           await client.query(statement);
         }
       }
-      
+
       // Record migration as applied
       await client.query(
         'INSERT INTO schema_migrations (version, checksum) VALUES ($1, $2) ON CONFLICT (version) DO NOTHING',
         [filename, checksum]
       );
-      
+
       await client.query('COMMIT');
       console.log(`✅ Migration applied: ${filename} (${statements.length} statement(s))`);
       return true;
@@ -273,7 +274,7 @@ async function status() {
       const filePath = path.join(__dirname, migration);
       const fileExists = fs.existsSync(filePath);
       const isApplied = applied.includes(migration);
-      
+
       if (!fileExists) {
         console.log(`❌ Missing  ${migration}`);
         missingFiles++;
@@ -285,7 +286,7 @@ async function status() {
 
     console.log('─'.repeat(60));
     console.log(`\nTotal: ${applied.length}/${MIGRATIONS.length} applied`);
-    
+
     if (missingFiles > 0) {
       console.log(`⚠️  Warning: ${missingFiles} migration file(s) are missing!\n`);
       process.exit(1);

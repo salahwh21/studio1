@@ -93,11 +93,9 @@ export const useAreasStore = create<AreasState>()(
         } catch (error: any) {
           console.error('❌ Failed to fetch areas from API:', error.message);
           set({
-            cities: [],
-            regions: [],
             isLoading: false,
-            error: 'Failed to load areas. Please ensure backend is running.',
-            lastFetch: null
+            error: 'Failed to load areas. Using local data.',
+            // Do NOT clear cities/regions so we fallback to cache
           });
         }
       },

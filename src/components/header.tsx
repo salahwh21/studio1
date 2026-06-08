@@ -37,7 +37,6 @@ const allNavItems: NavItem[] = [
   { href: '/dashboard', iconName: 'LayoutDashboard', label: 'لوحة التحكم', permissionId: 'dashboard:view' },
   { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'عرض الطلبات', permissionId: 'orders:view' },
   { href: '/dashboard/add-order', iconName: 'PackagePlus', label: 'إضافة طلبات', permissionId: 'orders:create' },
-  { href: '/dashboard/optimize', iconName: 'Wand2', label: 'تحسين المسار', permissionId: 'optimize:use' },
   { href: '/dashboard/drivers-map', iconName: 'Map', label: 'خريطة السائقين', permissionId: 'drivers-map:view' },
   { href: '/dashboard/returns', iconName: 'Undo2', label: 'إدارة المرتجعات', permissionId: 'returns:view' },
   { href: '/dashboard/financials', iconName: 'Calculator', label: 'المحاسبة', permissionId: 'financials:view' },
@@ -75,7 +74,7 @@ export function AppHeader() {
 
   if (!context || !context.isHydrated) {
     return (
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 sm:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-card px-4 sm:px-6">
             <Skeleton className="h-8 w-32" />
             <div className="flex items-center gap-2">
                 <Skeleton className="h-8 w-8 rounded-full" />
@@ -119,7 +118,7 @@ export function AppHeader() {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-sidebar px-4 sm:px-6">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-sidebar px-4 sm:px-6">
         
         <div className="flex items-center gap-4">
           <Link href="/dashboard"><HeaderLogo /></Link>

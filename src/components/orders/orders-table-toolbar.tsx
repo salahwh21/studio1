@@ -22,8 +22,10 @@ import { FilterDefinition } from '@/app/actions/get-orders';
 import { GroupByOption, ModalState } from './types';
 import { GROUP_BY_OPTIONS, ALL_COLUMNS } from './constants';
 import { ColumnConfig } from '@/components/export-data-dialog';
-import { PrintDialogUnified } from '@/components/print-dialog-unified';
+import { SimplePrintDialog } from '@/components/simple-print-dialog';
+import type { SavedTemplate } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
+import { QuickAddOrder } from '@/components/dashboard/quick-add-order';
 
 interface OrdersTableToolbarProps {
     filters: FilterDefinition[];
@@ -69,6 +71,7 @@ interface OrdersTableToolbarProps {
     groupedOrders: any;
     canAssignDriverToSelected: boolean;
     orders: any[]; // Add orders prop for bulk printing
+    checkActionAllowed?: (action: string, orderId?: string, newStatus?: string) => boolean;
 }
 
 export const OrdersTableToolbar = ({
@@ -109,7 +112,8 @@ export const OrdersTableToolbar = ({
     areAllGroupsOpen,
     groupedOrders,
     canAssignDriverToSelected,
-    orders
+    orders,
+    checkActionAllowed
 }: OrdersTableToolbarProps) => {
     const [showPrintDialog, setShowPrintDialog] = useState(false);
     const { toast } = useToast();
@@ -209,43 +213,51 @@ export const OrdersTableToolbar = ({
                 )}
 
                 {/* أزرار الإجراءات */}
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowDeleteConfirmDialog(true)}
-                    disabled={selectedRows.length === 0}
-                    className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-40"
-                >
-                    <Trash2 className="h-3.5 w-3.5 ml-1" /> حذف
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowAssignDriverDialog(true)}
-                    disabled={selectedRows.length === 0 || !canAssignDriverToSelected}
-                    title={!canAssignDriverToSelected ? 'يمكن تعيين السائق فقط للطلبات بحالة "بالانتظار" أو "تم استلام المال في الفرع"' : ''}
-                    className="h-7 text-xs text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 disabled:opacity-40"
-                >
-                    <Truck className="h-3.5 w-3.5 ml-1" /> سائق
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowAssignMerchantDialog(true)}
-                    disabled={selectedRows.length === 0}
-                    className="h-7 text-xs text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20 disabled:opacity-40"
-                >
-                    <Store className="h-3.5 w-3.5 ml-1" /> تاجر
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowChangeStatusDialog(true)}
-                    disabled={selectedRows.length === 0}
-                    className="h-7 text-xs text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20 disabled:opacity-40"
-                >
-                    <ArrowRightLeft className="h-3.5 w-3.5 ml-1" /> حالة
-                </Button>
+                {(!checkActionAllowed || checkActionAllowed('delete')) && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowDeleteConfirmDialog(true)}
+                        disabled={selectedRows.length === 0}
+                        className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-40"
+                    >
+                        <Trash2 className="h-3.5 w-3.5 ml-1" /> حذف
+                    </Button>
+                )}
+                {(!checkActionAllowed || checkActionAllowed('assign_driver')) && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowAssignDriverDialog(true)}
+                        disabled={selectedRows.length === 0 || !canAssignDriverToSelected}
+                        title={!canAssignDriverToSelected ? 'يمكن تعيين السائق فقط للطلبات بحالة "بالانتظار" أو "تم استلام المال في الفرع"' : ''}
+                        className="h-7 text-xs text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 disabled:opacity-40"
+                    >
+                        <Truck className="h-3.5 w-3.5 ml-1" /> سائق
+                    </Button>
+                )}
+                {(!checkActionAllowed || checkActionAllowed('assign_merchant')) && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowAssignMerchantDialog(true)}
+                        disabled={selectedRows.length === 0}
+                        className="h-7 text-xs text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20 disabled:opacity-40"
+                    >
+                        <Store className="h-3.5 w-3.5 ml-1" /> تاجر
+                    </Button>
+                )}
+                {(!checkActionAllowed || checkActionAllowed('change_status')) && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowChangeStatusDialog(true)}
+                        disabled={selectedRows.length === 0}
+                        className="h-7 text-xs text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20 disabled:opacity-40"
+                    >
+                        <ArrowRightLeft className="h-3.5 w-3.5 ml-1" /> حالة
+                    </Button>
+                )}
 
                 <Separator orientation="vertical" className="h-5" />
 
@@ -283,9 +295,11 @@ export const OrdersTableToolbar = ({
             </div>
 
             {/* Print Dialog - Unified */}
-            <PrintDialogUnified
+            <SimplePrintDialog
                 open={showPrintDialog}
                 onOpenChange={setShowPrintDialog}
+                selectedCount={selectedOrders.length}
+                onPrint={() => {}} // SimplePrintDialog handles print internally if orders are provided
                 orders={selectedOrders}
             />
         </div>

@@ -27,7 +27,8 @@ import {
   Truck,
   Zap,
   ChevronLeft,
-  ArrowLeft
+  ArrowLeft,
+  FileText
 } from 'lucide-react';
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +37,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { settingsDocs } from './settings-docs';
+import { EmergencyBackupManager } from '@/components/emergency-backup-manager';
 
 type SettingItem = {
   href: string;
@@ -173,11 +175,23 @@ const settingsSections: SettingsSection[] = [
         description: 'أتمتة عمليات المرتجعات',
         badge: 'جديد'
       },
+    ]
+  },
+  {
+    id: 'reports',
+    title: 'التقارير والطباعة',
+    description: 'إدارة مركزية لجميع تصاميم PDF والتقارير',
+    icon: FileText,
+    bgColor: 'bg-rose-500/10 dark:bg-rose-500/20',
+    iconBg: 'bg-rose-500',
+    borderColor: 'border-rose-500/30',
+    items: [
       {
-        href: '/dashboard/settings/policy',
-        icon: MessageSquareQuote,
-        title: 'قوالب البوليصة',
-        description: 'تخصيص شكل وثيقة الطلب'
+        href: '/dashboard/reports',
+        icon: LayoutGrid,
+        title: 'مركز تصميم التقارير',
+        description: 'إدارة وتخصيص بوالص الشحن والتقارير المالية والملفات الصادرة',
+        badge: 'جديد'
       },
     ]
   },
@@ -290,6 +304,9 @@ export default function SettingsPage() {
             </Link>
           </div>
         </div>
+
+        {/* Emergency Backup Section - Added for data safety */}
+        <EmergencyBackupManager />
 
         {/* Search Results */}
         {searchQuery && (

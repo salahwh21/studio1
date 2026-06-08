@@ -17,9 +17,6 @@ import { Loader2, Trash2, Truck, Store, Printer, FileDown, ArrowRightLeft } from
 
 import Icon from '@/components/icon';
 import { ChangeStatusDialog } from '@/components/change-status-dialog';
-import { PrintablePolicy } from '@/components/printable-policy';
-import { ModernPolicyV2 } from '@/components/modern-policy-v2';
-import { ThermalLabelOptimized } from '@/components/thermal-label-optimized';
 import { ExportDataDialog, ColumnConfig } from '@/components/export-data-dialog';
 
 import { Order } from '@/store/orders-store';
@@ -39,9 +36,6 @@ interface OrdersTableModalsProps {
     availableTemplates: SavedTemplate[];
     selectedTemplate: SavedTemplate | null;
     setSelectedTemplate: (t: SavedTemplate | null) => void;
-    printablePolicyRef: React.RefObject<any>;
-    modernPolicyV2Ref: React.RefObject<any>;
-    thermalLabelOptRef: React.RefObject<any>;
 
     // Bulk actions
     showDeleteConfirmDialog: boolean;
@@ -67,12 +61,6 @@ interface OrdersTableModalsProps {
     handleBulkChangeStatus: () => void;
     statuses: any[];
 
-    showModernPolicyV2Dialog: boolean;
-    setShowModernPolicyV2Dialog: (open: boolean) => void;
-
-    showThermalLabelOptDialog: boolean;
-    setShowThermalLabelOptDialog: (open: boolean) => void;
-
     isLoading: boolean;
     isClient: boolean;
 }
@@ -89,9 +77,6 @@ export const OrdersTableModals = ({
     availableTemplates,
     selectedTemplate,
     setSelectedTemplate,
-    printablePolicyRef,
-    modernPolicyV2Ref,
-    thermalLabelOptRef,
     showDeleteConfirmDialog,
     setShowDeleteConfirmDialog,
     handleBulkDelete,
@@ -111,10 +96,6 @@ export const OrdersTableModals = ({
     setSelectedStatusForBulk,
     handleBulkChangeStatus,
     statuses,
-    showModernPolicyV2Dialog,
-    setShowModernPolicyV2Dialog,
-    showThermalLabelOptDialog,
-    setShowThermalLabelOptDialog,
     isLoading,
     isClient,
 }: OrdersTableModalsProps) => {
@@ -153,7 +134,9 @@ export const OrdersTableModals = ({
                 <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0 bg-gray-100">
                     <DialogTitle className="sr-only">طباعة قياسية</DialogTitle>
                     <div className="p-4 flex items-center justify-center h-full">
-                        <PrintablePolicy ref={printablePolicyRef} orders={selectedOrders} template={null} />
+                        <div className="text-center text-gray-500">
+                            <p>استخدم SimplePrintDialog للطباعة</p>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>
@@ -188,7 +171,6 @@ export const OrdersTableModals = ({
                 allColumns={ALL_COLUMNS}
                 initialVisibleColumns={initialVisibleColumnConfigs}
                 ordersToExport={selectedOrders}
-                isClient={isClient}
             />
 
             {/* Delete Confirmation Dialog */}
@@ -317,75 +299,7 @@ export const OrdersTableModals = ({
                 </DialogContent>
             </Dialog>
 
-            {/* Thermal Label Optimized Dialog */}
-            <Dialog open={showThermalLabelOptDialog} onOpenChange={setShowThermalLabelOptDialog}>
-                <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0 bg-gray-100">
-                    <DialogTitle className="sr-only">طباعة حرارية</DialogTitle>
-                    
-                    {/* أزرار الطباعة */}
-                    <div className="flex gap-2 p-4 bg-white border-b no-print">
-                        <Button 
-                            onClick={() => thermalLabelOptRef.current?.handleExportPDF()}
-                            className="flex items-center gap-2"
-                        >
-                            <Icon name="Printer" className="h-4 w-4" />
-                            طباعة PDF
-                        </Button>
-                        <Button 
-                            onClick={() => thermalLabelOptRef.current?.handlePrint()}
-                            variant="outline"
-                            className="flex items-center gap-2"
-                        >
-                            <Icon name="Eye" className="h-4 w-4" />
-                            معاينة
-                        </Button>
-                        <Button 
-                            onClick={() => setShowThermalLabelOptDialog(false)}
-                            variant="ghost"
-                            className="ml-auto"
-                        >
-                            إغلاق
-                        </Button>
-                    </div>
-                    
-                    <ThermalLabelOptimized ref={thermalLabelOptRef} orders={selectedOrders} />
-                </DialogContent>
-            </Dialog>
-
-            {/* Modern Policy V2 Dialog */}
-            <Dialog open={showModernPolicyV2Dialog} onOpenChange={setShowModernPolicyV2Dialog}>
-                <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0 bg-gray-100">
-                    <DialogTitle className="sr-only">طباعة ملونة</DialogTitle>
-                    
-                    {/* أزرار الطباعة */}
-                    <div className="flex gap-2 p-4 bg-white border-b no-print">
-                        <Button 
-                            onClick={() => modernPolicyV2Ref.current?.handleExportPDF()}
-                            className="flex items-center gap-2"
-                        >
-                            <Icon name="Printer" className="h-4 w-4" />
-                            طباعة PDF
-                        </Button>
-                        <Button 
-                            onClick={() => modernPolicyV2Ref.current?.handlePrint()}
-                            variant="outline"
-                            className="flex items-center gap-2"
-                        >
-                            <Icon name="Eye" className="h-4 w-4" />
-                            معاينة
-                        </Button>
-                        <Button 
-                            onClick={() => setShowModernPolicyV2Dialog(false)}
-                            variant="ghost"
-                            className="ml-auto"
-                        >
-                            إغلاق
-                        </Button>
-                    </div>
-                    
-                    <ModernPolicyV2 ref={modernPolicyV2Ref} orders={selectedOrders} />
-                </DialogContent>
-            </Dialog>
+            {/* Modern Policy V2 Dialog - تم إزالته، استخدم SimplePrintDialog بدلاً منه */}
         </>
     );
 };

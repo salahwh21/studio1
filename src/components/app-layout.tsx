@@ -1,9 +1,9 @@
 'use client';
 
+import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useState, useContext, Suspense } from 'react';
 import { AppHeader } from '@/components/header';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -22,11 +22,13 @@ type NavItem = {
 
 const allNavItems: NavItem[] = [
     { href: '/dashboard', iconName: 'LayoutDashboard', label: 'لوحة التحكم', permissionId: 'dashboard:view' },
-    { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'عرض الطلبات', permissionId: 'orders:view' },
+    { href: '/dashboard/orders?view=active', iconName: 'ShoppingCart', label: 'الطلبات النشطة', permissionId: 'orders:view' },
+    { href: '/dashboard/orders?view=driver-returns', iconName: 'Truck', label: 'طلبات السائق', permissionId: 'returns:view' },
+    { href: '/dashboard/orders?view=branch-returns', iconName: 'Undo2', label: 'الراجع للفرع', permissionId: 'returns:view' },
+    { href: '/dashboard/orders?view=merchant-returns', iconName: 'PackageX', label: 'مرتجعات التاجر', permissionId: 'returns:view' },
+    { href: '/dashboard/orders?view=all', iconName: 'Archive', label: 'جميع الطلبات', permissionId: 'orders:view' },
     { href: '/dashboard/add-order', iconName: 'PackagePlus', label: 'إضافة طلبات', permissionId: 'orders:create' },
-    { href: '/dashboard/optimize', iconName: 'Wand2', label: 'تحسين المسار', permissionId: 'optimize:use' },
     { href: '/dashboard/drivers-map', iconName: 'Map', label: 'خريطة السائقين', permissionId: 'drivers-map:view' },
-    { href: '/dashboard/returns', iconName: 'Undo2', label: 'إدارة المرتجعات', permissionId: 'returns:view' },
     { href: '/dashboard/financials', iconName: 'Calculator', label: 'المحاسبة', permissionId: 'financials:view' },
     { href: '/dashboard/settings', iconName: 'Settings', label: 'الإعدادات', permissionId: 'settings:view' },
 ];
@@ -34,13 +36,15 @@ const allNavItems: NavItem[] = [
 const mobileMainItems: NavItem[] = [
     { href: '/dashboard', iconName: 'LayoutDashboard', label: 'الرئيسية', permissionId: 'dashboard:view' },
     { href: '/dashboard/add-order', iconName: 'PackagePlus', label: 'إضافة', permissionId: 'orders:create' },
-    { href: '/dashboard/orders', iconName: 'ShoppingCart', label: 'الطلبات', permissionId: 'orders:view' },
+    { href: '/dashboard/orders?view=active', iconName: 'ShoppingCart', label: 'الطلبات', permissionId: 'orders:view' },
     { href: '/dashboard/drivers-map', iconName: 'Map', label: 'الخريطة', permissionId: 'drivers-map:view' },
 ];
 
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
+export function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const currentView = searchParams.get('view');
     const [isMounted, setIsMounted] = useState(false);
     const settingsContext = useSettings();
 
@@ -83,8 +87,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }, [settingsContext?.isHydrated, settingsContext?.settings.ui]);
 
     const isActive = (href: string) => {
-        if (href === '/dashboard') return pathname === href;
-        return pathname.startsWith(href);
+        if (href === '/dashboard') return pathname === href && !currentView;
+        
+        const [basePath, query] = href.split('?');
+        if (pathname === basePath) {
+            if (query && query.includes('view=')) {
+                const targetView = new URLSearchParams(query).get('view');
+                return currentView === targetView;
+            }
+            if (!query && !currentView) {
+                return true;
+            }
+        }
+        
+        return pathname.startsWith(basePath) && pathname !== '/dashboard/orders';
     };
 
     if (!isMounted || !settingsContext?.isHydrated) {
@@ -100,7 +116,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <>
             <div className="flex min-h-screen w-full flex-col bg-muted/40" data-density={settingsContext.settings.ui.density}>
                 <AppHeader />
-                <main className="flex flex-1 flex-col gap-4 bg-background p-4 sm:p-6 md:p-8 pb-20 md:pb-8">
+                <main className="flex flex-1 flex-col gap-4 bg-background p-4 sm:p-4 md:px-6 md:py-4 pb-20 md:pb-8">
                     {children}
                 </main>
             </div>
@@ -152,5 +168,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
             </footer>
         </>
+    );
+}
+
+export function AppLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen w-full flex-col bg-muted/40"></div>}>
+            <AppLayoutContent>{children}</AppLayoutContent>
+        </Suspense>
     );
 }

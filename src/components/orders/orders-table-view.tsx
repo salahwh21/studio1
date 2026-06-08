@@ -30,7 +30,7 @@ import { ColumnConfig } from '@/components/export-data-dialog';
 
 interface OrdersTableViewProps {
     orders: Order[];
-    groupedOrders: Record<string, Order[]> | Record<string, { orders: Order[], subGroups: Record<string, Order[]> }> | null;
+    groupedOrders: any;
     openGroups: Record<string, boolean>;
     setOpenGroups: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 
@@ -66,6 +66,7 @@ interface OrdersTableViewProps {
     };
     selectedRowsCount?: number;
     ordersCount?: number;
+    checkActionAllowed?: (action: string, orderId?: string, newStatus?: string) => boolean;
 }
 
 export const OrdersTableView = ({
@@ -93,7 +94,8 @@ export const OrdersTableView = ({
     currencySymbol = 'د.أ',
     footerTotals,
     selectedRowsCount,
-    ordersCount
+    ordersCount,
+    checkActionAllowed
 }: OrdersTableViewProps) => {
 
     const renderOrderRow = (order: Order, index: number) => {
@@ -171,7 +173,7 @@ export const OrdersTableView = ({
                                         currentStatus: order.status,
                                         currentDriver: order.driver
                                     })}
-                                    disabled={!isEditMode}
+                                    disabled={!isEditMode || (checkActionAllowed && !checkActionAllowed('change_status', order.id))}
                                     className="inline-flex items-center justify-center gap-1.5 font-bold text-xs px-3 py-1.5 rounded-full w-[150px] mx-auto transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed hover:scale-105 hover:shadow-lg shadow-sm"
                                     style={{
                                         background: `linear-gradient(135deg, ${sInfo.color}30 0%, ${sInfo.color}15 100%)`,
@@ -190,7 +192,7 @@ export const OrdersTableView = ({
                             const options = col.key === 'merchant' ? merchants : drivers;
                             content = (
                                 <div className="flex items-center justify-center w-full h-12 px-1 group">
-                                    {isEditMode ? (
+                                    {isEditMode && (!checkActionAllowed || checkActionAllowed(col.key === 'merchant' ? 'assign_merchant' : 'assign_driver', order.id)) ? (
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <Button

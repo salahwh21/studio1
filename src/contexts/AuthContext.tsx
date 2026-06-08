@@ -50,57 +50,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const login = async (email: string, password: string) => {
-    // Mock login for dev accounts - works in both dev and production for testing
+    // Dev accounts kept as fallback only when backend is unavailable
     const devAccounts = [
       { email: 'admin@alwameed.com', password: '123', user: { id: 'user-salahwh', name: 'salahwh', email: 'admin@alwameed.com', roleId: 'admin', avatar: '', storeName: 'salahwh' }, redirect: '/dashboard' },
       { email: 'merchant@alwameed.com', password: '123', user: { id: 'user-merchant-1', name: 'محمد التاجر', email: 'merchant@alwameed.com', roleId: 'merchant', avatar: '', storeName: 'متجر الوميض' }, redirect: '/merchant' },
       { email: 'driver@alwameed.com', password: '123', user: { id: 'driver-1', name: 'ابو العبد', email: 'driver@alwameed.com', roleId: 'driver', avatar: '', storeName: 'ابو العبد' }, redirect: '/driver' },
     ];
-    
-    const devAccount = devAccounts.find(a => a.email === email && a.password === password);
-    if (devAccount) {
-      console.log('✅ Mock login:', devAccount.user.roleId);
-      // Set a mock auth_token cookie so middleware allows access
-      document.cookie = `auth_token=mock-token-${devAccount.user.id}; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 days
-      setUser(devAccount.user);
-      router.push(devAccount.redirect);
-      return;
+
+    // Client-side lockout: prevent spamming when backend rate-limits
+    if (typeof window !== 'undefined') {
+      const now = Date.now();
+      const lockoutUntilStr = localStorage.getItem('login_lockout_until') || '0';
+      const lockoutUntil = parseInt(lockoutUntilStr, 10) || 0;
+      if (now < lockoutUntil) {
+        const secondsLeft = Math.max(1, Math.ceil((lockoutUntil - now) / 1000));
+        throw new Error(`تم تجاوز محاولات تسجيل الدخول، يرجى المحاولة بعد ${secondsLeft} ثانية`);
+      }
     }
 
     try {
-      // Client-side lockout: prevent spamming when backend rate-limits
-      if (typeof window !== 'undefined') {
-        const now = Date.now();
-        const lockoutUntilStr = localStorage.getItem('login_lockout_until') || '0';
-        const lockoutUntil = parseInt(lockoutUntilStr, 10) || 0;
-        if (now < lockoutUntil) {
-          const secondsLeft = Math.max(1, Math.ceil((lockoutUntil - now) / 1000));
-          throw new Error(`تم تجاوز محاولات تسجيل الدخول، يرجى المحاولة بعد ${secondsLeft} ثانية`);
-        }
-      }
-
+      // 1) محاولة تسجيل الدخول الحقيقي عبر الباكند أولاً
       const response = await api.login(email, password);
 
-      // Token is set as httpOnly cookie by backend
-      setUser(response.user);
+      // 2) الباكند نجح — الكوكي الحقيقي (httpOnly) تم ضبطه تلقائياً
+      // نجلب بيانات المستخدم الكاملة من الباكند
+      let realUser = response.user;
+      try {
+        const meData = await api.getCurrentUser();
+        realUser = meData;
+      } catch {
+        // إذا فشل /auth/me نستخدم بيانات response.user مباشرة
+      }
 
+      // 3) حفظ المستخدم الحقيقي
+      setUser(realUser);
+      console.log('✅ Real backend login:', realUser.roleId, realUser.name);
+
+      // 4) توجيه حسب الدور الحقيقي
       const params = new URLSearchParams(window.location.search);
       const redirect = params.get('redirect');
 
-      // توجيه المستخدم حسب دوره إذا لم يكن هناك redirect محدد
       if (!redirect) {
-        if (response.user.roleId === 'merchant') {
+        if (realUser.roleId === 'merchant') {
           router.push('/merchant');
-        } else if (response.user.roleId === 'driver') {
+        } else if (realUser.roleId === 'driver') {
           router.push('/driver');
-        } else if (response.user.roleId === 'admin') {
-          router.push('/dashboard');
         } else {
           router.push('/dashboard');
         }
       } else {
         router.push(redirect);
       }
+
       // Reset attempts on success
       if (typeof window !== 'undefined') {
         localStorage.removeItem('login_attempts');
@@ -110,10 +111,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const rawMsg = typeof error?.message === 'string' ? error.message : String(error);
       const isInvalidCreds = rawMsg.includes('Invalid credentials') || rawMsg.includes('401');
       const isRateLimited = rawMsg.includes('Too many login attempts') || rawMsg.includes('429');
-      const isNetworkish = rawMsg === 'Failed to fetch' || rawMsg.includes('fetch') || rawMsg.includes('NetworkError') || rawMsg.includes('ECONNREFUSED') || rawMsg.includes('HTTP');
+      const isNetworkish = rawMsg === 'Failed to fetch' || rawMsg.includes('fetch') || rawMsg.includes('NetworkError') || rawMsg.includes('ECONNREFUSED');
+
+      // Fallback: إذا الباكند غير متاح (مشكلة شبكة)، نستخدم Mock Login
+      if (isNetworkish) {
+        const devAccount = devAccounts.find(a => a.email === email && a.password === password);
+        if (devAccount) {
+          console.log('⚠️ Backend unavailable, using mock login fallback:', devAccount.user.roleId);
+          document.cookie = `auth_token=mock-token-${devAccount.user.id}; path=/; max-age=${60 * 60 * 24 * 7}`;
+          setUser(devAccount.user);
+          router.push(devAccount.redirect);
+          return;
+        }
+      }
 
       if (isInvalidCreds) {
-        // Expected user error; don't spam console with stack
         console.warn('Login failed: invalid credentials');
       } else if (isRateLimited) {
         console.warn('Login rate limited by backend');
@@ -128,11 +140,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const now = Date.now();
         const attemptsJson = localStorage.getItem('login_attempts');
         const attempts: number[] = attemptsJson ? JSON.parse(attemptsJson) : [];
-        const recent = attempts.filter(ts => now - ts < 60_000); // last 60s
+        const recent = attempts.filter(ts => now - ts < 60_000);
         recent.push(now);
         localStorage.setItem('login_attempts', JSON.stringify(recent));
         if (recent.length >= 5) {
-          // Lock out for 60 seconds
           localStorage.setItem('login_lockout_until', String(now + 60_000));
         }
       }
@@ -140,7 +151,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Friendly messages for common backend errors
       if (typeof rawMsg === 'string') {
         if (rawMsg.includes('Too many login attempts') || rawMsg.includes('429')) {
-          // If backend rate limits, mirror a clear Arabic message and set a short client lockout
           if (typeof window !== 'undefined') {
             const now = Date.now();
             const untilStr = localStorage.getItem('login_lockout_until') || '0';

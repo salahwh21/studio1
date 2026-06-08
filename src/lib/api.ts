@@ -278,8 +278,19 @@ export const api = {
   },
 
   // Financials API
-  getMerchantPaymentSlips: async () => {
-    const res = await fetch(`${API_URL}/financials/merchant-payments`, defaultFetchOptions);
+  // Merchant Payments
+  getMerchantPaymentSlips: async (filters: any = {}) => {
+    const params = new URLSearchParams(filters);
+    const res = await fetch(`${API_URL}/financials/merchant-payments?${params}`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  createMerchantPaymentSlip: async (data: any) => {
+    const res = await fetch(`${API_URL}/financials/merchant-payments`, {
+      ...defaultFetchOptions,
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
     return handleResponse(res);
   },
 
@@ -289,6 +300,81 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     });
+    return handleResponse(res);
+  },
+
+  updateMerchantPaymentSlip: async (id: string, orderIds: string[]) => {
+    const res = await fetch(`${API_URL}/financials/merchant-payments/${id}`, {
+      ...defaultFetchOptions,
+      method: 'PUT',
+      body: JSON.stringify({ orderIds }),
+    });
+    return handleResponse(res);
+  },
+
+  deleteMerchantPaymentSlip: async (id: string) => {
+    const res = await fetch(`${API_URL}/financials/merchant-payments/${id}`, {
+      ...defaultFetchOptions,
+      method: 'DELETE',
+    });
+    return handleResponse(res);
+  },
+
+  // Driver Payments
+  getDriverPaymentSlips: async (filters: any = {}) => {
+    const params = new URLSearchParams(filters);
+    const res = await fetch(`${API_URL}/financials/driver-payments?${params}`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  createDriverPaymentSlip: async (data: any) => {
+    const res = await fetch(`${API_URL}/financials/driver-payments`, {
+      ...defaultFetchOptions,
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  updateDriverPaymentSlip: async (id: string, orderIds: string[]) => {
+    const res = await fetch(`${API_URL}/financials/driver-payments/${id}`, {
+      ...defaultFetchOptions,
+      method: 'PUT',
+      body: JSON.stringify({ orderIds }),
+    });
+    return handleResponse(res);
+  },
+
+  deleteDriverPaymentSlip: async (id: string) => {
+    const res = await fetch(`${API_URL}/financials/driver-payments/${id}`, {
+      ...defaultFetchOptions,
+      method: 'DELETE',
+    });
+    return handleResponse(res);
+  },
+
+  // Financial Stats & Overview
+  getFinancialOverview: async (period = 'month', startDate?: string, endDate?: string) => {
+    let query = `period=${period}`;
+    if (startDate && endDate) {
+      query += `&startDate=${startDate}&endDate=${endDate}`;
+    }
+    const res = await fetch(`${API_URL}/financials/overview?${query}`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  getDebtAlerts: async () => {
+    const res = await fetch(`${API_URL}/financials/debt-alerts`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  getDriverStatistics: async (driverName: string, period = 'today') => {
+    const res = await fetch(`${API_URL}/financials/driver-statistics/${encodeURIComponent(driverName)}?period=${period}`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  getMerchantStatistics: async (merchantName: string, period = 'month') => {
+    const res = await fetch(`${API_URL}/financials/merchant-statistics/${encodeURIComponent(merchantName)}?period=${period}`, defaultFetchOptions);
     return handleResponse(res);
   },
 

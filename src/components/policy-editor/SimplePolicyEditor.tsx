@@ -9,13 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/icon';
 import {
-  generateThermalLabel,
-  generateStandardPolicy,
-  generatePdf,
-  createThermalLabelHTML,
-  createStandardPolicyHTML,
-  openPdfInNewTab
+  openPdfInNewTab,
+  generatePdf
 } from '@/services/pdf-service';
+import {
+  createStandardPolicyHtml,
+  createThermalLabelHtml,
+} from '@/services/pdf-templates';
 import Barcode from 'react-barcode';
 
 // القياسات الحقيقية المستخدمة
@@ -41,7 +41,7 @@ interface SimplePolicyEditorProps {
 export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose }) => {
   const { toast } = useToast();
   const previewRef = useRef<HTMLDivElement>(null);
-  
+
   // إعدادات البوليصة
   const [settings, setSettings] = useState({
     policyType: 'thermal' as keyof typeof POLICY_TYPES,
@@ -94,7 +94,7 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
       const timer = setTimeout(() => {
         handlePreviewPDF();
       }, 500);
-      
+
       return () => clearTimeout(timer);
     }
   }, [settings.policyType, settings.paperSize, settings.companyName, settings.primaryColor, settings.secondaryColor, settings.showBarcode, settings.showCOD, settings.showPhone, settings.showAddress, settings.showNotes]);
@@ -118,14 +118,15 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
 
     switch (settings.policyType) {
       case 'thermal':
-        return createThermalLabelHTML(policyData, {
+        return createThermalLabelHtml(policyData, {
           width: currentSize.width,
           height: currentSize.height
         });
       case 'colored':
       case 'standard':
       default:
-        return createStandardPolicyHTML(policyData, {
+        // Use the restored standard policy
+        return createStandardPolicyHtml(policyData, {
           width: currentSize.width,
           height: currentSize.height
         });
@@ -137,7 +138,7 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
     setIsPreviewing(true);
     try {
       const html = createPolicyHTML();
-      
+
       // محاولة إنشاء PDF عبر Playwright للمعاينة
       try {
         const response = await fetch('/api/pdf-playwright', {
@@ -156,12 +157,12 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
         if (response.ok) {
           const blob = await response.blob();
           const url = URL.createObjectURL(blob);
-          
+
           // تنظيف URL السابق
           if (previewUrl) {
             URL.revokeObjectURL(previewUrl);
           }
-          
+
           setPreviewUrl(url);
           setShowEmbeddedPreview(true);
           toast({ title: 'تم إنشاء المعاينة', description: 'يمكنك الآن رؤية البوليصة كـ PDF' });
@@ -170,15 +171,15 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
         }
       } catch (error) {
         console.warn('PDF generation failed, using HTML preview:', error);
-        
+
         // العودة إلى معاينة HTML
         const blob = new Blob([html], { type: 'text/html; charset=utf-8' });
         const url = URL.createObjectURL(blob);
-        
+
         if (previewUrl) {
           URL.revokeObjectURL(previewUrl);
         }
-        
+
         setPreviewUrl(url);
         setShowEmbeddedPreview(true);
         toast({ title: 'معاينة HTML', description: 'يتم عرض المعاينة كـ HTML' });
@@ -211,7 +212,7 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
       };
 
       const filename = `policy_${settings.policyType}_${settings.paperSize}.pdf`;
-      
+
       if (settings.policyType === 'thermal') {
         await generateThermalLabel(policyData, {
           width: currentSize.width,
@@ -223,7 +224,7 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
           height: currentSize.height
         }, filename);
       }
-      
+
       toast({ title: 'تم التصدير', description: 'تم تصدير البوليصة بنجاح' });
     } catch (error: any) {
       console.error('Export error:', error);
@@ -238,22 +239,22 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
     try {
       const html = createPolicyHTML();
       const filename = `policy_${settings.policyType}_${settings.paperSize}.pdf`;
-      
+
       await openPdfInNewTab(html, filename, {
         width: currentSize.width,
         height: currentSize.height
       });
-      
-      toast({ 
-        title: 'تم فتح PDF', 
-        description: 'تم فتح البوليصة في تبويب جديد' 
+
+      toast({
+        title: 'تم فتح PDF',
+        description: 'تم فتح البوليصة في تبويب جديد'
       });
     } catch (error: any) {
       console.error('Open PDF error:', error);
-      toast({ 
-        variant: 'destructive', 
-        title: 'فشل فتح PDF', 
-        description: error.message 
+      toast({
+        variant: 'destructive',
+        title: 'فشل فتح PDF',
+        description: error.message
       });
     }
   };
@@ -300,7 +301,7 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
                 طلب رقم: {sampleOrder.orderNumber}
               </div>
             </div>
-            
+
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '4px' }}>
                 {sampleOrder.recipient}
@@ -316,14 +317,14 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
                 </div>
               )}
             </div>
-            
+
             {settings.showCOD && (
-              <div style={{ 
-                backgroundColor: '#fef2f2', 
-                border: '1px solid #fecaca', 
-                padding: '6px', 
-                textAlign: 'center', 
-                fontSize: '11px', 
+              <div style={{
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
+                padding: '6px',
+                textAlign: 'center',
+                fontSize: '11px',
                 fontWeight: 'bold',
                 marginBottom: '8px',
                 borderRadius: '4px'
@@ -331,7 +332,7 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
                 {sampleOrder.cod} ريال
               </div>
             )}
-            
+
             {settings.showBarcode && (
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '8px', fontFamily: 'monospace' }}>
@@ -351,7 +352,7 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
                 بوليصة شحن
               </div>
             </div>
-            
+
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
               <div style={{ fontSize: '12px', fontWeight: 'bold' }}>
                 رقم الطلب: {sampleOrder.orderNumber}
@@ -360,7 +361,7 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
                 التاريخ: {sampleOrder.date}
               </div>
             </div>
-            
+
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: settings.primaryColor }}>
                 معلومات المستلم
@@ -372,14 +373,14 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
                 <div><strong>المدينة:</strong> {sampleOrder.city} - {sampleOrder.region}</div>
               </div>
             </div>
-            
+
             {settings.showCOD && (
-              <div style={{ 
-                backgroundColor: '#fef2f2', 
-                border: '2px solid #fecaca', 
-                padding: '12px', 
-                textAlign: 'center', 
-                fontSize: '14px', 
+              <div style={{
+                backgroundColor: '#fef2f2',
+                border: '2px solid #fecaca',
+                padding: '12px',
+                textAlign: 'center',
+                fontSize: '14px',
                 fontWeight: 'bold',
                 marginBottom: '16px',
                 borderRadius: '6px'
@@ -387,7 +388,7 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
                 المبلغ المستحق: {sampleOrder.cod} ريال
               </div>
             )}
-            
+
             {settings.showNotes && sampleOrder.notes && (
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '4px', color: settings.primaryColor }}>
@@ -398,7 +399,7 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
                 </div>
               </div>
             )}
-            
+
             {settings.showBarcode && (
               <div style={{ textAlign: 'center', marginTop: '16px' }}>
                 <div style={{ fontSize: '10px', fontFamily: 'monospace' }}>
@@ -439,9 +440,9 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
           {/* نوع البوليصة */}
           <div className="space-y-2">
             <Label>نوع البوليصة</Label>
-            <Select 
-              value={settings.policyType} 
-              onValueChange={(value: keyof typeof POLICY_TYPES) => 
+            <Select
+              value={settings.policyType}
+              onValueChange={(value: keyof typeof POLICY_TYPES) =>
                 setSettings(prev => ({ ...prev, policyType: value }))
               }
             >
@@ -459,9 +460,9 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
           {/* حجم الورق */}
           <div className="space-y-2">
             <Label>حجم الورق</Label>
-            <Select 
-              value={settings.paperSize} 
-              onValueChange={(value: keyof typeof PAPER_SIZES) => 
+            <Select
+              value={settings.paperSize}
+              onValueChange={(value: keyof typeof PAPER_SIZES) =>
                 setSettings(prev => ({ ...prev, paperSize: value }))
               }
             >
@@ -533,10 +534,10 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
 
           {/* أزرار العمليات */}
           <div className="space-y-3 pt-4 border-t">
-            <Button 
-              onClick={handlePreviewPDF} 
+            <Button
+              onClick={handlePreviewPDF}
               disabled={isPreviewing}
-              variant="outline" 
+              variant="outline"
               className="w-full"
             >
               <Icon name={isPreviewing ? "Loader2" : "Eye"} className={`ml-2 h-4 w-4 ${isPreviewing ? "animate-spin" : ""}`} />
@@ -544,7 +545,7 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
             </Button>
 
             {showEmbeddedPreview && (
-              <Button 
+              <Button
                 onClick={() => {
                   setShowEmbeddedPreview(false);
                   if (previewUrl) {
@@ -552,7 +553,7 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
                     setPreviewUrl(null);
                   }
                 }}
-                variant="outline" 
+                variant="outline"
                 className="w-full"
               >
                 <Icon name="X" className="ml-2 h-4 w-4" />
@@ -560,27 +561,27 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
               </Button>
             )}
 
-            <Button 
-              onClick={handleOpenPDFInNewTab} 
-              variant="outline" 
+            <Button
+              onClick={handleOpenPDFInNewTab}
+              variant="outline"
               className="w-full bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 hover:from-purple-100 hover:to-pink-100 text-purple-700 hover:text-purple-800"
             >
               <Icon name="ExternalLink" className="ml-2 h-4 w-4" />
               عرض PDF في تبويب جديد
             </Button>
-            
-            <Button 
-              onClick={handleExportPDF} 
+
+            <Button
+              onClick={handleExportPDF}
               disabled={isExporting}
               className="w-full"
             >
               <Icon name={isExporting ? "Loader2" : "Download"} className={`ml-2 h-4 w-4 ${isExporting ? "animate-spin" : ""}`} />
               {isExporting ? "جاري التصدير..." : "تصدير PDF"}
             </Button>
-            
-            <Button 
-              onClick={handlePrint} 
-              variant="secondary" 
+
+            <Button
+              onClick={handlePrint}
+              variant="secondary"
               className="w-full"
             >
               <Icon name="Printer" className="ml-2 h-4 w-4" />
@@ -598,8 +599,8 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
             <div className="flex items-center justify-between mb-4 p-4 bg-white rounded-lg shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800">معاينة البوليصة</h3>
               <div className="flex gap-2">
-                <Button 
-                  onClick={handleOpenPDFInNewTab} 
+                <Button
+                  onClick={handleOpenPDFInNewTab}
                   size="sm"
                   variant="outline"
                   className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 hover:from-purple-100 hover:to-pink-100 text-purple-700 hover:text-purple-800"
@@ -607,8 +608,8 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
                   <Icon name="ExternalLink" className="ml-2 h-4 w-4" />
                   فتح في تبويب جديد
                 </Button>
-                <Button 
-                  onClick={handleExportPDF} 
+                <Button
+                  onClick={handleExportPDF}
                   disabled={isExporting}
                   size="sm"
                   className="bg-blue-600 hover:bg-blue-700"
@@ -616,8 +617,8 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
                   <Icon name={isExporting ? "Loader2" : "Download"} className={`ml-2 h-4 w-4 ${isExporting ? "animate-spin" : ""}`} />
                   {isExporting ? "جاري التصدير..." : "تحميل"}
                 </Button>
-                <Button 
-                  onClick={handlePrint} 
+                <Button
+                  onClick={handlePrint}
                   size="sm"
                   variant="outline"
                 >
@@ -626,9 +627,9 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
                 </Button>
               </div>
             </div>
-            
+
             <div className="flex-1 bg-white rounded-lg shadow-sm overflow-hidden">
-              <iframe 
+              <iframe
                 src={previewUrl}
                 className="w-full h-full border-0"
                 title="معاينة البوليصة"

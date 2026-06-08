@@ -135,13 +135,18 @@ export const DriverPaymentsLog = () => {
                 </html>
             `;
 
-            const blob = await generatePdf(html, {
-                width: '210mm',
-                height: '297mm',
-                filename: `كشف_تحصيل_${slip.driverName}_${slip.id}`,
+            // توليد PDF وتحميله
+            const filename = `كشف_تحصيل_${slip.driverName}_${slip.id}.pdf`;
+            const blob = await generatePdf(html, filename, {
+                width: 210,
+                height: 297
             });
-            downloadPdf(blob, `كشف_تحصيل_${slip.driverName}_${slip.id}.pdf`);
-            
+
+            // تحميل الملف إذا تم إرجاع blob صحيح
+            if (blob.size > 0) {
+                downloadPdf(blob, filename);
+            }
+
             toast({ title: 'تم التصدير بنجاح', description: 'تم تحميل كشف التحصيل.' });
         } catch (error) {
             console.error('Print error:', error);

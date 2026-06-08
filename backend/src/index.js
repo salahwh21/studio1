@@ -110,6 +110,8 @@ app.use('/api/returns', apiLimiter, returnsRoutes);
 app.use('/api/dashboard', apiLimiter, dashboardRoutes);
 app.use('/api/drivers', apiLimiter, driversRoutes);
 app.use('/api/settings', apiLimiter, settingsRoutes);
+app.use('/api/backup', apiLimiter, require('./routes/backup'));
+app.use('/api/export-sql', apiLimiter, require('./routes/export-sql'));
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -193,6 +195,11 @@ io.on('connection', (socket) => {
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Backend API running on http://0.0.0.0:${PORT}`);
   console.log(`📡 Socket.IO server ready for real-time communication`);
+
+  // Warm up database connection pool
+  db.query('SELECT 1')
+    .then(() => console.log('🔥 Database Connection Warmed Up!'))
+    .catch((err) => console.error('❌ Failed to warm up Database Connection:', err));
 });
 
 module.exports = { app, server, io };

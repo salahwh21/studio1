@@ -6,6 +6,7 @@ import { Order, useOrdersStore } from '@/store/orders-store';
 import { useStatusesStore } from '@/store/statuses-store';
 import { useUsersStore } from '@/store/user-store';
 import { useAreas } from '@/hooks/use-areas';
+import { useAuth } from '@/contexts/AuthContext';
 import { FilterDefinition, OrderSortConfig } from '@/app/actions/get-orders';
 import { GroupByOption } from '@/components/orders/types';
 import { SEARCHABLE_FIELDS } from '@/components/orders/constants';
@@ -17,7 +18,8 @@ export const useOrdersTable = () => {
     const { statuses } = useStatusesStore();
     const { users } = useUsersStore();
     const { cities } = useAreas();
-
+    const { user } = useAuth();
+    
     const [orders, setOrders] = useState<Order[]>(storeOrders);
     const [totalCount, setTotalCount] = useState(storeOrders.length);
     const [isLoading, setIsLoading] = useState(storeLoading);
@@ -98,10 +100,65 @@ export const useOrdersTable = () => {
         
         const statusFilter = searchParams.get('status');
         const driverFilter = searchParams.get('driver');
+        const view = searchParams.get('view');
 
         let filtered = [...storeOrders];
 
-        // Apply status filter
+        // --- View & RBAC Logic ---
+        if (view) {
+            const role = user?.roleId || 'admin';
+            const userName = user?.name;
+            
+            // Validate Role vs View
+            const allowedViewsByRole: Record<string, string[]> = {
+                'admin': ['active', 'driver-returns', 'branch-returns', 'merchant-returns', 'all'],
+                'ops': ['active', 'driver-returns', 'branch-returns', 'all'],
+                'branch': ['active', 'branch-returns'],
+                'driver': ['driver-returns'],
+                'merchant_returns': ['merchant-returns'],
+                'accountant': ['all'],
+            };
+
+            const isAllowed = role === 'admin' || (allowedViewsByRole[role] && allowedViewsByRole[role].includes(view));
+            
+            if (!isAllowed) {
+                // Fallback for unauthorized or invalid views
+                return [];
+            }
+
+            // Apply strict view-based filtering
+            switch (view) {
+                case 'active':
+                    filtered = filtered.filter(o => ['بانتظار السائق', 'قيد المعالجة', 'مؤجل'].includes(o.status));
+                    break;
+                case 'driver-returns':
+                    filtered = filtered.filter(o => 
+                        ['مرتجع', 'ملغي', 'تبديل', 'رفض ودفع أجور', 'رفض ولم يدفع أجور', 'وصول وعدم رد'].includes(o.status) 
+                        && o.driver && o.driver !== 'غير معين'
+                    );
+                    // Scope driver's data
+                    if (role === 'driver') {
+                        filtered = filtered.filter(o => o.driver === userName);
+                    }
+                    break;
+                case 'branch-returns':
+                    filtered = filtered.filter(o => o.status === 'مرجع للفرع');
+                    break;
+                case 'merchant-returns':
+                    filtered = filtered.filter(o => o.status === 'مرجع للتاجر');
+                    break;
+                case 'all':
+                    // Final states only for "All Orders" view as requested
+                    filtered = filtered.filter(o => ['مكتمل', 'تم التوصيل', 'تم استلام المال في الفرع'].includes(o.status));
+                    break;
+                default:
+                    // Invalid view param fallback
+                    return [];
+            }
+        }
+        // --- End View & RBAC Logic ---
+
+        // Apply URL legacy status filter
         if (statusFilter) {
             filtered = filtered.filter(o => o.status === statusFilter);
         }
@@ -133,6 +190,7 @@ export const useOrdersTable = () => {
                     }
                     const value = order[filter.field as keyof Order];
                     if (filter.operator === 'equals') return value === filter.value;
+                    if (filter.operator === 'not_equals') return value !== filter.value;
                     if (filter.operator === 'contains') return String(value).toLowerCase().includes(String(filter.value).toLowerCase());
                     return true;
                 });
@@ -338,9 +396,67 @@ export const useOrdersTable = () => {
         }
     };
 
+    // --- Security & Action Guards ---
+    const checkActionAllowed = (action: string, orderId?: string, newStatus?: string): boolean => {
+        const role = user?.roleId || 'admin';
+        if (role === 'admin') return true; // Admin bypass
+
+        const view = searchParams.get('view') || 'all';
+        let order: Order | undefined;
+        if (orderId) {
+            order = orders.find(o => o.id === orderId);
+            if (!order) order = storeOrders.find(o => o.id === orderId);
+        }
+
+        const currentStatus = order?.status;
+
+        // 1. Data Scope checks (Driver can only touch their own)
+        if (role === 'driver' && order && order.driver !== user?.name) {
+            return false;
+        }
+
+        // 2. Final States have NO operational actions (except Accountant or Admin)
+        const finalStates = ['مكتمل', 'مرجع للتاجر مكتمل'];
+        if (currentStatus && finalStates.includes(currentStatus)) {
+            return role === 'accountant' && action === 'change_status';
+        }
+
+        // 3. Status Transition Matrix
+        if (action === 'change_status' && newStatus && currentStatus) {
+            if (view === 'driver-returns') {
+                // Driver Returns queue only allows moving to 'مرجع للفرع'
+                if (newStatus !== 'مرجع للفرع') return false;
+            }
+            if (view === 'branch-returns') {
+                // Branch Returns allows moving to 'مؤجل' or 'مرجع للتاجر'
+                if (newStatus !== 'مؤجل' && newStatus !== 'مرجع للتاجر') return false;
+                if (role !== 'branch' && role !== 'ops') return false;
+            }
+            if (view === 'merchant-returns') {
+                if (newStatus !== 'مكتمل إرجاع تاجر' && newStatus !== 'مرجع للتاجر مكتمل') return false;
+            }
+        }
+
+        // 4. Role Action Restrictions
+        if (action === 'assign_driver') {
+            if (role === 'branch' || role === 'driver' || role === 'merchant_returns') return false;
+        }
+        
+        if (action === 'delete') {
+            if (role !== 'ops') return false; // Only ops and admin can delete
+        }
+
+        return true;
+    };
+    // --- End Security Guards ---
+
     // Bulk Actions
     const handleBulkDelete = async () => {
         if (selectedRows.length === 0) return;
+        if (!checkActionAllowed('delete')) {
+            toast({ variant: 'destructive', title: 'غير مصرح', description: 'ليس لديك صلاحية لحذف الطلبات.' });
+            return;
+        }
         try {
             await deleteOrders(selectedRows);
             setSelectedRows([]);
@@ -414,15 +530,20 @@ export const useOrdersTable = () => {
         if (selectedRows.length === 0 || !newStatus) return;
         
         try {
-            // TODO: Add validation rules based on requirements
-            // For now, we'll update all selected orders to the new status
-            await Promise.all(selectedRows.map(async (id) => {
+            const validRows = selectedRows.filter(id => checkActionAllowed('change_status', id, newStatus));
+            if (validRows.length !== selectedRows.length) {
+                toast({ variant: 'destructive', title: 'عملية مرفوضة', description: 'بعض أو كل الطلبات المحددة لا تقبل هذه الحالة ضمن صلاحياتك.' });
+                if (validRows.length === 0) return;
+            }
+
+            await Promise.all(validRows.map(async (id) => {
                 await updateOrderField(id, 'status', newStatus);
             }));
             toast({ 
                 title: 'تم التغيير', 
-                description: `تم تغيير حالة ${selectedRows.length} طلب إلى "${newStatus}".` 
+                description: `تم تغيير حالة ${validRows.length} طلب إلى "${newStatus}".` 
             });
+            setSelectedRows([]); // Clear selection after bulk change
         } catch (error) {
             toast({ variant: 'destructive', title: 'خطأ', description: 'فشل تغيير الحالة.' });
         }
@@ -466,6 +587,14 @@ export const useOrdersTable = () => {
         handleSort,
         handleRefresh: fetchData, // alias for manually triggering fetch
         handleUpdateField: async (id: string, field: keyof Order, value: any) => {
+            if (field === 'status' && !checkActionAllowed('change_status', id, value)) {
+                toast({ variant: 'destructive', title: 'غير مصرح', description: 'انتقال الحالة هذا غير مسموح به حالياً.' });
+                return;
+            }
+            if (field === 'driver' && !checkActionAllowed('assign_driver', id)) {
+                toast({ variant: 'destructive', title: 'غير مصرح', description: 'لا تملك صلاحية إسناد سائقين.' });
+                return;
+            }
             updateOrderField(id, field, value);
         },
         handleBulkDelete,
@@ -473,6 +602,7 @@ export const useOrdersTable = () => {
         handleBulkAssignMerchant,
         handleBulkChangeStatus,
         canAssignDriverToSelected,
+        checkActionAllowed, // Expose for UI visual hiding
         searchableFields,
         merchants,
         drivers,

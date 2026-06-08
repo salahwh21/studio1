@@ -253,7 +253,7 @@ router.get('/driver-statistics/:driverName', authenticateToken, async (req, res)
         SUM(driver_additional_fare)::DECIMAL(10,2) as additional_fare,
         AVG(EXTRACT(EPOCH FROM (updated_at - created_at))/3600)::DECIMAL(5,2) as avg_delivery_time_hours
       FROM orders 
-      WHERE driver = $1 AND ${dateFilter}
+      WHERE (driver = $1 OR previous_driver = $1) AND ${dateFilter}
     `, [driverName]);
 
     const stats = statsResult.rows[0] || {};
@@ -329,7 +329,7 @@ router.get('/comparison/:driverName', authenticateToken, async (req, res) => {
         SUM(driver_fee)::DECIMAL(10,2) as earnings,
         SUM(CASE WHEN status = 'تم التوصيل' THEN 1 ELSE 0 END) as delivered
       FROM orders 
-      WHERE driver = $1 AND created_at >= CURRENT_DATE - INTERVAL '30 days'
+      WHERE (driver = $1 OR previous_driver = $1) AND created_at >= CURRENT_DATE - INTERVAL '30 days'
     `, [driverName]);
 
     const previousResult = await db.query(`
@@ -338,7 +338,7 @@ router.get('/comparison/:driverName', authenticateToken, async (req, res) => {
         SUM(driver_fee)::DECIMAL(10,2) as earnings,
         SUM(CASE WHEN status = 'تم التوصيل' THEN 1 ELSE 0 END) as delivered
       FROM orders 
-      WHERE driver = $1 AND created_at >= CURRENT_DATE - INTERVAL '60 days' 
+      WHERE (driver = $1 OR previous_driver = $1) AND created_at >= CURRENT_DATE - INTERVAL '60 days' 
         AND created_at < CURRENT_DATE - INTERVAL '30 days'
     `, [driverName]);
 
@@ -380,7 +380,7 @@ router.get('/fee-breakdown/:driverName', authenticateToken, async (req, res) => 
         SUM(driver_additional_fare)::DECIMAL(10,2) as additional_fares,
         COUNT(*) as total_items
       FROM orders 
-      WHERE driver = $1 AND status = 'تم التوصيل'
+      WHERE (driver = $1 OR previous_driver = $1) AND status = 'تم التوصيل'
     `, [driverName]);
 
     const breakdown = breakdownResult.rows[0] || {};
@@ -539,6 +539,41 @@ router.post('/driver-payments', authenticateToken, [
   }
 });
 
+router.put('/driver-payments/:id', authenticateToken, [
+  body('orderIds').isArray().withMessage('Order IDs must be an array')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { id } = req.params;
+    const { orderIds } = req.body;
+
+    const result = await db.query(
+      `UPDATE driver_payment_slips 
+       SET order_ids = $1, item_count = $2
+       WHERE id = $3 RETURNING *`,
+      [orderIds, orderIds.length, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Payment slip not found' });
+    }
+
+    res.json({
+      id: result.rows[0].id,
+      driverName: result.rows[0].driver_name,
+      date: result.rows[0].date,
+      itemCount: result.rows[0].item_count
+    });
+  } catch (error) {
+    console.error('Update driver payment error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.delete('/driver-payments/:id', authenticateToken, async (req, res) => {
   try {
     const result = await db.query(
@@ -693,6 +728,41 @@ router.post('/merchant-payments', authenticateToken, [
     });
   } catch (error) {
     console.error('Create merchant payment error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.put('/merchant-payments/:id', authenticateToken, [
+  body('orderIds').isArray().withMessage('Order IDs must be an array')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { id } = req.params;
+    const { orderIds } = req.body;
+
+    const result = await db.query(
+      `UPDATE merchant_payment_slips 
+       SET order_ids = $1, item_count = $2
+       WHERE id = $3 RETURNING *`,
+      [orderIds, orderIds.length, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Payment slip not found' });
+    }
+
+    res.json({
+      id: result.rows[0].id,
+      merchantName: result.rows[0].merchant_name,
+      date: result.rows[0].date,
+      itemCount: result.rows[0].item_count
+    });
+  } catch (error) {
+    console.error('Update merchant payment error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

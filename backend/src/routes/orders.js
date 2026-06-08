@@ -10,7 +10,81 @@ const getIO = (req) => {
   return req.app.get('io');
 };
 
-router.get('/', optionalAuth, async (req, res) => {
+const TERMINAL_STATUSES = [
+  'مكتمل',
+  'مكتمل إرجاع تاجر',
+  'مرجع للتاجر مكتمل',
+  'ملغي',
+  'مرتجع',
+  'مرجع للتاجر',
+  'مرجع للفرع',
+  'تم استلام المال في الفرع',
+  'تم محاسبة التاجر',
+  'مؤرشف'
+];
+
+// --- Audit Logger Helper ---
+async function logAudit(orderId, req, action, previousStatus, newStatus, outcome, reason = null) {
+  const actorId = req.user?.id || 'unknown';
+  const actorName = req.user?.name || 'unknown';
+  const actorRole = req.user?.roleId || 'unknown';
+  
+  try {
+    await db.query(
+      `INSERT INTO order_audit_logs 
+      (order_id, actor_id, actor_name, actor_role, action, previous_status, new_status, outcome, reason)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [orderId, actorId, actorName, actorRole, action, previousStatus, newStatus, outcome, reason]
+    );
+  } catch (err) {
+    console.error('Audit log error:', err);
+  }
+}
+
+// --- Action Guard Helper ---
+function checkActionAllowed(req, action, currentStatus, newStatus, driverName) {
+  const role = req.user?.roleId || 'admin';
+  if (role === 'admin') return { allowed: true };
+  
+  // Data scope for driver
+  if (role === 'driver' && driverName && driverName !== req.user?.name) {
+    return { allowed: false, reason: 'لا تملك صلاحية على طلبات تعود لسائق آخر' };
+  }
+  
+  // Final States
+  const finalStates = ['مكتمل', 'مرجع للتاجر مكتمل'];
+  if (currentStatus && finalStates.includes(currentStatus)) {
+    if (role !== 'accountant' || action !== 'change_status') {
+       return { allowed: false, reason: 'الطلب في حالة نهائية ومغلق للعمليات' };
+    }
+  }
+  
+  if (action === 'change_status') {
+    if (role === 'branch') {
+       if (currentStatus === 'مرجع للفرع' && !['مؤجل', 'مرجع للتاجر'].includes(newStatus)) {
+         return { allowed: false, reason: 'الفرع يستطيع تحويل الراجع فقط إلى مؤجل أو مرجع تاجر' };
+       }
+       if (currentStatus === 'تم التوصيل' && newStatus !== 'تم استلام المال في الفرع') {
+         return { allowed: false, reason: 'الفرع يستطيع تأكيد الاستلام المالي فقط للطلبات الموصلة' };
+       }
+    }
+    if (role === 'merchant_returns' && !['مكتمل إرجاع تاجر', 'مرجع للتاجر مكتمل'].includes(newStatus)) {
+       return { allowed: false, reason: 'يُسمح فقط بإغلاق مرتجعات التاجر' };
+    }
+  }
+  
+  if (action === 'assign_driver' && ['branch', 'driver', 'merchant_returns'].includes(role)) {
+     return { allowed: false, reason: 'دورك لا يسمح بتعيين سائقين' };
+  }
+  
+  if (action === 'delete' && role !== 'ops') {
+     return { allowed: false, reason: 'دورك لا يسمح بحذف الطلبات' };
+  }
+  
+  return { allowed: true };
+}
+
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const {
       page = 0,
@@ -57,6 +131,20 @@ router.get('/', optionalAuth, async (req, res) => {
       params.push(dateTo);
     }
 
+    // --- Backend RBAC Data Scoping ---
+    const role = req.user?.roleId || 'admin';
+    const userName = req.user?.name;
+
+    if (role === 'driver') {
+      whereClause += ` AND driver = $${paramIndex++}`;
+      params.push(userName);
+    } else if (role === 'merchant') {
+      whereClause += ` AND merchant = $${paramIndex++}`;
+      // Fallback to storeName if merchant name differs (depends on schema setup, assuming name matches for now)
+      params.push(userName); 
+    }
+    // ---------------------------------
+
     // Whitelist for sortKey to prevent SQL injection
     const allowedSortKeys = ['id', 'created_at', 'date', 'status', 'cod', 'recipient', 'merchant', 'driver', 'order_number'];
     const safeSort = allowedSortKeys.includes(sortKey) ? sortKey : 'created_at';
@@ -93,6 +181,7 @@ router.get('/', optionalAuth, async (req, res) => {
       status: row.status,
       previousStatus: row.previous_status,
       driver: row.driver,
+      previousDriver: row.previous_driver,
       merchant: row.merchant,
       cod: parseFloat(row.cod),
       itemPrice: parseFloat(row.item_price),
@@ -111,11 +200,11 @@ router.get('/', optionalAuth, async (req, res) => {
     res.json({ orders, totalCount });
   } catch (error) {
     console.error('Get orders error:', error);
-    res.status(500).json({ error: 'Server error', code: 'SERVER_ERROR' });
+    res.status(500).json({ error: 'Server error', code: 'SERVER_ERROR', details: error.message });
   }
 });
 
-router.get('/:id', optionalAuth, async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const result = await db.query('SELECT * FROM orders WHERE id = $1', [req.params.id]);
 
@@ -138,6 +227,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
       status: row.status,
       previousStatus: row.previous_status,
       driver: row.driver,
+      previousDriver: row.previous_driver,
       merchant: row.merchant,
       cod: parseFloat(row.cod),
       itemPrice: parseFloat(row.item_price),
@@ -298,9 +388,32 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const current = currentResult.rows[0];
     let previousStatus = current.previous_status;
 
+    // Determine Action
+    let action = 'update';
+    if (updates.status && updates.status !== current.status) action = 'change_status';
+    if (updates.driver && updates.driver !== current.driver) action = 'assign_driver';
+
+    // Verify Guard
+    const guard = checkActionAllowed(req, action, current.status, updates.status || current.status, current.driver);
+    if (!guard.allowed) {
+      await logAudit(id, req, action, current.status, updates.status, 'denied', guard.reason);
+      return res.status(403).json({ error: guard.reason || 'Unauthorized action', code: 'UNAUTHORIZED' });
+    }
+
     if (updates.status && updates.status !== current.status) {
       previousStatus = current.status;
     }
+
+    // Handle terminal statuses: remove active driver and keep history
+    let newPreviousDriver = current.previous_driver;
+    if (updates.status && TERMINAL_STATUSES.includes(updates.status)) {
+      const activeDriver = updates.driver !== undefined ? updates.driver : current.driver;
+      if (activeDriver) {
+        newPreviousDriver = activeDriver;
+      }
+      updates.driver = null; // Clear active driver
+    }
+    updates.previousDriver = newPreviousDriver;
 
     const fields = [];
     const values = [];
@@ -317,6 +430,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       region: 'region',
       status: 'status',
       driver: 'driver',
+      previousDriver: 'previous_driver',
       merchant: 'merchant',
       cod: 'cod',
       itemPrice: 'item_price',
@@ -375,6 +489,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
       }
     }
     
+    // Log Success
+    await logAudit(id, req, action, current.status, row.status, 'success');
+    
     res.json({
       id: row.id,
       orderNumber: row.order_number,
@@ -394,23 +511,47 @@ router.patch('/:id/status', authenticateToken, [
     const { id } = req.params;
     const { status, driver_id } = req.body;
 
-    const currentResult = await db.query('SELECT status FROM orders WHERE id = $1', [id]);
+    const currentResult = await db.query('SELECT status, driver FROM orders WHERE id = $1', [id]);
     if (currentResult.rows.length === 0) {
       return res.status(404).json({ error: 'Order not found', code: 'NOT_FOUND' });
     }
 
-    const previousStatus = currentResult.rows[0].status;
+    const currentOrder = currentResult.rows[0];
+    const previousStatus = currentOrder.status;
+
+    const action = driver_id ? 'assign_driver' : 'change_status';
+    const guard = checkActionAllowed(req, action, previousStatus, status, currentOrder.driver);
+    if (!guard.allowed) {
+      await logAudit(id, req, action, previousStatus, status, 'denied', guard.reason);
+      return res.status(403).json({ error: guard.reason || 'Unauthorized action', code: 'UNAUTHORIZED' });
+    }
+
+    // Handle terminal statuses
+    let finalDriver = driver_id;
+    let finalPreviousDriver = undefined;
+    
+    if (TERMINAL_STATUSES.includes(status)) {
+      finalPreviousDriver = driver_id || currentOrder.driver;
+      finalDriver = null;
+    }
 
     let query = `UPDATE orders SET status = $1, previous_status = $2, updated_at = NOW()`;
     let params = [status, previousStatus];
+    let paramIdx = 3;
 
-    if (driver_id) {
-      query += `, driver = $3 WHERE id = $4 RETURNING *`;
-      params.push(driver_id, id);
-    } else {
-      query += ` WHERE id = $3 RETURNING *`;
-      params.push(id);
+    if (finalDriver !== undefined || finalPreviousDriver !== undefined) {
+       if (finalDriver !== undefined) {
+         query += `, driver = $${paramIdx++}`;
+         params.push(finalDriver);
+       }
+       if (finalPreviousDriver !== undefined) {
+         query += `, previous_driver = $${paramIdx++}`;
+         params.push(finalPreviousDriver);
+       }
     }
+    
+    query += ` WHERE id = $${paramIdx} RETURNING *`;
+    params.push(id);
 
     const result = await db.query(query, params);
 
@@ -425,6 +566,8 @@ router.patch('/:id/status', authenticateToken, [
         previousStatus: previousStatus
       });
     }
+
+    await logAudit(id, req, action, previousStatus, updatedOrder.status, 'success');
 
     res.json({ id: updatedOrder.id, status: updatedOrder.status, previousStatus });
   } catch (error) {
@@ -443,13 +586,33 @@ router.post('/bulk-status', authenticateToken, [
     await db.query('BEGIN');
 
     for (const orderId of orderIds) {
-      const currentResult = await db.query('SELECT status FROM orders WHERE id = $1', [orderId]);
+      const currentResult = await db.query('SELECT status, driver FROM orders WHERE id = $1', [orderId]);
       if (currentResult.rows.length > 0) {
-        const previousStatus = currentResult.rows[0].status;
-        await db.query(
-          `UPDATE orders SET status = $1, previous_status = $2, updated_at = NOW() WHERE id = $3`,
-          [status, previousStatus, orderId]
-        );
+        const currentOrder = currentResult.rows[0];
+        const previousStatus = currentOrder.status;
+
+        const guard = checkActionAllowed(req, 'change_status', previousStatus, status, currentOrder.driver);
+        if (!guard.allowed) {
+          await logAudit(orderId, req, 'change_status', previousStatus, status, 'denied', guard.reason);
+          continue; // Skip unauthorized order but process the rest
+        }
+
+        let updateQuery = `UPDATE orders SET status = $1, previous_status = $2, updated_at = NOW()`;
+        let updateParams = [status, previousStatus];
+        let pIdx = 3;
+
+        if (TERMINAL_STATUSES.includes(status)) {
+          if (currentOrder.driver) {
+             updateQuery += `, previous_driver = $${pIdx++}`;
+             updateParams.push(currentOrder.driver);
+          }
+          updateQuery += `, driver = NULL`;
+        }
+
+        updateQuery += ` WHERE id = $${pIdx}`;
+        updateParams.push(orderId);
+
+        await db.query(updateQuery, updateParams);
       }
     }
 
