@@ -10,7 +10,7 @@ echo "[1/4] Waiting for PostgreSQL to be ready..."
 sleep 3
 
 # Create the specific delivery_db using the password directly to avoid sudo prompts
-PGPASSWORD="Sbreen$1967" createdb -h localhost -U postgres delivery_db || true
+PGPASSWORD='Sbreen$1967' createdb -h localhost -U postgres delivery_db || true
 echo "✅ Database 'delivery_db' created."
 
 echo "[2/4] Setting up Backend environment..."

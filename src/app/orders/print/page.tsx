@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import PDFDesigner from '@/app/dashboard/reports/control-panel/page'
 
-export default function PrintOrdersPage() {
+function PrintOrdersContent() {
   const searchParams = useSearchParams()
   const orderIds = searchParams.get('ids')?.split(',') || []
   const [orders, setOrders] = useState([])
@@ -19,4 +19,12 @@ export default function PrintOrdersPage() {
   }, [orderIds])
 
   return <PDFDesigner initialOrders={orders} />
+}
+
+export default function PrintOrdersPage() {
+  return (
+    <Suspense fallback={<div>جاري التحميل...</div>}>
+      <PrintOrdersContent />
+    </Suspense>
+  )
 }

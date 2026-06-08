@@ -6,7 +6,7 @@
     "dev": "npx next dev -H 0.0.0.0 -p 5000",
     "build": "npx next build",
     "start": "npx next start -H 0.0.0.0 -p 5000",
-    "lint": "next lint",
+    "lint": "eslint .",
     "analyze": "ANALYZE=true npm run build",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -91,7 +91,6 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.3",
     "@next/bundle-analyzer": "^16.0.7",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
