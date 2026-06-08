@@ -174,24 +174,12 @@ async function runMigration(client, filename) {
   console.log(`📦 Running migration: ${filename}`);
 
   try {
-    // Split SQL into individual statements
-    const statements = splitSQLStatements(sql);
-
-    if (statements.length === 0) {
-      console.warn(`⚠️  No SQL statements found in ${filename}`);
-      return true;
-    }
-
-    // Execute each statement individually within a transaction
+    // Execute the entire SQL file directly within a transaction
     await client.query('BEGIN');
 
     try {
-      for (let i = 0; i < statements.length; i++) {
-        const statement = statements[i].trim();
-        // Skip empty statements or statements that are only comments/whitespace
-        if (statement && !statement.match(/^[\s-]*$/)) {
-          await client.query(statement);
-        }
+      if (sql.trim().length > 0) {
+        await client.query(sql);
       }
 
       // Record migration as applied
@@ -201,7 +189,7 @@ async function runMigration(client, filename) {
       );
 
       await client.query('COMMIT');
-      console.log(`✅ Migration applied: ${filename} (${statements.length} statement(s))`);
+      console.log(`✅ Migration applied: ${filename}`);
       return true;
     } catch (error) {
       await client.query('ROLLBACK');

@@ -13,7 +13,7 @@ pool.on('connect', () => {
 
 pool.on('error', (err) => {
   console.error('❌ Unexpected error on idle client', err);
-  process.exit(-1);
+  // process.exit(-1); // تم إيقاف هذا السطر لمنع تعطل الخادم بالكامل
 });
 
 module.exports = pool;
