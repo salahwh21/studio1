@@ -171,7 +171,7 @@ export const OrdersTableView = ({
                                         type: 'changeStatus',
                                         orderId: order.id,
                                         currentStatus: order.status,
-                                        currentDriver: order.driver
+                                        currentDriver: order.driver || undefined
                                     })}
                                     disabled={!isEditMode || (checkActionAllowed && !checkActionAllowed('change_status', order.id))}
                                     className="inline-flex items-center justify-center gap-1.5 font-bold text-xs px-3 py-1.5 rounded-full w-[150px] mx-auto transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed hover:scale-105 hover:shadow-lg shadow-sm"
@@ -795,7 +795,7 @@ export const OrdersTableView = ({
                             );
                         })()
                     ) : (
-                        orders.map((order, index) => renderOrderRow(order, index))
+                        orders.slice(page * rowsPerPage, (page + 1) * rowsPerPage).map((order, index) => renderOrderRow(order, index))
                     )}
                     
                     {/* سطر المجاميع - ثابت في الأسفل: position: sticky; bottom: 0; */}
