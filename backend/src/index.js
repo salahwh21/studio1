@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const compression = require('compression');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
@@ -38,6 +39,7 @@ const driversRoutes = require('./routes/drivers');
 const settingsRoutes = require('./routes/settings');
 
 const app = express();
+app.use(compression());
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
