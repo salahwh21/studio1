@@ -72,7 +72,7 @@ export default function DriverScanPage() {
 
     const order = orders.find(
       o => o.id === manualCode.trim() || 
-           o.orderNumber === manualCode.trim() ||
+           o.orderNumber?.toString() === manualCode.trim() ||
            o.referenceNumber === manualCode.trim()
     );
 

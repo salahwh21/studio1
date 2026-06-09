@@ -100,9 +100,8 @@ export const PrepareMerchantPayments = () => {
         addMerchantPaymentSlip({
             merchantName: selectedMerchant.storeName || selectedMerchant.name,
             date: new Date().toISOString(),
-            itemCount: ordersToProcess.length,
             status: 'جاهز للتسليم',
-            orders: ordersToProcess
+            orderIds: ordersToProcess.map(o => o.id)
         });
 
         toast({

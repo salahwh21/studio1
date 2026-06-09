@@ -46,7 +46,7 @@ export function KPICard({
   onClick,
   loading = false
 }: KPICardProps) {
-  const variantStyles: Record<KPICardProps['variant'], { card: string; badge: string; title: string; subtitle: string; value: string }> = {
+  const variantStyles: Record<NonNullable<KPICardProps['variant']>, { card: string; badge: string; title: string; subtitle: string; value: string }> = {
     revenue: {
       card: 'bg-emerald-500 bg-gradient-to-br from-emerald-500 to-emerald-600 border-none text-emerald-50',
       badge: 'bg-emerald-50/20 text-emerald-50',

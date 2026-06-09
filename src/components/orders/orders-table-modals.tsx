@@ -46,19 +46,19 @@ interface OrdersTableModalsProps {
     setShowAssignDriverDialog: (open: boolean) => void;
     selectedDriverForBulk: string;
     setSelectedDriverForBulk: (driver: string) => void;
-    handleBulkAssignDriver: () => void;
+    handleBulkAssignDriver: (driverName: string) => void;
 
     showAssignMerchantDialog: boolean;
     setShowAssignMerchantDialog: (open: boolean) => void;
     selectedMerchantForBulk: string;
     setSelectedMerchantForBulk: (merchant: string) => void;
-    handleBulkAssignMerchant: () => void;
+    handleBulkAssignMerchant: (merchantName: string) => void;
 
     showChangeStatusDialog: boolean;
     setShowChangeStatusDialog: (open: boolean) => void;
     selectedStatusForBulk: string;
     setSelectedStatusForBulk: (status: string) => void;
-    handleBulkChangeStatus: () => void;
+    handleBulkChangeStatus: (newStatus: string) => void;
     statuses: any[];
 
     isLoading: boolean;
@@ -221,7 +221,7 @@ export const OrdersTableModals = ({
                         <Button variant="outline" onClick={() => setShowAssignDriverDialog(false)}>
                             إلغاء
                         </Button>
-                        <Button onClick={handleBulkAssignDriver} disabled={isLoading || !selectedDriverForBulk}>
+                        <Button onClick={() => handleBulkAssignDriver(selectedDriverForBulk)} disabled={isLoading || !selectedDriverForBulk}>
                             {isLoading ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Truck className="ml-2 h-4 w-4" />}
                             تعيين
                         </Button>
@@ -256,7 +256,7 @@ export const OrdersTableModals = ({
                         <Button variant="outline" onClick={() => setShowChangeStatusDialog(false)}>
                             إلغاء
                         </Button>
-                        <Button onClick={handleBulkChangeStatus} disabled={isLoading || !selectedStatusForBulk}>
+                        <Button onClick={() => handleBulkChangeStatus(selectedStatusForBulk)} disabled={isLoading || !selectedStatusForBulk}>
                             {isLoading ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <ArrowRightLeft className="ml-2 h-4 w-4" />}
                             تغيير
                         </Button>
@@ -291,7 +291,7 @@ export const OrdersTableModals = ({
                         <Button variant="outline" onClick={() => setShowAssignMerchantDialog(false)}>
                             إلغاء
                         </Button>
-                        <Button onClick={handleBulkAssignMerchant} disabled={isLoading || !selectedMerchantForBulk}>
+                        <Button onClick={() => handleBulkAssignMerchant(selectedMerchantForBulk)} disabled={isLoading || !selectedMerchantForBulk}>
                             {isLoading ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Store className="ml-2 h-4 w-4" />}
                             تعيين
                         </Button>

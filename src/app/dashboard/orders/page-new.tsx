@@ -29,7 +29,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettings, SavedTemplate } from '@/contexts/SettingsContext';
 import { useOrdersTable } from '@/hooks/use-orders-table';
 import { useStatusesStore } from '@/store/statuses-store';
 import { useRealTimeOrders } from '@/hooks/useRealTimeOrders';
@@ -39,6 +39,7 @@ import { OrdersTableToolbar } from '@/components/orders/orders-table-toolbar';
 import { OrdersTableModals } from '@/components/orders/orders-table-modals';
 import { OrdersTableView } from '@/components/orders/orders-table-view';
 import { ModalState } from '@/components/orders/types';
+import { ALL_COLUMNS } from '@/components/orders/constants';
 
 import {
     DndContext,
@@ -109,12 +110,7 @@ const OrdersPageNew = () => {
         searchableFields,
         merchants,
         drivers,
-        cities,
-        visibleColumns,
-        visibleColumnKeys,
-        setVisibleColumnKeys,
-        handleColumnDragEnd,
-        handleColumnVisibilityChange
+        cities
     } = useOrdersTable();
 
     // UI State
@@ -128,16 +124,10 @@ const OrdersPageNew = () => {
     const [showAssignMerchantDialog, setShowAssignMerchantDialog] = useState(false);
     const [selectedMerchantForBulk, setSelectedMerchantForBulk] = useState('');
     const [showChangeStatusDialog, setShowChangeStatusDialog] = useState(false);
+    const [selectedStatusForBulk, setSelectedStatusForBulk] = useState('');
     const [showModernPolicyV2Dialog, setShowModernPolicyV2Dialog] = useState(false);
     const [showThermalLabelOptDialog, setShowThermalLabelOptDialog] = useState(false);
-
-    // DnD Sensors
-    const sensors = useSensors(
-        useSensor(PointerSensor),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
-    );
+    const [selectedTemplate, setSelectedTemplate] = useState<SavedTemplate | null>(null);
 
     // Calculate footer totals - تحسب من الصفوف المحددة فقط
     const footerTotals = React.useMemo(() => {
@@ -351,16 +341,12 @@ const OrdersPageNew = () => {
                 <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-slate-900">
                     {/* حاوية الجدول مع السكرول الداخلي - بدون padding أو borders */}
                     <div className="flex-1 overflow-auto">
-                        <DndContext
-                            sensors={sensors}
-                            onDragEnd={handleColumnDragEnd}
-                        >
                             <OrdersTableView
+                                visibleColumns={ALL_COLUMNS}
                                 orders={orders}
                                 groupedOrders={groupedOrders}
                                 openGroups={openGroups}
                                 setOpenGroups={setOpenGroups}
-                                visibleColumns={visibleColumns}
                                 selectedRows={selectedRows}
                                 handleSelectRow={handleSelectRow}
                                 handleSelectAll={handleSelectAll}
@@ -381,7 +367,6 @@ const OrdersPageNew = () => {
                                 selectedRowsCount={selectedRows.length}
                                 ordersCount={orders.length}
                             />
-                        </DndContext>
                     </div>
 
                     {/* ============================================
@@ -455,25 +440,36 @@ const OrdersPageNew = () => {
                 <OrdersTableModals
                     modalState={modalState}
                     setModalState={setModalState}
+                    selectedRows={selectedRows}
+                    visibleColumns={ALL_COLUMNS.map(c => c.key as string)}
+                    selectedRowsCount={selectedRows.length}
+                    orders={orders}
+                    drivers={drivers}
+                    merchants={merchants}
+                    availableTemplates={[]}
+                    selectedTemplate={selectedTemplate}
+                    setSelectedTemplate={setSelectedTemplate}
                     showDeleteConfirmDialog={showDeleteConfirmDialog}
                     setShowDeleteConfirmDialog={setShowDeleteConfirmDialog}
+                    handleBulkDelete={handleBulkDelete}
                     showAssignDriverDialog={showAssignDriverDialog}
                     setShowAssignDriverDialog={setShowAssignDriverDialog}
                     selectedDriverForBulk={selectedDriverForBulk}
                     setSelectedDriverForBulk={setSelectedDriverForBulk}
-                    drivers={drivers}
                     handleBulkAssignDriver={handleBulkAssignDriver}
                     showAssignMerchantDialog={showAssignMerchantDialog}
                     setShowAssignMerchantDialog={setShowAssignMerchantDialog}
                     selectedMerchantForBulk={selectedMerchantForBulk}
                     setSelectedMerchantForBulk={setSelectedMerchantForBulk}
-                    merchants={merchants}
                     handleBulkAssignMerchant={handleBulkAssignMerchant}
                     showChangeStatusDialog={showChangeStatusDialog}
                     setShowChangeStatusDialog={setShowChangeStatusDialog}
-                    selectedRows={selectedRows}
+                    selectedStatusForBulk={selectedStatusForBulk}
+                    setSelectedStatusForBulk={setSelectedStatusForBulk}
                     handleBulkChangeStatus={handleBulkChangeStatus}
                     statuses={statuses}
+                    isLoading={isLoading}
+                    isClient={isClient}
                 />
             </div>
         </TooltipProvider>

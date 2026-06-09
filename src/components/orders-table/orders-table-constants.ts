@@ -25,7 +25,9 @@ export const ALL_COLUMNS: ColumnConfig[] = [
   { key: 'notes', label: 'ملاحظات', sortable: true },
 ];
 
-export const GROUP_BY_OPTIONS: { value: keyof Order | null; label: string }[] = [
+export type GroupByOption = keyof Order | null;
+
+export const GROUP_BY_OPTIONS: { value: GroupByOption; label: string }[] = [
   { value: null, label: 'بدون تجميع' },
   { value: 'merchant', label: 'التاجر' },
   { value: 'status', label: 'الحالة' },

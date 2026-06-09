@@ -92,7 +92,7 @@ export function OrdersTableRow({
         const sInfo = getStatusInfo(value as string);
         content = (
           <button
-            onClick={() => onChangeStatus(order.id, order.status, order.driver)}
+            onClick={() => onChangeStatus(order.id, order.status, order.driver || undefined)}
             disabled={!isEditMode}
             className="inline-flex items-center justify-center gap-2 font-semibold text-sm px-4 py-2 rounded-lg w-[160px] mx-auto my-2 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:opacity-85 hover:-translate-y-0.5 hover:shadow-md"
             style={{
@@ -133,7 +133,7 @@ export function OrdersTableRow({
                               value={displayName}
                               onSelect={() => {
                                 const selectedValue = col.key === 'merchant' ? displayName : item.name;
-                                onUpdateField(order.id, col.key, selectedValue);
+                                onUpdateField(order.id, col.key as keyof Order, selectedValue);
                                 setTimeout(() => document.body.click(), 100);
                               }}
                               className="text-right cursor-pointer"
@@ -189,7 +189,7 @@ export function OrdersTableRow({
                     defaultValue={formatNumber(numValue)}
                     onBlur={(e) => {
                       const cleanValue = e.target.value.replace(/[^\d.-]/g, '');
-                      onUpdateField(order.id, col.key, parseFloat(cleanValue) || 0);
+                      onUpdateField(order.id, col.key as keyof Order, parseFloat(cleanValue) || 0);
                     }}
                     className={cn(
                       "h-10 text-center border-2 border-slate-300 rounded-lg focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-blue-500 bg-white hover:border-blue-400 font-semibold tabular-nums text-base mx-2",
@@ -351,7 +351,7 @@ export function OrdersTableRow({
             {isEditMode ? (
               <Input
                 defaultValue={displayValue}
-                onBlur={(e) => onUpdateField(order.id, col.key, convertToEnglishNumbers(e.target.value))}
+                onBlur={(e) => onUpdateField(order.id, col.key as keyof Order, convertToEnglishNumbers(e.target.value))}
                 className={cn(
                   "h-10 text-center border-2 border-slate-300 rounded-lg focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-blue-500 bg-white hover:border-blue-400 mx-4 my-2"
                 )}

@@ -18,7 +18,7 @@ function PrintOrdersContent() {
     }
   }, [orderIds])
 
-  return <PDFDesigner initialOrders={orders} />
+  return <PDFDesigner />
 }
 
 export default function PrintOrdersPage() {

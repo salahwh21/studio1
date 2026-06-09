@@ -62,7 +62,7 @@ export default function AiAgentPage() {
                     orderId: selectedOrder.id,
                     customerName: selectedOrder.recipient,
                     status: selectedOrder.status,
-                    driverName: selectedOrder.driver,
+                    driverName: selectedOrder.driver || undefined,
                     expectedDeliveryDate: selectedOrder.date,
                 },
                 query: customerQuery,

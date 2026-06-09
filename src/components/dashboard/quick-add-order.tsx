@@ -312,9 +312,9 @@ export function QuickAddOrder({ open, onOpenChange }: QuickAddOrderProps) {
                           
                           <div className="flex flex-col space-y-1">
                             <Label className="text-[11px] font-medium text-muted-foreground opacity-0 select-none hidden md:block">Spacer</Label>
-                            <div className="flex items-center space-x-2 space-x-reverse bg-card px-3 h-9 rounded-md border border-input hover:border-blue-400 transition-colors cursor-pointer" onClick={() => setIsPrepaid(!isPrepaid)}>
-                              <Checkbox id="isPrepaidModal" checked={isPrepaid} onCheckedChange={(checked) => setIsPrepaid(!!checked)} className="h-3.5 w-3.5 rounded" />
-                              <Label htmlFor="isPrepaidModal" className="text-[11px] cursor-pointer text-slate-700 dark:text-slate-300 select-none w-full">مدفوع مسبقاً</Label>
+                            <div className="flex items-center space-x-2 space-x-reverse bg-card px-3 h-9 rounded-md border border-input hover:border-blue-400 transition-colors cursor-pointer" onClick={() => setIsPrepaid((prev) => !prev)}>
+                              <Checkbox id="isPrepaidModal" checked={isPrepaid} className="h-3.5 w-3.5 rounded pointer-events-none" />
+                              <Label htmlFor="isPrepaidModal" className="text-[11px] cursor-pointer text-slate-700 dark:text-slate-300 select-none w-full pointer-events-none">مدفوع مسبقاً</Label>
                             </div>
                           </div>
 

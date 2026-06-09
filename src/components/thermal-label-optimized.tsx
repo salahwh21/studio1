@@ -7,11 +7,10 @@ import Barcode from 'react-barcode';
 import { Label } from './ui/label';
 import { useSettings } from '@/contexts/SettingsContext';
 import {
-    createThermalLabelHTML,
     generatePdf,
-    generateThermalLabel,
     generatePdfViaBrowserPrint
 } from '@/services/pdf-service';
+import { createThermalLabelHtml } from '@/services/pdf-templates';
 
 // 5 مقاسات أساسية
 type BaseSize = '100x150' | '100x100' | '75x50' | '60x40' | '50x30';
@@ -282,7 +281,7 @@ export const ThermalLabelOptimized = forwardRef<
             };
 
             // إنشاء HTML للملصق الحراري
-            const html = createThermalLabelHTML(thermalData, {
+            const html = createThermalLabelHtml(thermalData, {
                 width: widthMM,
                 height: heightMM,
                 customization: custom
@@ -326,7 +325,7 @@ export const ThermalLabelOptimized = forwardRef<
                 barcode: order.id
             };
 
-            const html = createThermalLabelHTML(thermalData, {
+            const html = createThermalLabelHtml(thermalData, {
                 width: widthMM,
                 height: heightMM,
                 customization: custom
@@ -358,12 +357,21 @@ export const ThermalLabelOptimized = forwardRef<
                 barcode: order.id
             };
 
-            // استخدام الخدمة الجديدة
-            await generateThermalLabel(thermalData, {
+            const html = createThermalLabelHtml(thermalData, {
                 width: widthMM,
                 height: heightMM,
                 customization: custom
-            }, `thermal_${baseSize}_${orientation}_${new Date().toISOString().split('T')[0]}.pdf`);
+            });
+
+            const filename = `thermal_${baseSize}_${orientation}_${new Date().toISOString().split('T')[0]}.pdf`;
+            const blob = await generatePdf(html, {
+                width: widthMM,
+                height: heightMM,
+                filename
+            });
+
+            const { downloadPdf } = await import('@/services/pdf-service');
+            downloadPdf(blob, filename);
 
             toast({ title: 'تم التصدير بنجاح' });
         } catch (error) {

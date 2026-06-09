@@ -196,34 +196,17 @@ export const SimplePolicyEditor: React.FC<SimplePolicyEditorProps> = ({ onClose 
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
-      const policyData = {
-        companyName: settings.companyName,
-        orderNumber: sampleOrder.orderNumber,
-        recipient: sampleOrder.recipient,
-        phone: sampleOrder.phone,
-        address: sampleOrder.address,
-        city: sampleOrder.city,
-        region: sampleOrder.region,
-        cod: sampleOrder.cod,
-        merchant: sampleOrder.merchant,
-        date: sampleOrder.date,
-        notes: settings.showNotes ? sampleOrder.notes : '',
-        barcode: sampleOrder.id
-      };
-
+      const html = createPolicyHTML();
       const filename = `policy_${settings.policyType}_${settings.paperSize}.pdf`;
 
-      if (settings.policyType === 'thermal') {
-        await generateThermalLabel(policyData, {
-          width: currentSize.width,
-          height: currentSize.height
-        }, filename);
-      } else {
-        await generateStandardPolicy(policyData, {
-          width: currentSize.width,
-          height: currentSize.height
-        }, filename);
-      }
+      const blob = await generatePdf(html, {
+        width: currentSize.width,
+        height: currentSize.height,
+        filename
+      });
+
+      const { downloadPdf } = await import('@/services/pdf-service');
+      downloadPdf(blob, filename);
 
       toast({ title: 'تم التصدير', description: 'تم تصدير البوليصة بنجاح' });
     } catch (error: any) {

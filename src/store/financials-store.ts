@@ -32,6 +32,8 @@ type FinancialsState = {
 
   // Actions
   fetchSlips: () => Promise<void>;
+  setMerchantPaymentSlips: (slips: MerchantPaymentSlip[]) => void;
+  setDriverPaymentSlips: (slips: DriverPaymentSlip[]) => void;
 
   addDriverPaymentSlip: (slip: { driverName: string; orderIds: string[]; date?: string }) => Promise<void>;
   deleteDriverPaymentSlip: (id: string) => Promise<void>;
@@ -68,6 +70,14 @@ export const useFinancialsStore = create<FinancialsState>()(
         // Local mode: Do nothing, just rely on persistence
         // Optionally simulate a load
         set({ isLoading: false });
+      },
+
+      setMerchantPaymentSlips: (slips) => {
+        set(state => { state.merchantPaymentSlips = slips; });
+      },
+
+      setDriverPaymentSlips: (slips) => {
+        set(state => { state.driverPaymentSlips = slips; });
       },
 
       addDriverPaymentSlip: async (slipData) => {

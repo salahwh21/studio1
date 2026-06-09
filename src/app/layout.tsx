@@ -32,9 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body>
         <GlobalErrorBoundary>
-          <ErrorBoundary>
-            <Providers>{children}</Providers>
-          </ErrorBoundary>
+          <Providers>{children}</Providers>
         </GlobalErrorBoundary>
       </body>
     </html>

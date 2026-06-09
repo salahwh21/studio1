@@ -351,9 +351,9 @@ const AddOrderPage = () => {
                       
                       <div className="flex flex-col space-y-2">
                         <Label className="font-semibold text-slate-700 dark:text-slate-300 opacity-0 select-none hidden md:block">Spacer</Label>
-                        <div className="flex items-center space-x-2 space-x-reverse bg-card px-4 h-10 rounded-md border border-input hover:border-blue-400 transition-colors cursor-pointer" onClick={() => setIsPrepaid(!isPrepaid)}>
-                          <Checkbox id="isPrepaid" checked={isPrepaid} onCheckedChange={(checked) => setIsPrepaid(!!checked)} className="h-4 w-4 rounded" />
-                          <Label htmlFor="isPrepaid" className="font-medium cursor-pointer text-slate-700 dark:text-slate-300 w-full select-none">
+                        <div className="flex items-center space-x-2 space-x-reverse bg-card px-4 h-10 rounded-md border border-input hover:border-blue-400 transition-colors cursor-pointer" onClick={() => setIsPrepaid((prev) => !prev)}>
+                          <Checkbox id="isPrepaid" checked={isPrepaid} className="h-4 w-4 rounded pointer-events-none" />
+                          <Label htmlFor="isPrepaid" className="font-medium cursor-pointer text-slate-700 dark:text-slate-300 w-full select-none pointer-events-none">
                             الطلب مدفوع مسبقًا
                           </Label>
                         </div>

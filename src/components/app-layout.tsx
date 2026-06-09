@@ -45,6 +45,7 @@ export function AppLayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const currentView = searchParams.get('view');
+    const isOrdersPage = pathname === '/dashboard/orders';
     const [isMounted, setIsMounted] = useState(false);
     const settingsContext = useSettings();
 
@@ -116,13 +117,17 @@ export function AppLayoutContent({ children }: { children: React.ReactNode }) {
         <>
             <div className="flex min-h-screen w-full flex-col bg-muted/40" data-density={settingsContext.settings.ui.density}>
                 <AppHeader />
-                <main className="flex flex-1 flex-col gap-4 bg-background p-4 sm:p-4 md:px-6 md:py-4 pb-20 md:pb-8">
+                <main className={cn(
+                    "flex flex-1 flex-col bg-background",
+                    isOrdersPage ? "p-0" : "gap-4 p-4 sm:p-4 md:px-6 md:py-4 pb-20 md:pb-8"
+                )}>
                     {children}
                 </main>
             </div>
 
             {/* Bottom Navigation for Mobile */}
-            <footer className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-card">
+            {!isOrdersPage && (
+                <footer className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-card">
                 <div className="grid h-16 grid-cols-5 items-center justify-items-center gap-1">
                     {mobileMainItems.filter(item => hasPermission(item.permissionId) && visiblePermissionIds.includes(item.permissionId)).map((item) => (
                         <Link
@@ -167,6 +172,7 @@ export function AppLayoutContent({ children }: { children: React.ReactNode }) {
                     </Sheet>
                 </div>
             </footer>
+            )}
         </>
     );
 }

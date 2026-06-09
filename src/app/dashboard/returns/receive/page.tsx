@@ -62,10 +62,11 @@ export default function ReceiveReturnsPage() {
     const stats = new Map<string, { count: number; cod: number; orders: Order[] }>();
     
     returnableOrders.forEach(order => {
-      if (!stats.has(order.driver)) {
-        stats.set(order.driver, { count: 0, cod: 0, orders: [] });
+      const driverName = order.driver as string;
+      if (!stats.has(driverName)) {
+        stats.set(driverName, { count: 0, cod: 0, orders: [] });
       }
-      const driverStat = stats.get(order.driver)!;
+      const driverStat = stats.get(driverName)!;
       driverStat.count++;
       driverStat.cod += order.cod;
       driverStat.orders.push(order);

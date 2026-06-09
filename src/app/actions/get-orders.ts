@@ -10,7 +10,7 @@ export type OrderSortConfig = {
 
 export type FilterDefinition = {
   field: string;
-  operator: 'contains' | 'equals';
+  operator: 'contains' | 'equals' | 'not_equals';
   value: string;
 }
 

@@ -187,13 +187,13 @@ const iconMapping: { [key in IconName]?: { feather?: keyof typeof FeatherIcons }
   BarChart: { feather: 'BarChart2' },
   RefreshCw: { feather: 'RefreshCw'},
   Download: { feather: 'Download'},
-  UserCog: { feather: 'UserCog' },
+  UserCog: { feather: 'User' },
   UsersCog: { feather: 'Users' },
   ListChecks: { feather: 'CheckSquare' },
   Upload: { feather: 'Upload' },
   UserPlus: { feather: 'UserPlus' },
-  FileUp: { feather: 'FileUp' },
-  FileDown: { feather: 'FileDown' },
+  FileUp: { feather: 'Upload' },
+  FileDown: { feather: 'Download' },
   X: { feather: 'X' },
   Check: { feather: 'Check' },
   ShieldCheck: { feather: 'Shield' },
@@ -246,7 +246,7 @@ const Icon = ({ name, isPrinting = false, ...props }: IconProps) => {
 
   switch (iconLibrary) {
     case 'feather':
-      IconComponent = featherName ? FeatherIcons[featherName] : LucideIcons[lucideName];
+      IconComponent = (featherName ? FeatherIcons[featherName] : LucideIcons[lucideName as keyof typeof LucideIcons]) as React.ElementType;
       break;
     case 'fontawesome':
       if (faName) {
@@ -254,11 +254,11 @@ const Icon = ({ name, isPrinting = false, ...props }: IconProps) => {
         return <FontAwesomeIcon icon={faName} className={props.className} />;
       }
       // Fallback to Lucide if no FontAwesome mapping exists
-      IconComponent = LucideIcons[lucideName];
+      IconComponent = LucideIcons[lucideName as keyof typeof LucideIcons] as React.ElementType;
       break;
     case 'lucide':
     default:
-      IconComponent = LucideIcons[lucideName];
+      IconComponent = LucideIcons[lucideName as keyof typeof LucideIcons] as React.ElementType;
       break;
   }
   

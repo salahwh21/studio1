@@ -11,9 +11,9 @@ import Barcode from 'react-barcode';
 import { fetchWrapper } from '@/lib/fetchWrapper';
 import {
     generatePdf,
-    createStandardPolicyHTML,
     createPdfPreview
 } from '@/services/pdf-service';
+import { createStandardPolicyHtml } from '@/services/pdf-templates';
 
 const mmToPx = (mm: number) => mm * 3.7795;
 
@@ -250,7 +250,7 @@ export const PrintablePolicy = forwardRef<{ handleExport: () => Promise<void>; h
             };
 
             // إنشاء HTML للمعاينة
-            const html = createStandardPolicyHTML(policyData, {
+            const html = createStandardPolicyHtml(policyData, {
                 width: paperDimensions.width,
                 height: paperDimensions.height
             });
@@ -302,7 +302,7 @@ export const PrintablePolicy = forwardRef<{ handleExport: () => Promise<void>; h
             };
 
             // استخدام الطباعة المحسّنة
-            const html = createStandardPolicyHTML(policyData, {
+            const html = createStandardPolicyHtml(policyData, {
                 width: paperDimensions.width,
                 height: paperDimensions.height
             });

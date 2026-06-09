@@ -8,11 +8,17 @@ import path from 'path';
 
 // GET - قراءة محتوى القالب
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { template: string } }
+  request: NextRequest
 ) {
   try {
-    const templateName = params.template;
+    const templateName = request.nextUrl.searchParams.get('template');
+    
+    if (!templateName) {
+      return NextResponse.json(
+        { error: 'Template name is required' },
+        { status: 400 }
+      );
+    }
     
     // التحقق من صحة اسم القالب
     if (!['policy', 'report'].includes(templateName)) {
@@ -53,11 +59,17 @@ export async function GET(
 
 // PUT - حفظ محتوى القالب
 export async function PUT(
-  request: NextRequest,
-  { params }: { params: { template: string } }
+  request: NextRequest
 ) {
   try {
-    const templateName = params.template;
+    const templateName = request.nextUrl.searchParams.get('template');
+    
+    if (!templateName) {
+      return NextResponse.json(
+        { error: 'Template name is required' },
+        { status: 400 }
+      );
+    }
     
     // التحقق من صحة اسم القالب
     if (!['policy', 'report'].includes(templateName)) {
@@ -116,11 +128,17 @@ export async function PUT(
 
 // DELETE - استعادة النسخة الاحتياطية
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { template: string } }
+  request: NextRequest
 ) {
   try {
-    const templateName = params.template;
+    const templateName = request.nextUrl.searchParams.get('template');
+    
+    if (!templateName) {
+      return NextResponse.json(
+        { error: 'Template name is required' },
+        { status: 400 }
+      );
+    }
     
     if (!['policy', 'report'].includes(templateName)) {
       return NextResponse.json(

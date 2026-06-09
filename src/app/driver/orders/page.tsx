@@ -104,7 +104,7 @@ function OrderCard({ order, formatCurrency, getStatusColor, getStatusIcon, onSel
       <div className="flex items-center justify-between mb-3 pb-2 border-b">
         <span className="font-mono text-sm bg-muted px-2 py-1 rounded">#{order.id.slice(-6)}</span>
         <Badge className={cn("gap-1", getStatusColor(order.status))}>
-          <Icon name={getStatusIcon(order.status)} className="h-3 w-3" />
+          <Icon name={getStatusIcon(order.status) as any} className="h-3 w-3" />
           {order.status}
         </Badge>
       </div>
@@ -600,7 +600,7 @@ export default function DriverOrdersPage() {
     return colors[status] || 'bg-gray-500';
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string): any => {
     const icons: Record<string, any> = {
       'تم التوصيل': 'PackageCheck',
       'جاري التوصيل': 'Truck',
@@ -823,7 +823,7 @@ export default function DriverOrdersPage() {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <CardContent className="p-2 pt-0">
-                    <ScrollArea className="w-full" orientation="horizontal">
+                    <ScrollArea className="w-full">
                       <div className="flex gap-3 pb-3">
                         {group.orders.map((order) => (
                           <div key={order.id} className="w-[320px] flex-shrink-0">

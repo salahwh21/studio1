@@ -245,9 +245,6 @@ const OrdersTableComponent = () => {
 
     return (
         <>
-            {/* القائمة العلوية الرئيسية - خارج TooltipProvider */}
-            <AppHeader />
-
             <TooltipProvider>
                 {/* حاوية رئيسية - بدون padding أو margins - استغلال كامل للمساحة */}
                 <div className="flex flex-col h-[calc(100vh-4rem)] bg-white dark:bg-slate-950 overflow-hidden">

@@ -289,7 +289,7 @@ export const ordersStore = create<OrdersState>()(
                     const validation = validateStatusTransition(
                         order.status,
                         newStatus,
-                        driverId || order.driver
+                        driverId || order.driver || undefined
                     );
 
                     if (!validation.valid) {
