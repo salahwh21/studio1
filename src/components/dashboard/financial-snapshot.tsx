@@ -120,10 +120,10 @@ export function FinancialSnapshot({ orders, isDelivered, isCashCollected }: Fina
       formatted: formatCurrency(currentRevenue),
       change: revenueChange,
       icon: 'TrendingUp',
-      color: '#10b981', // emerald
-      bgClass: 'bg-emerald-500',
-      lightBg: 'bg-emerald-50 dark:bg-emerald-950/20',
-      textClass: 'text-emerald-600 dark:text-emerald-400',
+      color: 'hsl(142 72% 29%)',
+      bgClass: 'bg-success',
+      lightBg: 'bg-success/10',
+      textClass: 'text-success',
     },
     {
       label: 'المبلغ المحصّل',
@@ -131,10 +131,10 @@ export function FinancialSnapshot({ orders, isDelivered, isCashCollected }: Fina
       formatted: formatCurrency(currentCollected),
       change: collectedChange,
       icon: 'Banknote',
-      color: '#3b82f6', // blue
-      bgClass: 'bg-blue-500',
-      lightBg: 'bg-blue-50 dark:bg-blue-950/20',
-      textClass: 'text-blue-600 dark:text-blue-400',
+      color: 'hsl(217 91% 60%)',
+      bgClass: 'bg-info',
+      lightBg: 'bg-info/10',
+      textClass: 'text-info',
     },
     {
       label: 'المتبقي للتحصيل',
@@ -142,10 +142,10 @@ export function FinancialSnapshot({ orders, isDelivered, isCashCollected }: Fina
       formatted: formatCurrency(remaining),
       percent: collectionPercent,
       icon: 'Wallet',
-      color: '#f59e0b', // amber
-      bgClass: 'bg-amber-500',
-      lightBg: 'bg-amber-50 dark:bg-amber-950/20',
-      textClass: 'text-amber-600 dark:text-amber-400',
+      color: 'hsl(38 92% 50%)',
+      bgClass: 'bg-warning',
+      lightBg: 'bg-warning/10',
+      textClass: 'text-warning',
     },
   ];
 
@@ -154,8 +154,8 @@ export function FinancialSnapshot({ orders, isDelivered, isCashCollected }: Fina
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-              <Icon name="PieChart" className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="p-2 rounded-lg bg-success/20">
+              <Icon name="PieChart" className="h-5 w-5 text-success" />
             </div>
             <div>
               <CardTitle className="text-base">الملخص المالي</CardTitle>
@@ -265,9 +265,9 @@ export function FinancialSnapshot({ orders, isDelivered, isCashCollected }: Fina
                       <div className="flex items-center gap-1 mt-1.5">
                         <Icon
                           name={metric.change > 0 ? 'TrendingUp' : 'TrendingDown'}
-                          className={cn('h-3 w-3', metric.change > 0 ? 'text-emerald-500' : 'text-red-500')}
+                          className={cn('h-3 w-3', metric.change > 0 ? 'text-success' : 'text-destructive')}
                         />
-                        <span className={cn('text-[11px] font-medium', metric.change > 0 ? 'text-emerald-600' : 'text-red-600')}>
+                        <span className={cn('text-[11px] font-medium', metric.change > 0 ? 'text-success' : 'text-destructive')}>
                           {metric.change > 0 ? '+' : ''}{metric.change}%
                         </span>
                         <span className="text-[11px] text-muted-foreground">
@@ -281,11 +281,11 @@ export function FinancialSnapshot({ orders, isDelivered, isCashCollected }: Fina
                       <div className="flex items-center gap-1.5 mt-1.5">
                         <div className="flex-1 h-1.5 rounded-full bg-muted/30 overflow-hidden">
                           <div
-                            className="h-full rounded-full bg-amber-500 transition-all duration-700"
+                            className="h-full rounded-full bg-warning transition-all duration-700"
                             style={{ width: `${100 - collectionPercent}%` }}
                           />
                         </div>
-                        <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                        <span className="text-[11px] font-semibold text-warning">
                           {100 - collectionPercent}%
                         </span>
                       </div>

@@ -54,13 +54,13 @@ import { FinancialSnapshot } from '@/components/dashboard/financial-snapshot';
 
 
 const chartConfig = {
-    delivered: { label: 'تم التوصيل', color: '#10b981' }, // emerald-500
-    postponed: { label: 'مؤجلة', color: '#f59e0b' }, // amber-500
-    returned: { label: 'مرتجعة', color: '#ef4444' }, // red-500
-    profit: { label: 'الربح', color: '#3b82f6' }, // blue-500
-    'تم التوصيل': { label: 'مكتملة', color: '#10b981' },
-    'جاري التوصيل': { label: 'قيد التوصيل', color: '#3b82f6' },
-    'مرتجع': { label: 'مرتجعة', color: '#ef4444' },
+    delivered: { label: 'تم التوصيل', color: 'hsl(142 72% 29%)' }, // success
+    postponed: { label: 'مؤجلة', color: 'hsl(38 92% 50%)' }, // warning
+    returned: { label: 'مرتجعة', color: 'hsl(0 84.2% 60.2%)' }, // destructive
+    profit: { label: 'الربح', color: 'hsl(217 91% 60%)' }, // info
+    'تم التوصيل': { label: 'مكتملة', color: 'hsl(142 72% 29%)' },
+    'جاري التوصيل': { label: 'قيد التوصيل', color: 'hsl(217 91% 60%)' },
+    'مرتجع': { label: 'مرتجعة', color: 'hsl(0 84.2% 60.2%)' },
 };
 
 
@@ -94,19 +94,14 @@ const isCashCollected = (status: string) => {
 };
 
 const RevenueCard = ({ title, value, iconName, color = 'primary' }: { title: string, value: string | number, iconName: any, color?: string }) => (
-    <Card className="bg-card/80 border border-border/60 shadow-sm">
-        <CardContent className="p-4 sm:p-5 flex items-center justify-center text-center h-full gap-3">
-            <div
-                className={
-                    `p-3 rounded-xl bg-primary/10 text-primary flex items-center justify-center` +
-                    (typeof color === 'string' && color !== 'primary' ? ` text-${color}` : '')
-                }
-            >
+    <Card className="bg-card border border-border/40 shadow-sm hover:shadow-md transition-shadow">
+        <CardContent className="p-5 sm:p-6 flex items-start gap-4">
+            <div className="p-3 rounded-lg bg-primary/15 text-primary flex items-center justify-center flex-shrink-0">
                 <Icon name={iconName} className="w-5 h-5" />
             </div>
-            <div className="space-y-1">
-                <p className="text-xs sm:text-sm text-muted-foreground">{title}</p>
-                <p className="text-lg sm:text-2xl font-bold tracking-tight">{value}</p>
+            <div className="flex-1 space-y-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</p>
+                <p className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{value}</p>
             </div>
         </CardContent>
     </Card>
@@ -622,8 +617,8 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="flex flex-col gap-4">
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-card/50 p-4 rounded-xl border border-border/50 shadow-sm">
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-card/50 p-5 rounded-lg border border-border/40 shadow-sm">
                 <div className="flex flex-col gap-1">
                     <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
                         <Icon name="LayoutDashboard" className="h-5 w-5 text-primary" />
@@ -645,13 +640,13 @@ export default function DashboardPage() {
             </div>
 
             {/* مؤشرات KPI الرئيسية */}
-            <div className="flex items-center justify-between mt-2">
+            <div className="space-y-3">
                 <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
                     <Icon name="Gauge" className="h-4 w-4" />
                     بطاقات الأداء الرئيسية
                 </h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 <KPICard
                     title="إجمالي الإيرادات"
                     value={formatCurrency(totalRevenue)}
@@ -696,18 +691,18 @@ export default function DashboardPage() {
             </div>
 
             {/* ملخص الحالات */}
-            <Card className="border-2 shadow-sm">
+            <Card className="border border-border/40 shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="pb-4">
                     <div className="flex items-center gap-2 mb-2">
-                        <div className="p-2 rounded-lg bg-primary/10">
+                        <div className="p-2 rounded-lg bg-primary/15">
                             <Icon name="ListChecks" className="h-5 w-5 text-primary" />
                         </div>
-                        <CardTitle>ملخص الحالات</CardTitle>
+                        <CardTitle className="text-base">ملخص الحالات</CardTitle>
                     </div>
-                    <CardDescription>عرض جميع حالات الطلبات مع عدد الطلبات لكل حالة</CardDescription>
+                    <CardDescription className="text-sm">عرض جميع حالات الطلبات مع عدد الطلبات لكل حالة</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
                         {/* جميع الحالات فقط (الإيرادات والطلبات موجودة في KPI Cards أعلاه) */}
                         {allStatusesData.map((status) => {
                             const hasOrders = status.count > 0;
@@ -755,13 +750,13 @@ export default function DashboardPage() {
             </Card>
 
             {/* تحصيل الأموال مع السائقين */}
-            <div className="flex items-center justify-between mt-4">
+            <div className="space-y-3">
                 <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
                     <Icon name="Wallet" className="h-4 w-4" />
                     تحصيل الأموال مع السائقين
                 </h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 <KPICard
                     title="مبالغ مع السائقين"
                     value={formatCurrency(cashWithDrivers)}

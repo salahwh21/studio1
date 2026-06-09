@@ -22,22 +22,22 @@ interface GoalsSectionProps {
 
 const goalColors = {
   orders: {
-    bg: 'bg-gradient-to-br from-blue-500 to-blue-600',
-    iconBg: 'bg-blue-50',
-    icon: 'text-blue-600',
-    progress: 'bg-blue-500',
+    bg: 'bg-info',
+    iconBg: 'bg-info/15',
+    icon: 'text-info',
+    progress: 'bg-info',
   },
   revenue: {
-    bg: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
-    iconBg: 'bg-emerald-50',
-    icon: 'text-emerald-600',
-    progress: 'bg-emerald-500',
+    bg: 'bg-success',
+    iconBg: 'bg-success/15',
+    icon: 'text-success',
+    progress: 'bg-success',
   },
   'success-rate': {
-    bg: 'bg-gradient-to-br from-violet-500 to-violet-600',
-    iconBg: 'bg-violet-50',
-    icon: 'text-violet-600',
-    progress: 'bg-violet-500',
+    bg: 'bg-primary',
+    iconBg: 'bg-primary/15',
+    icon: 'text-primary',
+    progress: 'bg-primary',
   },
 };
 
@@ -81,7 +81,7 @@ export function GoalsSection({ goals = [] }: GoalsSectionProps) {
               key={goal.id} 
               className={cn(
                 "overflow-hidden border-2 transition-all hover:shadow-lg",
-                isAchieved ? "border-emerald-500" : "border-border"
+                isAchieved ? "border-success" : "border-border"
               )}
             >
               <CardContent className="p-5">
@@ -103,8 +103,8 @@ export function GoalsSection({ goals = [] }: GoalsSectionProps) {
                       </div>
                     </div>
                     {isAchieved && (
-                      <div className="p-1.5 rounded-full bg-emerald-100">
-                        <Icon name="CheckCircle" className="h-4 w-4 text-emerald-600" />
+                      <div className="p-1.5 rounded-full bg-success/20">
+                        <Icon name="CheckCircle" className="h-4 w-4 text-success" />
                       </div>
                     )}
                   </div>
@@ -115,7 +115,7 @@ export function GoalsSection({ goals = [] }: GoalsSectionProps) {
                       <span className="text-muted-foreground">من {formatValue(goal.target, goal.unit)}</span>
                       <span className={cn(
                         "font-semibold",
-                        isAchieved ? "text-emerald-600" : "text-muted-foreground"
+                        isAchieved ? "text-success" : "text-muted-foreground"
                       )}>
                         {Math.round(progress)}%
                       </span>
@@ -136,16 +136,16 @@ export function GoalsSection({ goals = [] }: GoalsSectionProps) {
                         متبقي: <span className="font-semibold">{formatValue(remaining, goal.unit)}</span>
                       </span>
                     ) : (
-                      <span className="text-xs font-medium text-emerald-600 flex items-center gap-1">
+                      <span className="text-xs font-medium text-success flex items-center gap-1">
                         <Icon name="CheckCircle" className="h-3 w-3" />
                         تم تحقيق الهدف
                       </span>
                     )}
                     <div className={cn(
                       "px-2 py-1 rounded text-xs font-medium",
-                      progress >= 80 ? "bg-emerald-100 text-emerald-700" :
-                      progress >= 50 ? "bg-amber-100 text-amber-700" :
-                      "bg-gray-100 text-gray-700"
+                      progress >= 80 ? "bg-success/20 text-success" :
+                      progress >= 50 ? "bg-warning/20 text-warning" :
+                      "bg-muted text-muted-foreground"
                     )}>
                       {progress >= 80 ? "ممتاز" : progress >= 50 ? "جيد" : "يحتاج تحسين"}
                     </div>

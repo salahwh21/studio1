@@ -48,32 +48,32 @@ export function KPICard({
 }: KPICardProps) {
   const variantStyles: Record<NonNullable<KPICardProps['variant']>, { card: string; badge: string; title: string; subtitle: string; value: string }> = {
     revenue: {
-      card: 'bg-emerald-500 bg-gradient-to-br from-emerald-500 to-emerald-600 border-none text-emerald-50',
-      badge: 'bg-emerald-50/20 text-emerald-50',
-      title: 'text-emerald-50/90',
-      subtitle: 'text-emerald-50/80',
-      value: 'text-emerald-50',
+      card: 'bg-success border-none text-success-foreground',
+      badge: 'bg-success/20 text-success-foreground',
+      title: 'text-success-foreground/90',
+      subtitle: 'text-success-foreground/80',
+      value: 'text-success-foreground',
     },
     orders: {
-      card: 'bg-sky-500 bg-gradient-to-br from-sky-500 to-sky-600 border-none text-sky-50',
-      badge: 'bg-sky-50/20 text-sky-50',
-      title: 'text-sky-50/90',
-      subtitle: 'text-sky-50/80',
-      value: 'text-sky-50',
+      card: 'bg-info border-none text-info-foreground',
+      badge: 'bg-info/20 text-info-foreground',
+      title: 'text-info-foreground/90',
+      subtitle: 'text-info-foreground/80',
+      value: 'text-info-foreground',
     },
     success: {
-      card: 'bg-violet-500 bg-gradient-to-br from-violet-500 to-violet-600 border-none text-violet-50',
-      badge: 'bg-violet-50/20 text-violet-50',
-      title: 'text-violet-50/90',
-      subtitle: 'text-violet-50/80',
-      value: 'text-violet-50',
+      card: 'bg-primary border-none text-primary-foreground',
+      badge: 'bg-primary/20 text-primary-foreground',
+      title: 'text-primary-foreground/90',
+      subtitle: 'text-primary-foreground/80',
+      value: 'text-primary-foreground',
     },
     warning: {
-      card: 'bg-amber-500 bg-gradient-to-br from-amber-400 to-amber-500 border-none text-amber-50',
-      badge: 'bg-amber-50/20 text-amber-50',
-      title: 'text-amber-50/90',
-      subtitle: 'text-amber-50/80',
-      value: 'text-amber-50',
+      card: 'bg-warning border-none text-warning-foreground',
+      badge: 'bg-warning/20 text-warning-foreground',
+      title: 'text-warning-foreground/90',
+      subtitle: 'text-warning-foreground/80',
+      value: 'text-warning-foreground',
     },
   };
 
@@ -99,9 +99,9 @@ export function KPICard({
                   <div className="flex items-center gap-1 mt-2 cursor-help">
                     <Icon
                       name={trend.isPositive ? 'TrendingUp' : 'TrendingDown'}
-                      className={`h-4 w-4 ${trend.isPositive ? 'text-emerald-300' : 'text-red-300'}`}
+                      className={`h-4 w-4 ${trend.isPositive ? 'text-success/80' : 'text-destructive/80'}`}
                     />
-                    <span className={`text-xs font-medium ${trend.isPositive ? 'text-emerald-100' : 'text-red-100'}`}>
+                    <span className={`text-xs font-medium ${trend.isPositive ? 'text-success/90' : 'text-destructive/90'}`}>
                       {trend.isPositive ? '+' : ''}{trend.value}%
                     </span>
                     {trend.period && (
