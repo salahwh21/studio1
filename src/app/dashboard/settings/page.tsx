@@ -65,8 +65,8 @@ const settingsSections: SettingsSection[] = [
     description: 'معلومات الشركة والهوية والمظهر والإعدادات الإقليمية',
     icon: Building2,
     bgColor: 'bg-card',
-    iconBg: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-500',
-    borderColor: 'border-border',
+    iconBg: 'bg-info/20 text-info',
+    borderColor: 'border-border/40',
     items: [
       {
         href: '/dashboard/settings/company',
@@ -100,8 +100,8 @@ const settingsSections: SettingsSection[] = [
     description: 'إدارة الفريق والأدوار والأمان',
     icon: Shield,
     bgColor: 'bg-card',
-    iconBg: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-500',
-    borderColor: 'border-border',
+    iconBg: 'bg-primary/20 text-primary',
+    borderColor: 'border-border/40',
     items: [
       {
         href: '/dashboard/settings/account',
@@ -141,8 +141,8 @@ const settingsSections: SettingsSection[] = [
     description: 'المناطق والأسعار وحالات الطلبات',
     icon: Truck,
     bgColor: 'bg-card',
-    iconBg: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-500',
-    borderColor: 'border-border',
+    iconBg: 'bg-success/20 text-success',
+    borderColor: 'border-border/40',
     items: [
       {
         href: '/dashboard/settings/areas',
@@ -183,8 +183,8 @@ const settingsSections: SettingsSection[] = [
     description: 'إدارة مركزية لجميع تصاميم PDF والتقارير',
     icon: FileText,
     bgColor: 'bg-card',
-    iconBg: 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-500',
-    borderColor: 'border-border',
+    iconBg: 'bg-destructive/20 text-destructive',
+    borderColor: 'border-border/40',
     items: [
       {
         href: '/dashboard/reports',
@@ -201,8 +201,8 @@ const settingsSections: SettingsSection[] = [
     description: 'ربط الخدمات الخارجية والتنبيهات',
     icon: Zap,
     bgColor: 'bg-card',
-    iconBg: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-500',
-    borderColor: 'border-border',
+    iconBg: 'bg-warning/20 text-warning',
+    borderColor: 'border-border/40',
     items: [
       {
         href: '/dashboard/settings/notifications',
@@ -225,8 +225,8 @@ const settingsSections: SettingsSection[] = [
     description: 'أدوات AI لتحسين الإنتاجية',
     icon: Bot,
     bgColor: 'bg-card',
-    iconBg: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-500',
-    borderColor: 'border-border',
+    iconBg: 'bg-info/20 text-info',
+    borderColor: 'border-border/40',
     items: [
       {
         href: '/dashboard/settings/ai-config',
@@ -266,7 +266,7 @@ export default function SettingsPage() {
       <div className="max-w-7xl mx-auto p-6 space-y-8">
 
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-6">
           <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight">مركز الإعدادات</h1>
             <p className="text-muted-foreground">
@@ -379,8 +379,8 @@ export default function SettingsPage() {
                             <Card className="h-full bg-background/80 backdrop-blur-sm hover:bg-background hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group border-2 hover:border-primary">
                               <CardContent className="p-4">
                                 <div className="flex items-start gap-3">
-                                  <div className={`p-2.5 rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 group-hover:${section.iconBg.split(' ')[0]} group-hover:${section.iconBg.split(' ')[1]} transition-colors`}>
-                                    <item.icon className={`h-5 w-5 transition-colors`} />
+                                  <div className={`p-2.5 rounded-lg bg-muted group-hover:${section.iconBg} transition-colors`}>
+                                    <item.icon className={`h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors`} />
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
@@ -388,7 +388,7 @@ export default function SettingsPage() {
                                         {item.title}
                                       </h3>
                                       {item.badge && (
-                                        <Badge className="text-[10px] px-1.5 py-0 bg-emerald-500">
+                                        <Badge className="text-[10px] px-1.5 py-0 bg-success">
                                           {item.badge}
                                         </Badge>
                                       )}
@@ -416,10 +416,10 @@ export default function SettingsPage() {
         )}
 
         {/* Help Card */}
-        <Card className="overflow-hidden border-2 border-primary/20">
-          <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6">
+        <Card className="overflow-hidden border-2 border-success/20">
+          <div className="bg-gradient-to-r from-success/10 via-success/5 to-transparent p-6">
             <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl bg-primary shadow-lg">
+              <div className="p-3 rounded-xl bg-success shadow-lg">
                 <MessageSquareQuote className="h-6 w-6 text-white" />
               </div>
               <div className="flex-1">
@@ -428,7 +428,7 @@ export default function SettingsPage() {
                   فريق الدعم الفني جاهز لمساعدتك على مدار الساعة
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  <Button size="sm" className="gap-2">
+                  <Button size="sm" className="gap-2 bg-success hover:bg-success/90">
                     <MessageSquareQuote className="h-4 w-4" />
                     تواصل مع الدعم
                   </Button>
