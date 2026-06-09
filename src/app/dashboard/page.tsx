@@ -617,8 +617,8 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="flex flex-col gap-4">
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-card/50 p-4 rounded-xl border border-border/50 shadow-sm">
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-card/50 p-5 rounded-lg border border-border/40 shadow-sm">
                 <div className="flex flex-col gap-1">
                     <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
                         <Icon name="LayoutDashboard" className="h-5 w-5 text-primary" />
@@ -640,13 +640,13 @@ export default function DashboardPage() {
             </div>
 
             {/* مؤشرات KPI الرئيسية */}
-            <div className="flex items-center justify-between mt-2">
+            <div className="space-y-3">
                 <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
                     <Icon name="Gauge" className="h-4 w-4" />
                     بطاقات الأداء الرئيسية
                 </h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 <KPICard
                     title="إجمالي الإيرادات"
                     value={formatCurrency(totalRevenue)}
@@ -691,18 +691,18 @@ export default function DashboardPage() {
             </div>
 
             {/* ملخص الحالات */}
-            <Card className="border-2 shadow-sm">
+            <Card className="border border-border/40 shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="pb-4">
                     <div className="flex items-center gap-2 mb-2">
-                        <div className="p-2 rounded-lg bg-primary/10">
+                        <div className="p-2 rounded-lg bg-primary/15">
                             <Icon name="ListChecks" className="h-5 w-5 text-primary" />
                         </div>
-                        <CardTitle>ملخص الحالات</CardTitle>
+                        <CardTitle className="text-base">ملخص الحالات</CardTitle>
                     </div>
-                    <CardDescription>عرض جميع حالات الطلبات مع عدد الطلبات لكل حالة</CardDescription>
+                    <CardDescription className="text-sm">عرض جميع حالات الطلبات مع عدد الطلبات لكل حالة</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
                         {/* جميع الحالات فقط (الإيرادات والطلبات موجودة في KPI Cards أعلاه) */}
                         {allStatusesData.map((status) => {
                             const hasOrders = status.count > 0;
@@ -750,13 +750,13 @@ export default function DashboardPage() {
             </Card>
 
             {/* تحصيل الأموال مع السائقين */}
-            <div className="flex items-center justify-between mt-4">
+            <div className="space-y-3">
                 <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
                     <Icon name="Wallet" className="h-4 w-4" />
                     تحصيل الأموال مع السائقين
                 </h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 <KPICard
                     title="مبالغ مع السائقين"
                     value={formatCurrency(cashWithDrivers)}
