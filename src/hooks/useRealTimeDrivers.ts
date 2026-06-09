@@ -22,10 +22,10 @@ export const useRealTimeDrivers = () => {
   }, []);
 
   useEffect(() => {
-    socket.on('driver_status_update', handleDriverStatusUpdate);
+    socket?.on('driver_status_update', handleDriverStatusUpdate);
 
     return () => {
-      socket.off('driver_status_update', handleDriverStatusUpdate);
+      socket?.off('driver_status_update', handleDriverStatusUpdate);
     };
   }, [handleDriverStatusUpdate]);
 
@@ -35,8 +35,10 @@ export const useRealTimeDrivers = () => {
       console.log(`📍 Tracking order ${orderId}:`, data);
       callback(data);
     };
-    socket.on(`order_tracking_${orderId}`, handler);
-    return () => socket.off(`order_tracking_${orderId}`, handler);
+    socket?.on(`order_tracking_${orderId}`, handler);
+    return () => {
+        socket?.off(`order_tracking_${orderId}`, handler);
+    };
   }, []);
 
   return { trackOrderLocation, handleDriverLocationUpdate, handleDriverStatusUpdate };
