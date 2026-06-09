@@ -137,7 +137,7 @@ export default function RegionalSettingsPage() {
             />
 
             {/* Live Preview Card */}
-            <Card className="bg-gradient-to-l from-primary/5 via-primary/10 to-primary/5 border-primary/20">
+            <Card className="shadow-sm">
                 <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -162,8 +162,8 @@ export default function RegionalSettingsPage() {
 
             <div className="grid lg:grid-cols-2 gap-6">
                 {/* Currency & Numbers Card */}
-                <Card className="bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
-                    <CardHeader className="border-b bg-emerald-500/5">
+                <Card className="shadow-sm">
+                    <CardHeader className="border-b">
                         <div className="flex items-center gap-3">
                             <div className="p-2.5 rounded-xl bg-emerald-500 text-white shadow-lg">
                                 <Icon name="DollarSign" className="h-5 w-5" />
@@ -284,8 +284,8 @@ export default function RegionalSettingsPage() {
                 </Card>
 
                 {/* Time & Language Card */}
-                <Card className="bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
-                    <CardHeader className="border-b bg-blue-500/5">
+                <Card className="shadow-sm">
+                    <CardHeader className="border-b">
                         <div className="flex items-center gap-3">
                             <div className="p-2.5 rounded-xl bg-blue-500 text-white shadow-lg">
                                 <Icon name="Clock" className="h-5 w-5" />

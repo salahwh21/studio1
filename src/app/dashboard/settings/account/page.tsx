@@ -162,7 +162,7 @@ export default function AccountSettingsPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-        <Card className="border-r-4 border-r-purple-500">
+        <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -176,7 +176,7 @@ export default function AccountSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-r-4 border-r-blue-500">
+        <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -190,7 +190,7 @@ export default function AccountSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-r-4 border-r-green-500">
+        <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -204,7 +204,7 @@ export default function AccountSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-r-4 border-r-orange-500">
+        <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -269,7 +269,7 @@ export default function AccountSettingsPage() {
           {/* Account Info Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
                 <User className="h-5 w-5 text-primary" />
                 معلومات الحساب
               </CardTitle>
@@ -318,7 +318,7 @@ export default function AccountSettingsPage() {
           {/* Security Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
                 <KeyRound className="h-5 w-5 text-primary" />
                 أمان الحساب
               </CardTitle>
@@ -364,7 +364,7 @@ export default function AccountSettingsPage() {
           {/* Preferences Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
                 <Settings className="h-5 w-5 text-primary" />
                 التفضيلات
               </CardTitle>

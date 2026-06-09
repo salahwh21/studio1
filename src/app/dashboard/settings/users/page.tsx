@@ -261,14 +261,9 @@ const UserDialog = ({
 }
 
 const UserCard = ({ user, role, isSelected, onSelectionChange }: { user: User; role?: Role; isSelected: boolean; onSelectionChange: (id: string, checked: boolean) => void; }) => {
-    // Determine distinct color based on role group
-    const roleColorClass = user.roleId === 'merchant' ? 'border-r-blue-500'
-        : user.roleId === 'driver' ? 'border-r-emerald-500'
-            : 'border-r-purple-500';
-
     return (
         <Card
-            className={`hover:border-primary transition-all duration-200 border-r-4 ${roleColorClass} data-[state=checked]:border-primary data-[state=checked]:ring-2 data-[state=checked]:ring-primary`}
+            className={`hover:border-primary hover:shadow-md transition-all duration-200 data-[state=checked]:border-primary data-[state=checked]:ring-2 data-[state=checked]:ring-primary`}
             data-state={isSelected ? 'checked' : 'unchecked'}
         >
             <CardContent className="p-3 flex justify-between items-center">

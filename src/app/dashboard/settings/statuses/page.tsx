@@ -128,35 +128,33 @@ const StatusDialog = ({
 
 
 const StatusCard = ({ status }: { status: Status; onDelete: (id: string) => void; }) => {
-    const gradientStyle = {
-        background: `linear-gradient(to bottom right, ${status.color}, ${chroma(status.color).darken(0.6).hex()})`,
-    };
-
     return (
         <Card
-            className="hover:shadow-lg transition-all duration-300 ease-in-out flex flex-col text-white overflow-hidden"
-            style={gradientStyle}
+            className="hover:shadow-md transition-all duration-300 ease-in-out flex flex-col overflow-hidden bg-card border-r-4"
+            style={{ borderRightColor: status.color }}
         >
-            <CardHeader className="flex-grow flex items-center justify-center p-4">
+            <CardHeader className="flex-grow flex items-center justify-center p-6 border-b">
                 <Link href={`/dashboard/settings/statuses/${status.id}`} className="space-y-2 flex-1 cursor-pointer w-full text-center">
-                    <div className="inline-flex flex-col items-center gap-2">
-                        <Icon name={status.icon as any} className="h-8 w-8" />
-                        <span className="text-lg font-bold">{status.name}</span>
+                    <div className="inline-flex flex-col items-center gap-3">
+                        <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800">
+                            <Icon name={status.icon as any} className="h-8 w-8" style={{ color: status.color }} />
+                        </div>
+                        <span className="text-lg font-bold text-foreground">{status.name}</span>
+                        <span className="text-xs text-muted-foreground font-mono">{status.code}</span>
                     </div>
                 </Link>
             </CardHeader>
-            <CardContent className="mt-auto p-3 bg-black/20">
-                <div className="flex items-center justify-between rounded-md p-2">
-                    <Label htmlFor={`status-active-${status.id}`} className="text-sm flex items-center gap-2 cursor-default text-white/80">
+            <CardContent className="mt-auto p-3 bg-slate-50/50 dark:bg-slate-900/50">
+                <div className="flex items-center justify-between rounded-md px-2 py-1">
+                    <Label htmlFor={`status-active-${status.id}`} className="text-sm flex items-center gap-2 cursor-default text-muted-foreground">
                         <Checkbox
                             id={`status-active-${status.id}`}
                             checked={status.isActive}
                             disabled={true}
-                            className="border-white/50 data-[state=checked]:bg-white data-[state=checked]:text-black"
                         />
                         الحالة
                     </Label>
-                    <Badge variant={status.isActive ? 'default' : 'secondary'} className={status.isActive ? 'bg-white/90 text-black' : 'bg-white/20 text-white/80'}>
+                    <Badge variant={status.isActive ? 'default' : 'secondary'}>
                         {status.isActive ? 'مفعلة' : 'غير مفعلة'}
                     </Badge>
                 </div>
