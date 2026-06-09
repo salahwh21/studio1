@@ -54,13 +54,13 @@ import { FinancialSnapshot } from '@/components/dashboard/financial-snapshot';
 
 
 const chartConfig = {
-    delivered: { label: 'تم التوصيل', color: '#10b981' }, // emerald-500
-    postponed: { label: 'مؤجلة', color: '#f59e0b' }, // amber-500
-    returned: { label: 'مرتجعة', color: '#ef4444' }, // red-500
-    profit: { label: 'الربح', color: '#3b82f6' }, // blue-500
-    'تم التوصيل': { label: 'مكتملة', color: '#10b981' },
-    'جاري التوصيل': { label: 'قيد التوصيل', color: '#3b82f6' },
-    'مرتجع': { label: 'مرتجعة', color: '#ef4444' },
+    delivered: { label: 'تم التوصيل', color: 'hsl(142 72% 29%)' }, // success
+    postponed: { label: 'مؤجلة', color: 'hsl(38 92% 50%)' }, // warning
+    returned: { label: 'مرتجعة', color: 'hsl(0 84.2% 60.2%)' }, // destructive
+    profit: { label: 'الربح', color: 'hsl(217 91% 60%)' }, // info
+    'تم التوصيل': { label: 'مكتملة', color: 'hsl(142 72% 29%)' },
+    'جاري التوصيل': { label: 'قيد التوصيل', color: 'hsl(217 91% 60%)' },
+    'مرتجع': { label: 'مرتجعة', color: 'hsl(0 84.2% 60.2%)' },
 };
 
 
@@ -94,19 +94,14 @@ const isCashCollected = (status: string) => {
 };
 
 const RevenueCard = ({ title, value, iconName, color = 'primary' }: { title: string, value: string | number, iconName: any, color?: string }) => (
-    <Card className="bg-card/80 border border-border/60 shadow-sm">
-        <CardContent className="p-4 sm:p-5 flex items-center justify-center text-center h-full gap-3">
-            <div
-                className={
-                    `p-3 rounded-xl bg-primary/10 text-primary flex items-center justify-center` +
-                    (typeof color === 'string' && color !== 'primary' ? ` text-${color}` : '')
-                }
-            >
+    <Card className="bg-card border border-border/40 shadow-sm hover:shadow-md transition-shadow">
+        <CardContent className="p-5 sm:p-6 flex items-start gap-4">
+            <div className="p-3 rounded-lg bg-primary/15 text-primary flex items-center justify-center flex-shrink-0">
                 <Icon name={iconName} className="w-5 h-5" />
             </div>
-            <div className="space-y-1">
-                <p className="text-xs sm:text-sm text-muted-foreground">{title}</p>
-                <p className="text-lg sm:text-2xl font-bold tracking-tight">{value}</p>
+            <div className="flex-1 space-y-1">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</p>
+                <p className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{value}</p>
             </div>
         </CardContent>
     </Card>
