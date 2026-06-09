@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_IO_URL || 'http://localhost:3001';
+const isBrowser = typeof window !== 'undefined';
+const SOCKET_URL = isBrowser ? `${window.location.protocol}//${window.location.hostname}:5001` : 'http://localhost:5001';
 
 export let socket: Socket | null = null;
 
@@ -8,7 +9,7 @@ export const initSocket = () => {
   if (socket) return socket;
   
   // Disable Socket.IO if backend is not available
-  if (!SOCKET_URL || SOCKET_URL.includes('localhost')) {
+  if (!SOCKET_URL) {
     console.warn('⚠️ Socket.IO disabled - backend server not available');
     return null;
   }

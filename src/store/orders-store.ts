@@ -243,7 +243,7 @@ export const ordersStore = create<OrdersState>()(
                         } catch (error: any) {
                             retryCount++;
                             const msg = error?.message || String(error);
-                            const isAuthError = msg.includes('Access token') || msg.includes('401') || msg.includes('Unauthorized');
+                            const isAuthError = msg.includes('Access token') || msg.includes('401') || msg.includes('403') || msg.includes('Unauthorized') || msg.includes('Invalid or expired token');
                             if (isAuthError) {
                                 console.log('🔐 Authentication required or backend unavailable - skipping orders load');
                                 set((state) => {

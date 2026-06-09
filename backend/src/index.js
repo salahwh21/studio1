@@ -1,4 +1,5 @@
 const express = require('express');
+// Force nodemon restart
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
@@ -62,8 +63,8 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.) in development only
-    if (!origin && process.env.NODE_ENV === 'development') {
+    // Allow any origin in development to support testing on local network IPs
+    if (process.env.NODE_ENV === 'development') {
       return callback(null, true);
     }
     if (allowedOrigins.indexOf(origin) !== -1 || !origin) {

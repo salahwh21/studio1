@@ -73,6 +73,19 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
+  webpack: (config) => {
+    config.ignoreWarnings = [
+      function ignoreSourcemapsloaderWarnings(warning) {
+        return (
+          warning.module &&
+          warning.module.resource.includes('node_modules') &&
+          warning.details &&
+          warning.details.includes('source-map-loader')
+        );
+      },
+    ];
+    return config;
+  },
 };
 
 export default withBundleAnalyzer(nextConfig);

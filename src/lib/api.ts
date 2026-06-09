@@ -1,4 +1,5 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const isBrowser = typeof window !== 'undefined';
+const API_URL = isBrowser ? `${window.location.protocol}//${window.location.hostname}:5001/api` : 'http://localhost:5001/api';
 
 // Note: JWT is now stored in httpOnly cookie and sent automatically with credentials: 'include'
 const defaultFetchOptions: RequestInit = {
