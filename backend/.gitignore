@@ -26,3 +26,7 @@ dist/
 
 # Docker
 .docker/
+
+# temp files
+temp/
+backups/
