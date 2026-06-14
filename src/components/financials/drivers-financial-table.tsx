@@ -465,6 +465,15 @@ export const DriversFinancialTable = () => {
                                                                 <Icon name="Eye" className="h-4 w-4" />
                                                             </Link>
                                                         </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                            onClick={() => window.open(`/api/reports/driver/${driver.id}`, '_blank')}
+                                                            title="تحميل كشف PDF"
+                                                        >
+                                                            <Icon name="FileDown" className="h-4 w-4" />
+                                                        </Button>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
