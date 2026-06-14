@@ -119,8 +119,11 @@ app.use('/api/dashboard', apiLimiter, dashboardRoutes);
 app.use('/api/drivers', apiLimiter, driversRoutes);
 app.use('/api/settings', apiLimiter, settingsRoutes);
 app.use('/api/notifications', apiLimiter, require('./routes/notifications'));
+app.use('/api/notifications', apiLimiter, require('./routes/push-notifications'));
 app.use('/api/backup', apiLimiter, require('./routes/backup'));
 app.use('/api/export-sql', apiLimiter, require('./routes/export-sql'));
+app.use('/api/reports', apiLimiter, require('./routes/reports-pdf'));
+app.use('/api/companies', apiLimiter, require('./routes/companies'));
 app.use('/api/auth', apiLimiter, require('./routes/password-reset'));
 
 app.use((err, req, res, next) => {

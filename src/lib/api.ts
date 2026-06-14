@@ -72,6 +72,31 @@ export const api = {
     return handleResponse(res);
   },
 
+  getDriverPerformance: async () => {
+    const res = await fetch(`${API_URL}/dashboard/driver-performance`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  getHourlyOrders: async () => {
+    const res = await fetch(`${API_URL}/dashboard/hourly-orders`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  getTopAreas: async () => {
+    const res = await fetch(`${API_URL}/dashboard/top-areas`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  getTopMerchants: async () => {
+    const res = await fetch(`${API_URL}/dashboard/top-merchants`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  getWeeklyComparison: async () => {
+    const res = await fetch(`${API_URL}/dashboard/weekly-comparison`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
   getOrders: async (filters = {}) => {
     const params = new URLSearchParams(filters as any);
     const res = await fetch(`${API_URL}/orders?${params}`, defaultFetchOptions);

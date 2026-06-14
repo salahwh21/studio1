@@ -10,6 +10,7 @@ import { ordersStore } from '@/store/orders-store';
 import { useAuth } from '@/contexts/AuthContext';
 import { connectSocket, disconnectSocket, onNewOrder } from '@/lib/socket';
 import { useToast } from '@/hooks/use-toast';
+import { useServiceWorker } from '@/hooks/use-service-worker';
 
 const ADMIN_ROLES = ['admin', 'ops', 'accountant', 'branch', 'customer_service'];
 
@@ -19,6 +20,9 @@ const loadedForUser = new Set<string>();
 function DataLoader({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Register Service Worker for PWA
+  useServiceWorker();
 
   useEffect(() => {
     if (!user) return;

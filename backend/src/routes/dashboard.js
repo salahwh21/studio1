@@ -106,4 +106,140 @@ router.get('/orders-by-status', async (req, res) => {
   }
 });
 
+// تحليلات أداء السائقين الأسبوعية
+router.get('/driver-performance', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT
+        u.name as driver_name,
+        COUNT(o.id) as total_orders,
+        SUM(CASE WHEN o.status = 'تم التوصيل' THEN 1 ELSE 0 END) as delivered,
+        SUM(CASE WHEN o.status LIKE '%مرتجع%' OR o.status LIKE '%مرجع%' THEN 1 ELSE 0 END) as returned,
+        ROUND(AVG(CASE WHEN o.status = 'تم التوصيل' THEN 100.0 ELSE 0 END), 1) as success_rate,
+        COALESCE(SUM(o.delivery_fee), 0) as total_revenue
+      FROM orders o
+      JOIN users u ON o.driver = u.name
+      WHERE o.created_at >= CURRENT_DATE - INTERVAL '7 days'
+        AND u.role_id = 'driver'
+      GROUP BY u.name
+      ORDER BY total_orders DESC
+      LIMIT 10`
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Driver performance error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// تحليلات الطلبات بالساعة (اليوم)
+router.get('/hourly-orders', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT
+        EXTRACT(HOUR FROM created_at) as hour,
+        COUNT(*) as orders,
+        SUM(CASE WHEN status = 'تم التوصيل' THEN 1 ELSE 0 END) as delivered
+      FROM orders
+      WHERE DATE(created_at) = CURRENT_DATE
+      GROUP BY EXTRACT(HOUR FROM created_at)
+      ORDER BY hour`
+    );
+
+    // Fill missing hours with 0
+    const hourlyData = Array.from({ length: 24 }, (_, i) => ({
+      hour: i,
+      orders: 0,
+      delivered: 0,
+    }));
+
+    result.rows.forEach((row) => {
+      const h = parseInt(row.hour);
+      hourlyData[h] = {
+        hour: h,
+        orders: parseInt(row.orders),
+        delivered: parseInt(row.delivered),
+      };
+    });
+
+    res.json(hourlyData);
+  } catch (error) {
+    console.error('Hourly orders error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// تحليلات المناطق الأكثر نشاطاً
+router.get('/top-areas', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT
+        COALESCE(region, city, 'غير محدد') as area,
+        COUNT(*) as total_orders,
+        SUM(CASE WHEN status = 'تم التوصيل' THEN 1 ELSE 0 END) as delivered,
+        COALESCE(SUM(cod), 0) as total_cod
+      FROM orders
+      WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
+      GROUP BY COALESCE(region, city, 'غير محدد')
+      ORDER BY total_orders DESC
+      LIMIT 10`
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Top areas error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// تحليلات التجار الأكثر نشاطاً
+router.get('/top-merchants', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT
+        merchant as merchant_name,
+        COUNT(*) as total_orders,
+        SUM(CASE WHEN status = 'تم التوصيل' THEN 1 ELSE 0 END) as delivered,
+        COALESCE(SUM(cod), 0) as total_cod,
+        COALESCE(SUM(delivery_fee), 0) as total_fees
+      FROM orders
+      WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
+        AND merchant IS NOT NULL
+      GROUP BY merchant
+      ORDER BY total_orders DESC
+      LIMIT 10`
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Top merchants error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ملخص أسبوعي للمقارنة
+router.get('/weekly-comparison', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT
+        DATE(created_at) as date,
+        COUNT(*) as orders,
+        SUM(CASE WHEN status = 'تم التوصيل' THEN 1 ELSE 0 END) as delivered,
+        SUM(CASE WHEN status LIKE '%مرتجع%' OR status LIKE '%مرجع%' THEN 1 ELSE 0 END) as returned,
+        COALESCE(SUM(cod), 0) as total_cod,
+        COALESCE(SUM(delivery_fee), 0) as total_fees
+      FROM orders
+      WHERE created_at >= CURRENT_DATE - INTERVAL '14 days'
+      GROUP BY DATE(created_at)
+      ORDER BY date DESC`
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Weekly comparison error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

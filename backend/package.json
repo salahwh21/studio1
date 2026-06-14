@@ -28,7 +28,8 @@
     "puppeteer": "^24.34.0",
     "resend": "^6.12.4",
     "socket.io": "^4.8.1",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

@@ -165,39 +165,81 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
     }, [drivers, selectedDriverId, onSelectDriverInMap]);
 
 
-     // Effect to update order markers
+     // Effect to update order markers with viewport-based lazy loading
     useEffect(() => {
+        const map = mapRef.current;
         const clusterGroup = orderClusterGroupRef.current;
-        if (!clusterGroup) return;
-        
-        clusterGroup.clearLayers();
+        if (!clusterGroup || !map) return;
 
-        orders.forEach(order => {
-            if (!order.lat || !order.lng) return;
+        // Filter orders with valid coordinates
+        const validOrders = orders.filter(o => o.lat && o.lng);
 
-            const isHighlighted = highlightedOrder?.id === order.id;
-            const icon = createOrderIcon(getStatusColor(order.status), isHighlighted);
+        // Function to update visible markers based on viewport
+        const updateVisibleMarkers = () => {
+            const bounds = map.getBounds();
+            const zoom = map.getZoom();
 
-            const marker = L.marker([order.lat, order.lng], { icon, title: order.id, zIndexOffset: isHighlighted ? 1000 : 0 })
-                .bindTooltip(`${order.recipient} - ${order.id}`)
-                .on('click', () => onOrderPositionSelect(order));
+            clusterGroup.clearLayers();
 
-            clusterGroup.addLayer(marker);
-        });
-        
-        if (highlightedOrder?.lat && highlightedOrder?.lng && mapRef.current) {
-            mapRef.current.flyTo([highlightedOrder.lat, highlightedOrder.lng], 15);
-             const markerToAnimate = (clusterGroup.getLayers() as L.Marker[]).find(l => l.options.title === highlightedOrder.id);
-             if (markerToAnimate && (markerToAnimate as any)._icon) {
-                 (markerToAnimate as any)._icon.style.transition = 'transform 0.3s ease-in-out';
-                 (markerToAnimate as any)._icon.style.transform = 'scale(1.8)';
-                 setTimeout(() => {
-                     if((markerToAnimate as any)._icon) {
-                        (markerToAnimate as any)._icon.style.transform = 'scale(1.5)';
-                     }
-                 }, 300);
-             }
+            // At low zoom, only show a sample to avoid overwhelming
+            const maxMarkers = zoom < 10 ? 100 : zoom < 13 ? 500 : validOrders.length;
+            let added = 0;
+
+            for (const order of validOrders) {
+                if (added >= maxMarkers) break;
+
+                const latLng = L.latLng(order.lat!, order.lng!);
+
+                // Only add markers within extended viewport (with padding for smooth panning)
+                if (bounds.pad(0.5).contains(latLng) || highlightedOrder?.id === order.id) {
+                    const isHighlighted = highlightedOrder?.id === order.id;
+                    const icon = createOrderIcon(getStatusColor(order.status), isHighlighted);
+
+                    const marker = L.marker(latLng, { icon, title: order.id, zIndexOffset: isHighlighted ? 1000 : 0 })
+                        .bindTooltip(`${order.recipient} - ${order.id}`)
+                        .on('click', () => onOrderPositionSelect(order));
+
+                    clusterGroup.addLayer(marker);
+                    added++;
+                }
+            }
+        };
+
+        // Initial load
+        updateVisibleMarkers();
+
+        // Update on map move/zoom (debounced)
+        let timeout: NodeJS.Timeout;
+        const onMoveEnd = () => {
+            clearTimeout(timeout);
+            timeout = setTimeout(updateVisibleMarkers, 150);
+        };
+
+        map.on('moveend', onMoveEnd);
+        map.on('zoomend', onMoveEnd);
+
+        // Handle highlighted order
+        if (highlightedOrder?.lat && highlightedOrder?.lng) {
+            map.flyTo([highlightedOrder.lat, highlightedOrder.lng], 15);
+            setTimeout(() => {
+                const markerToAnimate = (clusterGroup.getLayers() as L.Marker[]).find(l => l.options.title === highlightedOrder.id);
+                if (markerToAnimate && (markerToAnimate as any)._icon) {
+                    (markerToAnimate as any)._icon.style.transition = 'transform 0.3s ease-in-out';
+                    (markerToAnimate as any)._icon.style.transform = 'scale(1.8)';
+                    setTimeout(() => {
+                        if((markerToAnimate as any)._icon) {
+                            (markerToAnimate as any)._icon.style.transform = 'scale(1.5)';
+                        }
+                    }, 300);
+                }
+            }, 500);
         }
+
+        return () => {
+            clearTimeout(timeout);
+            map.off('moveend', onMoveEnd);
+            map.off('zoomend', onMoveEnd);
+        };
 
     }, [orders, highlightedOrder, statuses, onOrderPositionSelect]);
 
