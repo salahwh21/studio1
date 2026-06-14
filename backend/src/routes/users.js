@@ -6,7 +6,7 @@ const { authenticateToken, authorizeRoles } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, authorizeRoles('admin', 'customer_service'), async (req, res) => {
   try {
     const { roleId, search, page, limit } = req.query;
 
@@ -27,15 +27,13 @@ router.get('/', authenticateToken, async (req, res) => {
     const countResult = await db.query(`SELECT COUNT(*) FROM users ${whereClause}`, params);
     const totalCount = parseInt(countResult.rows[0].count);
 
-    // Build query - only add pagination if limit is provided
+    const effectiveLimit = parseInt(limit) || 50;
+    const offset = page ? parseInt(page) * effectiveLimit : 0;
+
     let query = `SELECT id, name, email, store_name, role_id, avatar, whatsapp, price_list_id, created_at
-       FROM users ${whereClause} ORDER BY created_at DESC`;
-    
-    if (limit) {
-      const offset = page ? parseInt(page) * parseInt(limit) : 0;
-      query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
-      params.push(parseInt(limit), offset);
-    }
+       FROM users ${whereClause} ORDER BY created_at DESC
+       LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
+    params.push(effectiveLimit, offset);
 
     const result = await db.query(query, params);
 
@@ -126,7 +124,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/', authenticateToken, [
+router.post('/', authenticateToken, authorizeRoles('admin'), [
   body('name').notEmpty().withMessage('Name is required'),
   body('email').notEmpty().withMessage('Email is required'),
   body('roleId').notEmpty().withMessage('Role is required')
@@ -137,7 +135,11 @@ router.post('/', authenticateToken, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, roleId, storeName, avatar, whatsapp, priceListId, password = '123' } = req.body;
+    const { name, email, roleId, storeName, avatar, whatsapp, priceListId, password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: 'كلمة المرور مطلوبة ويجب أن تكون 6 أحرف على الأقل' });
+    }
 
     const existing = await db.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existing.rows.length > 0) {
@@ -171,7 +173,7 @@ router.post('/', authenticateToken, [
   }
 });
 
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, email, roleId, storeName, avatar, whatsapp, priceListId, password } = req.body;
@@ -197,7 +199,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
-      updateQuery += `, password = $8 WHERE id = $9 RETURNING *`;
+      updateQuery += `, password = $8, token_version = COALESCE(token_version, 1) + 1 WHERE id = $9 RETURNING *`;
       params.push(hashedPassword, id);
     } else {
       updateQuery += ` WHERE id = $8 RETURNING *`;
@@ -225,7 +227,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   try {
     const currentResult = await db.query('SELECT role_id FROM users WHERE id = $1', [req.params.id]);
     if (currentResult.rows.length === 0) {
@@ -243,7 +245,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/bulk-delete', authenticateToken, [
+router.post('/bulk-delete', authenticateToken, authorizeRoles('admin'), [
   body('userIds').isArray().withMessage('User IDs must be an array')
 ], async (req, res) => {
   try {

@@ -29,7 +29,6 @@ export class GlobalErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Global Error Boundary caught:', error, errorInfo);
-    this.setState({ errorInfo });
     
     // Log to error tracking service in production
     if (process.env.NODE_ENV === 'production') {

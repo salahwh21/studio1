@@ -18,7 +18,7 @@ export const CopyableCell = ({ value, children }: { value: string | number, chil
             <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-1 top-1 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-all bg-white/95 hover:bg-white shadow-md rounded border border-slate-200 z-[5]"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-all bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 shadow-sm rounded border border-slate-200 dark:border-slate-600 z-[5] text-slate-500 dark:text-slate-300"
                 onClick={handleCopy}
             >
                 <Clipboard className="h-3 w-3" />

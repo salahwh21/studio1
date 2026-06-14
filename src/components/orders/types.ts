@@ -14,4 +14,5 @@ export type ModalState =
     | { type: 'assignDriver' }
     | { type: 'changeStatus', orderId: string, currentStatus: string, currentDriver?: string }
     | { type: 'print' }
-    | { type: 'export' };
+    | { type: 'export' }
+    | { type: 'add' };

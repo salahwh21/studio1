@@ -26,6 +26,7 @@ import { updateThemeAction } from '@/app/actions/update-theme';
 import { useSettings } from '@/contexts/SettingsContext';
 import { SettingsHeader } from '@/components/settings-header';
 import { cn } from '@/lib/utils';
+import { api } from '@/lib/api';
 
 // Theme Presets
 const themePresets = [
@@ -250,22 +251,18 @@ export default function ThemeCustomizationPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    // Load saved theme from localStorage
-    const saved = localStorage.getItem('themeSettings');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.colors) setColors(parsed.colors);
-        if (parsed.typography) setTypography(parsed.typography);
-        if (parsed.layout) setLayout(parsed.layout);
-        if (parsed.effects) setEffects(parsed.effects);
-        if (parsed.sidebarColors) setSidebarColors(parsed.sidebarColors);
-        if (parsed.chartColors) setChartColors(parsed.chartColors);
-        if (parsed.selectedPreset) setSelectedPreset(parsed.selectedPreset);
-      } catch (e) {
-        console.error('Failed to parse saved theme');
+    api.getPreferences().then((prefs: any) => {
+      const saved = prefs?.theme;
+      if (saved) {
+        if (saved.colors) setColors(saved.colors);
+        if (saved.typography) setTypography(saved.typography);
+        if (saved.layout) setLayout(saved.layout);
+        if (saved.effects) setEffects(saved.effects);
+        if (saved.sidebarColors) setSidebarColors(saved.sidebarColors);
+        if (saved.chartColors) setChartColors(saved.chartColors);
+        if (saved.selectedPreset) setSelectedPreset(saved.selectedPreset);
       }
-    }
+    }).catch(() => {});
   }, []);
 
   // Apply preset
@@ -371,7 +368,7 @@ export default function ThemeCustomizationPage() {
     setIsSaving(true);
     try {
       const theme = { colors, typography, layout, effects, sidebarColors, chartColors, selectedPreset };
-      localStorage.setItem('themeSettings', JSON.stringify(theme));
+      await api.savePreferences({ theme });
       
       // Apply to CSS variables
       const root = document.documentElement;

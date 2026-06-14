@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -77,9 +78,8 @@ export default function IntegrationsPage() {
     const [integrationToDelete, setIntegrationToDelete] = useState<Connection | null>(null);
 
     useEffect(() => {
-        try {
-            const saved = localStorage.getItem('user-integrations');
-            let userConnections: Connection[] = saved ? JSON.parse(saved) : [];
+        api.getPreferences().then((prefs: any) => {
+            let userConnections: Connection[] = Array.isArray(prefs?.integrations) ? prefs.integrations : [];
 
             if (userConnections.length === 0) {
                 userConnections.push({
@@ -102,15 +102,12 @@ export default function IntegrationsPage() {
             }
 
             setConnections(userConnections);
-
-        } catch (e) {
-            console.error("Failed to parse integrations from localStorage", e);
-        }
+        }).catch(() => {});
     }, []);
 
     const saveConnections = (newConnections: Connection[]) => {
         setConnections(newConnections);
-        localStorage.setItem('user-integrations', JSON.stringify(newConnections));
+        api.savePreferences({ integrations: newConnections as any }).catch(() => {});
     };
 
     const handleActionClick = (integrationId: string) => {

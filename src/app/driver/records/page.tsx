@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useOrdersStore } from '@/store/orders-store';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useDriverOrders } from '@/hooks/use-driver-orders';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/icon';
@@ -27,18 +27,16 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function DriverRecordsPage() {
-  const { user } = useAuth();
-  const { orders } = useOrdersStore();
   const { formatCurrency, formatDate } = useSettings();
-  
+  const { orders: myOrders, isLoading } = useDriverOrders();
   const [isCollectionsOpen, setIsCollectionsOpen] = useState(false);
   const [isReturnsOpen, setIsReturnsOpen] = useState(false);
 
   // طلبات السائق اليوم
   const todayOrders = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
-    return orders.filter(o => o.driver === user?.name && o.date === today);
-  }, [orders, user]);
+    return myOrders.filter(o => o.date === today);
+  }, [myOrders]);
 
   // التحصيلات - الطلبات المسلمة
   const collectionsData = useMemo(() => {
@@ -68,6 +66,19 @@ export default function DriverRecordsPage() {
 
   // تاريخ اليوم بالعربي
   const todayDate = formatDate(new Date(), { longFormat: true });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 pb-20">
+        <Skeleton className="h-12 w-48" />
+        <div className="grid grid-cols-2 gap-4">
+          <Skeleton className="h-32 rounded-xl" />
+          <Skeleton className="h-32 rounded-xl" />
+        </div>
+        <Skeleton className="h-48 rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-20">

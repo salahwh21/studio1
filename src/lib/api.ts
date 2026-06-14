@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = '/api';
 
 // Note: JWT is now stored in httpOnly cookie and sent automatically with credentials: 'include'
 const defaultFetchOptions: RequestInit = {
@@ -62,6 +62,11 @@ export const api = {
     return handleResponse(res);
   },
 
+  getDriverLocations: async () => {
+    const res = await fetch(`${API_URL}/drivers/locations`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
   getOrdersByStatus: async () => {
     const res = await fetch(`${API_URL}/dashboard/orders-by-status`, defaultFetchOptions);
     return handleResponse(res);
@@ -87,11 +92,13 @@ export const api = {
     return handleResponse(res);
   },
 
-  updateOrderStatus: async (orderId: string, status: string, driverId?: string) => {
+  updateOrderStatus: async (orderId: string, status: string, driverId?: string | null) => {
+    const body: any = { status };
+    if (driverId !== undefined) body.driver_id = driverId; // null = مسح صريح، string = تعيين
     const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
       ...defaultFetchOptions,
       method: 'PATCH',
-      body: JSON.stringify({ status, driver_id: driverId }),
+      body: JSON.stringify(body),
     });
     return handleResponse(res);
   },
@@ -227,6 +234,21 @@ export const api = {
     return handleResponse(res);
   },
 
+  // User preferences API
+  getPreferences: async () => {
+    const res = await fetch(`${API_URL}/auth/preferences`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  savePreferences: async (patch: Record<string, unknown>) => {
+    const res = await fetch(`${API_URL}/auth/preferences`, {
+      ...defaultFetchOptions,
+      method: 'PUT',
+      body: JSON.stringify(patch),
+    });
+    return handleResponse(res);
+  },
+
   // Areas API
   getAreas: async () => {
     const res = await fetch(`${API_URL}/areas/all`, defaultFetchOptions);
@@ -278,8 +300,19 @@ export const api = {
   },
 
   // Financials API
-  getMerchantPaymentSlips: async () => {
-    const res = await fetch(`${API_URL}/financials/merchant-payments`, defaultFetchOptions);
+  // Merchant Payments
+  getMerchantPaymentSlips: async (filters: any = {}) => {
+    const params = new URLSearchParams(filters);
+    const res = await fetch(`${API_URL}/financials/merchant-payments?${params}`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  createMerchantPaymentSlip: async (data: any) => {
+    const res = await fetch(`${API_URL}/financials/merchant-payments`, {
+      ...defaultFetchOptions,
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
     return handleResponse(res);
   },
 
@@ -289,6 +322,81 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     });
+    return handleResponse(res);
+  },
+
+  updateMerchantPaymentSlip: async (id: string, orderIds: string[]) => {
+    const res = await fetch(`${API_URL}/financials/merchant-payments/${id}`, {
+      ...defaultFetchOptions,
+      method: 'PUT',
+      body: JSON.stringify({ orderIds }),
+    });
+    return handleResponse(res);
+  },
+
+  deleteMerchantPaymentSlip: async (id: string) => {
+    const res = await fetch(`${API_URL}/financials/merchant-payments/${id}`, {
+      ...defaultFetchOptions,
+      method: 'DELETE',
+    });
+    return handleResponse(res);
+  },
+
+  // Driver Payments
+  getDriverPaymentSlips: async (filters: any = {}) => {
+    const params = new URLSearchParams(filters);
+    const res = await fetch(`${API_URL}/financials/driver-payments?${params}`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  createDriverPaymentSlip: async (data: any) => {
+    const res = await fetch(`${API_URL}/financials/driver-payments`, {
+      ...defaultFetchOptions,
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  updateDriverPaymentSlip: async (id: string, orderIds: string[]) => {
+    const res = await fetch(`${API_URL}/financials/driver-payments/${id}`, {
+      ...defaultFetchOptions,
+      method: 'PUT',
+      body: JSON.stringify({ orderIds }),
+    });
+    return handleResponse(res);
+  },
+
+  deleteDriverPaymentSlip: async (id: string) => {
+    const res = await fetch(`${API_URL}/financials/driver-payments/${id}`, {
+      ...defaultFetchOptions,
+      method: 'DELETE',
+    });
+    return handleResponse(res);
+  },
+
+  // Financial Stats & Overview
+  getFinancialOverview: async (period = 'month', startDate?: string, endDate?: string) => {
+    let query = `period=${period}`;
+    if (startDate && endDate) {
+      query += `&startDate=${startDate}&endDate=${endDate}`;
+    }
+    const res = await fetch(`${API_URL}/financials/overview?${query}`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  getDebtAlerts: async () => {
+    const res = await fetch(`${API_URL}/financials/debt-alerts`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  getDriverStatistics: async (driverName: string, period = 'today') => {
+    const res = await fetch(`${API_URL}/financials/driver-statistics/${encodeURIComponent(driverName)}?period=${period}`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  getMerchantStatistics: async (merchantName: string, period = 'month') => {
+    const res = await fetch(`${API_URL}/financials/merchant-statistics/${encodeURIComponent(merchantName)}?period=${period}`, defaultFetchOptions);
     return handleResponse(res);
   },
 
@@ -363,7 +471,96 @@ export const api = {
       method: 'DELETE',
     });
     return handleResponse(res);
-  }
+  },
+
+  // Returns API
+  getDriversWithReturns: async () => {
+    const res = await fetch(`${API_URL}/returns/drivers-with-returns`, defaultFetchOptions);
+    return handleResponse(res) as Promise<{ drivers: Array<{ name: string; orderCount: number; totalCod: number }> }>;
+  },
+
+  createDriverReturnSlip: async (data: { driverName: string; orderIds: string[]; date?: string }) => {
+    const res = await fetch(`${API_URL}/returns/driver-slips`, {
+      ...defaultFetchOptions,
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  getDriverReturnSlips: async (filters: any = {}) => {
+    const params = new URLSearchParams(filters);
+    const res = await fetch(`${API_URL}/returns/driver-slips?${params}`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  getDriverReturnSlip: async (id: string) => {
+    const res = await fetch(`${API_URL}/returns/driver-slips/${id}`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  deleteDriverReturnSlip: async (id: string) => {
+    const res = await fetch(`${API_URL}/returns/driver-slips/${id}`, {
+      ...defaultFetchOptions,
+      method: 'DELETE',
+    });
+    return handleResponse(res);
+  },
+
+  removeOrderFromDriverSlip: async (slipId: string, orderId: string) => {
+    const res = await fetch(`${API_URL}/returns/driver-slips/${slipId}/orders/${orderId}`, {
+      ...defaultFetchOptions,
+      method: 'DELETE',
+    });
+    return handleResponse(res);
+  },
+
+  getMerchantReturnSlips: async (filters: any = {}) => {
+    const params = new URLSearchParams(filters);
+    const res = await fetch(`${API_URL}/returns/merchant-slips?${params}`, defaultFetchOptions);
+    return handleResponse(res);
+  },
+
+  updateMerchantReturnSlipStatus: async (id: string, status: string) => {
+    const res = await fetch(`${API_URL}/returns/merchant-slips/${id}/status`, {
+      ...defaultFetchOptions,
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+    return handleResponse(res);
+  },
+
+  createMerchantReturnSlip: async (data: { merchant: string; orderIds: string[]; date?: string }) => {
+    const res = await fetch(`${API_URL}/returns/merchant-slips`, {
+      ...defaultFetchOptions,
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  deleteMerchantReturnSlip: async (id: string) => {
+    const res = await fetch(`${API_URL}/returns/merchant-slips/${id}`, {
+      ...defaultFetchOptions,
+      method: 'DELETE',
+    });
+    return handleResponse(res);
+  },
+
+  // Notifications API
+  getWhatsAppUrl: async (orderId: string, templateKey?: string, customMessage?: string) => {
+    const res = await fetch(`${API_URL}/notifications/whatsapp`, {
+      ...defaultFetchOptions,
+      method: 'POST',
+      body: JSON.stringify({ orderId, templateKey, customMessage }),
+    });
+    return handleResponse(res) as Promise<{ url: string; phone: string; message: string }>;
+  },
+
+  getNotificationTemplates: async () => {
+    const res = await fetch(`${API_URL}/notifications/templates`, defaultFetchOptions);
+    return handleResponse(res) as Promise<{ templates: Array<{ key: string; name: string; content: string }> }>;
+  },
 };
 
 export default api;

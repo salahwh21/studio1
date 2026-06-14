@@ -216,7 +216,7 @@ const NotificationsForm = ({ defaultValues, onSave }: { defaultValues: FormValue
 
     return (
         <form onSubmit={handleSubmit(onSave)} className="space-y-6">
-            <Card className="bg-gradient-to-br from-primary/10 to-transparent">
+            <Card className="shadow-sm">
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">

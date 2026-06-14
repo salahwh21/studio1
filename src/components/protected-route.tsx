@@ -52,7 +52,7 @@ export function ProtectedRoute({
           if (user.roleId === 'merchant') {
             router.push('/merchant');
           } else if (user.roleId === 'driver') {
-            router.push('/dashboard/driver-app');
+            router.push('/driver');
           } else if (user.roleId === 'admin') {
             router.push('/dashboard');
           } else {

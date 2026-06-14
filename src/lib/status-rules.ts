@@ -9,6 +9,7 @@ export type OrderStatus =
   | 'تم التوصيل'
   | 'مرتجع'
   | 'مؤجل'
+  | 'مرجع للتاجر'
   | 'تم استلام المال في الفرع'
   | 'تم محاسبة التاجر';
 
@@ -150,6 +151,78 @@ export const STATUS_RULES: StatusTransitionRule[] = [
     requiresDriver: true,
     requiresConfirmation: true,
     confirmationMessage: 'هل تريد بدء التوصيل مباشرة؟',
+  },
+
+  // من "جاري التوصيل" إلى "مؤجل" - عند استلام السائق وتأجيل الطلب
+  {
+    from: 'جاري التوصيل',
+    to: 'مؤجل',
+    requiresDriver: false,
+    requiresConfirmation: false,
+  },
+
+  // من "جاري التوصيل" إلى "مرجع للتاجر"
+  {
+    from: 'جاري التوصيل',
+    to: 'مرجع للتاجر',
+    requiresDriver: false,
+    requiresConfirmation: false,
+  },
+
+  // من "بالانتظار" إلى "مرجع للتاجر"
+  {
+    from: 'بالانتظار',
+    to: 'مرجع للتاجر',
+    requiresDriver: false,
+    requiresConfirmation: false,
+  },
+
+  // من "مؤجل" إلى "مرجع للتاجر"
+  {
+    from: 'مؤجل',
+    to: 'مرجع للتاجر',
+    requiresDriver: false,
+    requiresConfirmation: false,
+  },
+
+  // من "مرتجع" إلى "مؤجل"
+  {
+    from: 'مرتجع',
+    to: 'مؤجل',
+    requiresDriver: false,
+    requiresConfirmation: false,
+  },
+
+  // من "مرتجع" إلى "مرجع للتاجر"
+  {
+    from: 'مرتجع',
+    to: 'مرجع للتاجر',
+    requiresDriver: false,
+    requiresConfirmation: false,
+  },
+
+  // من "بانتظار السائق" إلى "مؤجل" - عند استلام السائق في نهاية اليوم
+  {
+    from: 'بانتظار السائق',
+    to: 'مؤجل',
+    requiresDriver: false,
+    requiresConfirmation: false,
+  },
+
+  // من "بانتظار السائق" إلى "مرجع للتاجر"
+  {
+    from: 'بانتظار السائق',
+    to: 'مرجع للتاجر',
+    requiresDriver: false,
+    requiresConfirmation: false,
+  },
+
+  // من "بانتظار السائق" إلى "ملغي"
+  {
+    from: 'بانتظار السائق',
+    to: 'مرتجع',
+    requiresDriver: false,
+    requiresConfirmation: false,
   },
 
   // من "مرتجع" إلى "بالانتظار" - عند إعادة الطلب المرتجع

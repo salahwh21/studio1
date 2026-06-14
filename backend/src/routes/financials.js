@@ -1,57 +1,52 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const db = require('../config/database');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, authorizeRoles } = require('../middleware/auth');
 
 const router = express.Router();
 
 // Financial Overview Dashboard API
-router.get('/overview', authenticateToken, async (req, res) => {
+router.get('/overview', authenticateToken, authorizeRoles('admin', 'accountant'), async (req, res) => {
   try {
     const { period = 'month', startDate, endDate } = req.query;
 
-    let dateFilter = '';
-    let previousDateFilter = '';
+    let currentParams = [];
+    let previousParams = [];
+    let currentFilter = '';
+    let previousFilter = '';
 
     if (startDate && endDate) {
-      // Validate date format YYYY-MM-DD
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
         return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
       }
 
-      dateFilter = `DATE(created_at) BETWEEN '${startDate}' AND '${endDate}'`;
+      currentFilter = `DATE(created_at) BETWEEN $1 AND $2`;
+      currentParams = [startDate, endDate];
 
-      // Calculate previous period
       const start = new Date(startDate);
-      const end = new Date(endDate);
-      const diffTime = Math.abs(end - start);
-
+      const diffTime = Math.abs(new Date(endDate) - start);
       const prevEnd = new Date(start);
       prevEnd.setDate(prevEnd.getDate() - 1);
+      const prevStart = new Date(prevEnd.getTime() - diffTime);
 
-      const prevStart = new Date(prevEnd);
-      prevStart.setTime(prevEnd.getTime() - diffTime);
-
-      const prevStartStr = prevStart.toISOString().split('T')[0];
-      const prevEndStr = prevEnd.toISOString().split('T')[0];
-
-      previousDateFilter = `DATE(created_at) BETWEEN '${prevStartStr}' AND '${prevEndStr}'`;
+      previousFilter = `DATE(created_at) BETWEEN $1 AND $2`;
+      previousParams = [prevStart.toISOString().split('T')[0], prevEnd.toISOString().split('T')[0]];
 
     } else if (period === 'today') {
-      dateFilter = `DATE(created_at) = CURRENT_DATE`;
-      previousDateFilter = `DATE(created_at) = CURRENT_DATE - INTERVAL '1 day'`;
+      currentFilter = `DATE(created_at) = CURRENT_DATE`;
+      previousFilter = `DATE(created_at) = CURRENT_DATE - INTERVAL '1 day'`;
     } else if (period === 'week') {
-      dateFilter = `created_at >= CURRENT_DATE - INTERVAL '7 days'`;
-      previousDateFilter = `created_at >= CURRENT_DATE - INTERVAL '14 days' AND created_at < CURRENT_DATE - INTERVAL '7 days'`;
+      currentFilter = `created_at >= CURRENT_DATE - INTERVAL '7 days'`;
+      previousFilter = `created_at >= CURRENT_DATE - INTERVAL '14 days' AND created_at < CURRENT_DATE - INTERVAL '7 days'`;
     } else {
-      dateFilter = `created_at >= CURRENT_DATE - INTERVAL '30 days'`;
-      previousDateFilter = `created_at >= CURRENT_DATE - INTERVAL '60 days' AND created_at < CURRENT_DATE - INTERVAL '30 days'`;
+      currentFilter = `created_at >= CURRENT_DATE - INTERVAL '30 days'`;
+      previousFilter = `created_at >= CURRENT_DATE - INTERVAL '60 days' AND created_at < CURRENT_DATE - INTERVAL '30 days'`;
     }
 
     // Current period stats
     const currentStats = await db.query(`
-      SELECT 
+      SELECT
         COUNT(*) as total_orders,
         SUM(CASE WHEN status = 'تم التوصيل' THEN 1 ELSE 0 END) as delivered_orders,
         COALESCE(SUM(cod), 0)::DECIMAL(12,2) as total_cod,
@@ -59,18 +54,18 @@ router.get('/overview', authenticateToken, async (req, res) => {
         COALESCE(SUM(delivery_fee), 0)::DECIMAL(12,2) as total_delivery_fees,
         COALESCE(SUM(driver_fee), 0)::DECIMAL(12,2) as total_driver_fees,
         COALESCE(SUM(driver_additional_fare), 0)::DECIMAL(12,2) as total_additional_fares
-      FROM orders 
-      WHERE ${dateFilter}
-    `);
+      FROM orders
+      WHERE ${currentFilter}
+    `, currentParams);
 
     // Previous period for comparison
     const previousStats = await db.query(`
-      SELECT 
+      SELECT
         COALESCE(SUM(cod), 0)::DECIMAL(12,2) as total_cod,
         COALESCE(SUM(delivery_fee), 0)::DECIMAL(12,2) as total_delivery_fees
-      FROM orders 
-      WHERE ${previousDateFilter}
-    `);
+      FROM orders
+      WHERE ${previousFilter}
+    `, previousParams);
 
     // Pending payments
     const pendingMerchant = await db.query(`
@@ -123,7 +118,7 @@ router.get('/overview', authenticateToken, async (req, res) => {
 });
 
 // Debt Alerts API - Get pending debts for drivers and merchants
-router.get('/debt-alerts', authenticateToken, async (req, res) => {
+router.get('/debt-alerts', authenticateToken, authorizeRoles('admin', 'accountant'), async (req, res) => {
   try {
     // Get drivers with pending collections (delivered but not collected)
     const driversResult = await db.query(`
@@ -205,26 +200,66 @@ router.get('/debt-alerts', authenticateToken, async (req, res) => {
 });
 
 // Notify Debt API
-router.post('/notify-debt', authenticateToken, async (req, res) => {
-  const { name, amount, method } = req.body;
+router.post('/notify-debt', authenticateToken, authorizeRoles('admin', 'accountant'), async (req, res) => {
+  const { name, amount, method, email, phone } = req.body;
+
+  if (!name || !amount || !method) {
+    return res.status(400).json({ error: 'name, amount, method مطلوبين' });
+  }
 
   try {
-    // In a real application, you would integrate with an email service (like SendGrid, AWS SES)
-    // or an SMS gateway (like Twilio).
-    // For now, we simulate the notification sending.
+    if (method === 'email') {
+      if (!email) return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
 
-    console.log(`[Notification System] Sending ${method} reminder to ${name} for amount ${amount}`);
+      const smtpHost = process.env.SMTP_HOST;
+      const smtpUser = process.env.SMTP_USER;
+      const smtpPass = process.env.SMTP_PASS;
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!smtpHost || !smtpUser || !smtpPass) {
+        return res.status(400).json({ error: 'إعدادات البريد غير مكتملة — اذهب لإعدادات البريد أولاً' });
+      }
 
-    res.json({
-      success: true,
-      message: `تم إرسال تذكير الدفع بنجاح إلى ${name}`
-    });
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: { user: smtpUser, pass: smtpPass },
+      });
+
+      await transporter.sendMail({
+        from: `"${process.env.COMPANY_NAME || 'الوميض'}" <${smtpUser}>`,
+        to: email,
+        subject: `تذكير بمستحقات مالية — ${amount} د.أ`,
+        html: `<div dir="rtl" style="font-family:sans-serif;padding:24px">
+          <h2 style="color:#f97316">تذكير بمستحقات مالية</h2>
+          <p>مرحباً <strong>${name}</strong>،</p>
+          <p>نود تذكيركم بأن لديكم مستحقات بقيمة <strong>${amount} د.أ</strong> لم يتم تسويتها بعد.</p>
+          <p>نرجو التواصل مع الإدارة لترتيب عملية الدفع.</p>
+          <p style="color:#999;font-size:12px;margin-top:24px">نظام الوميض لإدارة التوصيل</p>
+        </div>`,
+      });
+
+      return res.json({ success: true, message: `تم إرسال تذكير بالبريد إلى ${name}` });
+
+    } else if (method === 'whatsapp') {
+      const whatsappPhone = phone || '';
+      if (!whatsappPhone) return res.status(400).json({ error: 'رقم الواتساب مطلوب' });
+
+      const cleanPhone = whatsappPhone.replace(/^0/, '962');
+      const message = encodeURIComponent(
+        `مرحباً ${name}، هذا تذكير بأن لديكم مستحقات بقيمة ${amount} د.أ لم يتم تسويتها. نرجو التواصل مع الإدارة.`
+      );
+      const url = `https://wa.me/${cleanPhone}?text=${message}`;
+
+      return res.json({ success: true, message: `رابط واتساب جاهز`, url });
+
+    } else {
+      return res.status(400).json({ error: 'method يجب أن يكون email أو whatsapp' });
+    }
   } catch (error) {
     console.error('Notification error:', error);
-    res.status(500).json({ error: 'Failed to send notification' });
+    res.status(500).json({ error: error.message || 'فشل إرسال التذكير' });
   }
 });
 
@@ -253,7 +288,7 @@ router.get('/driver-statistics/:driverName', authenticateToken, async (req, res)
         SUM(driver_additional_fare)::DECIMAL(10,2) as additional_fare,
         AVG(EXTRACT(EPOCH FROM (updated_at - created_at))/3600)::DECIMAL(5,2) as avg_delivery_time_hours
       FROM orders 
-      WHERE driver = $1 AND ${dateFilter}
+      WHERE (driver = $1 OR previous_driver = $1) AND ${dateFilter}
     `, [driverName]);
 
     const stats = statsResult.rows[0] || {};
@@ -329,7 +364,7 @@ router.get('/comparison/:driverName', authenticateToken, async (req, res) => {
         SUM(driver_fee)::DECIMAL(10,2) as earnings,
         SUM(CASE WHEN status = 'تم التوصيل' THEN 1 ELSE 0 END) as delivered
       FROM orders 
-      WHERE driver = $1 AND created_at >= CURRENT_DATE - INTERVAL '30 days'
+      WHERE (driver = $1 OR previous_driver = $1) AND created_at >= CURRENT_DATE - INTERVAL '30 days'
     `, [driverName]);
 
     const previousResult = await db.query(`
@@ -338,7 +373,7 @@ router.get('/comparison/:driverName', authenticateToken, async (req, res) => {
         SUM(driver_fee)::DECIMAL(10,2) as earnings,
         SUM(CASE WHEN status = 'تم التوصيل' THEN 1 ELSE 0 END) as delivered
       FROM orders 
-      WHERE driver = $1 AND created_at >= CURRENT_DATE - INTERVAL '60 days' 
+      WHERE (driver = $1 OR previous_driver = $1) AND created_at >= CURRENT_DATE - INTERVAL '60 days' 
         AND created_at < CURRENT_DATE - INTERVAL '30 days'
     `, [driverName]);
 
@@ -380,7 +415,7 @@ router.get('/fee-breakdown/:driverName', authenticateToken, async (req, res) => 
         SUM(driver_additional_fare)::DECIMAL(10,2) as additional_fares,
         COUNT(*) as total_items
       FROM orders 
-      WHERE driver = $1 AND status = 'تم التوصيل'
+      WHERE (driver = $1 OR previous_driver = $1) AND status = 'تم التوصيل'
     `, [driverName]);
 
     const breakdown = breakdownResult.rows[0] || {};
@@ -437,25 +472,29 @@ router.get('/driver-payments', authenticateToken, async (req, res) => {
       [...params, parseInt(limit), offset]
     );
 
-    const slips = await Promise.all(slipsResult.rows.map(async (slip) => {
+    // Batch: collect all order IDs and fetch in one query
+    const allOrderIds = slipsResult.rows.flatMap(s => s.order_ids || []);
+    let ordersMap = {};
+    if (allOrderIds.length > 0) {
       const ordersResult = await db.query(
-        'SELECT * FROM orders WHERE id = ANY($1)',
-        [slip.order_ids || []]
+        'SELECT id, recipient, cod, status, driver_fee FROM orders WHERE id = ANY($1)',
+        [allOrderIds]
       );
+      ordersResult.rows.forEach(o => { ordersMap[o.id] = o; });
+    }
 
-      return {
-        id: slip.id,
-        driverName: slip.driver_name,
-        date: slip.date,
-        itemCount: slip.item_count,
-        orders: ordersResult.rows.map(o => ({
-          id: o.id,
-          recipient: o.recipient,
-          cod: parseFloat(o.cod),
-          status: o.status,
-          driverFee: parseFloat(o.driver_fee)
-        }))
-      };
+    const slips = slipsResult.rows.map(slip => ({
+      id: slip.id,
+      driverName: slip.driver_name,
+      date: slip.date,
+      itemCount: slip.item_count,
+      orders: (slip.order_ids || []).map(oid => ordersMap[oid]).filter(Boolean).map(o => ({
+        id: o.id,
+        recipient: o.recipient,
+        cod: parseFloat(o.cod),
+        status: o.status,
+        driverFee: parseFloat(o.driver_fee)
+      }))
     }));
 
     res.json({ slips, totalCount });
@@ -508,7 +547,7 @@ router.get('/driver-payments/:id', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/driver-payments', authenticateToken, [
+router.post('/driver-payments', authenticateToken, authorizeRoles('admin', 'accountant'), [
   body('driverName').notEmpty().withMessage('Driver name is required'),
   body('orderIds').isArray().withMessage('Order IDs must be an array')
 ], async (req, res) => {
@@ -539,7 +578,42 @@ router.post('/driver-payments', authenticateToken, [
   }
 });
 
-router.delete('/driver-payments/:id', authenticateToken, async (req, res) => {
+router.put('/driver-payments/:id', authenticateToken, authorizeRoles('admin', 'accountant'), [
+  body('orderIds').isArray().withMessage('Order IDs must be an array')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { id } = req.params;
+    const { orderIds } = req.body;
+
+    const result = await db.query(
+      `UPDATE driver_payment_slips 
+       SET order_ids = $1, item_count = $2
+       WHERE id = $3 RETURNING *`,
+      [orderIds, orderIds.length, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Payment slip not found' });
+    }
+
+    res.json({
+      id: result.rows[0].id,
+      driverName: result.rows[0].driver_name,
+      date: result.rows[0].date,
+      itemCount: result.rows[0].item_count
+    });
+  } catch (error) {
+    console.error('Update driver payment error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.delete('/driver-payments/:id', authenticateToken, authorizeRoles('admin', 'accountant'), async (req, res) => {
   try {
     const result = await db.query(
       'DELETE FROM driver_payment_slips WHERE id = $1 RETURNING id',
@@ -595,26 +669,30 @@ router.get('/merchant-payments', authenticateToken, async (req, res) => {
       [...params, parseInt(limit), offset]
     );
 
-    const slips = await Promise.all(slipsResult.rows.map(async (slip) => {
+    // Batch: collect all order IDs and fetch in one query
+    const allOrderIds = slipsResult.rows.flatMap(s => s.order_ids || []);
+    let ordersMap = {};
+    if (allOrderIds.length > 0) {
       const ordersResult = await db.query(
-        'SELECT * FROM orders WHERE id = ANY($1)',
-        [slip.order_ids || []]
+        'SELECT id, recipient, cod, status, item_price FROM orders WHERE id = ANY($1)',
+        [allOrderIds]
       );
+      ordersResult.rows.forEach(o => { ordersMap[o.id] = o; });
+    }
 
-      return {
-        id: slip.id,
-        merchantName: slip.merchant_name,
-        date: slip.date,
-        itemCount: slip.item_count,
-        status: slip.status,
-        orders: ordersResult.rows.map(o => ({
-          id: o.id,
-          recipient: o.recipient,
-          cod: parseFloat(o.cod),
-          status: o.status,
-          itemPrice: parseFloat(o.item_price)
-        }))
-      };
+    const slips = slipsResult.rows.map(slip => ({
+      id: slip.id,
+      merchantName: slip.merchant_name,
+      date: slip.date,
+      itemCount: slip.item_count,
+      status: slip.status,
+      orders: (slip.order_ids || []).map(oid => ordersMap[oid]).filter(Boolean).map(o => ({
+        id: o.id,
+        recipient: o.recipient,
+        cod: parseFloat(o.cod),
+        status: o.status,
+        itemPrice: parseFloat(o.item_price)
+      }))
     }));
 
     res.json({ slips, totalCount });
@@ -665,7 +743,7 @@ router.get('/merchant-payments/:id', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/merchant-payments', authenticateToken, [
+router.post('/merchant-payments', authenticateToken, authorizeRoles('admin', 'accountant'), [
   body('merchantName').notEmpty().withMessage('Merchant name is required'),
   body('orderIds').isArray().withMessage('Order IDs must be an array')
 ], async (req, res) => {
@@ -697,7 +775,42 @@ router.post('/merchant-payments', authenticateToken, [
   }
 });
 
-router.patch('/merchant-payments/:id/status', authenticateToken, [
+router.put('/merchant-payments/:id', authenticateToken, authorizeRoles('admin', 'accountant'), [
+  body('orderIds').isArray().withMessage('Order IDs must be an array')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { id } = req.params;
+    const { orderIds } = req.body;
+
+    const result = await db.query(
+      `UPDATE merchant_payment_slips 
+       SET order_ids = $1, item_count = $2
+       WHERE id = $3 RETURNING *`,
+      [orderIds, orderIds.length, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Payment slip not found' });
+    }
+
+    res.json({
+      id: result.rows[0].id,
+      merchantName: result.rows[0].merchant_name,
+      date: result.rows[0].date,
+      itemCount: result.rows[0].item_count
+    });
+  } catch (error) {
+    console.error('Update merchant payment error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.patch('/merchant-payments/:id/status', authenticateToken, authorizeRoles('admin', 'accountant'), [
   body('status').notEmpty().withMessage('Status is required')
 ], async (req, res) => {
   const client = await db.connect();
@@ -743,7 +856,7 @@ router.patch('/merchant-payments/:id/status', authenticateToken, [
   }
 });
 
-router.delete('/merchant-payments/:id', authenticateToken, async (req, res) => {
+router.delete('/merchant-payments/:id', authenticateToken, authorizeRoles('admin', 'accountant'), async (req, res) => {
   try {
     const result = await db.query(
       'DELETE FROM merchant_payment_slips WHERE id = $1 RETURNING id',
@@ -757,6 +870,135 @@ router.delete('/merchant-payments/:id', authenticateToken, async (req, res) => {
     res.json({ deleted: req.params.id });
   } catch (error) {
     console.error('Delete merchant payment error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ==================== Order Settlements ====================
+
+// GET /api/financials/settlements — قائمة التسويات مع فلترة
+router.get('/settlements', authenticateToken, authorizeRoles('admin', 'accountant'), async (req, res) => {
+  try {
+    const { status, orderId, page = 0, limit = 50 } = req.query;
+    const offset = parseInt(page) * parseInt(limit);
+    const params = [];
+    let where = 'WHERE 1=1';
+    let i = 1;
+
+    if (status) { where += ` AND s.status = $${i++}`; params.push(status); }
+    if (orderId) { where += ` AND s.order_id = $${i++}`; params.push(orderId); }
+
+    const countResult = await db.query(
+      `SELECT COUNT(*) FROM order_settlements s ${where}`, params
+    );
+
+    const result = await db.query(
+      `SELECT s.*, o.recipient, o.merchant, o.driver, o.status as order_status, o.order_number
+       FROM order_settlements s
+       JOIN orders o ON o.id = s.order_id
+       ${where}
+       ORDER BY s.created_at DESC
+       LIMIT $${i++} OFFSET $${i}`,
+      [...params, parseInt(limit), offset]
+    );
+
+    res.json({
+      settlements: result.rows,
+      totalCount: parseInt(countResult.rows[0].count)
+    });
+  } catch (error) {
+    console.error('Get settlements error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/financials/settlements/:orderId — تسوية طلب محدد
+router.get('/settlements/:orderId', authenticateToken, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT s.*, o.recipient, o.merchant, o.driver, o.status as order_status, o.order_number
+       FROM order_settlements s
+       JOIN orders o ON o.id = s.order_id
+       WHERE s.order_id = $1`,
+      [req.params.orderId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Settlement not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Get settlement error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/financials/settlements — إنشاء تسوية يدوية
+router.post('/settlements', authenticateToken, authorizeRoles('admin', 'accountant'), [
+  body('orderId').notEmpty().withMessage('Order ID is required'),
+  body('codCollected').isNumeric().withMessage('COD collected must be a number'),
+  body('companyShare').isNumeric().withMessage('Company share must be a number'),
+  body('driverShare').isNumeric().withMessage('Driver share must be a number'),
+  body('merchantShare').isNumeric().withMessage('Merchant share must be a number'),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+  try {
+    const { orderId, codCollected, companyShare, driverShare, merchantShare, rtoFee = 0, notes } = req.body;
+
+    const orderCheck = await db.query('SELECT id FROM orders WHERE id = $1', [orderId]);
+    if (orderCheck.rows.length === 0) return res.status(404).json({ error: 'Order not found' });
+
+    const result = await db.query(
+      `INSERT INTO order_settlements
+         (order_id, cod_collected, company_share, driver_share, merchant_share, rto_fee, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (order_id) DO UPDATE SET
+         cod_collected = EXCLUDED.cod_collected,
+         company_share = EXCLUDED.company_share,
+         driver_share  = EXCLUDED.driver_share,
+         merchant_share = EXCLUDED.merchant_share,
+         rto_fee = EXCLUDED.rto_fee,
+         notes = EXCLUDED.notes,
+         updated_at = NOW()
+       RETURNING *`,
+      [orderId, codCollected, companyShare, driverShare, merchantShare, rtoFee, notes || null]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Create settlement error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /api/financials/settlements/:id — تحديث حالة التسوية
+router.patch('/settlements/:id', authenticateToken, authorizeRoles('admin', 'accountant'), [
+  body('status').isIn(['pending', 'settled']).withMessage('Invalid status'),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+  try {
+    const { status } = req.body;
+    const settledAt = status === 'settled' ? new Date().toISOString() : null;
+    const settledBy = status === 'settled' ? req.user.name : null;
+
+    const result = await db.query(
+      `UPDATE order_settlements
+       SET status = $1, settled_at = $2, settled_by = $3, updated_at = NOW()
+       WHERE id = $4
+       RETURNING *`,
+      [status, settledAt, settledBy, req.params.id]
+    );
+
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Settlement not found' });
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Update settlement error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

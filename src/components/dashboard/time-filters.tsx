@@ -11,7 +11,7 @@ import Icon from '@/components/icon';
 import { DateRange } from 'react-day-picker';
 import { subDays, startOfToday, startOfWeek, startOfMonth, subMonths } from 'date-fns';
 
-type TimePeriod = 'today' | 'yesterday' | 'last7days' | 'last30days' | 'thismonth' | 'lastmonth' | 'custom';
+type TimePeriod = 'all' | 'today' | 'yesterday' | 'last7days' | 'last30days' | 'thismonth' | 'lastmonth' | 'custom';
 
 interface TimeFiltersProps {
   onPeriodChange?: (period: TimePeriod, dateRange?: DateRange) => void;
@@ -59,7 +59,10 @@ export function TimeFilters({
   };
 
   useEffect(() => {
-    if (selectedPeriod !== 'custom') {
+    if (selectedPeriod === 'all') {
+      setDateRange(undefined);
+      updateURL('all');
+    } else if (selectedPeriod !== 'custom') {
       const range = getDateRangeForPeriod(selectedPeriod);
       setDateRange(range);
       updateURL(selectedPeriod, range);
@@ -70,7 +73,10 @@ export function TimeFilters({
     const params = new URLSearchParams(searchParams.toString());
     params.set('period', period);
     
-    if (range?.from && range?.to) {
+    if (period === 'all') {
+      params.delete('from');
+      params.delete('to');
+    } else if (range?.from && range?.to) {
       params.set('from', range.from.toISOString());
       params.set('to', range.to.toISOString());
     }
@@ -116,17 +122,16 @@ export function TimeFilters({
   };
 
   const resetFilters = () => {
-    setSelectedPeriod('today');
+    setSelectedPeriod('all');
     setDateRange(undefined);
     setCompareMode(false);
-    router.push('?period=today', { scroll: false });
+    router.push('?period=all', { scroll: false });
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 p-4 bg-muted/50 rounded-lg border">
-      <div className="flex items-center gap-2">
-        <Icon name="Filter" className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-semibold">الفترة الزمنية</span>
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+      <div className="hidden sm:flex items-center gap-1.5 text-muted-foreground">
+        <Icon name="Filter" className="h-3.5 w-3.5" />
       </div>
       
       <div className="flex flex-wrap items-center gap-3 flex-1">
@@ -135,6 +140,7 @@ export function TimeFilters({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">الكل</SelectItem>
             <SelectItem value="today">اليوم</SelectItem>
             <SelectItem value="yesterday">أمس</SelectItem>
             <SelectItem value="last7days">آخر 7 أيام</SelectItem>

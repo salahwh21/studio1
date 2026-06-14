@@ -1,5 +1,7 @@
 
 import * as React from 'react';
+import { useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -30,7 +32,7 @@ import { ColumnConfig } from '@/components/export-data-dialog';
 
 interface OrdersTableViewProps {
     orders: Order[];
-    groupedOrders: Record<string, Order[]> | Record<string, { orders: Order[], subGroups: Record<string, Order[]> }> | null;
+    groupedOrders: any;
     openGroups: Record<string, boolean>;
     setOpenGroups: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 
@@ -66,6 +68,7 @@ interface OrdersTableViewProps {
     };
     selectedRowsCount?: number;
     ordersCount?: number;
+    checkActionAllowed?: (action: string, orderId?: string, newStatus?: string) => boolean;
 }
 
 export const OrdersTableView = ({
@@ -93,29 +96,43 @@ export const OrdersTableView = ({
     currencySymbol = 'د.أ',
     footerTotals,
     selectedRowsCount,
-    ordersCount
+    ordersCount,
+    checkActionAllowed
 }: OrdersTableViewProps) => {
 
-    const renderOrderRow = (order: Order, index: number) => {
+    const tableContainerRef = useRef<HTMLDivElement>(null);
+    const visibleOrders = React.useMemo(() => {
+        if (groupedOrders) return [];
+        return orders.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+    }, [orders, page, rowsPerPage, groupedOrders]);
+
+    const rowVirtualizer = useVirtualizer({
+        count: visibleOrders.length,
+        getScrollElement: () => tableContainerRef.current,
+        estimateSize: () => 48,
+        overscan: 10,
+    });
+
+    const renderOrderRow = (order: Order, index: number, isGrouped?: boolean) => {
         const isSelected = selectedRows.includes(order.id);
         return (
-            <TableRow 
-                key={order.id} 
-                data-state={isSelected ? 'selected' : ''} 
-                className={`hover:bg-orange-50/60 dark:hover:bg-slate-800/60 transition-all duration-150 border-b border-gray-200/80 dark:border-slate-700/80 group ${
-                    isSelected 
-                        ? 'bg-gradient-to-l from-orange-100 via-orange-50 to-white dark:from-orange-900/40 dark:via-orange-900/20 dark:to-slate-900 border-r-4 border-r-orange-500 shadow-sm' 
-                        : index % 2 === 0 
-                            ? 'bg-white dark:bg-slate-900' 
-                            : 'bg-slate-50/70 dark:bg-slate-800/40'
+            <TableRow
+                key={order.id}
+                data-state={isSelected ? 'selected' : ''}
+                className={`hover:bg-orange-50/60 dark:hover:bg-slate-800/60 transition-all duration-150 border-b border-gray-200/80 dark:border-slate-700/80 group ${isGrouped ? '[&>td]:py-3 [&>td]:h-12' : ''} ${
+                    isSelected
+                        ? 'bg-gradient-to-l from-orange-100 via-orange-50 to-white dark:from-orange-900/40 dark:via-orange-900/20 dark:to-slate-900 border-r-4 border-r-orange-500 shadow-sm'
+                        : index % 2 === 0
+                            ? 'bg-white dark:bg-slate-900'
+                            : isGrouped ? 'bg-orange-50/70 dark:bg-orange-900/20' : 'bg-slate-50/70 dark:bg-slate-800/40'
                 }`}
             >
                 <TableCell className={`sticky right-0 z-10 p-2 text-center border-l ${
                     isSelected
                         ? 'bg-orange-100 dark:bg-orange-900/60 border-l-orange-300'
-                        : index % 2 === 0 
+                        : index % 2 === 0
                             ? 'bg-white dark:bg-slate-900 border-l-gray-200 dark:border-l-slate-700'
-                            : 'bg-slate-50 dark:bg-slate-800 border-l-gray-200 dark:border-l-slate-700'
+                            : isGrouped ? 'bg-orange-50/70 dark:bg-orange-900/20 border-l-gray-200 dark:border-l-slate-700' : 'bg-slate-50 dark:bg-slate-800 border-l-gray-200 dark:border-l-slate-700'
                 }`}>
                     <div className="flex items-center justify-center gap-2">
                         <span className="text-xs font-medium text-slate-600 dark:text-slate-400 tabular-nums">{page * rowsPerPage + index + 1}</span>
@@ -169,9 +186,9 @@ export const OrdersTableView = ({
                                         type: 'changeStatus',
                                         orderId: order.id,
                                         currentStatus: order.status,
-                                        currentDriver: order.driver
+                                        currentDriver: order.driver || undefined
                                     })}
-                                    disabled={!isEditMode}
+                                    disabled={!isEditMode || (checkActionAllowed && !checkActionAllowed('change_status', order.id))}
                                     className="inline-flex items-center justify-center gap-1.5 font-bold text-xs px-3 py-1.5 rounded-full w-[150px] mx-auto transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed hover:scale-105 hover:shadow-lg shadow-sm"
                                     style={{
                                         background: `linear-gradient(135deg, ${sInfo.color}30 0%, ${sInfo.color}15 100%)`,
@@ -190,7 +207,7 @@ export const OrdersTableView = ({
                             const options = col.key === 'merchant' ? merchants : drivers;
                             content = (
                                 <div className="flex items-center justify-center w-full h-12 px-1 group">
-                                    {isEditMode ? (
+                                    {isEditMode && (!checkActionAllowed || checkActionAllowed(col.key === 'merchant' ? 'assign_merchant' : 'assign_driver', order.id)) ? (
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <Button
@@ -518,12 +535,12 @@ export const OrdersTableView = ({
     };
 
     return (
-        <div className="flex-1 overflow-auto flex flex-col bg-white dark:bg-slate-900" style={{ pointerEvents: 'auto' }}>
+        <div ref={tableContainerRef} className="flex-1 overflow-x-auto overflow-y-auto flex flex-col bg-white dark:bg-slate-900 orders-table-container" style={{ pointerEvents: 'auto' }}>
             <Table style={{ pointerEvents: 'auto' }}>
                 {/* رأس الجدول - ثابت في الأعلى: position: sticky; top: 0; */}
-                <TableHeader className="sticky top-0 z-20 bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 shadow-xl" style={{ pointerEvents: 'auto' }}>
+                <TableHeader className="sticky top-0 z-20 bg-slate-600 dark:bg-slate-700 shadow-xl" style={{ pointerEvents: 'auto' }}>
                     <TableRow className="hover:bg-transparent border-none" style={{ pointerEvents: 'auto' }}>
-                        <TableHead className="sticky right-0 z-30 p-2 text-center border-l border-white/20 w-24 bg-gradient-to-r from-orange-600 to-orange-500 dark:from-orange-700 dark:to-orange-600">
+                        <TableHead className="sticky right-0 z-30 p-2 text-center border-l border-white/20 w-24 bg-slate-600 dark:bg-slate-700">
                             <div className="flex items-center justify-center gap-3">
                                 <span className="text-xs font-bold text-white">#</span>
                                 <Checkbox 
@@ -614,13 +631,13 @@ export const OrdersTableView = ({
                                 subGroups?: Record<string, NestedGroup>;
                             };
                             
-                            // ألوان مختلفة لكل مستوى
+                            // ألوان مختلفة لكل مستوى — gradient ناعم + شريط ملوّن على اليمين
                             const levelColors = [
-                                { bg: 'bg-blue-100 dark:bg-blue-900/30', hover: 'hover:bg-blue-200 dark:hover:bg-blue-900/50' },
-                                { bg: 'bg-orange-50 dark:bg-orange-900/20', hover: 'hover:bg-orange-100 dark:hover:bg-orange-900/30' },
-                                { bg: 'bg-green-50 dark:bg-green-900/20', hover: 'hover:bg-green-100 dark:hover:bg-green-900/30' },
-                                { bg: 'bg-purple-50 dark:bg-purple-900/20', hover: 'hover:bg-purple-100 dark:hover:bg-purple-900/30' },
-                                { bg: 'bg-pink-50 dark:bg-pink-900/20', hover: 'hover:bg-pink-100 dark:hover:bg-pink-900/30' },
+                                { bg: 'bg-gradient-to-l from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900', hover: 'hover:from-slate-100 hover:to-slate-200 dark:hover:from-slate-700 dark:hover:to-slate-800', text: 'text-slate-800 dark:text-slate-100', border: 'border-r-[5px] border-r-orange-500' },
+                                { bg: 'bg-gradient-to-l from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-900/40', hover: 'hover:from-orange-100 hover:to-orange-200 dark:hover:from-orange-900/30 dark:hover:to-orange-900/50', text: 'text-orange-900 dark:text-orange-100', border: 'border-r-[5px] border-r-slate-500' },
+                                { bg: 'bg-gradient-to-l from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/40', hover: 'hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-900/30 dark:hover:to-blue-900/50', text: 'text-blue-900 dark:text-blue-100', border: 'border-r-[5px] border-r-orange-400' },
+                                { bg: 'bg-gradient-to-l from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-900/40', hover: 'hover:from-emerald-100 hover:to-emerald-200 dark:hover:from-emerald-900/30 dark:hover:to-emerald-900/50', text: 'text-emerald-900 dark:text-emerald-100', border: 'border-r-[5px] border-r-slate-400' },
+                                { bg: 'bg-gradient-to-l from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/40', hover: 'hover:from-purple-100 hover:to-purple-200 dark:hover:from-purple-900/30 dark:hover:to-purple-900/50', text: 'text-purple-900 dark:text-purple-100', border: 'border-r-[5px] border-r-orange-500' },
                             ];
                             
                             const renderNestedGroups = (
@@ -655,33 +672,36 @@ export const OrdersTableView = ({
                                     
                                     return (
                                         <React.Fragment key={fullKey}>
-                                            <TableRow 
-                                                onClick={() => setOpenGroups(prev => ({ ...prev, [fullKey]: !isGroupOpen }))} 
+                                            <TableRow
+                                                onClick={() => setOpenGroups(prev => ({ ...prev, [fullKey]: !isGroupOpen }))}
                                                 className={cn(
-                                                    "cursor-pointer font-semibold transition-colors border-b border-gray-200 dark:border-slate-600",
+                                                    "cursor-pointer font-bold transition-colors border-b border-slate-500 dark:border-slate-600",
                                                     levelColors[colorIndex].bg,
                                                     levelColors[colorIndex].hover,
-                                                    "text-gray-900 dark:text-gray-100"
+                                                    levelColors[colorIndex].text,
+                                                    levelColors[colorIndex].border,
                                                 )}
                                             >
-                                                <TableCell className="p-0 border-l" colSpan={colSpan + 1}>
-                                                    <div 
-                                                        className="flex items-center py-2"
+                                                <TableCell className="p-0 border-l border-black/10 dark:border-white/10" colSpan={colSpan + 1}>
+                                                    <div
+                                                        className="flex items-center py-2.5"
                                                         style={{ paddingRight: `${paddingLeft}px` }}
                                                     >
                                                         <ChevronDown className={cn(
-                                                            "transition-transform ml-2",
+                                                            "transition-transform ml-2 opacity-90",
                                                             level === 0 ? "h-5 w-5" : "h-4 w-4",
                                                             !isGroupOpen && "-rotate-90"
                                                         )} />
-                                                        <span className={level === 0 ? "text-base" : "text-sm"}>
+                                                        <span className={cn("font-bold tracking-wide w-[160px] inline-block", level === 0 ? "text-sm" : "text-xs")}>
                                                             {groupKey || 'غير محدد'}
                                                         </span>
                                                         <span className={cn(
-                                                            "opacity-75 mr-1",
-                                                            level === 0 ? "text-sm" : "text-xs"
+                                                            "mr-1 px-2 py-0.5 rounded-full text-xs font-bold",
+                                                            level === 0
+                                                                ? "bg-orange-500 text-white"
+                                                                : "bg-slate-500 text-white"
                                                         )}>
-                                                            ({groupOrders.length})
+                                                            {groupOrders.length}
                                                         </span>
                                                     </div>
                                                 </TableCell>
@@ -698,10 +718,11 @@ export const OrdersTableView = ({
                                                         default: totalValue = '';
                                                     }
                                                     return (
-                                                        <TableCell 
-                                                            key={col.key} 
+                                                        <TableCell
+                                                            key={col.key}
                                                             className={cn(
-                                                                "p-2 text-center border-l font-semibold",
+                                                                "p-2 text-center border-l border-black/10 dark:border-white/10 font-bold",
+                                                                levelColors[colorIndex].text,
                                                                 level === 0 ? "text-sm" : "text-xs"
                                                             )}
                                                         >
@@ -714,7 +735,7 @@ export const OrdersTableView = ({
                                             {isGroupOpen && (
                                                 subGroups && Object.keys(subGroups).length > 0
                                                     ? renderNestedGroups(subGroups as Record<string, NestedGroup>, level + 1, fullKey)
-                                                    : groupOrders.map((order, index) => renderOrderRow(order, index))
+                                                    : groupOrders.map((order, index) => renderOrderRow(order, index, true))
                                             )}
                                         </React.Fragment>
                                     );
@@ -747,12 +768,12 @@ export const OrdersTableView = ({
                                 <>
                                     {renderNestedGroups(groupedOrders as Record<string, NestedGroup | Order[]>)}
                                     {/* سطر المجاميع الكلية للمجموعات */}
-                                    <TableRow className="bg-gradient-to-r from-slate-700 via-slate-800 to-slate-700 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 border-t-2 border-slate-500 dark:border-slate-600">
-                                        <TableCell 
-                                            className="sticky right-0 z-10 p-3 text-center bg-gradient-to-r from-orange-600 to-orange-500 dark:from-orange-700 dark:to-orange-600 border-l border-white/20"
+                                    <TableRow className="bg-slate-600 dark:bg-slate-700 border-t-2 border-slate-500 dark:border-slate-600 hover:!bg-slate-600 dark:hover:!bg-slate-700">
+                                        <TableCell
+                                            className="sticky right-0 z-10 p-3 text-center bg-slate-600 dark:bg-slate-700 border-l border-white/20"
                                         >
                                             <span className="text-sm font-bold text-white">
-                                                {selectedRows.length > 0 ? `المحدد (${selectedRows.length})` : 'المجموع الكلي'}
+                                                {selectedRows.length > 0 ? `المحدد (${selectedRows.length})` : 'المجموع'}
                                             </span>
                                         </TableCell>
                                         {visibleColumns.map((col, colIndex) => {
@@ -793,53 +814,45 @@ export const OrdersTableView = ({
                             );
                         })()
                     ) : (
-                        orders.map((order, index) => renderOrderRow(order, index))
+                        <>
+                            {rowVirtualizer.getVirtualItems().length > 0 && (
+                                <tr style={{ height: `${rowVirtualizer.getVirtualItems()[0]?.start ?? 0}px` }} />
+                            )}
+                            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                                const order = visibleOrders[virtualRow.index];
+                                if (!order) return null;
+                                return renderOrderRow(order, virtualRow.index);
+                            })}
+                            {rowVirtualizer.getVirtualItems().length > 0 && (
+                                <tr style={{ height: `${rowVirtualizer.getTotalSize() - (rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1]?.end ?? 0)}px` }} />
+                            )}
+                        </>
                     )}
                     
-                    {/* سطر المجاميع - ثابت في الأسفل: position: sticky; bottom: 0; */}
+                    {/* سطر المجاميع - ثابت في الأسفل */}
                     {footerTotals && !groupedOrders && (
-                        <TableRow className="sticky bottom-0 z-10 bg-gradient-to-r from-slate-700 via-slate-800 to-slate-700 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 border-t-2 border-slate-500 dark:border-slate-600 shadow-[0_-4px_12px_rgba(0,0,0,0.15)]">
-                            <TableCell 
-                                className="sticky right-0 z-10 py-2 px-3 text-center bg-gradient-to-r from-orange-600 to-orange-500 dark:from-orange-700 dark:to-orange-600"
-                            >
+                        <TableRow className="sticky bottom-0 z-10 bg-slate-600 dark:bg-slate-700 border-t-2 border-slate-500 dark:border-slate-600 shadow-[0_-4px_12px_rgba(0,0,0,0.15)] hover:!bg-slate-600 dark:hover:!bg-slate-700">
+                            <TableCell className="sticky right-0 z-10 py-2 px-3 text-center bg-slate-600 dark:bg-slate-700">
                                 <span className="text-sm font-bold text-white">
-                                    {selectedRowsCount && selectedRowsCount > 0 ? `المحدد (${selectedRowsCount})` : 'المجموع الكلي'}
+                                    {selectedRowsCount && selectedRowsCount > 0 ? `المحدد (${selectedRowsCount})` : 'المجموع'}
                                 </span>
                             </TableCell>
                             {visibleColumns.map((col) => {
                                 if (!footerTotals) return null;
                                 let totalValue = '';
                                 switch (col.key) {
-                                    case 'itemPrice':
-                                        totalValue = formatCurrency(footerTotals.itemPrice);
-                                        break;
-                                    case 'deliveryFee':
-                                        totalValue = formatCurrency(footerTotals.deliveryFee);
-                                        break;
-                                    case 'additionalCost':
-                                        totalValue = formatCurrency(footerTotals.additionalCost);
-                                        break;
-                                    case 'driverFee':
-                                        totalValue = formatCurrency(footerTotals.driverFee);
-                                        break;
-                                    case 'driverAdditionalFare':
-                                        totalValue = formatCurrency(0);
-                                        break;
-                                    case 'companyDue':
-                                        totalValue = formatCurrency(footerTotals.companyDue);
-                                        break;
-                                    case 'cod':
-                                        totalValue = formatCurrency(footerTotals.cod);
-                                        break;
-                                    default:
-                                        totalValue = '';
+                                    case 'itemPrice': totalValue = formatCurrency(footerTotals.itemPrice); break;
+                                    case 'deliveryFee': totalValue = formatCurrency(footerTotals.deliveryFee); break;
+                                    case 'additionalCost': totalValue = formatCurrency(footerTotals.additionalCost); break;
+                                    case 'driverFee': totalValue = formatCurrency(footerTotals.driverFee); break;
+                                    case 'driverAdditionalFare': totalValue = formatCurrency(0); break;
+                                    case 'companyDue': totalValue = formatCurrency(footerTotals.companyDue); break;
+                                    case 'cod': totalValue = formatCurrency(footerTotals.cod); break;
+                                    default: totalValue = '';
                                 }
                                 const isFinancialCol = ['itemPrice', 'deliveryFee', 'additionalCost', 'driverFee', 'driverAdditionalFare', 'companyDue', 'cod'].includes(col.key);
                                 return (
-                                    <TableCell 
-                                        key={col.key} 
-                                        className="py-2 px-3 text-center text-sm font-bold bg-slate-700/50 dark:bg-slate-800/50"
-                                    >
+                                    <TableCell key={col.key} className="py-2 px-3 text-center text-sm font-bold bg-slate-700/50 dark:bg-slate-800/50">
                                         {totalValue && isFinancialCol ? (
                                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-orange-500 text-white text-sm font-bold shadow-md">
                                                 {totalValue}

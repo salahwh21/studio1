@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useOrdersStore } from '@/store/orders-store';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useDriverOrders } from '@/hooks/use-driver-orders';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/icon';
@@ -17,15 +17,9 @@ import {
 } from '@/components/ui/select';
 
 export default function DriverHistoryPage() {
-  const { user } = useAuth();
-  const { orders } = useOrdersStore();
   const { formatCurrency, formatDate } = useSettings();
+  const { orders: myOrders, isLoading } = useDriverOrders();
   const [period, setPeriod] = useState('week');
-
-  // طلبات السائق
-  const myOrders = useMemo(() => {
-    return orders.filter(o => o.driver === user?.name);
-  }, [orders, user]);
 
   // فلترة حسب الفترة
   const filteredOrders = useMemo(() => {
@@ -106,6 +100,21 @@ export default function DriverHistoryPage() {
     };
     return colors[status] || 'text-gray-600 bg-gray-100';
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 pb-20">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-40" />
+          <Skeleton className="h-10 w-32 rounded-lg" />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)}
+        </div>
+        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

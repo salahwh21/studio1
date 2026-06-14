@@ -1,5 +1,8 @@
 {
-    "kiroAgent.configureMCP": "Enabled",
-    "typescript.autoClosingTags": false,
-    "chat.agent.maxRequests": 40
+    "builder.serverUrl": "http://localhost:5000",
+    "builder.command": "npm run dev",
+    "builder.runDevServer": false,
+    "builder.autoDetectDevServer": true,
+    "builder.launchType": "editor",
+    "css.lint.unknownAtRules": "ignore"
 }

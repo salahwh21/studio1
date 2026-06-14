@@ -61,7 +61,7 @@ const RoleCard = ({ role, userCount, onEdit, onDelete }: { role: Role; userCount
     const permissionPercentage = Math.round((permissionCount / totalPermissions) * 100);
 
     return (
-        <Card className={`hover:shadow-lg transition-all duration-300 border-r-4 ${colors.border} group`}>
+        <Card className={`hover:shadow-lg hover:border-primary transition-all duration-300 group`}>
             <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                     <Link href={`/dashboard/settings/roles/${role.id}`} className="flex-1">
@@ -294,7 +294,7 @@ export default function RolesListPage() {
 
             {/* Stats Cards */}
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-                <Card className="border-r-4 border-r-purple-500">
+                <Card className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -308,7 +308,7 @@ export default function RolesListPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-r-4 border-r-blue-500">
+                <Card className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -322,7 +322,7 @@ export default function RolesListPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-r-4 border-r-emerald-500">
+                <Card className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -336,7 +336,7 @@ export default function RolesListPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-r-4 border-r-orange-500">
+                <Card className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>

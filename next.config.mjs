@@ -46,8 +46,7 @@ const nextConfig = {
   },
   
   env: {
-    VITE_API_URL: process.env.VITE_API_URL || 'http://localhost:3001/api',
-    VITE_SOCKET_IO_URL: process.env.VITE_SOCKET_IO_URL || 'http://localhost:3001',
+    BACKEND_URL: process.env.BACKEND_URL || 'http://localhost:5001',
   },
   
   async headers() {
@@ -69,9 +68,36 @@ const nextConfig = {
       }
     ];
   },
-  
+  serverExternalPackages: ['genkit', 'handlebars'],
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+  },
+  async rewrites() {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5001';
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
+      },
+      {
+        source: '/socket.io/:path*',
+        destination: `${backendUrl}/socket.io/:path*`,
+      },
+    ];
+  },
+
+  webpack: (config) => {
+    config.ignoreWarnings = [
+      function ignoreSourcemapsloaderWarnings(warning) {
+        return (
+          warning.module &&
+          warning.module.resource.includes('node_modules') &&
+          warning.details &&
+          warning.details.includes('source-map-loader')
+        );
+      },
+    ];
+    return config;
   },
 };
 

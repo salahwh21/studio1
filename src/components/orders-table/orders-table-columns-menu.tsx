@@ -14,7 +14,6 @@ import {
 import { ALL_COLUMNS } from './orders-table-constants';
 import type { ColumnConfig } from '@/components/export-data-dialog';
 
-const COLUMN_SETTINGS_KEY = 'ordersTableColumnSettings';
 
 interface OrdersTableColumnsMenuProps {
   columns?: ColumnConfig[];
@@ -34,31 +33,19 @@ export function OrdersTableColumnsMenu({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
+  // Sync from parent when external props change
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const savedColumnSettings = localStorage.getItem(COLUMN_SETTINGS_KEY);
-        if (savedColumnSettings) {
-          const { savedColumns, savedVisibleKeys } = JSON.parse(savedColumnSettings);
-          if (Array.isArray(savedColumns) && Array.isArray(savedVisibleKeys)) {
-            setColumns(savedColumns);
-            setVisibleColumnKeys(savedVisibleKeys);
-          }
-        }
-      } catch (e) {
-        console.error("Error loading column settings from localStorage:", e);
-      }
-    }
-  }, []);
+    if (externalVisibleKeys) setVisibleColumnKeys(externalVisibleKeys);
+  }, [externalVisibleKeys]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const settingsToSave = JSON.stringify({ savedColumns: columns, savedVisibleKeys: visibleColumnKeys });
-      localStorage.setItem(COLUMN_SETTINGS_KEY, settingsToSave);
-    }
+    if (externalColumns) setColumns(externalColumns);
+  }, [externalColumns]);
+
+  useEffect(() => {
     if (onColumnsChange) onColumnsChange(columns);
     if (onVisibleColumnsChange) onVisibleColumnsChange(visibleColumnKeys);
-  }, [columns, visibleColumnKeys, onColumnsChange, onVisibleColumnsChange]);
+  }, [columns, visibleColumnKeys]);
 
   const handleColumnVisibilityChange = (key: string, checked: boolean) => {
     setVisibleColumnKeys(prev => {

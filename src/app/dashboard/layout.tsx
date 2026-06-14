@@ -10,10 +10,5 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   
-  // صفحة الطلبات لا تحتاج AppLayout - استغلال كامل للمساحة
-  if (pathname === '/dashboard/orders') {
-    return <>{children}</>;
-  }
-  
   return <AppLayout>{children}</AppLayout>;
 }

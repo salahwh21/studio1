@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const db = require('../config/database');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, authorizeRoles } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -41,7 +41,7 @@ router.post('/login', [
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, roleId: user.role_id, name: user.name },
+      { id: user.id, email: user.email, roleId: user.role_id, name: user.name, tokenVersion: user.token_version || 1 },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -71,7 +71,7 @@ router.post('/login', [
   }
 });
 
-router.post('/register', [
+router.post('/register', authenticateToken, authorizeRoles('admin'), [
   body('name')
     .notEmpty().withMessage('Name is required')
     .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters')
@@ -151,6 +151,39 @@ router.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
 
+router.post('/refresh', authenticateToken, async (req, res) => {
+  try {
+    const result = await db.query(
+      'SELECT id, name, email, role_id, token_version FROM users WHERE id = $1',
+      [req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = result.rows[0];
+    const token = jwt.sign(
+      { id: user.id, email: user.email, roleId: user.role_id, name: user.name, tokenVersion: user.token_version || 1 },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000,
+      path: '/'
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const result = await db.query(
@@ -175,6 +208,45 @@ router.get('/me', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Get user error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/auth/preferences — load user UI preferences
+router.get('/preferences', authenticateToken, async (req, res) => {
+  try {
+    const result = await db.query(
+      'SELECT ui_preferences FROM users WHERE id = $1',
+      [req.user.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    res.json(result.rows[0].ui_preferences || {});
+  } catch (error) {
+    console.error('Get preferences error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PUT /api/auth/preferences — save user UI preferences (merge, not replace)
+router.put('/preferences', authenticateToken, async (req, res) => {
+  try {
+    const patch = req.body;
+    if (typeof patch !== 'object' || Array.isArray(patch)) {
+      return res.status(400).json({ error: 'Body must be a JSON object' });
+    }
+    // Merge top-level keys only — deep merge done client-side
+    const result = await db.query(
+      `UPDATE users
+       SET ui_preferences = COALESCE(ui_preferences, '{}') || $1::jsonb,
+           updated_at = NOW()
+       WHERE id = $2
+       RETURNING ui_preferences`,
+      [JSON.stringify(patch), req.user.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    res.json(result.rows[0].ui_preferences);
+  } catch (error) {
+    console.error('Save preferences error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

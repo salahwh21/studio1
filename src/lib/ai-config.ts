@@ -1,7 +1,9 @@
 /**
  * AI Configuration Helper
- * Manages API keys for different AI providers
+ * Manages API keys for different AI providers — stored in DB via /api/auth/preferences
  */
+
+import { api } from '@/lib/api';
 
 export interface AIProviderConfig {
   apiKey: string;
@@ -21,46 +23,21 @@ export interface AIConfig {
 
 export type AIProviderName = keyof AIConfig;
 
-const AI_CONFIG_KEY = 'ai_config';
-
-/**
- * Get AI configuration from localStorage (client-side only)
- */
-export function getAIConfig(): AIConfig {
-  if (typeof window === 'undefined') {
+export async function getAIConfig(): Promise<AIConfig> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const prefs = await api.getPreferences();
+    return (prefs?.aiConfig as AIConfig) ?? {};
+  } catch {
     return {};
   }
-
-  try {
-    const saved = localStorage.getItem(AI_CONFIG_KEY);
-    if (saved) {
-      return JSON.parse(saved);
-    }
-  } catch (e) {
-    console.error('Failed to parse AI config from localStorage', e);
-  }
-
-  return {};
 }
 
-/**
- * Save AI configuration to localStorage (client-side only)
- */
-export function saveAIConfig(config: AIConfig): void {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(config));
-  } catch (e) {
-    console.error('Failed to save AI config to localStorage', e);
-  }
+export async function saveAIConfig(config: AIConfig): Promise<void> {
+  if (typeof window === 'undefined') return;
+  await api.savePreferences({ aiConfig: config });
 }
 
-/**
- * Get API key for a specific provider from environment variables (server-side)
- */
 export function getAPIKeyFromEnv(provider: AIProviderName): string | undefined {
   switch (provider) {
     case 'google':
@@ -80,51 +57,23 @@ export function getAPIKeyFromEnv(provider: AIProviderName): string | undefined {
   }
 }
 
-/**
- * Get API key for a specific provider (works on both client and server)
- */
 export function getAPIKey(provider: AIProviderName): string | undefined {
-  // Try localStorage first (client-side)
-  if (typeof window !== 'undefined') {
-    const config = getAIConfig();
-    const providerConfig = config[provider];
-    
-    if (providerConfig?.apiKey && providerConfig.enabled) {
-      return providerConfig.apiKey;
-    }
-  }
-
-  // Fallback to environment variables
   return getAPIKeyFromEnv(provider);
 }
 
-/**
- * Check if a provider is configured and enabled
- */
 export function isProviderEnabled(provider: AIProviderName): boolean {
-  const apiKey = getAPIKey(provider);
-  return !!apiKey;
+  return !!getAPIKey(provider);
 }
 
-/**
- * Get the first available AI provider
- */
 export function getAvailableProvider(): AIProviderName | null {
   const providers: AIProviderName[] = ['google', 'openai', 'anthropic', 'mistral', 'cohere', 'huggingface'];
-  
   for (const provider of providers) {
-    if (isProviderEnabled(provider)) {
-      return provider;
-    }
+    if (isProviderEnabled(provider)) return provider;
   }
-
   return null;
 }
 
-/**
- * Get all available providers
- */
 export function getAvailableProviders(): AIProviderName[] {
   const providers: AIProviderName[] = ['google', 'openai', 'anthropic', 'mistral', 'cohere', 'huggingface'];
-  return providers.filter(provider => isProviderEnabled(provider));
+  return providers.filter(p => isProviderEnabled(p));
 }

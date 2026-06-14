@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { SavedTemplate } from '@/contexts/SettingsContext';
 import { Save, Download, Upload, FileText, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { TemplateGallery } from './template-gallery';
 
 interface TemplateActionsProps {
   currentTemplate: SavedTemplate;
@@ -29,10 +30,10 @@ export function TemplateActions({ currentTemplate, onSave, onLoad }: TemplateAct
       name: templateName,
       id: `custom-${Date.now()}`,
     };
-    
+
     onSave(updatedTemplate);
     setSaveDialogOpen(false);
-    
+
     toast({
       title: 'تم الحفظ بنجاح',
       description: `تم حفظ القالب "${templateName}" بنجاح`,
@@ -41,15 +42,15 @@ export function TemplateActions({ currentTemplate, onSave, onLoad }: TemplateAct
 
   const handleExport = () => {
     const dataStr = JSON.stringify(currentTemplate, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+
     const exportFileDefaultName = `${currentTemplate.name.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
-    
+
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
-    
+
     toast({
       title: 'تم التصدير بنجاح',
       description: 'تم تصدير القالب كملف JSON',
@@ -59,16 +60,16 @@ export function TemplateActions({ currentTemplate, onSave, onLoad }: TemplateAct
   const handleImport = () => {
     try {
       const template = JSON.parse(importData) as SavedTemplate;
-      
+
       // Validate template structure
       if (!template.id || !template.name || !template.elements) {
         throw new Error('Invalid template format');
       }
-      
+
       onLoad(template);
       setLoadDialogOpen(false);
       setImportData('');
-      
+
       toast({
         title: 'تم الاستيراد بنجاح',
         description: `تم استيراد القالب "${template.name}" بنجاح`,
@@ -88,9 +89,9 @@ export function TemplateActions({ currentTemplate, onSave, onLoad }: TemplateAct
       id: `copy-${Date.now()}`,
       name: `نسخة من ${currentTemplate.name}`,
     };
-    
+
     onLoad(duplicatedTemplate);
-    
+
     toast({
       title: 'تم النسخ بنجاح',
       description: 'تم إنشاء نسخة من القالب الحالي',
@@ -141,6 +142,15 @@ export function TemplateActions({ currentTemplate, onSave, onLoad }: TemplateAct
         <Download className="w-4 h-4 mr-2" />
         تصدير
       </Button>
+
+      {/* Template Gallery */}
+      <TemplateGallery onSelect={(template) => {
+        onLoad({ ...template, id: `gallery-${Date.now()}` }); // Generate temp ID
+        toast({
+          title: 'تم تحميل القالب',
+          description: `تم تحميل "${template.name}". يمكنك تعديله وحفظه.`,
+        });
+      }} />
 
       {/* Import Dialog */}
       <Dialog open={loadDialogOpen} onOpenChange={setLoadDialogOpen}>

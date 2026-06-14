@@ -9,12 +9,24 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,
 });
 
-// Redis Connection
-const redis = new Redis(process.env.REDIS_URL!, {
-  retryDelayOnCloseConnection: 100,
-  enableReadyCheck: false,
-  maxRetriesPerRequest: null,
-});
+// Redis Connection - معالجة الخطأ إذا لم يكن يعمل محلياً
+let redis: any;
+try {
+  redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+    retryStrategy: (times) => {
+      if (times > 3) return null; // التوقف عن المحاولة بعد 3 مرات
+      return Math.min(times * 50, 2000);
+    },
+    maxRetriesPerRequest: 0,
+    enableReadyCheck: false
+  });
+
+  redis.on('error', (err: any) => {
+    console.warn('⚠️ Redis connection failed, continuing without cache.');
+  });
+} catch (error) {
+  console.warn('⚠️ Redis not available.');
+}
 
 // Database Helper Functions
 export class DatabaseService {

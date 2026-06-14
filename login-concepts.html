@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مقترحات تصميم صفحة تسجيل الدخول</title>
+<style>
+  :root { color-scheme: light; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f1f5f9; color: #1e293b; }
+
+  .page-header {
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+  }
+  .page-header h1 { font-size: 18px; font-weight: 700; color: #0f172a; }
+  .page-header p { font-size: 13px; color: #64748b; margin-top: 2px; }
+  .badge-current { background: #fee2e2; color: #dc2626; font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+
+  .concepts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 28px;
+    padding: 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .concept-card {
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  .concept-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); border-color: #6366f1; }
+
+  .concept-label {
+    padding: 16px 20px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .concept-label h2 { font-size: 15px; font-weight: 700; }
+  .concept-label p { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .tag { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+  .tag-recommended { background: #dcfce7; color: #16a34a; }
+  .tag-modern { background: #ede9fe; color: #7c3aed; }
+  .tag-minimal { background: #f0f9ff; color: #0369a1; }
+  .tag-bold { background: #fff7ed; color: #c2410c; }
+
+  .preview-box { height: 320px; position: relative; overflow: hidden; }
+
+  /* ===== CONCEPT 1 - Glassmorphism ===== */
+  .c1 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .c1::before {
+    content: ''; position: absolute;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,0.1); border-radius: 50%;
+    top: -60px; left: -60px; filter: blur(30px);
+  }
+  .c1-card {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px; padding: 24px;
+    width: 100%; max-width: 260px; position: relative; z-index: 1;
+  }
+  .c1-logo {
+    width: 44px; height: 44px; background: rgba(255,255,255,0.9);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px; font-size: 20px;
+  }
+  .c1-title { color: #fff; font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .c1-sub { color: rgba(255,255,255,0.7); font-size: 11px; margin-bottom: 18px; }
+  .c1-input {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 10px; padding: 10px 14px; color: #fff; font-size: 12px;
+    width: 100%; margin-bottom: 10px;
+  }
+  .c1-btn {
+    background: #fff; color: #764ba2; border: none; border-radius: 10px;
+    padding: 10px; width: 100%; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 4px;
+  }
+  .c1-roles { display: flex; gap: 6px; margin-top: 14px; justify-content: center; }
+  .c1-role {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 8px; padding: 5px 8px; color: rgba(255,255,255,0.9); font-size: 10px; text-align: center;
+  }
+
+  /* ===== CONCEPT 2 - Dark Elegant ===== */
+  .c2 { background: #0f0f1a; display: flex; overflow: hidden; }
+  .c2-left {
+    width: 42%; background: linear-gradient(160deg, #1a1a2e 0%, #16213e 100%);
+    padding: 20px; display: flex; flex-direction: column; justify-content: center;
+    align-items: center; position: relative; border-left: 1px solid rgba(99,102,241,0.2);
+  }
+  .c2-glow {
+    position: absolute; width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(99,102,241,0.4) 0%, transparent 70%);
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+  }
+  .c2-icon-wrap {
+    width: 56px; height: 56px; background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 16px; display: flex; align-items: center; justify-content: center;
+    font-size: 24px; position: relative; z-index: 1; margin-bottom: 12px;
+    box-shadow: 0 0 30px rgba(99,102,241,0.5);
+  }
+  .c2-brand { color: #fff; font-size: 14px; font-weight: 700; z-index: 1; }
+  .c2-brand-sub { color: rgba(255,255,255,0.4); font-size: 10px; z-index: 1; margin-top: 4px; }
+  .c2-dots { display: flex; gap: 5px; margin-top: 16px; z-index: 1; }
+  .c2-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(99,102,241,0.4); }
+  .c2-dot.active { background: #6366f1; }
+  .c2-right { flex: 1; padding: 20px 18px; display: flex; flex-direction: column; justify-content: center; }
+  .c2-title { color: #fff; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .c2-sub { color: rgba(255,255,255,0.4); font-size: 10px; margin-bottom: 16px; }
+  .c2-label { color: rgba(255,255,255,0.5); font-size: 10px; margin-bottom: 4px; }
+  .c2-input {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 9px 12px; color: #fff; font-size: 11px;
+    width: 100%; margin-bottom: 10px;
+  }
+  .c2-btn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none;
+    border-radius: 8px; padding: 10px; width: 100%; font-size: 12px; font-weight: 700;
+    cursor: pointer; box-shadow: 0 4px 15px rgba(99,102,241,0.4); margin-bottom: 12px;
+  }
+  .c2-quick { display: flex; gap: 5px; }
+  .c2-quick-btn {
+    flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 7px; padding: 7px 4px; color: rgba(255,255,255,0.6); font-size: 9px; text-align: center;
+  }
+
+  /* ===== CONCEPT 3 - Minimal Clean ===== */
+  .c3 { background: #fafafa; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .c3-card {
+    width: 100%; max-width: 260px; background: #fff; border-radius: 20px; padding: 24px 22px;
+    box-shadow: 0 4px 40px rgba(0,0,0,0.08); border: 1px solid #f1f5f9;
+  }
+  .c3-top { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .c3-logo {
+    width: 38px; height: 38px; background: linear-gradient(135deg, #0ea5e9, #6366f1);
+    border-radius: 11px; display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; font-size: 16px;
+  }
+  .c3-name { font-size: 15px; font-weight: 700; color: #0f172a; }
+  .c3-tagline { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+  .c3-heading { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 3px; }
+  .c3-desc { font-size: 11px; color: #94a3b8; margin-bottom: 16px; }
+  .c3-field { margin-bottom: 10px; }
+  .c3-field label { font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px; }
+  .c3-input {
+    width: 100%; background: #f8fafc; border: 1.5px solid #e2e8f0;
+    border-radius: 9px; padding: 9px 12px; font-size: 12px; color: #1e293b;
+  }
+  .c3-btn {
+    width: 100%; background: #0f172a; color: #fff; border: none; border-radius: 9px;
+    padding: 11px; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 12px; margin-bottom: 12px;
+  }
+  .c3-divider { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .c3-divider-line { flex: 1; height: 1px; background: #e2e8f0; }
+  .c3-divider-text { font-size: 10px; color: #94a3b8; }
+  .c3-roles { display: flex; gap: 6px; }
+  .c3-role-btn {
+    flex: 1; border: 1.5px solid #e2e8f0; border-radius: 9px; padding: 8px 4px;
+    font-size: 9px; text-align: center; cursor: pointer; background: #fff; color: #475569; font-weight: 600;
+  }
+  .c3-role-emoji { font-size: 14px; display: block; margin-bottom: 3px; }
+
+  /* ===== CONCEPT 4 - Bold Brand ===== */
+  .c4 { display: flex; overflow: hidden; }
+  .c4-left {
+    width: 45%;
+    background: linear-gradient(160deg, #f97316 0%, #ef4444 60%, #dc2626 100%);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 20px; position: relative; overflow: hidden;
+  }
+  .c4-left::before {
+    content: ''; position: absolute;
+    width: 200px; height: 200px; border: 40px solid rgba(255,255,255,0.08);
+    border-radius: 50%; bottom: -80px; left: -60px;
+  }
+  .c4-icon { font-size: 40px; margin-bottom: 10px; z-index: 1; }
+  .c4-brand { color: #fff; font-size: 20px; font-weight: 900; z-index: 1; }
+  .c4-brand-en { color: rgba(255,255,255,0.6); font-size: 9px; z-index: 1; letter-spacing: 3px; margin-top: 3px; }
+  .c4-stat {
+    margin-top: 20px; background: rgba(255,255,255,0.15); border-radius: 12px;
+    padding: 10px 16px; text-align: center; z-index: 1; width: 80%;
+  }
+  .c4-stat-num { color: #fff; font-size: 20px; font-weight: 900; }
+  .c4-stat-label { color: rgba(255,255,255,0.7); font-size: 9px; margin-top: 1px; }
+  .c4-right {
+    flex: 1; background: #fff; padding: 22px 18px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .c4-title { font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 2px; }
+  .c4-sub { font-size: 10px; color: #94a3b8; margin-bottom: 16px; }
+  .c4-label { font-size: 10px; font-weight: 700; color: #374151; display: block; margin-bottom: 4px; }
+  .c4-input {
+    width: 100%; border: 2px solid #f3f4f6; border-radius: 9px;
+    padding: 9px 12px; font-size: 11px; margin-bottom: 10px; background: #f9fafb;
+  }
+  .c4-btn {
+    background: linear-gradient(135deg, #f97316, #ef4444); color: #fff; border: none;
+    border-radius: 9px; padding: 10px; width: 100%; font-size: 12px; font-weight: 800;
+    cursor: pointer; margin-top: 4px; box-shadow: 0 4px 14px rgba(239,68,68,0.35); margin-bottom: 12px;
+  }
+  .c4-roles { display: flex; gap: 5px; }
+  .c4-role {
+    flex: 1; background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 8px;
+    padding: 7px 4px; font-size: 9px; text-align: center; color: #dc2626; font-weight: 600;
+  }
+
+  /* ===== Bottom Sections ===== */
+  .comparison-note {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;
+    padding: 14px 18px; margin: 0 32px 28px; font-size: 12px; color: #92400e;
+    max-width: 1336px; margin-left: auto; margin-right: auto;
+  }
+  .comparison-note strong { font-weight: 700; }
+
+  .features-section {
+    background: #fff; border-top: 1px solid #e2e8f0; padding: 32px;
+    max-width: 1400px; margin: 0 auto;
+  }
+  .features-title { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #f1f5f9; }
+  .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .feature-item { background: #f8fafc; border-radius: 12px; padding: 16px; border: 1px solid #e2e8f0; }
+  .feature-icon { font-size: 22px; margin-bottom: 8px; }
+  .feature-name { font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+  .feature-desc { font-size: 11px; color: #64748b; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div>
+    <h1>🎨 مقترحات تصميم صفحة تسجيل الدخول</h1>
+    <p>4 مفاهيم تصميمية — اختر الأنسب لهوية شركتك</p>
+  </div>
+  <span class="badge-current">التصميم الحالي: Classic Split</span>
+</div>
+
+<div class="concepts-grid">
+
+  <div class="concept-card">
+    <div class="concept-label">
+      <div>
+        <h2>🌈 Glassmorphism</h2>
+        <p>خلفية متدرجة بنفسجية مع بطاقة زجاجية شفافة</p>
+      </div>
+      <span class="tag tag-recommended">✦ الأجمل</span>
+    </div>
+    <div class="preview-box c1">
+      <div class="c1-card">
+        <div class="c1-logo">🚚</div>
+        <div class="c1-title">مرحباً بعودتك</div>
+        <div class="c1-sub">سجل دخولك للوصول إلى لوحة التحكم</div>
+        <input class="c1-input" placeholder="📧  البريد الإلكتروني" readonly>
+        <input class="c1-input" placeholder="🔒  كلمة المرور" readonly>
+        <button class="c1-btn">تسجيل الدخول ←</button>
+        <div class="c1-roles">
+          <div class="c1-role">🛡️ مدير</div>
+          <div class="c1-role">🏪 تاجر</div>
+          <div class="c1-role">🚗 سائق</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept-card">
+    <div class="concept-label">
+      <div>
+        <h2>🌙 Dark Elegant</h2>
+        <p>خلفية داكنة فاخرة مع لهجات بنفسجية مضيئة</p>
+      </div>
+      <span class="tag tag-modern">✦ عصري</span>
+    </div>
+    <div class="preview-box c2">
+      <div class="c2-left">
+        <div class="c2-glow"></div>
+        <div class="c2-icon-wrap">🚚</div>
+        <div class="c2-brand">الوميض</div>
+        <div class="c2-brand-sub">نظام إدارة التوصيل</div>
+        <div class="c2-dots">
+          <div class="c2-dot active"></div>
+          <div class="c2-dot"></div>
+          <div class="c2-dot"></div>
+          <div class="c2-dot"></div>
+        </div>
+      </div>
+      <div class="c2-right">
+        <div class="c2-title">تسجيل الدخول</div>
+        <div class="c2-sub">أدخل بيانات حسابك للمتابعة</div>
+        <div class="c2-label">البريد الإلكتروني</div>
+        <input class="c2-input" placeholder="name@company.com" readonly>
+        <div class="c2-label">كلمة المرور</div>
+        <input class="c2-input" placeholder="••••••••" readonly>
+        <button class="c2-btn">✦ دخول</button>
+        <div class="c2-quick">
+          <div class="c2-quick-btn">🛡️ مدير</div>
+          <div class="c2-quick-btn">🏪 تاجر</div>
+          <div class="c2-quick-btn">🚗 سائق</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept-card">
+    <div class="concept-label">
+      <div>
+        <h2>⬜ Minimal Clean</h2>
+        <p>أبيض نظيف بدون ضوضاء بصرية — بسيط وعصري</p>
+      </div>
+      <span class="tag tag-minimal">✦ بسيط</span>
+    </div>
+    <div class="preview-box c3">
+      <div class="c3-card">
+        <div class="c3-top">
+          <div class="c3-logo">و</div>
+          <div>
+            <div class="c3-name">الوميض</div>
+            <div class="c3-tagline">Delivery Management</div>
+          </div>
+        </div>
+        <div class="c3-heading">أهلاً بك 👋</div>
+        <div class="c3-desc">سجل دخولك لإدارة عمليات التوصيل</div>
+        <div class="c3-field">
+          <label>البريد الإلكتروني</label>
+          <input class="c3-input" placeholder="example@mail.com" readonly>
+        </div>
+        <div class="c3-field">
+          <label>كلمة المرور</label>
+          <input class="c3-input" placeholder="••••••••" readonly>
+        </div>
+        <button class="c3-btn">تسجيل الدخول</button>
+        <div class="c3-divider">
+          <div class="c3-divider-line"></div>
+          <span class="c3-divider-text">دخول سريع</span>
+          <div class="c3-divider-line"></div>
+        </div>
+        <div class="c3-roles">
+          <div class="c3-role-btn"><span class="c3-role-emoji">🛡️</span>مدير</div>
+          <div class="c3-role-btn"><span class="c3-role-emoji">🏪</span>تاجر</div>
+          <div class="c3-role-btn"><span class="c3-role-emoji">🚗</span>سائق</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept-card">
+    <div class="concept-label">
+      <div>
+        <h2>🔥 Bold Brand</h2>
+        <p>قسم يسار بلون برتقالي/أحمر جريء مع إحصائيات</p>
+      </div>
+      <span class="tag tag-bold">✦ جريء</span>
+    </div>
+    <div class="preview-box c4">
+      <div class="c4-left">
+        <div class="c4-icon">🚀</div>
+        <div class="c4-brand">الوميض</div>
+        <div class="c4-brand-en">ALWAMEED</div>
+        <div class="c4-stat">
+          <div class="c4-stat-num">+1,200</div>
+          <div class="c4-stat-label">طلب توصيل يومياً</div>
+        </div>
+      </div>
+      <div class="c4-right">
+        <div class="c4-title">تسجيل الدخول</div>
+        <div class="c4-sub">مرحباً! أدخل بيانات حسابك</div>
+        <label class="c4-label">البريد / رقم الهاتف</label>
+        <input class="c4-input" placeholder="أدخل البريد أو رقم الهاتف" readonly>
+        <label class="c4-label">كلمة المرور</label>
+        <input class="c4-input" placeholder="••••••••" readonly>
+        <button class="c4-btn">دخول ←</button>
+        <div class="c4-roles">
+          <div class="c4-role">🛡️ مدير</div>
+          <div class="c4-role">🏪 تاجر</div>
+          <div class="c4-role">🚗 سائق</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="comparison-note">
+  ⚠️ <strong>ملاحظة:</strong> هذه معاينات تصورية مصغّرة. كل التصاميم ستحتفظ بنفس الوظائف الحالية (الدخول السريع، الإعدادات الديناميكية، الروابط الاجتماعية) وستكون متجاوبة مع جميع الأجهزة. اختر التصميم المناسب وسيتم تطبيقه كاملاً.
+</div>
+
+<div class="features-section">
+  <div class="features-title">✦ ما الذي سيتحسن في أي تصميم تختاره</div>
+  <div class="features-grid">
+    <div class="feature-item">
+      <div class="feature-icon">📱</div>
+      <div class="feature-name">تجاوب كامل</div>
+      <div class="feature-desc">مثالي من 320px حتى الشاشات الكبيرة بدون كسر في التخطيط</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">✨</div>
+      <div class="feature-name">انتقالات سلسة</div>
+      <div class="feature-desc">animations عند التحميل والتفاعل مع الحقول وزر الدخول</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🎯</div>
+      <div class="feature-name">UX أفضل</div>
+      <div class="feature-desc">تركيز تلقائي، Enter للانتقال بين الحقول، رسائل خطأ inline</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🌙</div>
+      <div class="feature-name">Dark Mode محسّن</div>
+      <div class="feature-desc">دعم كامل للوضع الداكن بألوان متناسقة ومدروسة</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-name">أداء أسرع</div>
+      <div class="feature-desc">إزالة Skeleton غير الضرورية وتحسين hydration في Next.js</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">♿</div>
+      <div class="feature-name">إمكانية الوصول</div>
+      <div class="feature-desc">دعم keyboard navigation وscreen readers وARIA labels</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

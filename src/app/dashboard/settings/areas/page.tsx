@@ -387,7 +387,7 @@ const AreaDialog = ({
 
 export default function AreasPage() {
     const { toast } = useToast();
-    const { cities, setCities, addCity, updateCity, deleteCity, addArea, updateArea, deleteArea, restoreDefaults, fetchAreas } = useAreasStore();
+    const { cities, isLoading, setCities, addCity, updateCity, deleteCity, addArea, updateArea, deleteArea, restoreDefaults, fetchAreas } = useAreasStore();
 
     const [selectedCity, setSelectedCity] = useState<City | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -606,6 +606,17 @@ export default function AreasPage() {
                 </AlertDialog>
             </>
         )
+    }
+
+    if (isLoading && cities.length === 0) {
+        return (
+            <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-3"></div>
+                    <p className="text-muted-foreground text-sm">جاري تحميل المدن والمناطق...</p>
+                </div>
+            </div>
+        );
     }
 
     return (

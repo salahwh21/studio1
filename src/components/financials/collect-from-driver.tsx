@@ -101,8 +101,7 @@ export const CollectFromDriver = () => {
         addDriverPaymentSlip({
             driverName: selectedDriver.name,
             date: new Date().toISOString(),
-            itemCount: ordersToProcess.length,
-            orders: ordersToProcess,
+            orderIds: ordersToProcess.map(o => o.id),
         });
 
         // 2. Update status for selected orders

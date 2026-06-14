@@ -1,6 +1,7 @@
 
 import * as React from 'react';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useUserPreferences } from '@/hooks/use-user-preferences';
 import { Search, X, Filter, ListTree, ChevronRight, ChevronDown, Calendar, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -50,7 +51,6 @@ interface SavedFilter {
 }
 
 // مفتاح التخزين المحلي
-const SAVED_FILTERS_KEY = 'orders-saved-filters';
 
 interface AdvancedSearchProps {
     filters: FilterDefinition[];
@@ -90,6 +90,7 @@ export const AdvancedSearch = ({
     const [optionsOpen, setOptionsOpen] = useState(false);
     const [dateGroupOpen, setDateGroupOpen] = useState(false);
     const [savedFiltersOpen, setSavedFiltersOpen] = useState(false);
+    const prefs = useUserPreferences();
     const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([]);
     const [newFilterName, setNewFilterName] = useState('');
     const [dateFrom, setDateFrom] = useState('');
@@ -107,17 +108,12 @@ export const AdvancedSearch = ({
     const optionsSearchRef = useRef<HTMLInputElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // تحميل الفلاتر المحفوظة من localStorage
+    // تحميل الفلاتر المحفوظة من DB
     useEffect(() => {
-        const saved = localStorage.getItem(SAVED_FILTERS_KEY);
-        if (saved) {
-            try {
-                setSavedFilters(JSON.parse(saved));
-            } catch (e) {
-                console.error('Error loading saved filters:', e);
-            }
-        }
-    }, []);
+        if (!prefs.isReady) return;
+        const saved = prefs.get('savedFilters');
+        if (Array.isArray(saved)) setSavedFilters(saved as SavedFilter[]);
+    }, [prefs.isReady]);
 
     // دمج الحقول مع الخيارات الديناميكية
     const filterFields = FILTER_FIELDS.map(field => {
@@ -453,7 +449,7 @@ export const AdvancedSearch = ({
         
         const updated = [...savedFilters, newSavedFilter];
         setSavedFilters(updated);
-        localStorage.setItem(SAVED_FILTERS_KEY, JSON.stringify(updated));
+        prefs.set('savedFilters', updated as any);
         setNewFilterName('');
         setSavedFiltersOpen(false);
     };
@@ -495,7 +491,7 @@ export const AdvancedSearch = ({
     const deleteSavedFilter = (id: string) => {
         const updated = savedFilters.filter(f => f.id !== id);
         setSavedFilters(updated);
-        localStorage.setItem(SAVED_FILTERS_KEY, JSON.stringify(updated));
+        prefs.set('savedFilters', updated as any);
     };
 
     return (

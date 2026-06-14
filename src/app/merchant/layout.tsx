@@ -164,11 +164,34 @@ export default function MerchantLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="lg:mr-64">
-        <div className="container mx-auto p-4 lg:p-8">
+      <main className="lg:mr-64 min-h-screen pb-20 lg:pb-0">
+        <div className="max-w-7xl mx-auto">
           {children}
         </div>
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="grid grid-cols-5 gap-1 px-2 py-2">
+          {merchantNavItems.map((item) => {
+            const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setSidebarOpen(false)}
+                className={cn(
+                  'flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] font-semibold transition-colors',
+                  isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Icon name={item.icon as any} className="h-5 w-5" />
+                <span className="leading-none">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
       </div>
     </ProtectedRoute>
   );

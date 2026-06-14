@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { Upload, Save, Eye, ImageIcon, Trash2, RefreshCw } from 'lucide-react';
+import { fileToWebP } from '@/lib/image-to-webp';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -95,13 +96,12 @@ const LogoUploader = ({
   return (
     <div 
       className={cn(
-        "group relative rounded-xl border-2 transition-all duration-300 overflow-hidden",
-        "bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800",
-        hasLogo ? "border-slate-200 hover:border-primary/50" : "border-dashed border-slate-300 hover:border-primary"
+        "group relative rounded-xl border-2 transition-all duration-300 overflow-hidden bg-card",
+        hasLogo ? "border-border hover:border-primary/50" : "border-dashed border-muted-foreground/25 hover:border-primary"
       )}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b bg-slate-50/50 dark:bg-slate-800/50">
+      <div className="flex items-center gap-3 p-4 border-b bg-muted/50">
         <div className={cn("p-2 rounded-lg text-white shadow-md", section.color)}>
           <Icon name={section.iconName} className="h-4 w-4" />
         </div>
@@ -121,10 +121,8 @@ const LogoUploader = ({
       <div className="p-4">
         <div 
           className={cn(
-            "relative rounded-lg flex items-center justify-center transition-all",
-            "bg-[repeating-conic-gradient(#f1f5f9_0%_25%,#ffffff_0%_50%)] bg-[length:16px_16px]",
-            "dark:bg-[repeating-conic-gradient(#1e293b_0%_25%,#0f172a_0%_50%)]",
-            "border border-slate-200 dark:border-slate-700"
+            "relative rounded-lg flex items-center justify-center transition-all bg-muted/30",
+            "border border-border"
           )}
           style={{ 
             height: Math.max(section.displayHeight + 40, 80),
@@ -229,12 +227,15 @@ export default function CompanyIdentityPage() {
     favicon: { src: settings.login.favicon },
   });
 
-  const handleFileChange = (id: string, file: File) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setLogos(prev => ({ ...prev, [id]: { src: reader.result as string } }));
-    };
-    reader.readAsDataURL(file);
+  const handleFileChange = async (id: string, file: File) => {
+    try {
+      const webpDataUrl = await fileToWebP(file, 0.9);
+      setLogos(prev => ({ ...prev, [id]: { src: webpDataUrl } }));
+    } catch {
+      const reader = new FileReader();
+      reader.onloadend = () => setLogos(prev => ({ ...prev, [id]: { src: reader.result as string } }));
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleRemoveLogo = (id: string) => {
@@ -271,7 +272,7 @@ export default function CompanyIdentityPage() {
       />
 
       {/* Stats Bar */}
-      <Card className="bg-gradient-to-l from-primary/5 via-primary/10 to-primary/5 border-primary/20">
+      <Card className="shadow-sm">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -306,8 +307,8 @@ export default function CompanyIdentityPage() {
       </Card>
 
       {/* Company Name */}
-      <Card className="bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
-        <CardHeader className="border-b bg-blue-500/5">
+      <Card className="shadow-sm">
+        <CardHeader className="border-b">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-blue-500 text-white shadow-lg">
               <Icon name="Building2" className="h-5 w-5" />
@@ -332,8 +333,8 @@ export default function CompanyIdentityPage() {
       </Card>
 
       {/* Logos Section */}
-      <Card className="bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
-        <CardHeader className="border-b bg-purple-500/5">
+      <Card className="shadow-sm">
+        <CardHeader className="border-b">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-purple-500 text-white shadow-lg">
               <Icon name="Images" className="h-5 w-5" />
@@ -362,8 +363,8 @@ export default function CompanyIdentityPage() {
       </Card>
 
       {/* Live Preview */}
-      <Card className="bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
-        <CardHeader className="border-b bg-emerald-500/5">
+      <Card className="shadow-sm">
+        <CardHeader className="border-b">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-emerald-500 text-white shadow-lg">
               <Eye className="h-5 w-5" />

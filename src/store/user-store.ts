@@ -1,31 +1,9 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import { useRolesStore } from './roles-store';
+export type { User } from '@/types/user';
+import type { User } from '@/types/user';
 
-export type User = {
-    id: string;
-    name: string;
-    storeName?: string;
-    email: string;
-    roleId: string;
-    avatar: string;
-    password?: string;
-    whatsapp?: string;
-    priceListId?: string;
-};
-
-// بيانات افتراضية للتطوير عندما لا يكون الـ backend متاحاً
-const fallbackUsers: User[] = [
-    {
-        id: 'user-admin-1',
-        name: 'صلاح الوحيدي',
-        email: 'admin@alwameed.com',
-        roleId: 'admin',
-        avatar: '',
-        storeName: 'الإدارة',
-    },
-];
 
 type UsersState = {
     users: User[];
@@ -46,27 +24,9 @@ const generateId = () => `user-${Date.now()}-${Math.floor(Math.random() * 1000)}
 
 const createUserStore = () =>
     create<UsersState>()(
-        persist(
-            immer((set, get) => {
-                // Auto-load from API when backend is ready
-                const autoLoad = () => {
-                    const state = get();
-                    const backendReady =
-                        typeof window !== 'undefined' &&
-                        sessionStorage.getItem('backendReady') === '1';
-                    
-                    if (!state.isLoading && backendReady) {
-                        console.log('🔄 Auto-loading users from API...');
-                        state.loadUsersFromAPI();
-                    }
-                };
-
-                if (typeof window !== 'undefined') {
-                    setTimeout(autoLoad, 1500);
-                }
-
+        immer((set, get) => {
                 return {
-                    users: fallbackUsers,
+                    users: [],
                     isLoading: false,
                     error: null,
                     isFromAPI: false,
@@ -207,10 +167,10 @@ const createUserStore = () =>
 
                     deleteUser: async (userIds) => {
                         // Handle both string[] and User[] inputs
-                        const idsToDelete = Array.isArray(userIds) 
+                        const idsToDelete = Array.isArray(userIds)
                             ? userIds.map(u => typeof u === 'string' ? u : u.id)
                             : [typeof userIds === 'string' ? userIds : (userIds as User).id];
-                        
+
                         const users = get().users;
 
                         // Try API first
@@ -245,12 +205,12 @@ const createUserStore = () =>
                     syncRoleUserCounts: () => {
                         const users = get().users;
                         const roleCounts: Record<string, number> = {};
-                        
+
                         // حساب عدد المستخدمين لكل دور
                         users.forEach(user => {
                             roleCounts[user.roleId] = (roleCounts[user.roleId] || 0) + 1;
                         });
-                        
+
                         // تحديث الأدوار
                         const rolesStore = useRolesStore.getState();
                         rolesStore.roles.forEach(role => {
@@ -258,13 +218,13 @@ const createUserStore = () =>
                             if (role.userCount !== actualCount) {
                                 // تحديث العدد مباشرة
                                 useRolesStore.setState(state => ({
-                                    roles: state.roles.map(r => 
+                                    roles: state.roles.map(r =>
                                         r.id === role.id ? { ...r, userCount: actualCount } : r
                                     )
                                 }));
                             }
                         });
-                        
+
                         console.log('✅ Role user counts synced:', roleCounts);
                     },
 
@@ -273,16 +233,7 @@ const createUserStore = () =>
                         return get().users.filter(u => u.roleId === roleId).length;
                     },
                 };
-            }),
-            {
-                name: 'users-storage',
-                storage: createJSONStorage(() => localStorage),
-                partialize: (state) => ({ 
-                    users: state.users,
-                    isFromAPI: state.isFromAPI 
-                }),
-            }
-        )
+            })
     );
 
 export const usersStore = createUserStore();

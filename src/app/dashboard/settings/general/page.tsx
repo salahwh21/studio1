@@ -17,7 +17,7 @@ const generalSettingsItems: {
     { href: '/dashboard/settings/ui-customization', iconName: 'Brush', title: 'تخصيص الواجهة', description: 'تعديل شكل الواجهة وكثافة العرض' },
     { href: '/dashboard/settings/regional', iconName: 'Languages', title: 'الإعدادات الإقليمية', description: 'إدارة اللغة والعملة والمنطقة الزمنية' },
     { href: '/dashboard/settings/orders', iconName: 'Package', title: 'إعدادات الطلبات', description: 'التحكم في دورة حياة الطلبات' },
-    { href: '/dashboard/settings/policy', iconName: 'ReceiptText', title: 'إعدادات البوليصة', description: 'تصميم وتخصيص شكل بوليصة الشحن' },
+    { href: '/dashboard/reports/control-panel', iconName: 'FileText', title: 'التقارير والطباعة', description: 'إدارة مركزية لجميع تصاميم PDF والتقارير' },
     { href: '/dashboard/settings/menu-visibility', iconName: 'List', title: 'إعدادات ظهور القائمة', description: 'التحكم في القوائم المعروضة' },
   ];
 

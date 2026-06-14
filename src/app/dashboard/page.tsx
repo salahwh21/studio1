@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useUsersStore } from '@/store/user-store';
@@ -49,6 +49,8 @@ import { RecentActivities } from '@/components/dashboard/recent-activities';
 import { QuickActions } from '@/components/dashboard/quick-actions';
 import { TimeFilters } from '@/components/dashboard/time-filters';
 import { GoalsSection } from '@/components/dashboard/goals-section';
+import { FinancialSnapshot } from '@/components/dashboard/financial-snapshot';
+
 
 
 const chartConfig = {
@@ -110,17 +112,17 @@ const RevenueCard = ({ title, value, iconName, color = 'primary' }: { title: str
     </Card>
 );
 
-export default function DashboardPage() {
+function DashboardPageInner() {
     const [selectedDriver, setSelectedDriver] = useState('all');
     const searchParams = useSearchParams();
     const { formatCurrency, formatDate } = useSettings();
     const { users } = useUsersStore();
-    const { orders, isLoading: ordersLoading, error: ordersError, loadOrdersFromAPI } = useOrdersStore();
+    const { orders, isLoading: ordersLoading, error: ordersError, loadOrdersFromAPI, serverTotalCount } = useOrdersStore();
     const { statuses } = useStatusesStore();
-    
+
     // Real-time updates for orders
     useRealTimeOrders();
-    
+
     // Load orders if empty
     useEffect(() => {
         if (orders.length === 0 && !ordersLoading) {
@@ -130,7 +132,7 @@ export default function DashboardPage() {
             });
         }
     }, [orders.length, ordersLoading, loadOrdersFromAPI]);
-    
+
     // Debug: Log orders count and details
     useEffect(() => {
         console.log('📊 Dashboard: Orders count:', orders.length);
@@ -561,7 +563,7 @@ export default function DashboardPage() {
             </div>
         );
     }
-    
+
     // Show error state
     if (ordersError && orders.length === 0) {
         return (
@@ -574,7 +576,7 @@ export default function DashboardPage() {
                     <div className="text-center">
                         <p className="text-destructive mb-4">خطأ في تحميل البيانات</p>
                         <p className="text-muted-foreground mb-4">{ordersError}</p>
-                        <button 
+                        <button
                             onClick={() => loadOrdersFromAPI()}
                             className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                         >
@@ -585,7 +587,7 @@ export default function DashboardPage() {
             </div>
         );
     }
-    
+
     // Show empty state if no orders after loading
     if (!ordersLoading && orders.length === 0 && !ordersError) {
         return (
@@ -600,13 +602,13 @@ export default function DashboardPage() {
                         <p className="text-lg font-semibold mb-2">لا توجد طلبات</p>
                         <p className="text-muted-foreground mb-4">قاعدة البيانات فارغة أو لا توجد طلبات متطابقة مع الفلاتر</p>
                         <div className="flex gap-2 justify-center">
-                            <button 
+                            <button
                                 onClick={() => loadOrdersFromAPI()}
                                 className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                             >
                                 إعادة التحميل
                             </button>
-                            <Link 
+                            <Link
                                 href="/dashboard/add-order"
                                 className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
                             >
@@ -620,20 +622,27 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="flex flex-col gap-8">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
-                <p className="text-sm text-muted-foreground">{formatDate(new Date(), { longFormat: true })}</p>
+        <div className="flex flex-col gap-4">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-card/50 p-4 rounded-xl border border-border/50 shadow-sm">
+                <div className="flex flex-col gap-1">
+                    <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                        <Icon name="LayoutDashboard" className="h-5 w-5 text-primary" />
+                        لوحة تحكم المدير
+                    </h1>
+                    <p className="text-xs text-muted-foreground">{formatDate(new Date(), { longFormat: true })}</p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    {/* فلاتر زمنية */}
+                    <TimeFilters
+                        defaultPeriod={(searchParams.get('period') as any) || 'all'}
+                        showCompare={true}
+                    />
+                    
+                    {/* إجراءات سريعة */}
+                    <QuickActions />
+                </div>
             </div>
-
-            {/* إجراءات سريعة */}
-            <QuickActions />
-
-            {/* فلاتر زمنية */}
-            <TimeFilters
-                defaultPeriod={(searchParams.get('period') as any) || 'today'}
-                showCompare={true}
-            />
 
             {/* مؤشرات KPI الرئيسية */}
             <div className="flex items-center justify-between mt-2">
@@ -662,7 +671,8 @@ export default function DashboardPage() {
                     value={filteredOrders.length}
                     icon="ShoppingCart"
                     variant="orders"
-                    subtitle={`${orders.length} إجمالي | ${completedToday} مكتمل اليوم`}
+                    subtitle={`${serverTotalCount || orders.length} إجمالي | ${completedToday} مكتمل اليوم`}
+                    onClick={() => window.location.href = '/dashboard/orders'}
                 />
                 <KPICard
                     title="نسبة النجاح"
@@ -673,6 +683,7 @@ export default function DashboardPage() {
                     trend={successRate ? { value: successRate, isPositive: successRate >= 80 } : undefined}
                     progress={successRate}
                     target="90%"
+                    onClick={() => window.location.href = '/dashboard/orders'}
                 />
                 <KPICard
                     title="الطلبات المعلقة والحرجة"
@@ -680,209 +691,11 @@ export default function DashboardPage() {
                     icon="Clock"
                     variant="warning"
                     subtitle="طلبات بالانتظار أو مؤجلة"
+                    onClick={() => window.location.href = '/dashboard/orders'}
                 />
             </div>
 
-            {/* تحصيل الأموال مع السائقين */}
-            <div className="flex items-center justify-between mt-4">
-                <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                    <Icon name="Wallet" className="h-4 w-4" />
-                    تحصيل الأموال مع السائقين
-                </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <KPICard
-                    title="مبالغ مع السائقين"
-                    value={formatCurrency(cashWithDrivers)}
-                    icon="Wallet"
-                    variant="warning"
-                    subtitle="أموال لَم يتم تسليمها بعد"
-                />
-                <KPICard
-                    title="مبالغ تم استلامها"
-                    value={formatCurrency(cashCollected)}
-                    icon="Banknote"
-                    variant="revenue"
-                    subtitle="أموال وصلت إلى الشركة"
-                />
-                <KPICard
-                    title="نسبة التحصيل"
-                    value={`${collectionRate}%`}
-                    icon="PieChart"
-                    variant="success"
-                    subtitle="جزء المبالغ المستلمة من الإجمالي"
-                />
-                <KPICard
-                    title="سائقون عليهم مبالغ"
-                    value={driversWithOutstandingCash}
-                    icon="Users"
-                    variant="orders"
-                    subtitle={`من أصل ${drivers.length} سائق`}
-                />
-            </div>
-
-            {/* الأهداف اليومية */}
-            <GoalsSection goals={goals} />
-
-            {/* التنبيهات والأنشطة */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
-                    <AlertsSection alerts={alerts} />
-                </div>
-                <div className="lg:col-span-1">
-                    <RecentActivities activities={activities} />
-                </div>
-            </div>
-
-            {/* تقرير الأرباح اليومي */}
-            <Card className="border-2 shadow-sm">
-                <CardHeader className="pb-4">
-                    <div className="flex justify-between items-start gap-4">
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                                    <Icon name="TrendingUp" className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <CardTitle>تقرير الأرباح اليومي</CardTitle>
-                            </div>
-                            <CardDescription className="mt-1">
-                                نظرة على الأرباح المحققة خلال الأسبوع الماضي.
-                            </CardDescription>
-                        </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-1 flex-shrink-0"
-                            onClick={() => {
-                                const canvas = document.querySelector('[data-chart] canvas');
-                                if (canvas) {
-                                    const url = (canvas as HTMLCanvasElement).toDataURL('image/png');
-                                    const link = document.createElement('a');
-                                    link.download = 'تقرير-الأرباح.png';
-                                    link.href = url;
-                                    link.click();
-                                }
-                            }}
-                        >
-                            <Icon name="Download" className="h-4 w-4" />
-                            تصدير
-                        </Button>
-                    </div>
-                </CardHeader>
-                <CardContent className="h-[400px]">
-                    {profitChartData.length > 0 ? (
-                        <>
-                            <ChartContainer config={chartConfig} className="w-full h-full">
-                                <LineChart
-                                    data={profitChartData}
-                                    margin={{ top: 20, right: 20, left: 10, bottom: 20 }}
-                                >
-                                    <defs>
-                                        <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid
-                                        vertical={false}
-                                        strokeDasharray="3 3"
-                                        stroke="hsl(var(--muted))"
-                                        opacity={0.3}
-                                    />
-                                    <XAxis
-                                        dataKey="date"
-                                        tickFormatter={(value) => {
-                                            return formatDate(value);
-                                        }}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        className="text-xs font-medium"
-                                    />
-                                    <YAxis
-                                        tickFormatter={(value) => formatCurrency(value)}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        className="text-xs font-medium"
-                                        width={80}
-                                    />
-                                    <Tooltip
-                                        content={({ active, payload }) => {
-                                            if (active && payload && payload.length) {
-                                                const data = payload[0].payload;
-                                                return (
-                                                    <div className="rounded-lg border bg-background p-3 shadow-lg">
-                                                        <div className="font-semibold mb-2">
-                                                            {formatDate(data.date, { longFormat: true })}
-                                                        </div>
-                                                        <div className="flex items-center justify-between gap-4">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                                                                <span className="text-sm text-muted-foreground">الربح</span>
-                                                            </div>
-                                                            <span className="font-bold text-blue-600">
-                                                                {formatCurrency(data.profit)}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-                                            return null;
-                                        }}
-                                        cursor={{ stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '5 5' }}
-                                    />
-                                    <Legend
-                                        wrapperStyle={{ paddingTop: '10px' }}
-                                        iconType="line"
-                                        formatter={(value) => (
-                                            <span className="text-xs font-medium">{value}</span>
-                                        )}
-                                    />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="profit"
-                                        stroke="#3b82f6"
-                                        strokeWidth={3}
-                                        name="الربح"
-                                        dot={{ fill: '#3b82f6', r: 5, strokeWidth: 2, stroke: '#fff' }}
-                                        activeDot={{ r: 7, strokeWidth: 2, stroke: '#fff' }}
-                                        animationDuration={800}
-                                    />
-                                    <Area
-                                        type="monotone"
-                                        dataKey="profit"
-                                        fill="url(#profitGradient)"
-                                        stroke="none"
-                                    />
-                                </LineChart>
-                            </ChartContainer>
-
-                            {/* إحصائيات سريعة - فقط أعلى ربح ومتوسط يومي (إجمالي الأرباح موجود في KPI) */}
-                            <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold text-blue-600">
-                                        {formatCurrency(Math.max(...profitChartData.map(d => d.profit)))}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground mt-1">أعلى ربح</div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold text-muted-foreground">
-                                        {formatCurrency(profitChartData.reduce((sum, d) => sum + d.profit, 0) / profitChartData.length || 0)}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground mt-1">متوسط يومي</div>
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        <div className="flex items-center justify-center h-full">
-                            <div className="text-center">
-                                <Icon name="TrendingUp" className="h-12 w-12 mx-auto mb-2 text-muted-foreground opacity-50" />
-                                <p className="text-muted-foreground">لا توجد بيانات للأرباح</p>
-                            </div>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
+            {/* ملخص الحالات */}
             <Card className="border-2 shadow-sm">
                 <CardHeader className="pb-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -941,231 +754,293 @@ export default function DashboardPage() {
                 </CardContent>
             </Card>
 
-            {/* أداء السائقين - تصميم محسّن */}
-            <Card className="border-2 shadow-sm">
-                <CardHeader className="pb-4">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                                <div className="p-2 rounded-lg bg-primary/10">
-                                    <Icon name="Users" className="h-5 w-5 text-primary" />
-                                </div>
-                                <CardTitle>أداء السائقين</CardTitle>
-                            </div>
-                            <CardDescription>عرض ملخص شامل لأداء كل سائق مع إمكانية المقارنة</CardDescription>
-                        </div>
-                        <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-                            <SelectTrigger className="w-full sm:w-[240px]">
-                                <SelectValue placeholder="فلترة حسب السائق" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">كل السائقين</SelectItem>
-                                {drivers.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    {filteredDriverStats.length > 0 ? (
-                        <div className="space-y-4">
-                            {/* جدول مقارنة */}
-                            <div className="overflow-x-auto rounded-lg border">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="border-b bg-muted/50">
-                                            <th className="p-4 text-right font-semibold text-sm">السائق</th>
-                                            <th className="p-4 text-center font-semibold text-sm">إجمالي الطلبات</th>
-                                            <th className="p-4 text-center font-semibold text-sm">
-                                                <div className="flex items-center justify-center gap-1.5">
-                                                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                                    تم التوصيل
-                                                </div>
-                                            </th>
-                                            <th className="p-4 text-center font-semibold text-sm">
-                                                <div className="flex items-center justify-center gap-1.5">
-                                                    <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                                                    مؤجلة
-                                                </div>
-                                            </th>
-                                            <th className="p-4 text-center font-semibold text-sm">
-                                                <div className="flex items-center justify-center gap-1.5">
-                                                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                                                    مرتجعة
-                                                </div>
-                                            </th>
-                                            <th className="p-4 text-center font-semibold text-sm">نسبة النجاح</th>
-                                            <th className="p-4 text-center font-semibold text-sm">الإجراءات</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredDriverStats
-                                            .sort((a, b) => {
-                                                const aRate = a.total > 0 ? (a.completed / a.total) * 100 : 0;
-                                                const bRate = b.total > 0 ? (b.completed / b.total) * 100 : 0;
-                                                return bRate - aRate;
-                                            })
-                                            .map((driver, index) => {
-                                                const { id, name, phone, status, completed, postponed, returned, total, avatar } = driver;
-                                                const successRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-                                                const isTopPerformer = index === 0 && selectedDriver === 'all';
+            {/* تحصيل الأموال مع السائقين */}
+            <div className="flex items-center justify-between mt-4">
+                <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                    <Icon name="Wallet" className="h-4 w-4" />
+                    تحصيل الأموال مع السائقين
+                </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <KPICard
+                    title="مبالغ مع السائقين"
+                    value={formatCurrency(cashWithDrivers)}
+                    icon="Wallet"
+                    variant="warning"
+                    subtitle="أموال لَم يتم تسليمها بعد"
+                />
+                <KPICard
+                    title="مبالغ تم استلامها"
+                    value={formatCurrency(cashCollected)}
+                    icon="Banknote"
+                    variant="revenue"
+                    subtitle="أموال وصلت إلى الشركة"
+                />
+                <KPICard
+                    title="نسبة التحصيل"
+                    value={`${collectionRate}%`}
+                    icon="PieChart"
+                    variant="success"
+                    subtitle="جزء المبالغ المستلمة من الإجمالي"
+                />
+                <KPICard
+                    title="سائقون عليهم مبالغ"
+                    value={driversWithOutstandingCash}
+                    icon="Users"
+                    variant="orders"
+                    subtitle={`من أصل ${drivers.length} سائق`}
+                />
+            </div>
 
-                                                return (
-                                                    <tr
-                                                        key={id}
-                                                        className="border-b hover:bg-muted/30 transition-colors"
-                                                    >
-                                                        <td className="p-4">
-                                                            <div className="flex items-center gap-3">
-                                                                <Avatar className="h-10 w-10 border-2 border-background">
-                                                                    <AvatarImage src={avatar} alt={name} />
-                                                                    <AvatarFallback className="font-semibold">
-                                                                        {name.charAt(0)}
-                                                                    </AvatarFallback>
-                                                                </Avatar>
-                                                                <div className="flex-1">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <Link
-                                                                            href={`/dashboard/orders?driver=${encodeURIComponent(name)}`}
-                                                                            className="font-semibold hover:text-primary transition-colors"
-                                                                        >
-                                                                            {name}
+            {/* الأهداف اليومية — مُخفى مؤقتاً لتقليل الازدحام */}
+            {/* <GoalsSection goals={goals} /> */}
+
+            {/* التنبيهات */}
+            <AlertsSection alerts={alerts} />
+            {/* الأنشطة الحديثة — مُخفى مؤقتاً لتقليل الازدحام */}
+            {/* <RecentActivities activities={activities} /> */}
+
+            {/* الملخص المالي */}
+            <FinancialSnapshot
+                orders={orders}
+                isDelivered={isDelivered}
+                isCashCollected={isCashCollected}
+            />
+
+
+
+            {/* أداء السائقين — مُخفى مؤقتاً لتقليل الازدحام */}
+            {false && (
+                <Card className="border-2 shadow-sm">
+                    <CardHeader className="pb-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="p-2 rounded-lg bg-primary/10">
+                                        <Icon name="Users" className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <CardTitle>أداء السائقين</CardTitle>
+                                </div>
+                                <CardDescription>عرض ملخص شامل لأداء كل سائق مع إمكانية المقارنة</CardDescription>
+                            </div>
+                            <Select value={selectedDriver} onValueChange={setSelectedDriver}>
+                                <SelectTrigger className="w-full sm:w-[240px]">
+                                    <SelectValue placeholder="فلترة حسب السائق" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">كل السائقين</SelectItem>
+                                    {drivers.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {filteredDriverStats.length > 0 ? (
+                            <div className="space-y-4">
+                                {/* جدول مقارنة */}
+                                <div className="overflow-x-auto rounded-lg border">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="border-b bg-muted/50">
+                                                <th className="p-4 text-right font-semibold text-sm">السائق</th>
+                                                <th className="p-4 text-center font-semibold text-sm">إجمالي الطلبات</th>
+                                                <th className="p-4 text-center font-semibold text-sm">
+                                                    <div className="flex items-center justify-center gap-1.5">
+                                                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                                        تم التوصيل
+                                                    </div>
+                                                </th>
+                                                <th className="p-4 text-center font-semibold text-sm">
+                                                    <div className="flex items-center justify-center gap-1.5">
+                                                        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                                                        مؤجلة
+                                                    </div>
+                                                </th>
+                                                <th className="p-4 text-center font-semibold text-sm">
+                                                    <div className="flex items-center justify-center gap-1.5">
+                                                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                                        مرتجعة
+                                                    </div>
+                                                </th>
+                                                <th className="p-4 text-center font-semibold text-sm">نسبة النجاح</th>
+                                                <th className="p-4 text-center font-semibold text-sm">الإجراءات</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredDriverStats
+                                                .sort((a, b) => {
+                                                    const aRate = a.total > 0 ? (a.completed / a.total) * 100 : 0;
+                                                    const bRate = b.total > 0 ? (b.completed / b.total) * 100 : 0;
+                                                    return bRate - aRate;
+                                                })
+                                                .map((driver, index) => {
+                                                    const { id, name, phone, status, completed, postponed, returned, total, avatar } = driver;
+                                                    const successRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+                                                    const isTopPerformer = index === 0 && selectedDriver === 'all';
+
+                                                    return (
+                                                        <tr
+                                                            key={id}
+                                                            className="border-b hover:bg-muted/30 transition-colors"
+                                                        >
+                                                            <td className="p-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <Avatar className="h-10 w-10 border-2 border-background">
+                                                                        <AvatarImage src={avatar} alt={name} />
+                                                                        <AvatarFallback className="font-semibold">
+                                                                            {name.charAt(0)}
+                                                                        </AvatarFallback>
+                                                                    </Avatar>
+                                                                    <div className="flex-1">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Link
+                                                                                href={`/dashboard/orders?driver=${encodeURIComponent(name)}`}
+                                                                                className="font-semibold hover:text-primary transition-colors"
+                                                                            >
+                                                                                {name}
+                                                                            </Link>
+                                                                            {isTopPerformer && (
+                                                                                <Icon name="Star" className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1.5 mt-1">
+                                                                            <div className={`w-2 h-2 rounded-full ${status === 'نشط' ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`}></div>
+                                                                            <span className="text-xs text-muted-foreground">{status}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-4 text-center">
+                                                                <div className="font-bold text-lg">{total}</div>
+                                                            </td>
+                                                            <td className="p-4 text-center">
+                                                                <Link
+                                                                    href={`/dashboard/orders?driver=${encodeURIComponent(name)}&status=تم التوصيل`}
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors"
+                                                                >
+                                                                    <Icon name="PackageCheck" className="h-4 w-4" />
+                                                                    {completed}
+                                                                </Link>
+                                                            </td>
+                                                            <td className="p-4 text-center">
+                                                                <Link
+                                                                    href={`/dashboard/orders?driver=${encodeURIComponent(name)}&status=مؤجل`}
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 font-semibold hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
+                                                                >
+                                                                    <Icon name="RefreshCw" className="h-4 w-4" />
+                                                                    {postponed}
+                                                                </Link>
+                                                            </td>
+                                                            <td className="p-4 text-center">
+                                                                <Link
+                                                                    href={`/dashboard/orders?driver=${encodeURIComponent(name)}&status=مرتجع`}
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 font-semibold hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
+                                                                >
+                                                                    <Icon name="XCircle" className="h-4 w-4" />
+                                                                    {returned}
+                                                                </Link>
+                                                            </td>
+                                                            <td className="p-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="flex-1">
+                                                                        <Progress
+                                                                            value={successRate}
+                                                                            className="h-2"
+                                                                        />
+                                                                    </div>
+                                                                    <span className={`text-sm font-bold min-w-[3rem] text-right ${successRate >= 80 ? 'text-emerald-600' :
+                                                                        successRate >= 60 ? 'text-amber-600' :
+                                                                            'text-red-600'
+                                                                        }`}>
+                                                                        {successRate}%
+                                                                    </span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-4">
+                                                                <div className="flex items-center justify-center gap-2">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        asChild
+                                                                        className="h-8 w-8 p-0"
+                                                                    >
+                                                                        <Link href={`/dashboard/orders?driver=${encodeURIComponent(name)}`}>
+                                                                            <Icon name="Eye" className="h-4 w-4" />
                                                                         </Link>
-                                                                        {isTopPerformer && (
-                                                                            <Icon name="Star" className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="flex items-center gap-1.5 mt-1">
-                                                                        <div className={`w-2 h-2 rounded-full ${status === 'نشط' ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`}></div>
-                                                                        <span className="text-xs text-muted-foreground">{status}</span>
-                                                                    </div>
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        asChild
+                                                                        className="h-8 w-8 p-0"
+                                                                    >
+                                                                        <Link href={`/dashboard/driver-app`}>
+                                                                            <Icon name="User" className="h-4 w-4" />
+                                                                        </Link>
+                                                                    </Button>
                                                                 </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="p-4 text-center">
-                                                            <div className="font-bold text-lg">{total}</div>
-                                                        </td>
-                                                        <td className="p-4 text-center">
-                                                            <Link
-                                                                href={`/dashboard/orders?driver=${encodeURIComponent(name)}&status=تم التوصيل`}
-                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors"
-                                                            >
-                                                                <Icon name="PackageCheck" className="h-4 w-4" />
-                                                                {completed}
-                                                            </Link>
-                                                        </td>
-                                                        <td className="p-4 text-center">
-                                                            <Link
-                                                                href={`/dashboard/orders?driver=${encodeURIComponent(name)}&status=مؤجل`}
-                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 font-semibold hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
-                                                            >
-                                                                <Icon name="RefreshCw" className="h-4 w-4" />
-                                                                {postponed}
-                                                            </Link>
-                                                        </td>
-                                                        <td className="p-4 text-center">
-                                                            <Link
-                                                                href={`/dashboard/orders?driver=${encodeURIComponent(name)}&status=مرتجع`}
-                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 font-semibold hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
-                                                            >
-                                                                <Icon name="XCircle" className="h-4 w-4" />
-                                                                {returned}
-                                                            </Link>
-                                                        </td>
-                                                        <td className="p-4">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="flex-1">
-                                                                    <Progress
-                                                                        value={successRate}
-                                                                        className="h-2"
-                                                                    />
-                                                                </div>
-                                                                <span className={`text-sm font-bold min-w-[3rem] text-right ${successRate >= 80 ? 'text-emerald-600' :
-                                                                    successRate >= 60 ? 'text-amber-600' :
-                                                                        'text-red-600'
-                                                                    }`}>
-                                                                    {successRate}%
-                                                                </span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="p-4">
-                                                            <div className="flex items-center justify-center gap-2">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    asChild
-                                                                    className="h-8 w-8 p-0"
-                                                                >
-                                                                    <Link href={`/dashboard/orders?driver=${encodeURIComponent(name)}`}>
-                                                                        <Icon name="Eye" className="h-4 w-4" />
-                                                                    </Link>
-                                                                </Button>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    asChild
-                                                                    className="h-8 w-8 p-0"
-                                                                >
-                                                                    <Link href={`/dashboard/driver-app`}>
-                                                                        <Icon name="User" className="h-4 w-4" />
-                                                                    </Link>
-                                                                </Button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                        </tbody>
+                                    </table>
+                                </div>
 
-                            {/* إحصائيات إجمالية */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
-                                <div className="text-center p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900">
-                                    <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                                        {filteredDriverStats.reduce((sum, d) => sum + d.completed, 0)}
+                                {/* إحصائيات إجمالية */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
+                                    <div className="text-center p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900">
+                                        <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                                            {filteredDriverStats.reduce((sum, d) => sum + d.completed, 0)}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground mt-1">إجمالي المكتملة</div>
                                     </div>
-                                    <div className="text-xs text-muted-foreground mt-1">إجمالي المكتملة</div>
-                                </div>
-                                <div className="text-center p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900">
-                                    <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                                        {filteredDriverStats.reduce((sum, d) => sum + d.postponed, 0)}
+                                    <div className="text-center p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900">
+                                        <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                                            {filteredDriverStats.reduce((sum, d) => sum + d.postponed, 0)}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground mt-1">إجمالي المؤجلة</div>
                                     </div>
-                                    <div className="text-xs text-muted-foreground mt-1">إجمالي المؤجلة</div>
-                                </div>
-                                <div className="text-center p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900">
-                                    <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                                        {filteredDriverStats.reduce((sum, d) => sum + d.returned, 0)}
+                                    <div className="text-center p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900">
+                                        <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                                            {filteredDriverStats.reduce((sum, d) => sum + d.returned, 0)}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground mt-1">إجمالي المرتجعة</div>
                                     </div>
-                                    <div className="text-xs text-muted-foreground mt-1">إجمالي المرتجعة</div>
-                                </div>
-                                <div className="text-center p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900">
-                                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                                        {filteredDriverStats.length > 0
-                                            ? Math.round(
-                                                filteredDriverStats.reduce((sum, d) => {
-                                                    const rate = d.total > 0 ? (d.completed / d.total) * 100 : 0;
-                                                    return sum + rate;
-                                                }, 0) / filteredDriverStats.length
-                                            )
-                                            : 0
-                                        }%
+                                    <div className="text-center p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900">
+                                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                            {filteredDriverStats.length > 0
+                                                ? Math.round(
+                                                    filteredDriverStats.reduce((sum, d) => {
+                                                        const rate = d.total > 0 ? (d.completed / d.total) * 100 : 0;
+                                                        return sum + rate;
+                                                    }, 0) / filteredDriverStats.length
+                                                )
+                                                : 0
+                                            }%
+                                        </div>
+                                        <div className="text-xs text-muted-foreground mt-1">متوسط نسبة النجاح</div>
                                     </div>
-                                    <div className="text-xs text-muted-foreground mt-1">متوسط نسبة النجاح</div>
                                 </div>
                             </div>
-                        </div>
-                    ) : (
-                        <div className="text-center py-12">
-                            <Icon name="Users" className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-                            <p className="text-muted-foreground font-medium">
-                                {selectedDriver !== 'all' ? 'لم يتم العثور على سائق بهذا الاسم' : 'لا يوجد سائقين لعرضهم'}
-                            </p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                        ) : (
+                            <div className="text-center py-12">
+                                <Icon name="Users" className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                                <p className="text-muted-foreground font-medium">
+                                    {selectedDriver !== 'all' ? 'لم يتم العثور على سائق بهذا الاسم' : 'لا يوجد سائقين لعرضهم'}
+                                </p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
 
         </div>
     )
 }
 
+
+
+export default function DashboardPage() {
+    return <Suspense><DashboardPageInner /></Suspense>;
+}

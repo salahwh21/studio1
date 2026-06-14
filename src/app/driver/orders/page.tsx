@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOrdersStore } from '@/store/orders-store';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useSearchParams } from 'next/navigation';
+import { useDriverOrders } from '@/hooks/use-driver-orders';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +35,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { api } from '@/lib/api';
 
 // أنواع التجميع
 type GroupBy = 'none' | 'region' | 'merchant' | 'status';
@@ -77,10 +80,16 @@ function OrderCard({ order, formatCurrency, getStatusColor, getStatusIcon, onSel
     return encodeURIComponent(lines.join('\n'));
   };
 
-  // فتح واتساب بدون رقم محدد - السائق يختار المستلم
-  const openWhatsAppWithoutNumber = () => {
-    const message = generateWhatsAppMessage(driverNote);
-    window.open(`https://wa.me/?text=${message}`, '_blank');
+  // فتح واتساب مع رقم الزبون عبر backend
+  const openWhatsAppWithoutNumber = async () => {
+    try {
+      const result = await api.getWhatsAppUrl(order.id, undefined, driverNote || undefined);
+      window.open(result.url, '_blank');
+    } catch {
+      // Fallback: use local message generation
+      const message = generateWhatsAppMessage(driverNote);
+      window.open(`https://wa.me/?text=${message}`, '_blank');
+    }
     setWhatsappDialogOpen(false);
     setDriverNote('');
   };
@@ -104,7 +113,7 @@ function OrderCard({ order, formatCurrency, getStatusColor, getStatusIcon, onSel
       <div className="flex items-center justify-between mb-3 pb-2 border-b">
         <span className="font-mono text-sm bg-muted px-2 py-1 rounded">#{order.id.slice(-6)}</span>
         <Badge className={cn("gap-1", getStatusColor(order.status))}>
-          <Icon name={getStatusIcon(order.status)} className="h-3 w-3" />
+          <Icon name={getStatusIcon(order.status) as any} className="h-3 w-3" />
           {order.status}
         </Badge>
       </div>
@@ -464,9 +473,10 @@ function OrderCard({ order, formatCurrency, getStatusColor, getStatusIcon, onSel
 
 export default function DriverOrdersPage() {
   const { user } = useAuth();
-  const { orders, updateOrderField } = useOrdersStore();
+  const { updateOrderStatus } = useOrdersStore();
   const { formatCurrency } = useSettings();
   const searchParams = useSearchParams();
+  const { orders: myOrders, isLoading } = useDriverOrders();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('filter') || 'all');
@@ -477,11 +487,6 @@ export default function DriverOrdersPage() {
   const [groupBy, setGroupBy] = useState<GroupBy>('region');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('cards');
-
-  // طلبات السائق
-  const myOrders = useMemo(() => {
-    return orders.filter(o => o.driver === user?.name);
-  }, [orders, user]);
 
   // الحصول على المناطق والتجار الفريدين
   const uniqueRegions = useMemo(() => {
@@ -600,7 +605,7 @@ export default function DriverOrdersPage() {
     return colors[status] || 'bg-gray-500';
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string): any => {
     const icons: Record<string, any> = {
       'تم التوصيل': 'PackageCheck',
       'جاري التوصيل': 'Truck',
@@ -611,14 +616,12 @@ export default function DriverOrdersPage() {
     return icons[status] || 'Package';
   };
 
-  const handleUpdateStatus = () => {
+  const handleUpdateStatus = async () => {
     if (selectedOrder && newStatus) {
-      updateOrderField(selectedOrder.id, 'status', newStatus);
-      if (notes) {
-        const currentNotes = selectedOrder.notes || '';
-        const timestamp = new Date().toLocaleString('ar-JO');
-        const updatedNotes = `${currentNotes}\n[${timestamp}] ${newStatus}: ${notes}`;
-        updateOrderField(selectedOrder.id, 'notes', updatedNotes);
+      try {
+        await updateOrderStatus(selectedOrder.id, newStatus as any);
+      } catch {
+        // store already reverted on failure
       }
       setUpdateDialogOpen(false);
       setSelectedOrder(null);
@@ -632,6 +635,21 @@ export default function DriverOrdersPage() {
     setNewStatus(status);
     setUpdateDialogOpen(true);
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4 pb-20">
+        <div className="sticky top-0 z-10 bg-background/95 -mx-4 px-4 pt-2 pb-4 border-b space-y-3">
+          <Skeleton className="h-10 w-48" />
+          <div className="flex gap-2">
+            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-8 w-20 rounded-full" />)}
+          </div>
+        </div>
+        <Skeleton className="h-10 w-full rounded-lg" />
+        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 pb-20">
@@ -823,7 +841,7 @@ export default function DriverOrdersPage() {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <CardContent className="p-2 pt-0">
-                    <ScrollArea className="w-full" orientation="horizontal">
+                    <ScrollArea className="w-full">
                       <div className="flex gap-3 pb-3">
                         {group.orders.map((order) => (
                           <div key={order.id} className="w-[320px] flex-shrink-0">

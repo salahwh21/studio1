@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import api from '@/lib/api';
 
 export interface Region {
@@ -47,8 +46,7 @@ interface AreasState {
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export const useAreasStore = create<AreasState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       cities: [],
       regions: [],
       isLoading: false,
@@ -93,11 +91,9 @@ export const useAreasStore = create<AreasState>()(
         } catch (error: any) {
           console.error('❌ Failed to fetch areas from API:', error.message);
           set({
-            cities: [],
-            regions: [],
             isLoading: false,
-            error: 'Failed to load areas. Please ensure backend is running.',
-            lastFetch: null
+            error: 'Failed to load areas. Using local data.',
+            // Do NOT clear cities/regions so we fallback to cache
           });
         }
       },
@@ -217,14 +213,5 @@ export const useAreasStore = create<AreasState>()(
       restoreDefaults: async () => {
         await get().fetchAreas();
       }
-    }),
-    {
-      name: 'areas-storage',
-      partialize: (state) => ({
-        cities: state.cities,
-        regions: state.regions,
-        lastFetch: state.lastFetch,
-      }),
-    }
-  )
+    })
 );

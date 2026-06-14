@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { api } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -171,16 +172,15 @@ export default function IntegrationDetailPage() {
     const [rules, setRules] = useState(initialRules);
 
     useEffect(() => {
-        // In a real app, you'd fetch the connection details from your backend using the integrationId
-        const savedConnections = JSON.parse(localStorage.getItem('user-integrations') || '[]');
-        const foundConnection = savedConnections.find((c: any) => c.id === integrationId);
-        
-        if (foundConnection) {
-            const foundIntegrationInfo = integrationsList.find(i => i.id === foundConnection.integrationId);
-            setConnection(foundConnection);
-            setIntegrationInfo(foundIntegrationInfo);
-        }
-        setIsLoading(false);
+        api.getPreferences().then((prefs: any) => {
+            const savedConnections: any[] = Array.isArray(prefs?.integrations) ? prefs.integrations : [];
+            const foundConnection = savedConnections.find((c: any) => c.id === integrationId);
+            if (foundConnection) {
+                const foundIntegrationInfo = integrationsList.find(i => i.id === foundConnection.integrationId);
+                setConnection(foundConnection);
+                setIntegrationInfo(foundIntegrationInfo);
+            }
+        }).catch(() => {}).finally(() => setIsLoading(false));
     }, [integrationId]);
 
     const handleSaveChanges = () => {

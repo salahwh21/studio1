@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const db = require('../config/database');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const { getCache, setCache, invalidateCache } = require('../utils/cache');
 
 const router = express.Router();
 
@@ -10,11 +11,91 @@ const getIO = (req) => {
   return req.app.get('io');
 };
 
-router.get('/', optionalAuth, async (req, res) => {
+const TERMINAL_STATUSES = [
+  'مكتمل',
+  'مكتمل إرجاع تاجر',
+  'مرجع للتاجر مكتمل',
+  'ملغي',
+  'مرتجع',
+  'مرجع للتاجر',
+  'مرجع للفرع',
+  'تم استلام المال في الفرع',
+  'تم محاسبة التاجر',
+  'مؤرشف'
+];
+
+// --- Audit Logger Helper ---
+async function logAudit(orderId, req, action, previousStatus, newStatus, outcome, reason = null) {
+  const actorId = req.user?.id || 'unknown';
+  const actorName = req.user?.name || 'unknown';
+  const actorRole = req.user?.roleId || 'unknown';
+  
   try {
+    await db.query(
+      `INSERT INTO order_audit_logs 
+      (order_id, actor_id, actor_name, actor_role, action, previous_status, new_status, outcome, reason)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [orderId, actorId, actorName, actorRole, action, previousStatus, newStatus, outcome, reason]
+    );
+  } catch (err) {
+    console.error('Audit log error:', err);
+  }
+}
+
+// --- Action Guard Helper ---
+function checkActionAllowed(req, action, currentStatus, newStatus, driverName) {
+  const role = req.user?.roleId || 'admin';
+  if (role === 'admin') return { allowed: true };
+  
+  // Data scope for driver
+  if (role === 'driver' && driverName && driverName !== req.user?.name) {
+    return { allowed: false, reason: 'لا تملك صلاحية على طلبات تعود لسائق آخر' };
+  }
+  
+  // Final States
+  const finalStates = ['مكتمل', 'مرجع للتاجر مكتمل'];
+  if (currentStatus && finalStates.includes(currentStatus)) {
+    if (role !== 'accountant' || action !== 'change_status') {
+       return { allowed: false, reason: 'الطلب في حالة نهائية ومغلق للعمليات' };
+    }
+  }
+  
+  if (action === 'change_status') {
+    if (role === 'branch') {
+       if (currentStatus === 'مرجع للفرع' && !['مؤجل', 'مرجع للتاجر'].includes(newStatus)) {
+         return { allowed: false, reason: 'الفرع يستطيع تحويل الراجع فقط إلى مؤجل أو مرجع تاجر' };
+       }
+       if (currentStatus === 'تم التوصيل' && newStatus !== 'تم استلام المال في الفرع') {
+         return { allowed: false, reason: 'الفرع يستطيع تأكيد الاستلام المالي فقط للطلبات الموصلة' };
+       }
+    }
+    if (role === 'merchant_returns' && !['مكتمل إرجاع تاجر', 'مرجع للتاجر مكتمل'].includes(newStatus)) {
+       return { allowed: false, reason: 'يُسمح فقط بإغلاق مرتجعات التاجر' };
+    }
+  }
+  
+  if (action === 'assign_driver' && ['branch', 'driver', 'merchant_returns'].includes(role)) {
+     return { allowed: false, reason: 'دورك لا يسمح بتعيين سائقين' };
+  }
+  
+  if (action === 'delete' && role !== 'ops') {
+     return { allowed: false, reason: 'دورك لا يسمح بحذف الطلبات' };
+  }
+  
+  return { allowed: true };
+}
+
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    const cacheKey = `orders:list:${JSON.stringify(req.query)}:role:${req.user?.roleId || 'admin'}:name:${req.user?.name || 'unknown'}`;
+    const cachedData = await getCache(cacheKey);
+    if (cachedData) {
+      return res.json(cachedData);
+    }
+
     const {
       page = 0,
-      limit = 1000, // Increased default limit for dashboard
+      limit = 50,
       sortKey = 'created_at',
       sortDir = 'desc',
       status,
@@ -30,51 +111,65 @@ router.get('/', optionalAuth, async (req, res) => {
     let whereClause = 'WHERE 1=1';
     let paramIndex = 1;
 
-    // FIXED: SQL Injection - using $1, $2, etc
     if (status) {
-      whereClause += ` AND status = $${paramIndex++}`;
+      whereClause += ` AND o.status = $${paramIndex++}`;
       params.push(status);
     }
     if (driver) {
-      whereClause += ` AND driver = $${paramIndex++}`;
+      whereClause += ` AND o.driver = $${paramIndex++}`;
       params.push(driver);
     }
     if (merchant) {
-      whereClause += ` AND merchant = $${paramIndex++}`;
+      whereClause += ` AND o.merchant = $${paramIndex++}`;
       params.push(merchant);
     }
     if (search) {
-      whereClause += ` AND (id ILIKE $${paramIndex} OR recipient ILIKE $${paramIndex} OR phone ILIKE $${paramIndex} OR address ILIKE $${paramIndex} OR reference_number ILIKE $${paramIndex})`;
+      whereClause += ` AND (o.id ILIKE $${paramIndex} OR o.recipient ILIKE $${paramIndex} OR o.phone ILIKE $${paramIndex} OR o.address ILIKE $${paramIndex} OR o.reference_number ILIKE $${paramIndex})`;
       params.push(`%${search}%`);
       paramIndex++;
     }
     if (dateFrom) {
-      whereClause += ` AND date >= $${paramIndex++}`;
+      whereClause += ` AND o.date >= $${paramIndex++}`;
       params.push(dateFrom);
     }
     if (dateTo) {
-      whereClause += ` AND date <= $${paramIndex++}`;
+      whereClause += ` AND o.date <= $${paramIndex++}`;
       params.push(dateTo);
     }
 
+    // --- Backend RBAC Data Scoping ---
+    const role = req.user?.roleId || 'admin';
+    const userName = req.user?.name;
+
+    if (role === 'driver') {
+      whereClause += ` AND o.driver = $${paramIndex++}`;
+      params.push(userName);
+    } else if (role === 'merchant') {
+      whereClause += ` AND o.merchant = $${paramIndex++}`;
+      params.push(userName);
+    }
+    // ---------------------------------
+
     // Whitelist for sortKey to prevent SQL injection
     const allowedSortKeys = ['id', 'created_at', 'date', 'status', 'cod', 'recipient', 'merchant', 'driver', 'order_number'];
-    const safeSort = allowedSortKeys.includes(sortKey) ? sortKey : 'created_at';
+    const safeSort = `o.${allowedSortKeys.includes(sortKey) ? sortKey : 'created_at'}`;
     const safeDir = sortDir.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
 
     // Get total count first (for accurate pagination)
     const countParams = [...params];
     const countResult = await db.query(
-      `SELECT COUNT(*) as count FROM orders ${whereClause}`,
+      `SELECT COUNT(*) as count FROM orders o LEFT JOIN order_settlements s ON s.order_id = o.id ${whereClause}`,
       countParams
     );
     const totalCount = parseInt(countResult.rows[0].count) || 0;
 
-    // OPTIMIZED: Single query with all needed data
+    // OPTIMIZED: Single query with settlement status
     const ordersResult = await db.query(
-      `SELECT * 
-       FROM orders ${whereClause} 
-       ORDER BY ${safeSort} ${safeDir} 
+      `SELECT o.*, s.status as settlement_status
+       FROM orders o
+       LEFT JOIN order_settlements s ON s.order_id = o.id
+       ${whereClause}
+       ORDER BY ${safeSort} ${safeDir}
        LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
       [...params, parseInt(limit), offset]
     );
@@ -93,6 +188,7 @@ router.get('/', optionalAuth, async (req, res) => {
       status: row.status,
       previousStatus: row.previous_status,
       driver: row.driver,
+      previousDriver: row.previous_driver,
       merchant: row.merchant,
       cod: parseFloat(row.cod),
       itemPrice: parseFloat(row.item_price),
@@ -105,17 +201,20 @@ router.get('/', optionalAuth, async (req, res) => {
       lat: row.lat ? parseFloat(row.lat) : null,
       lng: row.lng ? parseFloat(row.lng) : null,
       createdAt: row.created_at,
-      updatedAt: row.updated_at
+      updatedAt: row.updated_at,
+      settlementStatus: row.settlement_status || null,
     }));
 
-    res.json({ orders, totalCount });
+    const responseData = { orders, totalCount };
+    await setCache(cacheKey, responseData, 300); // Cache for 5 minutes
+    res.json(responseData);
   } catch (error) {
     console.error('Get orders error:', error);
-    res.status(500).json({ error: 'Server error', code: 'SERVER_ERROR' });
+    res.status(500).json({ error: 'Server error', code: 'SERVER_ERROR', details: error.message });
   }
 });
 
-router.get('/:id', optionalAuth, async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const result = await db.query('SELECT * FROM orders WHERE id = $1', [req.params.id]);
 
@@ -138,6 +237,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
       status: row.status,
       previousStatus: row.previous_status,
       driver: row.driver,
+      previousDriver: row.previous_driver,
       merchant: row.merchant,
       cod: parseFloat(row.cod),
       itemPrice: parseFloat(row.item_price),
@@ -225,10 +325,8 @@ router.post('/', authenticateToken, [
       lng
     } = req.body;
 
-    const nextNumberResult = await db.query(
-      'SELECT COALESCE(MAX(order_number), 0) + 1 as next_number FROM orders'
-    );
-    const orderNumber = nextNumberResult.rows[0].next_number;
+    const nextNumberResult = await db.query("SELECT nextval('order_number_seq') as next_number");
+    const orderNumber = parseInt(nextNumberResult.rows[0].next_number);
     const orderId = `ORD-${orderNumber}`;
 
     const calculatedItemPrice = itemPrice || (cod - deliveryFee - additionalCost);
@@ -250,6 +348,7 @@ router.post('/', authenticateToken, [
     );
 
     const row = result.rows[0];
+    await invalidateCache('orders:list:*');
     // Return full object to allow frontend to update state immediately without re-fetching
     res.status(201).json({
       id: row.id,
@@ -298,9 +397,32 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const current = currentResult.rows[0];
     let previousStatus = current.previous_status;
 
+    // Determine Action
+    let action = 'update';
+    if (updates.status && updates.status !== current.status) action = 'change_status';
+    if (updates.driver && updates.driver !== current.driver) action = 'assign_driver';
+
+    // Verify Guard
+    const guard = checkActionAllowed(req, action, current.status, updates.status || current.status, current.driver);
+    if (!guard.allowed) {
+      await logAudit(id, req, action, current.status, updates.status, 'denied', guard.reason);
+      return res.status(403).json({ error: guard.reason || 'Unauthorized action', code: 'UNAUTHORIZED' });
+    }
+
     if (updates.status && updates.status !== current.status) {
       previousStatus = current.status;
     }
+
+    // Handle terminal statuses: remove active driver and keep history
+    let newPreviousDriver = current.previous_driver;
+    if (updates.status && TERMINAL_STATUSES.includes(updates.status)) {
+      const activeDriver = updates.driver !== undefined ? updates.driver : current.driver;
+      if (activeDriver) {
+        newPreviousDriver = activeDriver;
+      }
+      updates.driver = null; // Clear active driver
+    }
+    updates.previousDriver = newPreviousDriver;
 
     const fields = [];
     const values = [];
@@ -317,6 +439,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       region: 'region',
       status: 'status',
       driver: 'driver',
+      previousDriver: 'previous_driver',
       merchant: 'merchant',
       cod: 'cod',
       itemPrice: 'item_price',
@@ -375,6 +498,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
       }
     }
     
+    // Log Success
+    await logAudit(id, req, action, current.status, row.status, 'success');
+    await invalidateCache('orders:list:*');
+    
     res.json({
       id: row.id,
       orderNumber: row.order_number,
@@ -394,37 +521,113 @@ router.patch('/:id/status', authenticateToken, [
     const { id } = req.params;
     const { status, driver_id } = req.body;
 
-    const currentResult = await db.query('SELECT status FROM orders WHERE id = $1', [id]);
+    const currentResult = await db.query('SELECT status, driver FROM orders WHERE id = $1', [id]);
     if (currentResult.rows.length === 0) {
       return res.status(404).json({ error: 'Order not found', code: 'NOT_FOUND' });
     }
 
-    const previousStatus = currentResult.rows[0].status;
+    const currentOrder = currentResult.rows[0];
+    const previousStatus = currentOrder.status;
+
+    const action = driver_id ? 'assign_driver' : 'change_status';
+    const guard = checkActionAllowed(req, action, previousStatus, status, currentOrder.driver);
+    if (!guard.allowed) {
+      await logAudit(id, req, action, previousStatus, status, 'denied', guard.reason);
+      return res.status(403).json({ error: guard.reason || 'Unauthorized action', code: 'UNAUTHORIZED' });
+    }
+
+    // Handle terminal statuses or explicit driver clear
+    let finalDriver = driver_id;
+    let finalPreviousDriver = undefined;
+
+    if (TERMINAL_STATUSES.includes(status)) {
+      finalPreviousDriver = driver_id || currentOrder.driver;
+      finalDriver = null;
+    } else if (driver_id === null && 'driver_id' in req.body) {
+      // مسح صريح للسائق عند استلام المرتجعات
+      finalPreviousDriver = currentOrder.driver || undefined;
+      finalDriver = null;
+    }
 
     let query = `UPDATE orders SET status = $1, previous_status = $2, updated_at = NOW()`;
     let params = [status, previousStatus];
+    let paramIdx = 3;
 
-    if (driver_id) {
-      query += `, driver = $3 WHERE id = $4 RETURNING *`;
-      params.push(driver_id, id);
-    } else {
-      query += ` WHERE id = $3 RETURNING *`;
-      params.push(id);
+    if (finalDriver !== undefined || finalPreviousDriver !== undefined) {
+       if (finalDriver !== undefined) {
+         query += `, driver = $${paramIdx++}`;
+         params.push(finalDriver);
+       }
+       if (finalPreviousDriver !== undefined) {
+         query += `, previous_driver = $${paramIdx++}`;
+         params.push(finalPreviousDriver);
+       }
     }
+    
+    query += ` WHERE id = $${paramIdx} RETURNING *`;
+    params.push(id);
 
     const result = await db.query(query, params);
 
     const updatedOrder = result.rows[0];
-    
+
+    // إنشاء/تحديث تسوية تلقائية عند التوصيل أو الإرجاع
+    if (status === 'تم التوصيل' || status === 'مرجع للتاجر' || status === 'مرتجع') {
+      try {
+        const orderFull = await db.query(
+          'SELECT cod, delivery_fee, driver_fee, driver_additional_fare, item_price FROM orders WHERE id = $1',
+          [id]
+        );
+        if (orderFull.rows.length > 0) {
+          const o = orderFull.rows[0];
+          const cod = parseFloat(o.cod) || 0;
+          const driverShare = (parseFloat(o.driver_fee) || 0) + (parseFloat(o.driver_additional_fare) || 0);
+          const companyShare = parseFloat(o.delivery_fee) || 0;
+          const merchantShare = parseFloat(o.item_price) || 0;
+          // رسوم الإرجاع: نجلبها من الإعدادات إذا كانت موجودة
+          let rtoFee = 0;
+          if (status === 'مرجع للتاجر' || status === 'مرتجع') {
+            try {
+              const settingsResult = await db.query(
+                "SELECT settings_data->'pricing'->>'rtoFee' as rto_fee FROM settings WHERE company_id = 1"
+              );
+              rtoFee = parseFloat(settingsResult.rows[0]?.rto_fee) || 0;
+            } catch (_) {}
+          }
+
+          await db.query(
+            `INSERT INTO order_settlements
+               (order_id, cod_collected, company_share, driver_share, merchant_share, rto_fee)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (order_id) DO UPDATE SET
+               cod_collected  = EXCLUDED.cod_collected,
+               company_share  = EXCLUDED.company_share,
+               driver_share   = EXCLUDED.driver_share,
+               merchant_share = EXCLUDED.merchant_share,
+               rto_fee        = EXCLUDED.rto_fee,
+               updated_at     = NOW()`,
+            [id, cod, companyShare, driverShare, merchantShare, rtoFee]
+          );
+        }
+      } catch (settlementErr) {
+        console.error('Auto-settlement error (non-fatal):', settlementErr.message);
+      }
+    }
+
     // Emit Socket.IO event for status change
     const io = getIO(req);
     if (io) {
-      io.emit('order_status_changed', {
+      io.to('admin').to(`driver:${updatedOrder.driver}`).emit('order_status_changed', {
         order_id: id,
         status: updatedOrder.status,
-        previousStatus: previousStatus
+        previousStatus: previousStatus,
+        driver_id: updatedOrder.driver ?? null,
+        previous_driver: updatedOrder.previous_driver ?? undefined,
       });
     }
+
+    await logAudit(id, req, action, previousStatus, updatedOrder.status, 'success');
+    await invalidateCache('orders:list:*');
 
     res.json({ id: updatedOrder.id, status: updatedOrder.status, previousStatus });
   } catch (error) {
@@ -443,17 +646,38 @@ router.post('/bulk-status', authenticateToken, [
     await db.query('BEGIN');
 
     for (const orderId of orderIds) {
-      const currentResult = await db.query('SELECT status FROM orders WHERE id = $1', [orderId]);
+      const currentResult = await db.query('SELECT status, driver FROM orders WHERE id = $1', [orderId]);
       if (currentResult.rows.length > 0) {
-        const previousStatus = currentResult.rows[0].status;
-        await db.query(
-          `UPDATE orders SET status = $1, previous_status = $2, updated_at = NOW() WHERE id = $3`,
-          [status, previousStatus, orderId]
-        );
+        const currentOrder = currentResult.rows[0];
+        const previousStatus = currentOrder.status;
+
+        const guard = checkActionAllowed(req, 'change_status', previousStatus, status, currentOrder.driver);
+        if (!guard.allowed) {
+          await logAudit(orderId, req, 'change_status', previousStatus, status, 'denied', guard.reason);
+          continue; // Skip unauthorized order but process the rest
+        }
+
+        let updateQuery = `UPDATE orders SET status = $1, previous_status = $2, updated_at = NOW()`;
+        let updateParams = [status, previousStatus];
+        let pIdx = 3;
+
+        if (TERMINAL_STATUSES.includes(status)) {
+          if (currentOrder.driver) {
+             updateQuery += `, previous_driver = $${pIdx++}`;
+             updateParams.push(currentOrder.driver);
+          }
+          updateQuery += `, driver = NULL`;
+        }
+
+        updateQuery += ` WHERE id = $${pIdx}`;
+        updateParams.push(orderId);
+
+        await db.query(updateQuery, updateParams);
       }
     }
 
     await db.query('COMMIT');
+    await invalidateCache('orders:list:*');
     res.json({ updated: orderIds.length });
   } catch (error) {
     await db.query('ROLLBACK');
@@ -478,6 +702,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       });
     }
 
+    await invalidateCache('orders:list:*');
     res.json({ deleted: req.params.id });
   } catch (error) {
     console.error('Delete order error:', error);
@@ -506,10 +731,47 @@ router.post('/bulk-delete', authenticateToken, [
       });
     }
 
+    await invalidateCache('orders:list:*');
     res.json({ deleted: result.rows.length });
   } catch (error) {
     console.error('Bulk delete error:', error);
     res.status(500).json({ error: 'Server error', code: 'SERVER_ERROR' });
+  }
+});
+
+// ==================== Audit Logs ====================
+
+router.get('/audit-logs', authenticateToken, async (req, res) => {
+  try {
+    const { orderId, actorName, action, outcome, page = 0, limit = 50 } = req.query;
+    const offset = parseInt(page) * parseInt(limit);
+    const params = [];
+    let where = 'WHERE 1=1';
+    let i = 1;
+
+    if (orderId) { where += ` AND order_id = $${i++}`; params.push(orderId); }
+    if (actorName) { where += ` AND actor_name ILIKE $${i++}`; params.push(`%${actorName}%`); }
+    if (action) { where += ` AND action = $${i++}`; params.push(action); }
+    if (outcome) { where += ` AND outcome = $${i++}`; params.push(outcome); }
+
+    const countResult = await db.query(
+      `SELECT COUNT(*) FROM order_audit_logs ${where}`, params
+    );
+
+    const result = await db.query(
+      `SELECT * FROM order_audit_logs ${where}
+       ORDER BY created_at DESC
+       LIMIT $${i++} OFFSET $${i}`,
+      [...params, parseInt(limit), offset]
+    );
+
+    res.json({
+      logs: result.rows,
+      totalCount: parseInt(countResult.rows[0].count)
+    });
+  } catch (error) {
+    console.error('Get audit logs error:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

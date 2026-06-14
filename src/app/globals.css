@@ -11,13 +11,30 @@
   font-feature-settings: "lnum" 1 !important;
   -webkit-font-feature-settings: "lnum" 1 !important;
   font-family: var(--font-tajawal), 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-  font-size: inherit;
 }
 
 html, body {
   font-variant-numeric: tabular-nums lining-nums !important;
   font-family: var(--font-tajawal), 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
   font-size: 16px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide all scrollbars globally except orders table */
+*:not(.orders-table-container) {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+*:not(.orders-table-container)::-webkit-scrollbar {
+  width: 0px !important;
+  height: 0px !important;
+  display: none !important;
+  background: transparent !important;
 }
 
 /* RTL Support */
@@ -26,6 +43,11 @@ body {
   text-align: right;
   font-variant-numeric: tabular-nums lining-nums !important;
   font-size: 16px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+body::-webkit-scrollbar {
+  display: none;
 }
 
 /* Unified styling for all text and numbers */
@@ -48,7 +70,6 @@ input[type="text"],
   font-feature-settings: "lnum" 1 !important;
   -webkit-font-feature-settings: "lnum" 1 !important;
   font-family: var(--font-tajawal), 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-  font-size: 16px;
 }
 
 /* Dropdowns and menus RTL */
@@ -80,6 +101,24 @@ input[type="text"],
 /* Fix scrollbar position for RTL */
 [data-radix-scroll-area-viewport] {
   direction: rtl !important;
+}
+
+/* إظهار السكرول الأفقي في جدول الطلبات فقط */
+div.orders-table-container {
+  scrollbar-width: thin !important;
+  -ms-overflow-style: auto !important;
+}
+div.orders-table-container::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+  display: block !important;
+}
+div.orders-table-container::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+div.orders-table-container::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.6) !important;
+  border-radius: 3px !important;
 }
 
 /* Dropdowns max height and scroll */
@@ -275,9 +314,29 @@ input[type="text"],
   letter-spacing: 0.05em !important;
 }
 
-/* Popover Content - macOS Style */
+/* Popover / Tooltip / Dropdown — always above everything including Leaflet and sticky sidebar */
 [data-radix-popper-content-wrapper] {
-  z-index: 50;
+  z-index: 9999 !important;
+  position: fixed !important;
+}
+
+/* Leaflet map stays below UI overlays */
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-pane,
+.leaflet-shadow-pane,
+.leaflet-overlay-pane,
+.leaflet-map-pane {
+  z-index: auto !important;
+}
+.leaflet-container {
+  z-index: 0 !important;
+  isolation: isolate;
+}
+
+/* Sidebar z-index — stays below UI overlays */
+aside {
+  z-index: 40;
 }
 
 [data-radix-popper-content-wrapper]>div {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import Icon from '@/components/icon';
 import { useToast } from '@/hooks/use-toast';
 import { useOrdersStore } from '@/store/orders-store';
+import { useDriverOrders } from '@/hooks/use-driver-orders';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -31,7 +32,8 @@ export default function DriverScanPage() {
   const { toast } = useToast();
   const { settings, formatCurrency } = useSettings();
   const currencySymbol = settings.regional.currencySymbol;
-  const { orders, updateOrderStatus } = useOrdersStore();
+  const { updateOrderStatus } = useOrdersStore();
+  const { orders } = useDriverOrders();
   const { statuses } = useStatusesStore();
   
   const [isScanning, setIsScanning] = useState(false);
@@ -72,7 +74,7 @@ export default function DriverScanPage() {
 
     const order = orders.find(
       o => o.id === manualCode.trim() || 
-           o.orderNumber === manualCode.trim() ||
+           o.orderNumber?.toString() === manualCode.trim() ||
            o.referenceNumber === manualCode.trim()
     );
 

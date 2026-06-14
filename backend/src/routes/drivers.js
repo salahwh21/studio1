@@ -6,15 +6,32 @@ const db = require('../config/database');
 router.get('/available', async (req, res) => {
   try {
     const result = await db.query(
-      `SELECT d.*, u.full_name, u.phone, u.avatar_url 
-       FROM drivers d 
-       JOIN users u ON d.user_id = u.id 
-       WHERE d.is_online = true 
+      `SELECT d.*, u.full_name, u.phone, u.avatar_url
+       FROM drivers d
+       JOIN users u ON d.user_id = u.id
+       WHERE d.is_online = true
        ORDER BY d.rating DESC`
     );
     res.json(result.rows);
   } catch (error) {
     console.error('Available drivers error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// مواقع كل السائقين (للخريطة)
+router.get('/locations', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT d.id, d.is_online, d.current_latitude, d.current_longitude, d.last_location_update,
+              u.name, u.avatar
+       FROM drivers d
+       JOIN users u ON d.id = u.id
+       WHERE d.current_latitude IS NOT NULL AND d.current_longitude IS NOT NULL`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Driver locations error:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -1,23 +1,24 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_IO_URL || 'http://localhost:3001';
+export let socket: Socket | null = null;
 
-let socket: Socket | null = null;
+const getSocketUrl = () => {
+  if (typeof window === 'undefined') return '';
+  const { protocol, hostname } = window.location;
+  return `${protocol}//${hostname}:5001`;
+};
 
 export const initSocket = () => {
   if (socket) return socket;
-  
-  // Disable Socket.IO if backend is not available
-  if (!SOCKET_URL || SOCKET_URL.includes('localhost')) {
-    console.warn('⚠️ Socket.IO disabled - backend server not available');
-    return null;
-  }
-  
-  socket = io(SOCKET_URL, {
+
+  if (typeof window === 'undefined') return null;
+
+  socket = io(getSocketUrl(), {
     autoConnect: false,
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionAttempts: 5,
+    withCredentials: true, // يرسل الـ httpOnly cookie تلقائياً للمصادقة
   });
   
   socket.on('connect', () => {

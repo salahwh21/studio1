@@ -550,15 +550,25 @@ const defaultSettingsData: ComprehensiveSettings = {
   },
 };
 
-const SETTINGS_KEY = 'comprehensiveAppSettings';
 
 // 5. Create the provider component
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<ComprehensiveSettings>(defaultSettingsData);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const hasUserChangedSettings = React.useRef(false);
 
   const loadSettings = useCallback(async () => {
+    // منع الطلبات المتكررة: لا نطلب إلا مرة كل 30 ثانية
+    const CACHE_KEY = '__settings_last_fetch__';
+    const now = Date.now();
+    const lastFetch = (typeof window !== 'undefined' && (window as any)[CACHE_KEY]) || 0;
+    if (now - lastFetch < 30_000) {
+      setIsHydrated(true);
+      return;
+    }
+    if (typeof window !== 'undefined') (window as any)[CACHE_KEY] = now;
+
     try {
       // Try to load from API first
       const { default: api } = await import('@/lib/api');
@@ -602,57 +612,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           }
         };
         setSettings(mergedSettings);
-        // Also save to localStorage as backup
-        window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(mergedSettings));
       }
     } catch (error) {
-      console.error("Failed to load settings from API, falling back to localStorage", error);
-      // Fallback to localStorage
-      try {
-        const item = window.localStorage.getItem(SETTINGS_KEY);
-        if (item) {
-          const savedSettings = JSON.parse(item);
-          const mergedSettings = {
-            ...defaultSettingsData,
-            ...savedSettings,
-            policy: {
-              ...defaultSettingsData.policy,
-              ...(savedSettings.policy || {}),
-            },
-            notifications: {
-              ...defaultSettingsData.notifications,
-              ...(savedSettings.notifications || {}),
-            },
-            orders: {
-              ...defaultSettingsData.orders,
-              ...(savedSettings.orders || {}),
-            },
-            login: {
-              ...defaultSettingsData.login,
-              ...(savedSettings.login || {}),
-            },
-            regional: {
-              ...defaultSettingsData.regional,
-              ...(savedSettings.regional || {}),
-            },
-            ui: {
-              ...defaultSettingsData.ui,
-              ...(savedSettings.ui || {}),
-            },
-            menuVisibility: {
-              ...defaultSettingsData.menuVisibility,
-              ...(savedSettings.menuVisibility || {}),
-            },
-            aiAgent: {
-              ...defaultSettingsData.aiAgent,
-              ...(savedSettings.aiAgent || {}),
-            }
-          };
-          setSettings(mergedSettings);
-        }
-      } catch (localError) {
-        console.error("Failed to load settings from localStorage", localError);
-      }
+      console.error("Failed to load settings from API", error);
     } finally {
       setIsHydrated(true);
     }
@@ -664,23 +626,19 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   }, [loadSettings]);
 
   // Save settings to API whenever they change (with debounce)
+  // Only save when user actually changes settings, not on initial hydration
   useEffect(() => {
-    if (!isHydrated || isSaving) return;
+    if (!isHydrated || isSaving || !hasUserChangedSettings.current) return;
 
     const saveToApi = async () => {
+      if (typeof document !== 'undefined' && !document.cookie.includes('token') && !localStorage.getItem('token')) return;
       setIsSaving(true);
       try {
         const { default: api } = await import('@/lib/api');
         await api.updateSettings(settings);
-        // Also save to localStorage as backup
-        window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-      } catch (error) {
-        console.error("Failed to save settings to API, saved to localStorage only", error);
-        // Fallback: save to localStorage only
-        try {
-          window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-        } catch (localError) {
-          console.error("Failed to save settings to localStorage", localError);
+      } catch (error: any) {
+        if (!error?.message?.includes('Access token') && !error?.message?.includes('401')) {
+          console.error("Failed to save settings to API", error);
         }
       } finally {
         setIsSaving(false);
@@ -693,6 +651,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
   // Generic function to update a top-level setting
   const setSetting = <K extends keyof ComprehensiveSettings>(key: K, value: ComprehensiveSettings[K]) => {
+    hasUserChangedSettings.current = true;
     setSettings(prevSettings => ({
       ...prevSettings,
       [key]: value,
@@ -704,6 +663,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       nestedKey: K,
       value: ComprehensiveSettings[T][K]
   ) => {
+       hasUserChangedSettings.current = true;
        setSettings(prev => ({
           ...prev,
           [topLevelKey]: {
@@ -721,6 +681,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const updateAiAgentSetting = (key: keyof AiAgentSettings, value: any) => updateNestedSetting('aiAgent', key, value);
 
   const updateSocialLink = (key: keyof SocialLinks, value: string) => {
+      hasUserChangedSettings.current = true;
       setSettings(prev => ({
           ...prev,
           login: {
@@ -734,6 +695,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const updateMenuVisibility = (roleId: string, permissionId: string, checked: boolean) => {
+    hasUserChangedSettings.current = true;
     setSettings(prev => {
         const currentVisibility = prev.menuVisibility[roleId] || [];
         const newVisibility = checked

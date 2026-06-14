@@ -90,8 +90,8 @@ export function PDFPreview({ template, mockData }: PDFPreviewProps) {
     try {
       const html = buildTemplateHTML();
       const dataUrl = await generatePdfPreview(html, {
-        width: `${canvasWidth}mm`,
-        height: `${canvasHeight}mm`,
+        width: canvasWidth as number,
+        height: canvasHeight as number,
       });
       setPdfUrl(dataUrl);
 
@@ -115,8 +115,8 @@ export function PDFPreview({ template, mockData }: PDFPreviewProps) {
     try {
       const html = buildTemplateHTML();
       const blob = await generatePdf(html, {
-        width: `${canvasWidth}mm`,
-        height: `${canvasHeight}mm`,
+        width: canvasWidth as number,
+        height: canvasHeight as number,
         filename: template.name.replace(/[^a-zA-Z0-9]/g, '_'),
       });
       downloadPdf(blob, `${template.name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);

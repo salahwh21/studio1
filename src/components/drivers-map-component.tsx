@@ -80,7 +80,11 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                 center: [31.9539, 35.9106], // Amman, Jordan
                 zoom: 11,
                 scrollWheelZoom: true,
+                zoomControl: false, // Disable default zoom to reposition it
             });
+
+            // Move zoom control to bottom left to avoid overlap with floating panels
+            L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -98,11 +102,15 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                 routingControlRef.current = L.Routing.control({
                     waypoints: [],
                     routeWhileDragging: false,
+                    // @ts-ignore - Missing properties in types
                     lineOptions: {
                         styles: [{ color: '#F96941', opacity: 0.8, weight: 6 }],
+                        extendToWaypoints: true,
+                        missingRouteTolerance: 0
                     },
-                    show: false, // This is the fix to hide the white container
+                    show: false,
                     addWaypoints: false,
+                    // @ts-ignore - createMarker is on plan in strict types
                     createMarker: () => null,
                 }).addTo(map);
 
@@ -264,7 +272,7 @@ export default function DriversMapComponent({ drivers, orders, initialSelectedDr
                              }, 200);
                          };
 
-                        routingControl.off('routesfound').on('routesfound', routeFoundHandler);
+                        (routingControl as any).off('routesfound').on('routesfound', routeFoundHandler);
                         
                         toast({ title: 'تم تحسين المسار وجاري محاكاة الحركة!' });
                     }

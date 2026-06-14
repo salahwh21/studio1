@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { fileToWebP } from '@/lib/image-to-webp';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -89,13 +90,16 @@ export default function AccountSettingsPage() {
   const permissionCount = hasAllPermissions ? totalPermissions : (role?.permissions?.length || 0);
   const permissionPercentage = Math.round((permissionCount / totalPermissions) * 100);
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const webpDataUrl = await fileToWebP(file, 0.9);
+      setAvatar(webpDataUrl);
+    } catch {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setAvatar(event.target?.result as string);
-      };
-      reader.readAsDataURL(e.target.files[0]);
+      reader.onload = (event) => setAvatar(event.target?.result as string);
+      reader.readAsDataURL(file);
     }
   };
 
@@ -162,7 +166,7 @@ export default function AccountSettingsPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-        <Card className="border-r-4 border-r-purple-500">
+        <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -176,7 +180,7 @@ export default function AccountSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-r-4 border-r-blue-500">
+        <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -190,7 +194,7 @@ export default function AccountSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-r-4 border-r-green-500">
+        <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -204,7 +208,7 @@ export default function AccountSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-r-4 border-r-orange-500">
+        <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -269,7 +273,7 @@ export default function AccountSettingsPage() {
           {/* Account Info Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
                 <User className="h-5 w-5 text-primary" />
                 معلومات الحساب
               </CardTitle>
@@ -318,7 +322,7 @@ export default function AccountSettingsPage() {
           {/* Security Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
                 <KeyRound className="h-5 w-5 text-primary" />
                 أمان الحساب
               </CardTitle>
@@ -364,7 +368,7 @@ export default function AccountSettingsPage() {
           {/* Preferences Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
                 <Settings className="h-5 w-5 text-primary" />
                 التفضيلات
               </CardTitle>

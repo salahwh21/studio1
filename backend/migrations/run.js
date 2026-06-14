@@ -20,13 +20,10 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-// Migration files to run in order
-const MIGRATIONS = [
-  '001_initial_schema.sql',
-  '002_seed_data.sql',
-  '003_create_admin_user.sql',
-  '004_create_settings_table.sql'
-];
+// Auto-discover all .sql migration files in the migrations directory, sorted by filename
+const MIGRATIONS = fs.readdirSync(__dirname)
+  .filter(f => f.endsWith('.sql'))
+  .sort();
 
 /**
  * Create the schema_migrations table if it doesn't exist
@@ -73,12 +70,12 @@ function splitSQLStatements(sql) {
   let stringChar = null;
   let inComment = false;
   let commentType = null; // '--' or '/*'
-  
+
   for (let i = 0; i < sql.length; i++) {
     const char = sql[i];
     const nextChar = sql[i + 1] || '';
     const prevChar = sql[i - 1] || '';
-    
+
     // Handle string literals
     if (!inComment && (char === "'" || char === '"')) {
       if (!inString) {
@@ -91,7 +88,7 @@ function splitSQLStatements(sql) {
       currentStatement += char;
       continue;
     }
-    
+
     // Handle comments
     if (!inString) {
       // Single-line comment
@@ -101,7 +98,7 @@ function splitSQLStatements(sql) {
         currentStatement += char;
         continue;
       }
-      
+
       // Multi-line comment start
       if (char === '/' && nextChar === '*') {
         inComment = true;
@@ -109,7 +106,7 @@ function splitSQLStatements(sql) {
         currentStatement += char;
         continue;
       }
-      
+
       // Multi-line comment end
       if (inComment && commentType === '/*' && char === '*' && nextChar === '/') {
         inComment = false;
@@ -117,20 +114,20 @@ function splitSQLStatements(sql) {
         currentStatement += char;
         continue;
       }
-      
+
       // End of single-line comment (newline)
       if (inComment && commentType === '--' && char === '\n') {
         inComment = false;
         commentType = null;
       }
     }
-    
+
     // If we're in a comment, just add the character
     if (inComment) {
       currentStatement += char;
       continue;
     }
-    
+
     // Check for statement delimiter (semicolon not in string or comment)
     if (!inString && !inComment && char === ';') {
       currentStatement += char;
@@ -141,16 +138,16 @@ function splitSQLStatements(sql) {
       currentStatement = '';
       continue;
     }
-    
+
     currentStatement += char;
   }
-  
+
   // Add remaining statement if any
   const trimmed = currentStatement.trim();
   if (trimmed && trimmed !== ';') {
     statements.push(trimmed);
   }
-  
+
   return statements.filter(stmt => stmt.length > 0);
 }
 
@@ -172,35 +169,23 @@ async function runMigration(client, filename) {
 
   console.log(`📦 Running migration: ${filename}`);
 
-    try {
-    // Split SQL into individual statements
-    const statements = splitSQLStatements(sql);
-    
-    if (statements.length === 0) {
-      console.warn(`⚠️  No SQL statements found in ${filename}`);
-      return true;
-    }
-    
-    // Execute each statement individually within a transaction
+  try {
+    // Execute the entire SQL file directly within a transaction
     await client.query('BEGIN');
-    
+
     try {
-      for (let i = 0; i < statements.length; i++) {
-        const statement = statements[i].trim();
-        // Skip empty statements or statements that are only comments/whitespace
-        if (statement && !statement.match(/^[\s-]*$/)) {
-          await client.query(statement);
-        }
+      if (sql.trim().length > 0) {
+        await client.query(sql);
       }
-      
+
       // Record migration as applied
       await client.query(
         'INSERT INTO schema_migrations (version, checksum) VALUES ($1, $2) ON CONFLICT (version) DO NOTHING',
         [filename, checksum]
       );
-      
+
       await client.query('COMMIT');
-      console.log(`✅ Migration applied: ${filename} (${statements.length} statement(s))`);
+      console.log(`✅ Migration applied: ${filename}`);
       return true;
     } catch (error) {
       await client.query('ROLLBACK');
@@ -273,7 +258,7 @@ async function status() {
       const filePath = path.join(__dirname, migration);
       const fileExists = fs.existsSync(filePath);
       const isApplied = applied.includes(migration);
-      
+
       if (!fileExists) {
         console.log(`❌ Missing  ${migration}`);
         missingFiles++;
@@ -285,7 +270,7 @@ async function status() {
 
     console.log('─'.repeat(60));
     console.log(`\nTotal: ${applied.length}/${MIGRATIONS.length} applied`);
-    
+
     if (missingFiles > 0) {
       console.log(`⚠️  Warning: ${missingFiles} migration file(s) are missing!\n`);
       process.exit(1);
@@ -312,6 +297,8 @@ async function reset() {
     // Drop all tables in reverse order
     const tables = [
       'schema_migrations',
+      'notification_logs',
+      'order_settlements',
       'order_tracking',
       'drivers',
       'driver_return_slips',

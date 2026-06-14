@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ProtectedRoute } from '@/components/protected-route';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
-import { useOrdersStore } from '@/store/orders-store';
+import { useDriverOrders } from '@/hooks/use-driver-orders';
+import { api } from '@/lib/api';
+import { connectSocket, emitDriverLocation, disconnectSocket } from '@/lib/socket';
 
 const driverNavItems = [
   { href: '/driver', icon: 'Home', label: 'الرئيسية', exact: true },
@@ -27,18 +29,86 @@ export default function DriverLayout({
 }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { orders } = useOrdersStore();
+  const { orders } = useDriverOrders();
   const [isOnline, setIsOnline] = useState(true);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 
   // حساب عدد الطلبات النشطة
   const activeOrdersCount = orders.filter(
-    o => o.driver === user?.name && 
-    (o.status === 'جاري التوصيل' || o.status === 'بالانتظار')
+    o => o.status === 'جاري التوصيل' || o.status === 'بالانتظار'
   ).length;
 
+  const watchIdRef = useRef<number | null>(null);
+  const lastEmitRef = useRef<number>(0);
+
+  // GPS tracking: إرسال الموقع عبر Socket عندما يكون السائق online
+  useEffect(() => {
+    if (!isOnline || !user?.id) {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      return;
+    }
+
+    connectSocket();
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const now = Date.now();
+        if (now - lastEmitRef.current < 10000) return; // throttle: كل 10 ثواني
+        lastEmitRef.current = now;
+
+        emitDriverLocation({
+          driver_id: user.id,
+          order_id: '',
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+      (error) => {
+        console.error('GPS error:', error.message);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 15000,
+      }
+    );
+
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+    };
+  }, [isOnline, user?.id]);
+
   const handleLogout = async () => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    disconnectSocket();
     await logout();
   };
+
+  const handleToggleOnline = useCallback(async () => {
+    if (isTogglingStatus) return;
+    const newStatus = !isOnline;
+    setIsOnline(newStatus);
+    setIsTogglingStatus(true);
+    try {
+      if (user?.id) {
+        await api.updateDriverStatus(user.id, newStatus);
+      }
+    } catch {
+      // Revert on failure
+      setIsOnline(!newStatus);
+    } finally {
+      setIsTogglingStatus(false);
+    }
+  }, [isOnline, isTogglingStatus, user?.id]);
 
   return (
     <ProtectedRoute allowedRoles={['driver']}>
@@ -67,23 +137,22 @@ export default function DriverLayout({
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Notifications Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative"
-              >
-                <Icon name="Bell" className="h-5 w-5" />
-                {/* Notification Badge */}
-                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                  3
-                </span>
-              </Button>
+              {activeOrdersCount > 0 && (
+                <Link href="/driver/orders?filter=pending">
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Icon name="Bell" className="h-5 w-5" />
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                      {activeOrdersCount > 9 ? '9+' : activeOrdersCount}
+                    </span>
+                  </Button>
+                </Link>
+              )}
 
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsOnline(!isOnline)}
+                onClick={handleToggleOnline}
+                disabled={isTogglingStatus}
                 className={cn(
                   "gap-2",
                   isOnline ? "text-green-600" : "text-gray-400"
@@ -105,7 +174,7 @@ export default function DriverLayout({
                 <Icon name="Truck" className="h-6 w-6 text-primary" />
                 <span className="font-bold text-lg">تطبيق السائق</span>
               </div>
-              
+
               <div className="flex items-center gap-3 p-3 rounded-lg bg-accent">
                 <Avatar className="h-12 w-12 border-2 border-primary">
                   <AvatarFallback className="bg-primary text-primary-foreground">
@@ -127,7 +196,8 @@ export default function DriverLayout({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setIsOnline(!isOnline)}
+                  onClick={handleToggleOnline}
+                  disabled={isTogglingStatus}
                 >
                   <Icon name={isOnline ? "Wifi" : "WifiOff"} className="h-4 w-4" />
                 </Button>
@@ -234,7 +304,7 @@ export default function DriverLayout({
                   {item.label}
                   {item.badge && activeOrdersCount > 0 && (
                     <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs" variant="destructive">
-                      {activeOrdersCount}
+                      {activeOrdersCount > 9 ? '9+' : activeOrdersCount}
                     </Badge>
                   )}
                 </Link>
